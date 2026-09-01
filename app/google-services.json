@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "841038193764",
+    "project_id": "guardband-aae65",
+    "firebase_url": "https://guardband-aae65-default-rtdb.asia-southeast1.firebasedatabase.app/",
+    "storage_bucket": "guardband-aae65.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:841038193764:android:51c7b54f8b3c7e35b32b71",
+        "android_client_info": {
+          "package_name": "com.example.guardband"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCchZiNXCwjYOady-zrmuauEMkmuQJYuM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
