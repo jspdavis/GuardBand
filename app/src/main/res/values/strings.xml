@@ -1,3 +1,67 @@
 <resources>
     <string name="app_name">GuardBand</string>
+
+    <!-- Splash -->
+    <string name="splash_tagline">Stay safe. Stay connected.</string>
+
+    <!-- Login -->
+    <string name="hint_email">Email address</string>
+    <string name="hint_password">Password</string>
+    <string name="btn_login">Log In</string>
+    <string name="btn_signup">Create an account</string>
+    <string name="btn_forgot">Forgot password?</string>
+
+    <!-- Sign Up – Name -->
+    <string name="label_signup_name_title">What\'s your name?</string>
+    <string name="hint_full_name">Full name</string>
+    <string name="btn_next">Next</string>
+
+    <!-- Sign Up – Location -->
+    <string name="label_signup_location_title">Where are you based?</string>
+    <string name="hint_location">City or region</string>
+
+    <!-- Sign Up – Contacts -->
+    <string name="label_signup_contacts_title">Add emergency contacts</string>
+    <string name="hint_contact_name">Contact name</string>
+    <string name="hint_contact_phone">Phone number</string>
+    <string name="hint_contact_relationship">Relationship (e.g. Friend)</string>
+    <string name="btn_add_contact">+ Add contact</string>
+    <string name="btn_submit">Submit</string>
+
+    <!-- Forgot – Request -->
+    <string name="label_forgot_request_title">Reset your password</string>
+    <string name="label_forgot_request_subtitle">Enter the email linked to your account.</string>
+    <string name="btn_send_link">Send reset link</string>
+
+    <!-- Forgot – Verify -->
+    <string name="label_forgot_verify_title">Check your email</string>
+    <string name="label_forgot_verify_subtitle">Enter the 6-digit code we sent you.</string>
+    <string name="hint_code">Verification code</string>
+    <string name="btn_verify">Verify</string>
+    <string name="btn_resend">Resend code</string>
+
+    <!-- Forgot – New Password -->
+    <string name="label_forgot_newpass_title">Create a new password</string>
+    <string name="hint_new_password">New password</string>
+    <string name="hint_confirm_password">Confirm password</string>
+    <string name="btn_save_password">Save password</string>
+
+    <!-- Forgot – Success -->
+    <string name="label_forgot_success_title">Password updated!</string>
+    <string name="label_forgot_success_subtitle">Your password has been changed successfully.</string>
+    <string name="btn_back_to_login">Back to Login</string>
+
+    <!-- Loading -->
+    <string name="label_loading">Please wait…</string>
+
+    <!-- Dashboard -->
+    <string name="label_dashboard_welcome">Welcome back, %1$s</string>
+    <string name="label_dashboard_status">You are protected.</string>
+    <string name="label_your_contacts">Your Emergency Contacts</string>
+    <string name="btn_logout">Log Out</string>
+
+    <!-- Generic -->
+    <string name="error_field_required">This field is required.</string>
+    <string name="error_passwords_mismatch">Passwords do not match.</string>
+    <string name="error_invalid_email">Enter a valid email address.</string>
 </resources>
