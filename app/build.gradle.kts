@@ -43,6 +43,15 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
+    // Lifecycle ViewModel KTX
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
+    // OkHttp
+    implementation(libs.okhttp)
+
+    // Kotlin Coroutines
+    implementation(libs.kotlinx.coroutines.android)
+
     // Firebase BoM — manages all Firebase library versions
     implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
     implementation("com.google.firebase:firebase-analytics")

@@ -1,12 +1,15 @@
 package com.example.guardband.ui.main
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.guardband.R
+import com.example.guardband.ui.mocksender.MockSenderActivity
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -29,6 +32,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         checkDatabaseConnection()
+        setupDebugButton()
+    }
+
+    /**
+     * Temporary debug button to launch MockSenderActivity.
+     * TODO: Remove this once Ishi's auth flow is integrated and replace with proper navigation.
+     */
+    private fun setupDebugButton() {
+        findViewById<Button>(R.id.btnOpenMockSender).setOnClickListener {
+            startActivity(Intent(this, MockSenderActivity::class.java))
+        }
     }
 
     private fun checkDatabaseConnection() {
