@@ -63,8 +63,5 @@
     <!-- Generic -->
     <string name="error_field_required">This field is required.</string>
     <string name="error_passwords_mismatch">Passwords do not match.</string>
-    <!-- Google Sign-In: paste Web client ID from Firebase Console → Project settings → Your apps -->
-    <string name="default_web_client_id">REPLACE_WITH_FIREBASE_WEB_CLIENT_ID.apps.googleusercontent.com</string>
-
-    <string name="error_required_field">This is a required field.</string>
+    <string name="error_invalid_email">Enter a valid email address.</string>
 </resources>

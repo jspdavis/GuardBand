@@ -3,10 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
-        android:name=".GuardBandApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -17,9 +15,7 @@
         android:theme="@style/Theme.GuardBand"
         tools:targetApi="31">
 
-        <meta-data
-            android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version" />
+        <!-- ── Splash ──────────────────────────────────────────────────────── -->
 
         <activity
             android:name=".ui.splash.SplashActivity"
@@ -32,33 +28,75 @@
             </intent-filter>
         </activity>
 
+        <!-- ── Auth ───────────────────────────────────────────────────────── -->
+
         <activity
-            android:name=".ui.login.LoginActivity"
+            android:name=".ui.auth.LoginActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ui.signup.SignUpWizardActivity"
+            android:name=".ui.auth.SignUpNameActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ui.forgotpass.ForgotPasswordActivity"
+            android:name=".ui.auth.SignUpLocationActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.auth.SignUpContactsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- ── Forgot Password ────────────────────────────────────────────── -->
+
+        <activity
+            android:name=".ui.forgot.ForgotRequestActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.forgot.ForgotVerifyActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.forgot.ForgotNewPassActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.forgot.ForgotSuccessActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- ── Loading ────────────────────────────────────────────────────── -->
 
         <activity
             android:name=".ui.loading.LoadingActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <!-- ── Dashboard ──────────────────────────────────────────────────── -->
+
         <activity
-            android:name=".ui.dashboard.MainActivity"
+            android:name=".ui.dashboard.DashboardActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
+
+        <!-- ── Legacy (retained, no longer launcher) ─────────────────────── -->
+        <activity
+            android:name=".ui.main.MainActivity"
+            android:exported="false" />
 
     </application>
 

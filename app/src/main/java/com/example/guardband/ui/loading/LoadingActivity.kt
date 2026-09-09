@@ -6,38 +6,39 @@ import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import com.example.guardband.R
-import com.example.guardband.data.repository.AuthRepository
-import com.example.guardband.ui.dashboard.MainActivity
-import com.example.guardband.ui.login.LoginActivity
+import com.example.guardband.ui.dashboard.DashboardActivity
 
+/**
+ * Transient loading screen shown between auth actions and the Dashboard.
+ *
+ * Callers pass [EXTRA_DESTINATION] to tell LoadingActivity where to go next.
+ * Currently only [DEST_DASHBOARD] is defined; add more destinations as needed.
+ *
+ * Automatically advances after [LOADING_DELAY_MS] to simulate a network call.
+ */
 class LoadingActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_DESTINATION = "extra_destination"
-        const val DEST_MAIN = "dest_main"
-        const val DEST_DASHBOARD = DEST_MAIN
-        private const val LOADING_DELAY_MS = 1600L
+        const val DEST_DASHBOARD    = "dest_dashboard"
+        private const val LOADING_DELAY_MS = 1800L
     }
 
     private val handler = Handler(Looper.getMainLooper())
 
     private val navigateForward = Runnable {
-        val destination = intent.getStringExtra(EXTRA_DESTINATION) ?: DEST_MAIN
+        val destination = intent.getStringExtra(EXTRA_DESTINATION)
         when (destination) {
-            DEST_MAIN -> {
-                // Session check — if somehow signed out mid-flow, return to login.
-                if (!AuthRepository.getInstance().isLoggedIn()) {
-                    // Wizard may complete without email/password; still open shell.
-                }
+            DEST_DASHBOARD -> {
                 startActivity(
-                    Intent(this, MainActivity::class.java).apply {
+                    Intent(this, DashboardActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
                 )
             }
             else -> {
                 startActivity(
-                    Intent(this, LoginActivity::class.java).apply {
+                    Intent(this, DashboardActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
                 )
@@ -61,8 +62,9 @@ class LoadingActivity : AppCompatActivity() {
         handler.removeCallbacks(navigateForward)
     }
 
+    /** Prevent the user from pressing Back to escape the loading screen. */
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        // Block during transition.
+        // Intentionally blocked during loading transition.
     }
 }
