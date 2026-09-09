@@ -1,0 +1,229 @@
+{
+  "pbtResults": {
+    "1. Write bug condition exploration tests (before any fix)": {
+      "status": "passed",
+      "failingExample": "8 tests executed, 6 failed as expected on unfixed code:\n\nA1 FAILED (Bug 1 — malformed phone +123):\n  Expected: view.showError(...) called, authRepository.login() NOT called.\n  Actual: view.showLoading() called (presenter passed +123 to Firebase without validation).\n  Counterexample: identifier=\"+123\", password=\"Secret1!\"\n\nA2 FAILED (Bug 1 — unrecognized identifier 'abc'):\n  Expected: view.showError(...) called, authRepository.login() NOT called.\n  Actual: view.showLoading() called (presenter passed 'abc' directly to Firebase).\n  Counterexample: identifier=\"abc\", password=\"Secret1!\"\n\nA3 FAILED (Bug 1 — malformed email 'notanemail@'):\n  Expected: view.showError(...) called, authRepository.login() NOT called.\n  Actual: view.showLoading() called (presenter passed malformed email to Firebase).\n  Counterexample: identifier=\"notanemail@\", password=\"Secret1!\"\n\nB1 FAILED (Bug 2 — blank email+password bypass):\n  Expected: showFieldError(\"email\", <non-null msg>) called; step remains 1.\n  Actual: only null-clearing calls for firstName/lastName; step advanced to 2 via else->goToStep(2).\n  Counterexample: firstName=\"Alice\", lastName=\"Smith\", email=\"\", password=\"\"\n\nB3 FAILED (Bug 2 — NullPointerException from android.util.Patterns):\n  Expected: showFieldError(\"password\", ...) shown; step remains 1.\n  Actual: NullPointerException at SignUpPresenter.onNameContinue line 59 because android.util.Patterns.EMAIL_ADDRESS == null in JVM unit tests.\n  Counterexample: firstName=\"Alice\", lastName=\"Smith\", email=\"alice@example.com\", password=\"\"\n\nB4 FAILED (Bug 2 — Skip bypass):\n  Expected: step remains 1 after onSkip() when step==1.\n  Actual: step advanced to 2 (onSkip calls goToStep(2) when step==1).\n  Counterexample: step=1, call onSkip()\n\nB2 PASSED (email error IS shown for blank email with non-blank password — this sub-case works on current code).\nC1 PASSED (onPasswordChanged absent = Bug 3 confirmed).",
+      "lastRunTimestamp": 1788956759161
+    }
+  },
+  "executionHistory": {
+    "1. Write bug condition exploration tests (before any fix)": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954054229
+      },
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954070204
+      },
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788956808213
+      }
+    ],
+    "2. Write preservation property tests (before any fix)": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954055286
+      },
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788956827761
+      }
+    ],
+    "3.1 Add format-detection helpers to `LoginPresenter.kt`": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954055494
+      }
+    ],
+    "3.2 Replace the guard block in `onLoginClicked` with ordered validation": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954055710
+      }
+    ],
+    "3.3 Verify Bug 1 exploration test now passes (Property 1: Expected Behavior)": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954055877
+      }
+    ],
+    "3.4 Verify preservation tests still pass (Property 2: Preservation)": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954056027
+      }
+    ],
+    "4.1 Remove the blank-credential bypass in `SignUpPresenter.onNameContinue`": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954056203
+      }
+    ],
+    "4.2 Disable Skip navigation from Step 1 in `SignUpPresenter.onSkip()`": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954056410
+      }
+    ],
+    "4.3 Hide the Skip button in `SignUpWizardActivity.onCreate`": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954056606
+      }
+    ],
+    "4.4 Verify Bug 2 exploration tests now pass (Property 1: Expected Behavior)": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954056740
+      }
+    ],
+    "4.5 Verify preservation tests still pass (Property 2: Preservation)": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954056914
+      }
+    ],
+    "5.1 Add `onPasswordChanged` to `SignUpContract`": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954057064
+      }
+    ],
+    "5.2 Implement `onPasswordChanged` in `SignUpPresenter`": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954057193
+      }
+    ],
+    "5.3 Add rule TextViews to `fragment_signup_name.xml`": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954057298
+      }
+    ],
+    "5.4 Wire up TextWatcher and `updatePasswordRules` in `SignUpNameFragment`": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954057421
+      }
+    ],
+    "5.5 Delegate `onPasswordChanged` and `updatePasswordRules` in `SignUpWizardActivity`": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954057578
+      }
+    ],
+    "5.6 Verify Bug 3 exploration test now passes (Property 1: Expected Behavior)": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954057728
+      }
+    ],
+    "5.7 Verify preservation tests still pass (Property 2: Preservation)": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954057858
+      }
+    ],
+    "6.1 Add `tvEmptyContactsError` to `fragment_signup_contacts.xml`": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954058032
+      }
+    ],
+    "6.2 Guard CONTINUE in `SignUpContactsFragment.btnAction` click listener": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954058164
+      }
+    ],
+    "6.3 Hide the error when contacts become non-empty in `renderContacts`": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954058292
+      }
+    ],
+    "6.4 Verify Bug D exploration test now passes (Property 1: Expected Behavior)": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954058430
+      }
+    ],
+    "6.5 Verify preservation tests still pass (Property 2: Preservation)": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954058566
+      }
+    ],
+    "7. Checkpoint — Ensure all tests pass": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954058682
+      }
+    ],
+    "8.1 Add RTDB dual-write to ContactRepository.addContact": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954058782
+      }
+    ],
+    "8.2 Add RTDB dual-delete to ContactRepository.deleteContact": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954058881
+      }
+    ],
+    "8.3 Verify RTDB path in DatabaseManager": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954058966
+      }
+    ],
+    "9.1 Audit ForgotPasswordActivity step transitions for backstack leaks": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954059054
+      }
+    ],
+    "9.2 Ensure OTP timer is stopped on all exit paths from ForgotPasswordActivity": [
+      {
+        "executionId": "b4472aad-7a93-4b97-a40b-12df6d7d7218",
+        "chatSessionId": "sess_1919b732-b744-48df-b257-c5898703886b",
+        "timestamp": 1788954059151
+      }
+    ]
+  }
+}
