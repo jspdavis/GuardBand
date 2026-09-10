@@ -15,19 +15,19 @@ import com.google.firebase.database.ValueEventListener
  * This repository exclusively uses [DatabaseManager.database] — no separate
  * FirebaseDatabase instance is constructed anywhere else in the app.
  */
-class ContactRepository(
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
+open class ContactRepository(
+    private val auth: FirebaseAuth? = try { FirebaseAuth.getInstance() } catch (e: Exception) { null },
     private val dbManager: DatabaseManager = DatabaseManager
 ) {
 
     private fun contactsRef(uid: String) =
         dbManager.database.getReference("users/$uid/$NODE_CONTACTS")
 
-    fun getContacts(
+    open fun getContacts(
         onSuccess: (List<EmergencyContact>) -> Unit,
         onError: (String) -> Unit
     ) {
-        val uid = auth.currentUser?.uid ?: return onError("Not signed in.")
+        val uid = auth?.currentUser?.uid ?: return onError("Not signed in.")
         contactsRef(uid).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val list = snapshot.children.mapNotNull { child ->
@@ -43,12 +43,12 @@ class ContactRepository(
         })
     }
 
-    fun addContact(
+    open fun addContact(
         contact: EmergencyContact,
         onSuccess: (EmergencyContact) -> Unit,
         onError: (String) -> Unit
     ) {
-        val uid = auth.currentUser?.uid ?: return onError("Not signed in.")
+        val uid = auth?.currentUser?.uid ?: return onError("Not signed in.")
         val ref = contactsRef(uid).push()
         val saved = contact.copy(id = ref.key ?: contact.id)
         ref.setValue(saved.toMap())
@@ -56,23 +56,23 @@ class ContactRepository(
             .addOnFailureListener { e -> onError(e.localizedMessage ?: "Failed to add contact.") }
     }
 
-    fun deleteContact(
+    open fun deleteContact(
         contactId: String,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val uid = auth.currentUser?.uid ?: return onError("Not signed in.")
+        val uid = auth?.currentUser?.uid ?: return onError("Not signed in.")
         contactsRef(uid).child(contactId).removeValue()
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener { e -> onError(e.localizedMessage ?: "Failed to delete contact.") }
     }
 
-    fun replaceAll(
+    open fun replaceAll(
         contacts: List<EmergencyContact>,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val uid = auth.currentUser?.uid ?: return onError("Not signed in.")
+        val uid = auth?.currentUser?.uid ?: return onError("Not signed in.")
         val ref = contactsRef(uid)
 
         // Build a map of {pushKey -> contactMap} for a single atomic write.

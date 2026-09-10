@@ -3,13 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/white"
     android:orientation="vertical">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Add emergency Numbers"
-        android:textColor="@color/brand_accent"
+        android:textColor="#1A1A1A"
         android:textSize="22sp"
         android:textStyle="bold" />
 
@@ -19,7 +20,7 @@
         android:layout_marginTop="6dp"
         android:layout_marginBottom="16dp"
         android:text="Selected contacts you wish to share your location with in case of an emergency"
-        android:textColor="@color/text_secondary"
+        android:textColor="#8E8E93"
         android:textSize="12sp" />
 
     <androidx.recyclerview.widget.RecyclerView
@@ -35,7 +36,7 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginVertical="12dp"
         android:text="Add new contact"
-        android:textColor="@color/text_primary"
+        android:textColor="#1A1A1A"
         android:textSize="13sp"
         android:textStyle="bold"
         android:visibility="gone" />
@@ -56,9 +57,11 @@
             app:boxCornerRadiusBottomStart="8dp"
             app:boxCornerRadiusTopEnd="8dp"
             app:boxCornerRadiusTopStart="8dp"
+            app:boxStrokeColor="#1A1A1A"
             app:boxStrokeWidth="1dp"
             app:endIconDrawable="@drawable/ic_phone"
             app:endIconMode="custom"
+            app:endIconTint="#1A1A1A"
             app:hintEnabled="false">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -66,8 +69,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Phone number"
+                android:textColorHint="#8E8E93"
                 android:inputType="phone"
-                android:paddingVertical="12dp" />
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="12dp"
+                android:textColor="#1A1A1A"
+                android:textSize="13sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
@@ -75,7 +82,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="4dp"
             android:text="Name"
-            android:textColor="@color/text_primary"
+            android:textColor="#1A1A1A"
             android:textSize="13sp"
             android:textStyle="bold" />
 
@@ -89,6 +96,7 @@
             app:boxCornerRadiusBottomStart="8dp"
             app:boxCornerRadiusTopEnd="8dp"
             app:boxCornerRadiusTopStart="8dp"
+            app:boxStrokeColor="#1A1A1A"
             app:boxStrokeWidth="1dp"
             app:hintEnabled="false">
 
@@ -97,7 +105,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPersonName"
-                android:paddingVertical="12dp" />
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="12dp"
+                android:textColor="#1A1A1A"
+                android:textSize="13sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
@@ -105,7 +116,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="4dp"
             android:text="Select relationship"
-            android:textColor="@color/text_primary"
+            android:textColor="#1A1A1A"
             android:textSize="13sp"
             android:textStyle="bold" />
 
@@ -126,11 +137,14 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnAction"
         android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:backgroundTint="@color/brand_primary"
+        android:layout_height="48dp"
+        android:backgroundTint="#4E8B38"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
         android:text="ADD"
         android:textAllCaps="true"
-        android:textColor="@color/white"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
         android:textStyle="bold"
-        app:cornerRadius="8dp" />
+        app:cornerRadius="12dp" />
 </LinearLayout>

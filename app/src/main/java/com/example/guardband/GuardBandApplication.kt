@@ -1,4 +1,11 @@
 package com.example.guardband
 
-class GuardBandApplication {
+import android.app.Application
+import com.google.firebase.FirebaseApp
+
+class GuardBandApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        FirebaseApp.initializeApp(this)
+    }
 }

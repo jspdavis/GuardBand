@@ -3,194 +3,352 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#FFFFFF"
     android:fillViewport="true">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:paddingHorizontal="24dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="24dp">
 
-        <TextView
+        <!-- Header Bar: Back Button, Step Progress, Skip Action -->
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:src="@drawable/back_arrow"
+            app:layout_constraintBottom_toBottomOf="@id/layoutStepIndicator"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/layoutStepIndicator"
+            app:tint="#1A1A1A" />
+
+        <LinearLayout
+            android:id="@+id/layoutStepIndicator"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toStartOf="@id/btnSkip"
+            app:layout_constraintStart_toEndOf="@id/btnBack"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:text="Step 1/3"
+                android:textColor="#8E8E93"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="160dp"
+                android:layout_height="4dp"
+                android:orientation="horizontal">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="#4E8B38" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="#E0E0E0" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="#E0E0E0" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/btnSkip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="4dp"
+            android:text="Skip"
+            android:textColor="#1A1A1A"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@id/layoutStepIndicator"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/layoutStepIndicator" />
+
+        <!-- Title Section -->
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
             android:text="What is your name?"
-            android:textColor="@color/brand_accent"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:textColor="#1A1A1A"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutStepIndicator" />
 
         <TextView
-            android:layout_width="wrap_content"
+            android:id="@+id/tvSubtitle"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginTop="4dp"
             android:text="This is what will be used to address you"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp" />
+            android:textColor="#8E8E93"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvTitle" />
 
+        <!-- First Name -->
         <TextView
+            android:id="@+id/tvLabelFirstName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
             android:layout_marginBottom="6dp"
             android:text="First Name"
-            android:textColor="@color/text_primary"
+            android:textColor="#1A1A1A"
             android:textSize="13sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvSubtitle" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilFirstName"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="6dp"
             app:boxCornerRadiusBottomEnd="8dp"
             app:boxCornerRadiusBottomStart="8dp"
             app:boxCornerRadiusTopEnd="8dp"
             app:boxCornerRadiusTopStart="8dp"
+            app:boxStrokeColor="#1A1A1A"
             app:boxStrokeWidth="1dp"
-            app:hintEnabled="false">
+            app:hintEnabled="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvLabelFirstName">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etFirstName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPersonName"
-                android:paddingVertical="12dp" />
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="12dp"
+                android:textColor="#1A1A1A"
+                android:textSize="13sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Last Name -->
         <TextView
+            android:id="@+id/tvLabelLastName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"
+            android:layout_marginTop="16dp"
             android:text="Last Name"
-            android:textColor="@color/text_primary"
+            android:textColor="#1A1A1A"
             android:textSize="13sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tilFirstName" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilLastName"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="6dp"
             app:boxCornerRadiusBottomEnd="8dp"
             app:boxCornerRadiusBottomStart="8dp"
             app:boxCornerRadiusTopEnd="8dp"
             app:boxCornerRadiusTopStart="8dp"
+            app:boxStrokeColor="#1A1A1A"
             app:boxStrokeWidth="1dp"
-            app:hintEnabled="false">
+            app:hintEnabled="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvLabelLastName">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etLastName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPersonName"
-                android:paddingVertical="12dp" />
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="12dp"
+                android:textColor="#1A1A1A"
+                android:textSize="13sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Email -->
         <TextView
+            android:id="@+id/tvLabelEmail"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"
+            android:layout_marginTop="16dp"
             android:text="Email"
-            android:textColor="@color/text_primary"
+            android:textColor="#1A1A1A"
             android:textSize="13sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tilLastName" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilEmail"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="6dp"
             app:boxCornerRadiusBottomEnd="8dp"
             app:boxCornerRadiusBottomStart="8dp"
             app:boxCornerRadiusTopEnd="8dp"
             app:boxCornerRadiusTopStart="8dp"
+            app:boxStrokeColor="#1A1A1A"
             app:boxStrokeWidth="1dp"
-            app:hintEnabled="false">
+            app:hintEnabled="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvLabelEmail">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textEmailAddress"
-                android:paddingVertical="12dp" />
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="12dp"
+                android:textColor="#1A1A1A"
+                android:textSize="13sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Password -->
         <TextView
+            android:id="@+id/tvLabelPassword"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="6dp"
+            android:layout_marginTop="16dp"
             android:text="Password"
-            android:textColor="@color/text_primary"
+            android:textColor="#1A1A1A"
             android:textSize="13sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tilEmail" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilPassword"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginTop="6dp"
             app:boxCornerRadiusBottomEnd="8dp"
             app:boxCornerRadiusBottomStart="8dp"
             app:boxCornerRadiusTopEnd="8dp"
             app:boxCornerRadiusTopStart="8dp"
+            app:boxStrokeColor="#1A1A1A"
             app:boxStrokeWidth="1dp"
             app:hintEnabled="false"
-            app:passwordToggleEnabled="true">
+            app:passwordToggleEnabled="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvLabelPassword">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etPassword"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
-                android:paddingVertical="12dp" />
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="12dp"
+                android:textColor="#1A1A1A"
+                android:textSize="13sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Live password criteria tags (updated on every keystroke) -->
+        <!-- Live Password Criteria Feedback -->
         <TextView
             android:id="@+id/tvSignUpRule1"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
+            android:layout_marginTop="12dp"
             android:text="☐ At least 8 characters"
-            android:textSize="12sp" />
+            android:textColor="#8E8E93"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tilPassword" />
 
         <TextView
             android:id="@+id/tvSignUpRule2"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
+            android:layout_marginTop="4dp"
             android:text="☐ At least 1 uppercase letter"
-            android:textSize="12sp" />
+            android:textColor="#8E8E93"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvSignUpRule1" />
 
         <TextView
             android:id="@+id/tvSignUpRule3"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
+            android:layout_marginTop="4dp"
             android:text="☐ At least 1 lowercase letter"
-            android:textSize="12sp" />
+            android:textColor="#8E8E93"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvSignUpRule2" />
 
         <TextView
             android:id="@+id/tvSignUpRule4"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
+            android:layout_marginTop="4dp"
             android:text="☐ At least 1 number or special character"
-            android:textSize="12sp" />
+            android:textColor="#8E8E93"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvSignUpRule3" />
 
+        <!-- Primary Action Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnContinue"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:backgroundTint="@color/brand_primary"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="28dp"
+            android:backgroundTint="#4E8B38"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
             android:text="CONTINUE"
             android:textAllCaps="true"
-            android:textColor="@color/white"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
             android:textStyle="bold"
-            app:cornerRadius="8dp" />
-    </LinearLayout>
-</ScrollView>
+            app:cornerRadius="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvSignUpRule4"
+            app:layout_constraintVertical_bias="1.0" />
 
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

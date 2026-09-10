@@ -5,30 +5,45 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface_bg"
+    android:background="@android:color/white"
     tools:context=".features.loading.LoadingActivity">
 
-    <!-- Spinner -->
-    <ProgressBar
-        android:id="@+id/progress_loading"
-        style="@style/Widget.AppCompat.ProgressBar"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        app:layout_constraintBottom_toTopOf="@id/tv_loading_label"
+    <!-- Center-aligned Vertical Chain Container -->
+
+    <ImageView
+        android:id="@+id/iv_logo"
+        android:layout_width="146dp"
+        android:layout_height="140dp"
+        android:contentDescription="App Logo"
+        android:src="@drawable/logo"
+        app:layout_constraintBottom_toTopOf="@id/progress_loading"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_chainStyle="packed" />
 
-    <!-- Label -->
+    <ProgressBar
+        android:id="@+id/progress_loading"
+        style="@style/Widget.AppCompat.ProgressBar"
+        android:layout_width="35dp"
+        android:layout_height="35dp"
+        android:layout_marginTop="24dp"
+        android:indeterminateTint="#4E8B38"
+        app:layout_constraintBottom_toTopOf="@id/tv_loading_label"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_logo" />
+
     <TextView
         android:id="@+id/tv_loading_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="@string/label_loading"
-        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-        android:textColor="@color/text_secondary"
+        android:textColor="#8E8E93"
+        android:textSize="12sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
