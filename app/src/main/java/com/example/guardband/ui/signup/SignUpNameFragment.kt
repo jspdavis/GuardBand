@@ -40,6 +40,11 @@ class SignUpNameFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         host = activity as? Host
 
+        // Host activity already owns Back / Step / Skip — hide fragment duplicates.
+        view.findViewById<View?>(R.id.btnBack)?.visibility = View.GONE
+        view.findViewById<View?>(R.id.btnSkip)?.visibility = View.GONE
+        view.findViewById<View?>(R.id.layoutStepIndicator)?.visibility = View.GONE
+
         tvRule1 = view.findViewById(R.id.tvSignUpRule1)
         tvRule2 = view.findViewById(R.id.tvSignUpRule2)
         tvRule3 = view.findViewById(R.id.tvSignUpRule3)

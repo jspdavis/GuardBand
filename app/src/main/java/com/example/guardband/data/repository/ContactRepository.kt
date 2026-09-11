@@ -31,8 +31,8 @@ open class ContactRepository(
         contactsRef(uid).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val list = snapshot.children.mapNotNull { child ->
-                    val data = child.value as? Map<*, *> ?: return@mapNotNull null
-                    EmergencyContact.fromMap(child.key ?: "", data.mapKeys { it.key.toString() })
+                    val raw = child.value as? Map<*, *> ?: return@mapNotNull null
+                    EmergencyContact.fromMap(child.key ?: "", raw)
                 }
                 onSuccess(list)
             }

@@ -1,7 +1,7 @@
 package com.example.guardband.data.model
 
 /**
- * GuardBand user profile persisted in Firestore at users/{uid}.
+ * GuardBand user profile persisted in Realtime Database at users/{uid}.
  */
 data class User(
     val uid: String = "",
@@ -30,20 +30,18 @@ data class User(
     )
 
     companion object {
-        @Suppress("UNCHECKED_CAST")
-        fun fromMap(uid: String, data: Map<String, Any?>?): User {
+        fun fromMap(uid: String, data: Map<*, *>?): User {
             if (data == null) return User(uid = uid)
             return User(
                 uid = uid,
-                email = data["email"] as? String ?: "",
-                phone = data["phone"] as? String ?: "",
-                firstName = data["firstName"] as? String ?: "",
-                lastName = data["lastName"] as? String ?: "",
-                location = data["location"] as? String ?: "",
-                photoUrl = data["photoUrl"] as? String ?: "",
+                email = data["email"]?.toString().orEmpty(),
+                phone = data["phone"]?.toString().orEmpty(),
+                firstName = data["firstName"]?.toString().orEmpty(),
+                lastName = data["lastName"]?.toString().orEmpty(),
+                location = data["location"]?.toString().orEmpty(),
+                photoUrl = data["photoUrl"]?.toString().orEmpty(),
                 profileComplete = data["profileComplete"] as? Boolean ?: false,
-                createdAt = (data["createdAt"] as? Long)
-                    ?: (data["createdAt"] as? Number)?.toLong()
+                createdAt = (data["createdAt"] as? Number)?.toLong()
                     ?: System.currentTimeMillis()
             )
         }

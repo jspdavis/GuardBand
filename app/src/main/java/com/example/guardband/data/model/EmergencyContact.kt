@@ -17,13 +17,13 @@ data class EmergencyContact(
     )
 
     companion object {
-        fun fromMap(id: String, data: Map<String, Any?>?): EmergencyContact {
+        fun fromMap(id: String, data: Map<*, *>?): EmergencyContact {
             if (data == null) return EmergencyContact(id = id)
             return EmergencyContact(
                 id = id,
-                name = data["name"] as? String ?: "",
-                phoneNumber = data["phoneNumber"] as? String ?: "",
-                relationship = data["relationship"] as? String ?: ""
+                name = data["name"]?.toString().orEmpty(),
+                phoneNumber = data["phoneNumber"]?.toString().orEmpty(),
+                relationship = data["relationship"]?.toString().orEmpty()
             )
         }
     }

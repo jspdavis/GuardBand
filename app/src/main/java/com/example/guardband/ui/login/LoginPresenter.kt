@@ -54,15 +54,10 @@ class LoginPresenter(
         authRepository.login(
             identifier = trimmedId,
             password = password,
-            onSuccess = { user ->
+            onSuccess = {
                 view?.hideLoading()
-                if (user.profileComplete || user.location.isNotBlank()) {
-                    view?.navigateToMain()
-                } else if (user.firstName.isBlank()) {
-                    view?.navigateToSignUp()
-                } else {
-                    view?.navigateToSignUpLocation(user)
-                }
+                // Wireframe: successful login always lands on Main/Dashboard.
+                view?.navigateToMain()
             },
             onError = { msg ->
                 view?.hideLoading()

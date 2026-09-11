@@ -83,6 +83,7 @@ class SignUpContactsFragment : Fragment() {
     }
 
     fun renderContacts(contacts: List<EmergencyContact>) {
+        if (!::adapter.isInitialized || view == null) return
         adapter.submit(contacts)
         if (contacts.isEmpty()) {
             layoutAddForm.visibility = View.VISIBLE

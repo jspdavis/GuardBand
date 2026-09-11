@@ -8,6 +8,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import com.example.guardband.R
 import com.example.guardband.data.model.EmergencyContact
 import com.example.guardband.data.model.ValidationResult
@@ -22,11 +23,11 @@ class SignUpWizardActivity : AppCompatActivity(),
     companion object {
         const val EXTRA_START_STEP = "extra_start_step"
         const val EXTRA_FIRST_NAME = "extra_first_name"
-        const val EXTRA_LAST_NAME  = "extra_last_name"
-        const val EXTRA_EMAIL      = "extra_email"
-        const val STEP_NAME      = 1
-        const val STEP_LOCATION  = 2
-        const val STEP_CONTACTS  = 3
+        const val EXTRA_LAST_NAME = "extra_last_name"
+        const val EXTRA_EMAIL = "extra_email"
+        const val STEP_NAME = 1
+        const val STEP_LOCATION = 2
+        const val STEP_CONTACTS = 3
     }
 
     private lateinit var tvStep: TextView
@@ -35,24 +36,22 @@ class SignUpWizardActivity : AppCompatActivity(),
     private lateinit var progress3: View
 
     private val presenter = SignUpPresenter()
-    private val nameFragment     = SignUpNameFragment()
-    private val locationFragment = SignUpLocationFragment()
-    private val contactsFragment = SignUpContactsFragment()
+    private var pendingContacts: List<EmergencyContact>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signup_wizard)
 
-        tvStep    = findViewById(R.id.tvStep)
+        tvStep = findViewById(R.id.tvStep)
         progress1 = findViewById(R.id.progress1)
         progress2 = findViewById(R.id.progress2)
         progress3 = findViewById(R.id.progress3)
 
         val startStep = intent.getIntExtra(EXTRA_START_STEP, STEP_NAME)
         presenter.seedFromGoogle(
-            first     = intent.getStringExtra(EXTRA_FIRST_NAME).orEmpty(),
-            last      = intent.getStringExtra(EXTRA_LAST_NAME).orEmpty(),
-            mail      = intent.getStringExtra(EXTRA_EMAIL).orEmpty(),
+            first = intent.getStringExtra(EXTRA_FIRST_NAME).orEmpty(),
+            last = intent.getStringExtra(EXTRA_LAST_NAME).orEmpty(),
+            mail = intent.getStringExtra(EXTRA_EMAIL).orEmpty(),
             startStep = startStep
         )
         presenter.attachView(this)
@@ -62,7 +61,10 @@ class SignUpWizardActivity : AppCompatActivity(),
         }
         findViewById<TextView>(R.id.tvSkip).setOnClickListener { presenter.onSkip() }
 
-        showStep(presenter.getCurrentStep())
+        // Restore / show the correct step without stacking fragments.
+        if (savedInstanceState == null) {
+            showStep(presenter.getCurrentStep())
+        }
         updateStepIndicator(presenter.getCurrentStep())
     }
 
@@ -71,22 +73,29 @@ class SignUpWizardActivity : AppCompatActivity(),
         super.onDestroy()
     }
 
-    // ── SignUpContract.View ───────────────────────────────────────────────────
-
     override fun showStep(step: Int) {
-        val fragment = when (step) {
-            2    -> locationFragment
-            3    -> contactsFragment
-            else -> nameFragment
+        val fragment: Fragment = when (step) {
+            2 -> SignUpLocationFragment()
+            3 -> SignUpContactsFragment()
+            else -> SignUpNameFragment()
         }
+        // commitNow avoids racing renderContacts before the view exists (crash → Login).
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, fragment)
-            .commit()
+            .replace(R.id.fragmentContainer, fragment, "signup_step_$step")
+            .commitNow()
+
+        if (step == 3) {
+            pendingContacts?.let { contacts ->
+                (supportFragmentManager.findFragmentByTag("signup_step_3") as? SignUpContactsFragment)
+                    ?.renderContacts(contacts)
+                pendingContacts = null
+            }
+        }
     }
 
     override fun updateStepIndicator(step: Int) {
         tvStep.text = "Step $step/3"
-        val active   = ContextCompat.getColor(this, R.color.brand_primary)
+        val active = ContextCompat.getColor(this, R.color.brand_primary)
         val inactive = 0xFFE0E0E0.toInt()
         progress1.setBackgroundColor(if (step >= 1) active else inactive)
         progress2.setBackgroundColor(if (step >= 2) active else inactive)
@@ -94,19 +103,19 @@ class SignUpWizardActivity : AppCompatActivity(),
     }
 
     override fun renderContacts(contacts: List<EmergencyContact>) {
-        contactsFragment.renderContacts(contacts)
+        val fragment = supportFragmentManager.findFragmentByTag("signup_step_3") as? SignUpContactsFragment
+        if (fragment != null && fragment.view != null) {
+            fragment.renderContacts(contacts)
+        } else {
+            pendingContacts = contacts
+        }
     }
 
     override fun clearContactForm() {
-        contactsFragment.clearForm()
+        (supportFragmentManager.findFragmentByTag("signup_step_3") as? SignUpContactsFragment)
+            ?.clearForm()
     }
 
-    /**
-     * Navigate to LoadingActivity and clear the entire back-stack so no
-     * LoginActivity or SignUpWizardActivity remains navigable via the back
-     * button.  FLAG_ACTIVITY_NEW_TASK + FLAG_ACTIVITY_CLEAR_TASK together
-     * ensure the task is fully replaced.
-     */
     override fun navigateToLoading() {
         startActivity(
             Intent(this, LoadingActivity::class.java).apply {
@@ -114,26 +123,29 @@ class SignUpWizardActivity : AppCompatActivity(),
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
         )
+        // Do not finish() before Loading starts — CLEAR_TASK already replaces the stack.
     }
 
     override fun showFieldError(field: String, message: String?) {
         when (field) {
             "firstName", "lastName", "email", "password" ->
-                nameFragment.showErrors(field, message)
+                (supportFragmentManager.findFragmentByTag("signup_step_1") as? SignUpNameFragment)
+                    ?.showErrors(field, message)
             "location" ->
-                locationFragment.showLocationError(message)
+                (supportFragmentManager.findFragmentByTag("signup_step_2") as? SignUpLocationFragment)
+                    ?.showLocationError(message)
             else -> {
-                contactsFragment.showFieldError(field, message)
+                (supportFragmentManager.findFragmentByTag("signup_step_3") as? SignUpContactsFragment)
+                    ?.showFieldError(field, message)
                 if (message != null) showError(message)
             }
         }
     }
 
     override fun updatePasswordCriteria(rules: ValidationResult.PasswordRules, hasTyped: Boolean) {
-        nameFragment.updatePasswordCriteria(rules, hasTyped)
+        (supportFragmentManager.findFragmentByTag("signup_step_1") as? SignUpNameFragment)
+            ?.updatePasswordCriteria(rules, hasTyped)
     }
-
-    // ── Fragment Host callbacks ───────────────────────────────────────────────
 
     override fun onNameContinue(firstName: String, lastName: String, email: String, password: String) {
         presenter.onNameContinue(firstName, lastName, email, password)
@@ -159,10 +171,8 @@ class SignUpWizardActivity : AppCompatActivity(),
         presenter.onContactsContinue()
     }
 
-    // ── BaseView ──────────────────────────────────────────────────────────────
-
-    override fun showLoading()  { /* Buttons are disabled per-fragment as needed. */ }
-    override fun hideLoading()  {}
+    override fun showLoading() {}
+    override fun hideLoading() {}
     override fun showError(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }

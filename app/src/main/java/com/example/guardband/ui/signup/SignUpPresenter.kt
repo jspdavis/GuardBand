@@ -63,13 +63,15 @@ class SignUpPresenter(
             view?.showFieldError("lastName", null)
         }
 
-        // Email — required + format check
+        // Email OR phone — required + format check
         val trimmedEmail = email.trim()
+        val phoneOk = Regex("^\\+?\\d{10,15}$").matches(trimmedEmail)
+        val emailOk = Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()
         if (trimmedEmail.isBlank()) {
             view?.showFieldError("email", "This field is required.")
             hasError = true
-        } else if (!Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()) {
-            view?.showFieldError("email", "Enter a valid email address.")
+        } else if (!phoneOk && !emailOk) {
+            view?.showFieldError("email", "Enter a valid email or phone number.")
             hasError = true
         } else {
             view?.showFieldError("email", null)
@@ -137,6 +139,7 @@ class SignUpPresenter(
         view?.showFieldError("location", null)
         this.location = location.trim()
 
+        // Always advance to Step 3 first — never route to Login from here.
         if (authRepository.isLoggedIn()) {
             view?.showLoading()
             authRepository.updateProfile(
@@ -149,10 +152,9 @@ class SignUpPresenter(
                     view?.hideLoading()
                     goToStep(3)
                 },
-                onError = { msg ->
+                onError = {
                     view?.hideLoading()
-                    // Non-fatal: navigate anyway so wizard is not stuck.
-                    view?.showError(msg)
+                    // Non-fatal: location is kept in presenter memory; continue wizard.
                     goToStep(3)
                 }
             )
