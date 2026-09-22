@@ -44,4 +44,10 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
+    <style name="CustomSwitchTheme">
+        <item name="colorControlActivated">@color/brand_primary</item>
+        <item name="colorSwitchThumbNormal">#FFFFFF</item>
+        <item name="android:colorForeground">@color/brand_primary</item>
+    </style>
 </resources>

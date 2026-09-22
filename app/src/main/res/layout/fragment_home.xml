@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#F5F5F5"
+    tools:context=".ui.dashboard.HomeFragment">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="20dp">
+
+        <!-- Welcome Message -->
+        <TextView
+            android:id="@+id/tvWelcome"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Welcome"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="#1A1A1A"
+            android:layout_marginTop="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Send an alert."
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginTop="4dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvWelcome" />
+
+        <!-- Main LED Control Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardDeviceControl"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvSubtitle">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="24dp">
+
+                <!-- Header with Icon and Title -->
+                <ImageView
+                    android:id="@+id/ivDeviceIcon"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@android:drawable/ic_menu_info_details"
+                    android:tint="#4E8B38"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/tvCardTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="ESP32 LED Controller"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:textColor="#1A1A1A"
+                    android:layout_marginStart="16dp"
+                    app:layout_constraintStart_toEndOf="@id/ivDeviceIcon"
+                    app:layout_constraintTop_toTopOf="@id/ivDeviceIcon"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+                <TextView
+                    android:id="@+id/tvDeviceId"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Device: guardband-001"
+                    android:textSize="12sp"
+                    android:textColor="#999999"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="4dp"
+                    app:layout_constraintStart_toEndOf="@id/ivDeviceIcon"
+                    app:layout_constraintTop_toBottomOf="@id/tvCardTitle"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+                <!-- Status Badge -->
+                <LinearLayout
+                    android:id="@+id/layoutStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/status_badge_background"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="6dp"
+                    android:layout_marginTop="24dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/ivDeviceIcon">
+
+                    <View
+                        android:id="@+id/viewStatusIndicator"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:background="@drawable/status_indicator"
+                        android:backgroundTint="#CCCCCC" />
+
+                    <TextView
+                        android:id="@+id/tvDeviceStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Checking..."
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="#666666"
+                        android:layout_marginStart="8dp" />
+                </LinearLayout>
+
+                <!-- Divider -->
+                <View
+                    android:id="@+id/divider"
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:background="#E0E0E0"
+                    android:layout_marginTop="20dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/layoutStatus" />
+
+                <!-- LED Control Section -->
+                <TextView
+                    android:id="@+id/tvControlLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="LED Control"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#1A1A1A"
+                    android:layout_marginTop="20dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/divider" />
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchLed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false"
+                    android:enabled="false"
+                    android:theme="@style/CustomSwitchTheme"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tvControlLabel"
+                    app:layout_constraintBottom_toBottomOf="@id/tvControlLabel" />
+
+                <!-- LED Status Display -->
+                <LinearLayout
+                    android:id="@+id/layoutLedStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:background="#F8F8F8"
+                    android:padding="16dp"
+                    android:layout_marginTop="16dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvControlLabel">
+
+                    <ImageView
+                        android:id="@+id/ivLedIcon"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@android:drawable/presence_offline"
+                        android:tint="#CCCCCC" />
+
+                    <TextView
+                        android:id="@+id/tvLedStatus"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="LED Status: Unknown"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="#666666"
+                        android:layout_marginStart="12dp" />
+                </LinearLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Info Section -->
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>

@@ -39,10 +39,22 @@ class SignUpPresenter(
         view?.updatePasswordCriteria(result.passwordRules, hasTyped = password.isNotEmpty())
     }
 
+    // Old signature for backward compatibility (no phone)
     override fun onNameContinue(
         firstName: String,
         lastName: String,
         email: String,
+        password: String
+    ) {
+        onNameContinue(firstName, lastName, email, "", password)
+    }
+
+    // New signature with phone number
+    override fun onNameContinue(
+        firstName: String,
+        lastName: String,
+        email: String,
+        phone: String,
         password: String
     ) {
         var hasError = false
@@ -63,18 +75,30 @@ class SignUpPresenter(
             view?.showFieldError("lastName", null)
         }
 
-        // Email OR phone — required + format check
+        // Email — required + format check
         val trimmedEmail = email.trim()
-        val phoneOk = Regex("^\\+?\\d{10,15}$").matches(trimmedEmail)
         val emailOk = Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()
         if (trimmedEmail.isBlank()) {
             view?.showFieldError("email", "This field is required.")
             hasError = true
-        } else if (!phoneOk && !emailOk) {
-            view?.showFieldError("email", "Enter a valid email or phone number.")
+        } else if (!emailOk) {
+            view?.showFieldError("email", "Enter a valid email address.")
             hasError = true
         } else {
             view?.showFieldError("email", null)
+        }
+
+        // Phone — REQUIRED and validate format
+        val trimmedPhone = phone.trim()
+        val phoneOk = Regex("^\\+?\\d{10,15}$").matches(trimmedPhone)
+        if (trimmedPhone.isBlank()) {
+            view?.showFieldError("phone", "This field is required.")
+            hasError = true
+        } else if (!phoneOk) {
+            view?.showFieldError("phone", "Enter a valid phone number (e.g., +639171234567)")
+            hasError = true
+        } else {
+            view?.showFieldError("phone", null)
         }
 
         // Password — required + all 4 criteria
@@ -116,6 +140,7 @@ class SignUpPresenter(
             password = password,
             firstName = this.firstName,
             lastName = this.lastName,
+            phone = trimmedPhone,
             onSuccess = {
                 accountCreated = true
                 this.email = trimmedEmail

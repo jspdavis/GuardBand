@@ -238,6 +238,48 @@
                 android:textSize="13sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Phone Number -->
+        <TextView
+            android:id="@+id/tvLabelPhone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Phone Number"
+            android:textColor="#1A1A1A"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tilEmail" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilPhone"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            app:boxCornerRadiusBottomEnd="8dp"
+            app:boxCornerRadiusBottomStart="8dp"
+            app:boxCornerRadiusTopEnd="8dp"
+            app:boxCornerRadiusTopStart="8dp"
+            app:boxStrokeColor="#1A1A1A"
+            app:boxStrokeWidth="1dp"
+            app:hintEnabled="false"
+            app:helperTextTextColor="#8E8E93"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvLabelPhone">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etPhone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="phone"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="12dp"
+                android:textColor="#1A1A1A"
+                android:textSize="13sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
         <!-- Password -->
         <TextView
             android:id="@+id/tvLabelPassword"
@@ -249,7 +291,7 @@
             android:textSize="13sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tilEmail" />
+            app:layout_constraintTop_toBottomOf="@id/tilPhone" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilPassword"
@@ -335,6 +377,7 @@
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_marginTop="28dp"
+            android:layout_marginBottom="24dp"
             android:backgroundTint="#4E8B38"
             android:insetTop="0dp"
             android:insetBottom="0dp"
@@ -344,11 +387,9 @@
             android:textSize="14sp"
             android:textStyle="bold"
             app:cornerRadius="16dp"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvSignUpRule4"
-            app:layout_constraintVertical_bias="1.0" />
+            app:layout_constraintTop_toBottomOf="@id/tvSignUpRule4" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

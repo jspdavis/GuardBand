@@ -18,7 +18,11 @@ import com.google.android.material.textfield.TextInputLayout
 class SignUpNameFragment : Fragment() {
 
     interface Host {
+
         fun onNameContinue(firstName: String, lastName: String, email: String, password: String)
+
+        fun onNameContinue(firstName: String, lastName: String, email: String, phone: String, password: String)
+
         fun onPasswordTyped(password: String)
     }
 
@@ -66,6 +70,9 @@ class SignUpNameFragment : Fragment() {
                 view.findViewById<TextInputEditText>(R.id.etFirstName).text?.toString().orEmpty(),
                 view.findViewById<TextInputEditText>(R.id.etLastName).text?.toString().orEmpty(),
                 view.findViewById<TextInputEditText>(R.id.etEmail).text?.toString().orEmpty(),
+
+                view.findViewById<TextInputEditText>(R.id.etPhone).text?.toString().orEmpty(),
+
                 etPassword.text?.toString().orEmpty()
             )
         }
@@ -79,6 +86,10 @@ class SignUpNameFragment : Fragment() {
             "firstName" -> v.findViewById<TextInputLayout>(R.id.tilFirstName).error = message
             "lastName"  -> v.findViewById<TextInputLayout>(R.id.tilLastName).error = message
             "email"     -> v.findViewById<TextInputLayout>(R.id.tilEmail).error = message
+
+
+            "phone"     -> v.findViewById<TextInputLayout>(R.id.tilPhone).error = message
+
             "password"  -> v.findViewById<TextInputLayout>(R.id.tilPassword).error = message
         }
     }

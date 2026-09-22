@@ -21,7 +21,11 @@ interface SignUpContract {
     }
 
     interface Presenter {
+
         fun onNameContinue(firstName: String, lastName: String, email: String, password: String)
+
+        fun onNameContinue(firstName: String, lastName: String, email: String, phone: String, password: String)
+
         fun onLocationContinue(location: String)
         fun onAddContact(name: String, phone: String, relationship: String)
         fun onDeleteContact(contactId: String)

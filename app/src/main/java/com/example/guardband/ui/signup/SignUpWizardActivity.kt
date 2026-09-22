@@ -128,7 +128,7 @@ class SignUpWizardActivity : AppCompatActivity(),
 
     override fun showFieldError(field: String, message: String?) {
         when (field) {
-            "firstName", "lastName", "email", "password" ->
+            "firstName", "lastName", "email", "phone", "password" ->
                 (supportFragmentManager.findFragmentByTag("signup_step_1") as? SignUpNameFragment)
                     ?.showErrors(field, message)
             "location" ->
@@ -147,8 +147,14 @@ class SignUpWizardActivity : AppCompatActivity(),
             ?.updatePasswordCriteria(rules, hasTyped)
     }
 
+    // Old signature for backward compatibility
     override fun onNameContinue(firstName: String, lastName: String, email: String, password: String) {
         presenter.onNameContinue(firstName, lastName, email, password)
+    }
+
+    // New signature with phone
+    override fun onNameContinue(firstName: String, lastName: String, email: String, phone: String, password: String) {
+        presenter.onNameContinue(firstName, lastName, email, phone, password)
     }
 
     override fun onPasswordTyped(password: String) {

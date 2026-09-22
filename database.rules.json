@@ -1,0 +1,37 @@
+{
+  "rules": {
+    "devices": {
+      "$deviceId": {
+        "latest": {
+          ".read": true,
+          ".write": true,
+          ".validate": "newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
+          "type": {
+            ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
+          },
+          "sequenceId": {
+            ".validate": "newData.isNumber()"
+          },
+          "battery": {
+            "percent": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+            },
+            "isCharging": {
+              ".validate": "newData.isBoolean()"
+            }
+          }
+        },
+        "history": {
+          "$sequenceId": {
+            ".read": true,
+            ".write": true,
+            ".validate": "newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
+            "type": {
+              ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
+            }
+          }
+        }
+      }
+    }
+  }
+}
