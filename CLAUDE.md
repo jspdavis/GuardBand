@@ -32,10 +32,11 @@ Each branch holds a deliberately different architecture. Check which one you are
 | `mvvm-main` | The real product build (MVVM) |
 | `mvp-checkpoint` (+ `-local-backup`, `-phone`) | Instructor-assigned checkpoint that must stay **strict MVP** (Login, Register, Forgot Password, Change Password, Dashboard). Kept separate so it doesn't mix with product work. |
 | `mvvm-jedd`, `ishi` | Individual teammates' working branches |
+| `feature/firebase-auth` | Cut from `mvvm-main`. Firebase Auth + the `users/{uid}` profile. |
 
 Do not port MVVM code into the MVP checkpoint branches, or MVP code into the MVVM branches.
 
-## Architecture (MVVM, on `mvvm-jedd`)
+## Architecture (MVVM, on the `mvvm-*` and `feature/*` branches)
 
 View ↔ ViewModel ↔ Repository. Pre-auth screens are Activities. After login, everything lives in one host Activity, `HomeActivity`, whose tabs and pushed screens are **Fragments**. That's the one deliberate exception to "every screen is an Activity" (see "Home host" below and `docs/home-host-and-bottom-nav.md`). There is no MVP code left (no Contracts, Presenters or `base/`).
 
@@ -45,14 +46,17 @@ com/example/guardband/
 │   ├── model/            User, EmergencyContact, Alert (+ AlertType) (plain data classes; no passwords)
 │   ├── repository/       AuthRepository, ContactRepository (suspend, Result<T>)
 │   │                     AlertRepository (Flow<Result<T>>, live reads)
-│   │                     InMemory*Repository + InMemoryStore (current implementation)
+│   │                     UserProfileRepository (writes users/{uid})
+│   │                     AuthError + FirebaseAuthErrorMapper (typed auth failures)
+│   │                     Firebase* = live; InMemory* + InMemoryStore = test doubles
 │   ├── DeviceConstants.kt      DEFAULT_DEVICE_ID = "guardband-001" (until pairing exists)
+│   ├── FirebaseProvider.kt     the one FirebaseAuth / FirebaseDatabase instance
 │   └── RepositoryProvider.kt   manual wiring; swap implementations here
 ├── ui/
 │   ├── splash/         Splash → Home if signed in, else Login (2 s countdown)
 │   ├── login/
 │   ├── signup/         Name → Location → Contacts
-│   ├── forgot/         Request → Verify → NewPass → Success
+│   ├── forgot/         Request → Sent (Firebase emails the link; no OTP screens)
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
 │   ├── track/          Track tab (default): user chip, bell, gear, map placeholder, Check-in pill
@@ -64,14 +68,16 @@ com/example/guardband/
 └── utils/InputValidator.kt     shared input predicates (no messages)
 ```
 
-Data lives in `InMemoryStore`, a process-local store with seed login `alex@guardband.com` / `password123`, reset code `123456`, four seeded alerts for `guardband-001` and a simulated 1.2 s latency. Nothing is persisted and nothing talks to Firebase yet. The session dies with the process.
+**Auth and the user profile are on Firebase** (see "Firebase" below). **Contacts and alerts are still in-memory:** `InMemoryStore` is a process-local store with two seeded contacts, four seeded alerts for `guardband-001` and a simulated 1.2 s latency, and it loses everything when the process dies. Contacts move to the RTDB next; alerts follow when the `devices/{deviceId}` reader lands.
+
+`InMemoryAuthRepository` is still in the tree but is **not** wired into `RepositoryProvider` — it is the unit-test double for the Firebase implementation and returns the same `AuthError`s, so the two stay interchangeable.
 
 `ui/dashboard/` and `res/layout/activity_dashboard.xml` are gone, replaced by `ui/home/`. Two leftovers from them are still waiting to be removed: the `label_dashboard_*`/`label_your_contacts` strings and the CardView dependency, which now has no user at all.
 
 Conventions (copy `ui/login/*` as the reference):
 - **State:** one `XUiState` data class per screen, held in a `MutableStateFlow` and exposed as a `StateFlow`. Update it only with `_uiState.update { it.copy(...) }`.
 - **Events:** one-shot events (navigate, toast) go in a sealed `XEvent` sent through `Channel(Channel.BUFFERED)` and exposed with `receiveAsFlow()`. Never encode navigation as state. A screen with no state of its own (Splash, Loading, Sign-up Name/Location) has events only.
-- **ViewModels** take repositories through the constructor and hold no `Context` or View. They expose `companion object { val Factory = viewModelFactory { initializer { XViewModel(RepositoryProvider.…) } } }`, and Activities use `by viewModels { XViewModel.Factory }`; plain `by viewModels()` is fine when there are no dependencies. User-facing messages are `MSG_*` constants in the ViewModel.
+- **ViewModels** take repositories through the constructor and hold no `Context` or View. They expose `companion object { val Factory = viewModelFactory { initializer { XViewModel(RepositoryProvider.…) } } }`, and Activities use `by viewModels { XViewModel.Factory }`; plain `by viewModels()` is fine when there are no dependencies. User-facing messages are `MSG_*` constants in the ViewModel — including the wording for every `AuthError`, which each screen maps itself in a private `messageFor(error)`. Those messages stay in Kotlin rather than `strings.xml` precisely because a ViewModel holds no `Context`.
 - **Activities** bind views with `findViewById`, forward raw input and clicks, render state, and execute events (Toast, `startActivity`, `finish`). They collect each flow in its own `lifecycleScope.launch { repeatOnLifecycle(STARTED) { … } }`. Building `Intent`s stays in the Activity.
 - **Wizard data** moves between screens as Intent extras. The Activity passes the extras into the ViewModel's click handler, and the navigation event carries the data back.
 - **Exceptions:** `ForgotSuccessActivity` and `NotificationsFragment` have no ViewModel. Each is a static screen whose only action is navigation.
@@ -80,7 +86,7 @@ Conventions (copy `ui/login/*` as the reference):
 
 - **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph.
 - **Tabs:** Track (default), Contacts, Alert, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), both opened from Track's top bar. While one is showing, the bar stays visible with no tab checked, and Back (or the screen's back arrow) returns to the last tab. Back on a tab exits.
-- **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check covers Android restoring `HomeActivity` after process death, when the in-memory session is gone. Settings and Notifications are inside the host, so they're covered too.
+- **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings and Notifications are inside the host, so they're covered too.
 - **Fragments follow the Activity conventions,** with these differences:
   - Use `Fragment(R.layout.x)`, and bind views in `onViewCreated` with `view.findViewById`.
   - Collect flows with `viewLifecycleOwner.lifecycleScope.launch { viewLifecycleOwner.repeatOnLifecycle(STARTED) { … } }`.
@@ -89,7 +95,20 @@ Conventions (copy `ui/login/*` as the reference):
   - A pushed screen's back arrow calls `requireActivity().onBackPressedDispatcher.onBackPressed()`.
 - **Lists** use `ListAdapter` + `DiffUtil` with `findViewById` in the ViewHolder (`ContactAdapter`, `AlertHistoryAdapter`).
 
-Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, Firebase Analytics and Firebase Database. Firebase Database is declared but no code uses it yet. README also lists Firebase Auth, OkHttp and Credentials/googleid, but those are **not** declared.
+Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with Analytics, **Auth** and Database. Tests add kotlinx-coroutines-test and Robolectric. OkHttp stays `debugImplementation`. Everything except CardView now lives in `gradle/libs.versions.toml`. README also lists Credentials/googleid for Google sign-in, which is **not** declared — Google sign-in is not implemented.
+
+## Firebase
+
+Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cloud Functions). Auth is **email + password**; Google sign-in is not implemented.
+
+- **Firebase calls live only in repository classes.** No Firebase import belongs in an Activity, Fragment or ViewModel. `FirebaseProvider` owns the single `FirebaseAuth` and `FirebaseDatabase`; `FirebaseDatabase.getInstance()` takes the URL from `google-services.json`, so never hardcode it.
+- **The session is `FirebaseAuth.currentUser`,** which the SDK persists, so it survives process death. `currentUser()` is synchronous and safe in a ViewModel's constructor, but it can only fill `id`, `name` (the Firebase display name, set at sign-up) and `email` — **`location` is always empty**, because it lives at `users/{uid}` and needs an async read. Profile and Track therefore show "Location not set" until that read exists.
+- **Failures are typed.** Repositories return `Result.failure(AuthError)`, and `FirebaseAuthErrorMapper` maps `FirebaseAuthException.errorCode`, never the exception message — messages are localised and change between SDK versions. `AuthError` carries no message and suppresses its stack trace, so Firebase text cannot reach a log or a Toast.
+- **Login must not distinguish a wrong password from an unknown account,** and forgot-password must confirm identically for an unregistered email. With email-enumeration protection on, Firebase returns the same code for both anyway; the UI must not undo that.
+- **Password reset is Firebase's hosted flow.** `sendPasswordResetEmail` emails a link and the user finishes in a browser. The app never sees a reset code, so there is no verify-code or set-new-password screen, and nothing like `otpPlain` or `pendingPassword` is ever written.
+- **No PII in logs.** Never log a uid, an email, a token or Firebase error text.
+- **Never overwrite `app/google-services.json` from another branch,** and don't touch it, `.firebaserc` or any signing config as a side effect of other work.
+- **The `users/{uid}` Security Rules are not deployed.** The proposal in the Prompt 08 report still has to be merged with the existing `devices/` rules in the Console, by hand.
 
 ## Firebase data contract
 
@@ -115,16 +134,24 @@ The band (or the mock sender) PUTs to the RTDB REST API, and Security Rules vali
 
 For demos without hardware, Phone A runs `MockSenderActivity`, which sends OkHttp PUTs to the RTDB endpoints, and Phone B runs the receiver screens. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives in the **debug source set** (`app/src/debug/java/.../ui/mocksender/`, plus `app/src/debug/AndroidManifest.xml`, which gives it its own "GuardBand Mock Sender" launcher icon), so release builds contain neither the code nor the icon. OkHttp is `debugImplementation` for the same reason. `INGEST_ALERT_URL` in `AlertSender.kt` is still a placeholder, and it POSTs to a Cloud Function, which doesn't match the RTDB-REST design above. The payload follows `SCHEMA.md`.
 
+## UI workflow (agent vs. designer)
+- Figma is the visual source of truth and is owned by Jul. The agent does not need the wireframes pasted in.
+- The agent builds: layout skeletons with stable snake_case view IDs, binding to state, buttons and click handlers, state/event plumbing, strings in strings.xml, and accessibility labels. It uses theme tokens only.
+- The agent does NOT: tune spacing, colors, typography, or icons beyond placeholders. Mark such spots with `<!-- DESIGN: Jul -->`.
+- Each screen's KDoc lists its view IDs so the layout XML can be restyled without touching logic.
+
 ## Gotchas
 
 - `README.md` is UTF-16 encoded. Plain `cat`/`grep` will show it with spaces between characters, so use `iconv -f UTF-16 -t UTF-8 README.md` to read it.
 - Layouts use plain `findViewById` with snake_case IDs prefixed by screen (`et_login_email`, `btn_login`). There is no ViewBinding or Compose.
 - Every Activity is locked to portrait in the manifest. New Activities must be added there.
+- **An unescaped apostrophe in a string resource** fails `mergeDebugResources` with `Can not extract resource from ParsedResource`, naming neither the string nor the line. Write it `\'`.
+- JVM unit tests need **Robolectric** wherever `InputValidator` is reached, because it uses `android.util.Patterns`, and wherever a `FirebaseException` is constructed, because its constructor calls `android.text.TextUtils`.
 
 ## Working agreements
 
 - Work happens in scoped passes: discovery (read-only) first, then decisions, then a scoped implementation, then build confirmation.
 - Pass prompts contain explicit "do NOT touch" lists. Follow them, and put anything ambiguous in the report instead of improvising.
-- The agent never runs builds, Gradle or the emulator; the developer does.
+- The agent does not run builds, Gradle or the emulator unless the pass prompt explicitly asks for build confirmation (Prompt 08 did). The emulator is always the developer's.
 - No state-changing git commands (commit, checkout, merge, reset, push, …) unless explicitly asked. Delete or move files with filesystem operations, not `git rm`/`git mv`.
 - Never port MVP code into MVVM branches, or the reverse.
