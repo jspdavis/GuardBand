@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="48dp"
         android:text="@string/label_forgot_request_title"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+        android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
         android:textColor="@color/text_primary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -29,7 +29,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="@string/label_forgot_request_subtitle"
-        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
         android:textColor="@color/text_secondary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -38,7 +38,7 @@
     <!-- Email input -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_forgot_request_email"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        style="@style/Widget.GuardBand.TextInputLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"

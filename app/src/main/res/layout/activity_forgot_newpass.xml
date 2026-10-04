@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="48dp"
         android:text="@string/label_forgot_newpass_title"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+        android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
         android:textColor="@color/text_primary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -25,7 +25,7 @@
     <!-- New password input -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_forgot_new_password"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        style="@style/Widget.GuardBand.TextInputLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
@@ -46,7 +46,7 @@
     <!-- Confirm password input -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_forgot_confirm_password"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        style="@style/Widget.GuardBand.TextInputLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"

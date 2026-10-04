@@ -8,14 +8,16 @@
     android:background="@color/splash_bg"
     tools:context=".ui.splash.SplashActivity">
 
-    <!-- App logo placeholder -->
+    <!-- App logo (G mark): packed chain logo -> title, centered in parent -->
     <ImageView
         android:id="@+id/iv_splash_logo"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
+        android:layout_width="140dp"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
         android:contentDescription="@string/app_name"
-        android:src="@mipmap/ic_launcher_round"
-        app:layout_constraintBottom_toTopOf="@id/tv_splash_tagline"
+        android:scaleType="fitCenter"
+        android:src="@drawable/logo_mark"
+        app:layout_constraintBottom_toTopOf="@id/tv_splash_title"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -28,33 +30,35 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="@string/app_name"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+        android:textAppearance="@style/TextAppearance.GuardBand.TitleLarge"
         android:textColor="@color/splash_text"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/iv_splash_logo" />
 
-    <!-- Tagline -->
+    <!-- Tagline (hidden; id kept, outside the chain) -->
     <TextView
         android:id="@+id/tv_splash_tagline"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="@string/splash_tagline"
-        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
         android:textColor="@color/splash_text"
-        app:layout_constraintBottom_toTopOf="@id/progress_splash"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_splash_title" />
 
-    <!-- Loading indicator -->
+    <!-- Loading indicator (hidden; id kept) -->
     <ProgressBar
         android:id="@+id/progress_splash"
         style="@style/Widget.AppCompat.ProgressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="48dp"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
