@@ -34,6 +34,10 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+    testOptions {
+        // Robolectric needs the merged resources and the real android.jar
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -60,12 +64,20 @@ dependencies {
     // TODO: remove once the dead ui/dashboard files and activity_dashboard.xml are deleted
     implementation("androidx.cardview:cardview:1.0.0")
 
-    // Firebase BoM — manages all Firebase library versions
-    implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-database")
+    // Firebase — the BoM pins every version below it, so none declares its own
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.database)
+
+    // await() on Firebase's Task<T>, so the repositories stay suspend functions
+    implementation(libs.kotlinx.coroutines.play.services)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    // Robolectric — InputValidator uses android.util.Patterns, which is stubbed
+    // out in plain JVM unit tests
+    testImplementation(libs.robolectric)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
