@@ -2,6 +2,9 @@ package com.example.guardband.data
 
 import android.os.Handler
 import android.os.Looper
+import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.model.User
+import com.example.guardband.data.repository.InMemoryStore
 
 /**
  * Simulates a backend repository using hardcoded data and delayed callbacks.
@@ -9,31 +12,15 @@ import android.os.Looper
  *
  * All callbacks are dispatched on the main thread via a Handler so callers
  * never need to worry about thread-switching during the mock phase.
+ *
+ * Temporary MVP facade: data lives in [InMemoryStore], shared with the MVVM
+ * repositories. This object only maps to/from [UserModel]/[ContactModel].
+ * Delete once every screen has been migrated.
  */
 object MockRepository {
 
     // ── Simulated delay in milliseconds ──────────────────────────────────────
     private const val MOCK_DELAY_MS = 1200L
-
-    // ── Seed data ─────────────────────────────────────────────────────────────
-    private val seedUser = UserModel(
-        id = "mock-user-001",
-        name = "Alex Rivera",
-        email = "alex@guardband.com",
-        location = "San Francisco, CA",
-        password = "password123"
-    )
-
-    private val seedContacts = mutableListOf(
-        ContactModel("c-01", "Jordan Lee",   "+1-555-0101", "Friend"),
-        ContactModel("c-02", "Morgan Smith", "+1-555-0202", "Family")
-    )
-
-    // ── Registered users store (in-memory, mock only) ─────────────────────────
-    private val registeredUsers = mutableListOf(seedUser)
-
-    // ── Pending reset code (mock only) ────────────────────────────────────────
-    private var pendingResetCode: String = "123456"
 
     // ─────────────────────────────────────────────────────────────────────────
     // Auth
@@ -52,11 +39,13 @@ object MockRepository {
         onError: (String) -> Unit
     ) {
         delayed {
-            val match = registeredUsers.find {
-                it.email.equals(email.trim(), ignoreCase = true) && it.password == password
+            val match = InMemoryStore.findByCredentials(email, password)
+            if (match != null) {
+                InMemoryStore.setSession(match.id)
+                onSuccess(match.toUserModel(password))
+            } else {
+                onError("Invalid email or password.")
             }
-            if (match != null) onSuccess(match)
-            else onError("Invalid email or password.")
         }
     }
 
@@ -69,15 +58,12 @@ object MockRepository {
         onError: (String) -> Unit
     ) {
         delayed {
-            val exists = registeredUsers.any {
-                it.email.equals(user.email.trim(), ignoreCase = true)
-            }
-            if (exists) {
+            if (InMemoryStore.emailExists(user.email)) {
                 onError("An account with that email already exists.")
             } else {
-                val newUser = user.copy(id = "mock-user-${System.currentTimeMillis()}")
-                registeredUsers.add(newUser)
-                onSuccess(newUser)
+                val newUser = InMemoryStore.addUser(user.toUser(), user.password)
+                InMemoryStore.setSession(newUser.id)
+                onSuccess(newUser.toUserModel(user.password))
             }
         }
     }
@@ -96,11 +82,8 @@ object MockRepository {
         onError: (String) -> Unit
     ) {
         delayed {
-            val exists = registeredUsers.any {
-                it.email.equals(email.trim(), ignoreCase = true)
-            }
-            if (exists) {
-                pendingResetCode = "123456" // fixed mock code
+            if (InMemoryStore.emailExists(email)) {
+                InMemoryStore.pendingResetCode = "123456" // fixed mock code
                 onSuccess()
             } else {
                 onError("No account found for that email.")
@@ -118,7 +101,7 @@ object MockRepository {
         onError: (String) -> Unit
     ) {
         delayed {
-            if (code.trim() == pendingResetCode) onSuccess()
+            if (code.trim() == InMemoryStore.pendingResetCode) onSuccess()
             else onError("Incorrect verification code. Try again.")
         }
     }
@@ -134,11 +117,7 @@ object MockRepository {
         onError: (String) -> Unit
     ) {
         delayed {
-            val index = registeredUsers.indexOfFirst {
-                it.email.equals(email.trim(), ignoreCase = true)
-            }
-            if (index >= 0) {
-                registeredUsers[index] = registeredUsers[index].copy(password = newPassword)
+            if (InMemoryStore.updatePassword(email, newPassword)) {
                 onSuccess()
             } else {
                 onError("Session expired. Please restart the reset flow.")
@@ -154,7 +133,7 @@ object MockRepository {
     fun getContacts(
         onSuccess: (List<ContactModel>) -> Unit
     ) {
-        delayed { onSuccess(seedContacts.toList()) }
+        delayed { onSuccess(InMemoryStore.getContacts().map { it.toContactModel() }) }
     }
 
     /**
@@ -167,7 +146,7 @@ object MockRepository {
         onError: (String) -> Unit
     ) {
         delayed {
-            seedContacts.add(contact.copy(id = "c-${System.currentTimeMillis()}"))
+            InMemoryStore.addContact(contact.toEmergencyContact())
             onSuccess()
         }
     }
@@ -180,4 +159,18 @@ object MockRepository {
     private fun delayed(block: () -> Unit) {
         Handler(Looper.getMainLooper()).postDelayed(block, MOCK_DELAY_MS)
     }
+
+    // ── Model mapping (MVP models ↔ data/model) ───────────────────────────────
+
+    private fun User.toUserModel(password: String) =
+        UserModel(id = id, name = name, email = email, location = location, password = password)
+
+    private fun UserModel.toUser() =
+        User(id = id, name = name, email = email, location = location)
+
+    private fun EmergencyContact.toContactModel() =
+        ContactModel(id = id, name = name, phoneNumber = phoneNumber, relationship = relationship)
+
+    private fun ContactModel.toEmergencyContact() =
+        EmergencyContact(id = id, name = name, phoneNumber = phoneNumber, relationship = relationship)
 }

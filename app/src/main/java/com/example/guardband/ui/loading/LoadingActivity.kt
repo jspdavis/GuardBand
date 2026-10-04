@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.example.guardband.R
 import com.example.guardband.ui.dashboard.DashboardActivity
@@ -50,6 +51,11 @@ class LoadingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_loading)
+
+        // Prevent the user from pressing Back to escape the loading screen.
+        onBackPressedDispatcher.addCallback(this) {
+            // Intentionally blocked during loading transition.
+        }
     }
 
     override fun onResume() {
@@ -60,11 +66,5 @@ class LoadingActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(navigateForward)
-    }
-
-    /** Prevent the user from pressing Back to escape the loading screen. */
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        // Intentionally blocked during loading transition.
     }
 }

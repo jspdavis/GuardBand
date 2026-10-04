@@ -43,6 +43,12 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
+    // MVVM — ViewModel, lifecycle-aware coroutines, by viewModels()
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.kotlinx.coroutines.android)
+
     // CardView — used in activity_dashboard.xml status card
     implementation("androidx.cardview:cardview:1.0.0")
 
