@@ -35,16 +35,38 @@ Each branch holds a deliberately different architecture. Check which one you are
 
 Do not port MVVM code into the MVP checkpoint branches, or MVP code into the MVVM branches.
 
-## Architecture (current tree)
+## Architecture (MVVM, on `mvvm-jedd`)
 
-The code is partway through an MVP → MVVM migration, so both patterns exist side by side:
+Every screen is an Activity: View (Activity) ↔ ViewModel ↔ Repository. There is no MVP code left (no Contracts, Presenters or `base/`).
 
-- **MVP layer (wired up, runs).** These screens are Activities: `ui/splash`, `ui/auth` (Login plus the 3-step sign-up Name → Location → Contacts), `ui/forgot` (Request → Verify → NewPass → Success), `ui/loading`, and `ui/dashboard/DashboardActivity`. All of them are registered in `AndroidManifest.xml`. Each screen pairs a `*Contract` interface (View + Presenter) with a presenter that extends `base/BasePresenter<V : BaseView>`. The Activity calls `attachView(this)` in `onCreate` and `detachView()` in `onDestroy`. Presenters call `data/MockRepository`, an in-memory singleton that runs callbacks on the main thread after a 1.2 s delay. The seed login is `alex@guardband.com` / `password123`, and the reset code is `123456`. Sign-up data moves between steps as Intent extras.
-- **MVVM layer (not wired up).** `ui/login`, `ui/signup`, `ui/forgotpass`, `ui/changepass`, `ui/dashboard/*ViewModel`, and `ui/splash/SplashViewModel` use `ViewModel` + `StateFlow<*UiState>` + `viewModelScope`. They call `suspend` extensions in `data/repository/*Ext.kt`, which wrap callback-style repository methods with `suspendCancellableCoroutine`. No Activity or Fragment uses these ViewModels yet.
-- **Placeholder stubs.** Many files contain only an empty class, for example `AuthRepository`, `UserRepository`, `core/auth/*`, `core/navigation/*`, `core/ui/*`, `data/remote/*`, `data/model/User.kt`, `utils/*`, and most Fragments under `ui/home`, `ui/profile`, `ui/settings`, `ui/notifications`, and `ui/main`. The `*Ext.kt` files and the ViewModels call methods and types (`AuthRepository.login(...)`, `ContactRepository`, `EmergencyContact`) that don't exist yet, so expect compile errors in that layer until the stubs are filled in.
-- **Legacy.** `ui/main/MainActivity` is the old launcher. It is still in the manifest but not exported, and it is the only place that touches `FirebaseDatabase` directly.
+```
+com/example/guardband/
+├── data/
+│   ├── model/            User, EmergencyContact (plain data classes; no passwords)
+│   ├── repository/       AuthRepository, ContactRepository (suspend interfaces returning Result<T>)
+│   │                     InMemory*Repository + InMemoryStore (current implementation)
+│   └── RepositoryProvider.kt   manual wiring; swap implementations here
+├── ui/
+│   ├── splash/    Splash → Login (2 s countdown)
+│   ├── login/
+│   ├── signup/    Name → Location → Contacts
+│   ├── forgot/    Request → Verify → NewPass → Success
+│   ├── loading/   1.8 s transition → Dashboard (Back blocked)
+│   └── dashboard/
+└── utils/InputValidator.kt     shared input predicates (no messages)
+```
 
-Dependencies actually declared are AppCompat, Material, ConstraintLayout, CardView, Firebase Analytics, and Firebase Database. Lifecycle and coroutines come in transitively. README also lists Firebase Auth, OkHttp, and Credentials/googleid as planned libraries, but they are **not** in `build.gradle.kts`.
+Data lives in `InMemoryStore`, a process-local store with seed login `alex@guardband.com` / `password123`, reset code `123456` and a simulated 1.2 s latency. Nothing is persisted and nothing talks to Firebase yet.
+
+Conventions (copy `ui/login/*` as the reference):
+- **State:** one `XUiState` data class per screen, held in a `MutableStateFlow` and exposed as a `StateFlow`. Update it only with `_uiState.update { it.copy(...) }`.
+- **Events:** one-shot events (navigate, toast) go in a sealed `XEvent` sent through `Channel(Channel.BUFFERED)` and exposed with `receiveAsFlow()`. Never encode navigation as state. A screen with no state of its own (Splash, Loading, Sign-up Name/Location) has events only.
+- **ViewModels** take repositories through the constructor and hold no `Context` or View. They expose `companion object { val Factory = viewModelFactory { initializer { XViewModel(RepositoryProvider.…) } } }`, and Activities use `by viewModels { XViewModel.Factory }`; plain `by viewModels()` is fine when there are no dependencies. User-facing messages are `MSG_*` constants in the ViewModel.
+- **Activities** bind views with `findViewById`, forward raw input and clicks, render state, and execute events (Toast, `startActivity`, `finish`). They collect each flow in its own `lifecycleScope.launch { repeatOnLifecycle(STARTED) { … } }`. Building `Intent`s stays in the Activity.
+- **Wizard data** moves between screens as Intent extras. The Activity passes the extras into the ViewModel's click handler, and the navigation event carries the data back.
+- **Exception:** `ForgotSuccessActivity` has no ViewModel. It's a static screen whose only action is navigation.
+
+Declared dependencies: AppCompat, Material, ConstraintLayout, CardView, activity-ktx, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, Firebase Analytics and Firebase Database. Firebase Database is declared but no code uses it yet. README also lists Firebase Auth, OkHttp and Credentials/googleid, but those are **not** declared.
 
 ## Firebase data contract
 
@@ -59,10 +81,18 @@ The alert payload (`schemaVersion: 1`) has these fields: `deviceId`, `type` (`PA
 
 ## Mock sender
 
-For demos without hardware, Phone A runs `MockSenderActivity`, which sends OkHttp PUTs to the RTDB endpoints, and Phone B runs the receiver screens. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It doesn't exist in the current tree yet.
+For demos without hardware, Phone A runs `MockSenderActivity`, which sends OkHttp PUTs to the RTDB endpoints, and Phone B runs the receiver screens. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives on `mvvm-main` (`ui/mocksender/`) and hasn't been merged into `mvvm-jedd` yet.
 
 ## Gotchas
 
 - `README.md` is UTF-16 encoded. Plain `cat`/`grep` will show it with spaces between characters, so use `iconv -f UTF-16 -t UTF-8 README.md` to read it.
 - Layouts use plain `findViewById` with snake_case IDs prefixed by screen (`et_login_email`, `btn_login`). There is no ViewBinding or Compose.
 - Every Activity is locked to portrait in the manifest. New Activities must be added there.
+
+## Working agreements
+
+- Work happens in scoped passes: discovery (read-only) first, then decisions, then a scoped implementation, then build confirmation.
+- Pass prompts contain explicit "do NOT touch" lists. Follow them, and put anything ambiguous in the report instead of improvising.
+- The agent never runs builds, Gradle or the emulator; the developer does.
+- No state-changing git commands (commit, checkout, merge, reset, push, …) unless explicitly asked. Delete or move files with filesystem operations, not `git rm`/`git mv`.
+- Never port MVP code into MVVM branches, or the reverse.

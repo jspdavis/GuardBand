@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/surface_bg"
     android:padding="24dp"
-    tools:context=".features.forgot.ForgotVerifyActivity">
+    tools:context=".ui.forgot.ForgotVerifyActivity">
 
     <!-- Title -->
     <TextView

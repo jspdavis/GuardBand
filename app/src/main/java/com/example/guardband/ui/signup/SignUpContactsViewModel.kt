@@ -1,0 +1,113 @@
+package com.example.guardband.ui.signup
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.guardband.data.RepositoryProvider
+import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.repository.AuthRepository
+import com.example.guardband.data.repository.ContactRepository
+import com.example.guardband.utils.InputValidator
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+/**
+ * Sign-Up Step 3 — account credentials, the emergency contact, and final
+ * registration.
+ *
+ * Flow: SignUpContactsActivity → LoadingActivity → DashboardActivity
+ */
+class SignUpContactsViewModel(
+    private val authRepository: AuthRepository,
+    private val contactRepository: ContactRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(SignUpContactsUiState())
+    val uiState: StateFlow<SignUpContactsUiState> = _uiState.asStateFlow()
+
+    private val _events = Channel<SignUpContactsEvent>(Channel.BUFFERED)
+    val events: Flow<SignUpContactsEvent> = _events.receiveAsFlow()
+
+    /**
+     * [name]/[location] come from the previous steps; every value is passed to
+     * the repository untrimmed, as before. The contact fields are trimmed and
+     * saved only when both name and phone are filled in.
+     */
+    fun onSubmitClicked(
+        name: String,
+        location: String,
+        email: String,
+        password: String,
+        contactName: String,
+        contactPhone: String,
+        contactRelationship: String
+    ) {
+        if (_uiState.value.isLoading) return
+        if (!validateCredentials(email, password)) return
+
+        _uiState.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            authRepository.register(name, location, email, password)
+                .onSuccess {
+                    saveContactIfPresent(contactName, contactPhone, contactRelationship)
+                    _uiState.update { it.copy(isLoading = false) }
+                    _events.send(SignUpContactsEvent.NavigateToLoadingDashboard)
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    _events.send(SignUpContactsEvent.ShowMessage(error.message.orEmpty()))
+                }
+        }
+    }
+
+    /**
+     * Saves the sign-up contact (previously discarded). Skipped silently when
+     * name or phone is blank; a failure is ignored because the account already
+     * exists. The id is assigned by the repository.
+     */
+    private suspend fun saveContactIfPresent(name: String, phone: String, relationship: String) {
+        if (InputValidator.isBlank(name) || InputValidator.isBlank(phone)) return
+        contactRepository.addContact(
+            EmergencyContact(
+                name = name.trim(),
+                phoneNumber = phone.trim(),
+                relationship = relationship.trim()
+            )
+        )
+    }
+
+    // ── Validation ────────────────────────────────────────────────────────────
+
+    /** Emits the first failing rule's message and returns false. */
+    private fun validateCredentials(email: String, password: String): Boolean {
+        val error = when {
+            InputValidator.isBlank(email) || !InputValidator.isValidEmail(email) -> MSG_EMAIL_INVALID
+            InputValidator.isBlank(password) -> MSG_PASSWORD_REQUIRED
+            else -> return true
+        }
+        _events.trySend(SignUpContactsEvent.ShowMessage(error))
+        return false
+    }
+
+    companion object {
+        const val MSG_EMAIL_INVALID = "Enter a valid email address."
+        const val MSG_PASSWORD_REQUIRED = "Password is required."
+
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                SignUpContactsViewModel(
+                    RepositoryProvider.authRepository,
+                    RepositoryProvider.contactRepository
+                )
+            }
+        }
+    }
+}

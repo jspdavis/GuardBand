@@ -6,8 +6,13 @@ import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
+import kotlinx.coroutines.launch
 
 /**
  * Forgot Password — Step 1.
@@ -15,13 +20,13 @@ import com.example.guardband.R
  *
  * Flow: ForgotRequestActivity → ForgotVerifyActivity
  */
-class ForgotRequestActivity : AppCompatActivity(), ForgotContract.RequestView {
+class ForgotRequestActivity : AppCompatActivity() {
 
     private lateinit var etEmail: com.google.android.material.textfield.TextInputEditText
     private lateinit var btnSend: Button
     private lateinit var progressBar: ProgressBar
 
-    private val presenter = ForgotRequestPresenter()
+    private val viewModel: ForgotRequestViewModel by viewModels { ForgotRequestViewModel.Factory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,41 +36,38 @@ class ForgotRequestActivity : AppCompatActivity(), ForgotContract.RequestView {
         btnSend     = findViewById(R.id.btn_forgot_request_send)
         progressBar = findViewById(R.id.progress_forgot_request)
 
-        presenter.attachView(this)
-
         btnSend.setOnClickListener {
-            presenter.onSendLinkClicked(etEmail.text.toString())
+            viewModel.onSendClicked(etEmail.text.toString())
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect(::render)
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.events.collect(::handleEvent)
+            }
         }
     }
 
-    override fun onDestroy() {
-        presenter.detachView()
-        super.onDestroy()
+    private fun render(state: ForgotRequestUiState) {
+        progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+        btnSend.isEnabled = !state.isLoading
     }
 
-    // ── ForgotContract.RequestView ────────────────────────────────────────────
+    private fun handleEvent(event: ForgotRequestEvent) {
+        when (event) {
+            is ForgotRequestEvent.ShowMessage ->
+                Toast.makeText(this, event.text, Toast.LENGTH_SHORT).show()
 
-    override fun navigateToVerify(email: String) {
-        startActivity(
-            Intent(this, ForgotVerifyActivity::class.java).apply {
-                putExtra(ForgotVerifyActivity.EXTRA_EMAIL, email)
-            }
-        )
-    }
-
-    // ── BaseView ──────────────────────────────────────────────────────────────
-
-    override fun showLoading() {
-        progressBar.visibility = View.VISIBLE
-        btnSend.isEnabled = false
-    }
-
-    override fun hideLoading() {
-        progressBar.visibility = View.GONE
-        btnSend.isEnabled = true
-    }
-
-    override fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+            is ForgotRequestEvent.NavigateToVerify ->
+                startActivity(
+                    Intent(this, ForgotVerifyActivity::class.java).apply {
+                        putExtra(ForgotVerifyActivity.EXTRA_EMAIL, event.email)
+                    }
+                )
+        }
     }
 }

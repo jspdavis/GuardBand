@@ -7,8 +7,13 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
+import kotlinx.coroutines.launch
 
 /**
  * Forgot Password — Step 2.
@@ -17,7 +22,7 @@ import com.example.guardband.R
  * Receives: [EXTRA_EMAIL] from ForgotRequestActivity.
  * Flow: ForgotVerifyActivity → ForgotNewPassActivity
  */
-class ForgotVerifyActivity : AppCompatActivity(), ForgotContract.VerifyView {
+class ForgotVerifyActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_EMAIL = "extra_email"
@@ -28,7 +33,7 @@ class ForgotVerifyActivity : AppCompatActivity(), ForgotContract.VerifyView {
     private lateinit var tvResend: TextView
     private lateinit var progressBar: ProgressBar
 
-    private val presenter = ForgotVerifyPresenter()
+    private val viewModel: ForgotVerifyViewModel by viewModels { ForgotVerifyViewModel.Factory }
     private var email: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,51 +46,43 @@ class ForgotVerifyActivity : AppCompatActivity(), ForgotContract.VerifyView {
         tvResend    = findViewById(R.id.tv_forgot_resend)
         progressBar = findViewById(R.id.progress_forgot_verify)
 
-        presenter.attachView(this)
-
         btnVerify.setOnClickListener {
-            presenter.onVerifyClicked(email, etCode.text.toString())
+            viewModel.onVerifyClicked(email, etCode.text.toString())
         }
 
         tvResend.setOnClickListener {
-            presenter.onResendClicked(email)
+            viewModel.onResendClicked(email)
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect(::render)
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.events.collect(::handleEvent)
+            }
         }
     }
 
-    override fun onDestroy() {
-        presenter.detachView()
-        super.onDestroy()
+    private fun render(state: ForgotVerifyUiState) {
+        progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+        btnVerify.isEnabled = !state.isLoading
+        tvResend.isEnabled  = !state.isLoading
     }
 
-    // ── ForgotContract.VerifyView ─────────────────────────────────────────────
+    private fun handleEvent(event: ForgotVerifyEvent) {
+        when (event) {
+            is ForgotVerifyEvent.ShowMessage ->
+                Toast.makeText(this, event.text, Toast.LENGTH_SHORT).show()
 
-    override fun navigateToNewPassword(email: String) {
-        startActivity(
-            Intent(this, ForgotNewPassActivity::class.java).apply {
-                putExtra(ForgotNewPassActivity.EXTRA_EMAIL, email)
-            }
-        )
-    }
-
-    override fun showResendConfirmation() {
-        Toast.makeText(this, "Code resent — check your email.", Toast.LENGTH_SHORT).show()
-    }
-
-    // ── BaseView ──────────────────────────────────────────────────────────────
-
-    override fun showLoading() {
-        progressBar.visibility = View.VISIBLE
-        btnVerify.isEnabled = false
-        tvResend.isEnabled  = false
-    }
-
-    override fun hideLoading() {
-        progressBar.visibility = View.GONE
-        btnVerify.isEnabled = true
-        tvResend.isEnabled  = true
-    }
-
-    override fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+            is ForgotVerifyEvent.NavigateToNewPassword ->
+                startActivity(
+                    Intent(this, ForgotNewPassActivity::class.java).apply {
+                        putExtra(ForgotNewPassActivity.EXTRA_EMAIL, event.email)
+                    }
+                )
+        }
     }
 }

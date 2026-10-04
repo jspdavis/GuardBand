@@ -7,33 +7,32 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
-import com.example.guardband.data.ContactModel
-import com.example.guardband.ui.auth.LoginActivity
+import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.ui.login.LoginActivity
+import kotlinx.coroutines.launch
 
 /**
  * Main dashboard — shown after a successful login or sign-up.
  *
  * Displays a welcome header, protection status badge, and a dynamically
- * built list of emergency contacts loaded from [MockRepository].
+ * built list of emergency contacts.
  *
  * Flow: DashboardActivity → (Logout) → LoginActivity (back-stack cleared)
  */
-class DashboardActivity : AppCompatActivity(), DashboardContract.View {
-
-    companion object {
-        /** Optional: pass a display name through intent extras. */
-        const val EXTRA_USER_NAME = "extra_user_name"
-    }
+class DashboardActivity : AppCompatActivity() {
 
     private lateinit var tvWelcome: TextView
     private lateinit var btnLogout: Button
     private lateinit var progressBar: ProgressBar
     private lateinit var contactsContainer: LinearLayout
 
-    private lateinit var presenter: DashboardPresenter
+    private val viewModel: DashboardViewModel by viewModels { DashboardViewModel.Factory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,27 +43,28 @@ class DashboardActivity : AppCompatActivity(), DashboardContract.View {
         progressBar       = findViewById(R.id.progress_dashboard)
         contactsContainer = findViewById(R.id.ll_dashboard_contacts)
 
-        val userName = intent.getStringExtra(EXTRA_USER_NAME) ?: ""
-        presenter = DashboardPresenter(userName)
-        presenter.attachView(this)
+        btnLogout.setOnClickListener { viewModel.onLogoutClicked() }
 
-        btnLogout.setOnClickListener { presenter.onLogoutClicked() }
-
-        presenter.loadDashboard()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect(::render)
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.events.collect(::handleEvent)
+            }
+        }
     }
 
-    override fun onDestroy() {
-        presenter.detachView()
-        super.onDestroy()
+    private fun render(state: DashboardUiState) {
+        tvWelcome.text = getString(R.string.label_dashboard_welcome, state.userName)
+        progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+        // As before, the list (or its empty state) only appears once loading finishes.
+        if (!state.isLoading) showContacts(state.contacts)
     }
 
-    // ── DashboardContract.View ────────────────────────────────────────────────
-
-    override fun showUserName(name: String) {
-        tvWelcome.text = getString(R.string.label_dashboard_welcome, name)
-    }
-
-    override fun showContacts(contacts: List<ContactModel>) {
+    private fun showContacts(contacts: List<EmergencyContact>) {
         contactsContainer.removeAllViews()
 
         if (contacts.isEmpty()) {
@@ -96,25 +96,14 @@ class DashboardActivity : AppCompatActivity(), DashboardContract.View {
         }
     }
 
-    override fun navigateToLogin() {
-        startActivity(
-            Intent(this, LoginActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-        )
-    }
-
-    // ── BaseView ──────────────────────────────────────────────────────────────
-
-    override fun showLoading() {
-        progressBar.visibility = View.VISIBLE
-    }
-
-    override fun hideLoading() {
-        progressBar.visibility = View.GONE
-    }
-
-    override fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    private fun handleEvent(event: DashboardEvent) {
+        when (event) {
+            DashboardEvent.NavigateToLogin ->
+                startActivity(
+                    Intent(this, LoginActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                )
+        }
     }
 }

@@ -6,8 +6,13 @@ import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
+import kotlinx.coroutines.launch
 
 /**
  * Forgot Password — Step 3.
@@ -16,7 +21,7 @@ import com.example.guardband.R
  * Receives: [EXTRA_EMAIL] from ForgotVerifyActivity.
  * Flow: ForgotNewPassActivity → ForgotSuccessActivity
  */
-class ForgotNewPassActivity : AppCompatActivity(), ForgotContract.NewPasswordView {
+class ForgotNewPassActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_EMAIL = "extra_email"
@@ -27,7 +32,7 @@ class ForgotNewPassActivity : AppCompatActivity(), ForgotContract.NewPasswordVie
     private lateinit var btnSave: Button
     private lateinit var progressBar: ProgressBar
 
-    private val presenter = ForgotNewPasswordPresenter()
+    private val viewModel: ForgotNewPassViewModel by viewModels { ForgotNewPassViewModel.Factory }
     private var email: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,42 +45,40 @@ class ForgotNewPassActivity : AppCompatActivity(), ForgotContract.NewPasswordVie
         btnSave           = findViewById(R.id.btn_forgot_save_password)
         progressBar       = findViewById(R.id.progress_forgot_newpass)
 
-        presenter.attachView(this)
-
         btnSave.setOnClickListener {
-            presenter.onSavePasswordClicked(
+            viewModel.onSaveClicked(
                 email           = email,
                 newPassword     = etNewPassword.text.toString(),
                 confirmPassword = etConfirmPassword.text.toString()
             )
         }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect(::render)
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.events.collect(::handleEvent)
+            }
+        }
     }
 
-    override fun onDestroy() {
-        presenter.detachView()
-        super.onDestroy()
+    private fun render(state: ForgotNewPassUiState) {
+        progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+        btnSave.isEnabled = !state.isLoading
     }
 
-    // ── ForgotContract.NewPasswordView ────────────────────────────────────────
+    private fun handleEvent(event: ForgotNewPassEvent) {
+        when (event) {
+            is ForgotNewPassEvent.ShowMessage ->
+                Toast.makeText(this, event.text, Toast.LENGTH_SHORT).show()
 
-    override fun navigateToSuccess() {
-        startActivity(Intent(this, ForgotSuccessActivity::class.java))
-        finish()
-    }
-
-    // ── BaseView ──────────────────────────────────────────────────────────────
-
-    override fun showLoading() {
-        progressBar.visibility = View.VISIBLE
-        btnSave.isEnabled = false
-    }
-
-    override fun hideLoading() {
-        progressBar.visibility = View.GONE
-        btnSave.isEnabled = true
-    }
-
-    override fun showError(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+            ForgotNewPassEvent.NavigateToSuccess -> {
+                startActivity(Intent(this, ForgotSuccessActivity::class.java))
+                finish()
+            }
+        }
     }
 }

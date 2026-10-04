@@ -3,8 +3,7 @@ package com.example.guardband.data.model
 /**
  * A registered GuardBand user as seen by the UI layer.
  *
- * Mirrors [com.example.guardband.data.UserModel] minus the password, which
- * never leaves the data layer.
+ * Has no password field: credentials never leave the data layer.
  *
  * @param id       Unique user identifier.
  * @param name     Full display name entered during sign-up.

@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/surface_bg"
     android:padding="24dp"
-    tools:context=".features.forgot.ForgotNewPassActivity">
+    tools:context=".ui.forgot.ForgotNewPassActivity">
 
     <!-- Title -->
     <TextView

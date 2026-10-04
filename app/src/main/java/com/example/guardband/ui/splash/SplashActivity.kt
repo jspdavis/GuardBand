@@ -2,43 +2,50 @@ package com.example.guardband.ui.splash
 
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
-import com.example.guardband.ui.auth.LoginActivity
+import com.example.guardband.ui.login.LoginActivity
+import kotlinx.coroutines.launch
 
 /**
  * Entry point of the app.
- * Displays the brand splash screen for [SPLASH_DELAY_MS] ms then
+ * Displays the brand splash screen while [SplashViewModel] counts down, then
  * navigates to [LoginActivity], clearing itself from the back-stack.
  */
 class SplashActivity : AppCompatActivity() {
 
-    companion object {
-        private const val SPLASH_DELAY_MS = 2000L
-    }
-
-    private val handler = Handler(Looper.getMainLooper())
-
-    private val navigateToLogin = Runnable {
-        startActivity(Intent(this, LoginActivity::class.java))
-        finish()
-    }
+    private val viewModel: SplashViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.events.collect { event ->
+                    when (event) {
+                        SplashEvent.NavigateToLogin -> {
+                            startActivity(Intent(this@SplashActivity, LoginActivity::class.java))
+                            finish()
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        handler.postDelayed(navigateToLogin, SPLASH_DELAY_MS)
+        viewModel.startCountdown()
     }
 
     override fun onPause() {
         super.onPause()
-        // Cancel the delayed transition if the activity goes to background.
-        handler.removeCallbacks(navigateToLogin)
+        // Cancel the countdown if the activity goes to background.
+        viewModel.cancelCountdown()
     }
 }
