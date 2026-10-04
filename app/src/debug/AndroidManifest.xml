@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Debug-only additions, merged into the main manifest for debug builds.
+    MockSenderActivity is a throwaway test harness that stands in for the
+    wristband firmware; it gets its own launcher icon so a demo phone can
+    open it without adb. Release builds contain neither the code nor the icon.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+
+        <activity
+            android:name=".ui.mocksender.MockSenderActivity"
+            android:exported="true"
+            android:label="@string/mock_sender_label"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>

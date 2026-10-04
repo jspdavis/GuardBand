@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher label for the debug-only MockSenderActivity -->
+    <string name="mock_sender_label">GuardBand Mock Sender</string>
+</resources>

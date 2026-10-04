@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="GuardBand Mock Sender"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Simulates ESP32 wearable device alerts"
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="32dp" />
+
+    <Button
+        android:id="@+id/btnSimulatePanic"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Simulate Panic"
+        android:textAllCaps="false"
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="#D32F2F" />
+
+    <Button
+        android:id="@+id/btnSimulateCheckin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Simulate Check-in"
+        android:textAllCaps="false"
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="#1976D2" />
+
+    <Button
+        android:id="@+id/btnSimulateLowBattery"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Simulate Low Battery"
+        android:textAllCaps="false"
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="#F57C00" />
+
+    <Button
+        android:id="@+id/btnSimulateTracking"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Simulate Tracking Update"
+        android:textAllCaps="false"
+        android:layout_marginBottom="32dp"
+        android:backgroundTint="#388E3C" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#E0E0E0"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Status:"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ready to send alerts"
+        android:textAlignment="center"
+        android:minHeight="48dp"
+        android:padding="12dp"
+        android:background="#F5F5F5" />
+
+</LinearLayout>

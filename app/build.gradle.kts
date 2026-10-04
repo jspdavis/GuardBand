@@ -49,6 +49,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
 
+    // OkHttp — only the debug-only MockSender harness (src/debug) uses it
+    debugImplementation(libs.okhttp)
+
     // CardView — used in activity_dashboard.xml status card
     implementation("androidx.cardview:cardview:1.0.0")
 

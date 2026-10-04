@@ -81,7 +81,7 @@ The alert payload (`schemaVersion: 1`) has these fields: `deviceId`, `type` (`PA
 
 ## Mock sender
 
-For demos without hardware, Phone A runs `MockSenderActivity`, which sends OkHttp PUTs to the RTDB endpoints, and Phone B runs the receiver screens. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives on `mvvm-main` (`ui/mocksender/`) and hasn't been merged into `mvvm-jedd` yet.
+For demos without hardware, Phone A runs `MockSenderActivity`, which sends OkHttp PUTs to the RTDB endpoints, and Phone B runs the receiver screens. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives in the **debug source set** (`app/src/debug/java/.../ui/mocksender/`, plus `app/src/debug/AndroidManifest.xml`, which gives it its own "GuardBand Mock Sender" launcher icon), so release builds contain neither the code nor the icon. OkHttp is `debugImplementation` for the same reason. `INGEST_ALERT_URL` in `AlertSender.kt` is still a placeholder, and it POSTs to a Cloud Function, which doesn't match the RTDB-REST design above. The payload follows `SCHEMA.md`.
 
 ## Gotchas
 
