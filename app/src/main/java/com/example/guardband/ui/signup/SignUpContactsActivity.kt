@@ -20,6 +20,11 @@ import kotlinx.coroutines.launch
  * Sign-Up Step 3 — user adds an emergency contact and finishes registration.
  *
  * Receives: [EXTRA_NAME], [EXTRA_LOCATION] from SignUpLocationActivity.
+ * View ids: et_signup_contacts_email, et_signup_contacts_password,
+ * et_contact_name, et_contact_phone, et_contact_relationship,
+ * btn_signup_contacts_submit, progress_signup_contacts, and the matching
+ * til_* wrappers.
+ *
  * Flow: SignUpContactsActivity → LoadingActivity → HomeActivity
  *
  * A single contact block is shown; list expansion can be implemented in a

@@ -10,6 +10,8 @@
     tools:context=".ui.forgot.ForgotSuccessActivity">
 
     <!-- Success icon -->
+    <!-- DESIGN: Jul — this screen now confirms "reset link sent", not
+         "password updated", so the tick may want to become a mail glyph. -->
     <TextView
         android:id="@+id/tv_forgot_success_icon"
         android:layout_width="wrap_content"

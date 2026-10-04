@@ -18,9 +18,15 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * Scoped to the Activity, so tab Fragments share this instance through
  * `activityViewModels { HomeViewModel.Factory }` and forward top-bar clicks here.
  *
- * Auth gate: Splash only routes signed-in users here, but the in-memory
- * session dies with the process while Android can still restore this
- * Activity directly. A fresh ViewModel therefore re-checks the session.
+ * Auth gate: a fresh ViewModel re-checks the session, because Android can
+ * restore this Activity directly without going through Splash.
+ *
+ * Now that the session is [com.google.firebase.auth.FirebaseAuth]'s persisted
+ * user, it survives process death, so this check rarely fires — it used to be
+ * the only thing standing between a dead in-memory session and a signed-out
+ * user sitting on the Home screen. It is kept because it still catches a
+ * restore after the account was signed out or disabled elsewhere, and because
+ * the pushed Settings and Notifications screens inherit it.
  */
 class HomeViewModel(
     private val authRepository: AuthRepository

@@ -22,6 +22,10 @@ import kotlinx.coroutines.launch
 /**
  * Login screen — entry point for returning users.
  *
+ * View ids: et_login_email, et_login_password, btn_login, progress_login,
+ * tv_login_signup, tv_login_forgot, til_login_email, til_login_password,
+ * iv_login_logo, tv_login_title.
+ *
  * Flow:
  *   Login  →  LoadingActivity  →  HomeActivity
  *   Login  →  SignUpNameActivity

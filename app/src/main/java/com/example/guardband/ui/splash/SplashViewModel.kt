@@ -21,6 +21,9 @@ import kotlinx.coroutines.launch
  * When the countdown ends, a signed-in user goes straight to Home and everyone
  * else goes to Login. HomeViewModel re-checks the session (the second gate).
  *
+ * `isLoggedIn()` is Firebase's persisted user, which the SDK restores on its
+ * own; the countdown gives it time to do so before the route is decided.
+ *
  * The Activity starts the countdown in onResume and cancels it in onPause,
  * so it restarts from zero every time the screen resumes.
  */

@@ -33,22 +33,12 @@
     <string name="label_forgot_request_subtitle">Enter the email linked to your account.</string>
     <string name="btn_send_link">Send reset link</string>
 
-    <!-- Forgot – Verify -->
-    <string name="label_forgot_verify_title">Check your email</string>
-    <string name="label_forgot_verify_subtitle">Enter the 6-digit code we sent you.</string>
-    <string name="hint_code">Verification code</string>
-    <string name="btn_verify">Verify</string>
-    <string name="btn_resend">Resend code</string>
-
-    <!-- Forgot – New Password -->
-    <string name="label_forgot_newpass_title">Create a new password</string>
-    <string name="hint_new_password">New password</string>
-    <string name="hint_confirm_password">Confirm password</string>
-    <string name="btn_save_password">Save password</string>
-
-    <!-- Forgot – Success -->
-    <string name="label_forgot_success_title">Password updated!</string>
-    <string name="label_forgot_success_subtitle">Your password has been changed successfully.</string>
+    <!-- Forgot – Sent: the confirmation. The reset itself happens on
+         Firebase's own hosted page, so there is no verify-code or
+         new-password step, and the wording must not reveal whether the
+         account exists. -->
+    <string name="label_forgot_success_title">Check your email</string>
+    <string name="label_forgot_success_subtitle">If an account exists for that address, we\'ve sent it a link to reset your password.</string>
     <string name="btn_back_to_login">Back to Login</string>
 
     <!-- Loading -->

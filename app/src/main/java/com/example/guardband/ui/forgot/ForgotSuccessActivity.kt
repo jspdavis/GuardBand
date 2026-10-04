@@ -8,13 +8,20 @@ import com.example.guardband.R
 import com.example.guardband.ui.login.LoginActivity
 
 /**
- * Forgot Password — Step 4.
- * Confirms that the password was changed successfully.
+ * Forgot Password — Step 2, the confirmation.
+ *
+ * Says a reset link was sent, without saying whether the account exists: it is
+ * shown for an unknown email too, so the screen cannot be used to find out
+ * which addresses are registered. The reset itself happens on Firebase's own
+ * hosted page, which is why there is no verify-code or new-password step.
  *
  * Deliberately has no ViewModel: a static screen whose only action is
  * navigation, with no state, validation or data access.
  *
- * Flow: ForgotSuccessActivity → LoginActivity (clears forgot back-stack)
+ * View ids: tv_forgot_success_icon, tv_forgot_success_title,
+ * tv_forgot_success_subtitle, btn_forgot_success_login.
+ *
+ * Flow: ForgotSuccessActivity → LoginActivity (clears the forgot back-stack)
  */
 class ForgotSuccessActivity : AppCompatActivity() {
 
