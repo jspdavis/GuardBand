@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.asStateFlow
  * returns a [User] or a copy of the contact list. Nothing is persisted, so the
  * session is lost when the process dies.
  *
+ * Only the unit tests reach this now: the app's auth goes through
+ * [FirebaseAuthRepository], while contacts and alerts are still in-memory.
+ *
  * Not thread-safe by design — all callers touch it from the main thread
  * (repositories via viewModelScope).
  */
@@ -46,9 +49,6 @@ internal object InMemoryStore {
         EmergencyContact("c-02", "Morgan Smith", "+1-555-0202", "Family")
     )
 
-    /** Fixed mock verification code for the forgot-password flow. */
-    var pendingResetCode: String = "123456"
-
     private var currentUserId: String? = null
 
     // ── Users ─────────────────────────────────────────────────────────────────
@@ -70,16 +70,6 @@ internal object InMemoryStore {
         val newUser = user.copy(id = "mock-user-${System.currentTimeMillis()}")
         users.add(StoredUser(newUser, password))
         return newUser
-    }
-
-    /** Replaces the password of the user with [email]. Returns false if no such user. */
-    fun updatePassword(email: String, newPassword: String): Boolean {
-        val index = users.indexOfFirst {
-            it.user.email.equals(email.trim(), ignoreCase = true)
-        }
-        if (index < 0) return false
-        users[index] = users[index].copy(password = newPassword)
-        return true
     }
 
     // ── Session ───────────────────────────────────────────────────────────────

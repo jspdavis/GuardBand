@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.repository.AuthError
 import com.example.guardband.data.repository.AuthRepository
 import com.example.guardband.data.repository.ContactRepository
 import com.example.guardband.utils.InputValidator
@@ -63,7 +64,7 @@ class SignUpContactsViewModel(
                 }
                 .onFailure { error ->
                     _uiState.update { it.copy(isLoading = false) }
-                    _events.send(SignUpContactsEvent.ShowMessage(error.message.orEmpty()))
+                    _events.send(SignUpContactsEvent.ShowMessage(messageFor(error)))
                 }
         }
     }
@@ -91,15 +92,36 @@ class SignUpContactsViewModel(
         val error = when {
             InputValidator.isBlank(email) || !InputValidator.isValidEmail(email) -> MSG_EMAIL_INVALID
             InputValidator.isBlank(password) -> MSG_PASSWORD_REQUIRED
+            !InputValidator.isPasswordLongEnough(password) -> MSG_PASSWORD_TOO_SHORT
             else -> return true
         }
         _events.trySend(SignUpContactsEvent.ShowMessage(error))
         return false
     }
 
+    // ── Errors ────────────────────────────────────────────────────────────────
+
+    /** Wording for an [AuthError]. Never shows the exception text. */
+    private fun messageFor(error: Throwable): String = when (error) {
+        AuthError.EmailAlreadyInUse -> MSG_EMAIL_IN_USE
+        AuthError.InvalidEmail -> MSG_EMAIL_INVALID
+
+        // Only reachable if Firebase's rule is ever stricter than ours.
+        AuthError.WeakPassword -> MSG_PASSWORD_TOO_SHORT
+
+        AuthError.Network -> MSG_NO_CONNECTION
+        AuthError.TooManyRequests -> MSG_TOO_MANY_ATTEMPTS
+        else -> MSG_SIGN_UP_FAILED
+    }
+
     companion object {
         const val MSG_EMAIL_INVALID = "Enter a valid email address."
         const val MSG_PASSWORD_REQUIRED = "Password is required."
+        const val MSG_PASSWORD_TOO_SHORT = "Password must be at least 8 characters."
+        const val MSG_EMAIL_IN_USE = "An account with that email already exists."
+        const val MSG_NO_CONNECTION = "No connection. Check your network and try again."
+        const val MSG_TOO_MANY_ATTEMPTS = "Too many attempts. Try again in a few minutes."
+        const val MSG_SIGN_UP_FAILED = "Could not create your account. Please try again."
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

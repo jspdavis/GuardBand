@@ -54,22 +54,11 @@
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- ── Forgot Password ────────────────────────────────────────────── -->
+        <!-- ── Forgot Password (request + confirmation; the reset itself is ──
+             ── Firebase's own hosted page) ───────────────────────────────── -->
 
         <activity
             android:name=".ui.forgot.ForgotRequestActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".ui.forgot.ForgotVerifyActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name=".ui.forgot.ForgotNewPassActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />

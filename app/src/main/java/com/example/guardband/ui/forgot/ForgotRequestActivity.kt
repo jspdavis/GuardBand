@@ -15,10 +15,13 @@ import com.example.guardband.R
 import kotlinx.coroutines.launch
 
 /**
- * Forgot Password — Step 1.
- * User enters their email; a mock reset code is "sent".
+ * Forgot Password — the only step.
+ * User enters their email; Firebase sends a reset link they open in a browser.
  *
- * Flow: ForgotRequestActivity → ForgotVerifyActivity
+ * View ids: et_forgot_request_email, btn_forgot_request_send,
+ * progress_forgot_request, tv_forgot_request_title, tv_forgot_request_subtitle.
+ *
+ * Flow: ForgotRequestActivity → ForgotSuccessActivity
  */
 class ForgotRequestActivity : AppCompatActivity() {
 
@@ -62,12 +65,10 @@ class ForgotRequestActivity : AppCompatActivity() {
             is ForgotRequestEvent.ShowMessage ->
                 Toast.makeText(this, event.text, Toast.LENGTH_SHORT).show()
 
-            is ForgotRequestEvent.NavigateToVerify ->
-                startActivity(
-                    Intent(this, ForgotVerifyActivity::class.java).apply {
-                        putExtra(ForgotVerifyActivity.EXTRA_EMAIL, event.email)
-                    }
-                )
+            ForgotRequestEvent.NavigateToSent -> {
+                startActivity(Intent(this, ForgotSuccessActivity::class.java))
+                finish()
+            }
         }
     }
 }

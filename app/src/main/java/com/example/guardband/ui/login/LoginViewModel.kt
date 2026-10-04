@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
+import com.example.guardband.data.repository.AuthError
 import com.example.guardband.data.repository.AuthRepository
 import com.example.guardband.utils.InputValidator
 import kotlinx.coroutines.channels.Channel
@@ -49,7 +50,7 @@ class LoginViewModel(
                 }
                 .onFailure { error ->
                     _uiState.update { it.copy(isLoading = false) }
-                    _events.send(LoginEvent.ShowMessage(error.message.orEmpty()))
+                    _events.send(LoginEvent.ShowMessage(messageFor(error)))
                 }
         }
     }
@@ -76,10 +77,35 @@ class LoginViewModel(
         return false
     }
 
+    // ── Errors ────────────────────────────────────────────────────────────────
+
+    /**
+     * Wording for an [AuthError]. Never shows the exception text.
+     *
+     * A wrong password and an unknown email deliberately share one message:
+     * Firebase reports both with the same code, and keeping them identical
+     * stops the screen from confirming which emails have accounts.
+     */
+    private fun messageFor(error: Throwable): String = when (error) {
+        AuthError.InvalidCredentials,
+        AuthError.NoSuchUser,
+        AuthError.InvalidEmail -> MSG_INVALID_CREDENTIALS
+
+        AuthError.UserDisabled -> MSG_ACCOUNT_DISABLED
+        AuthError.Network -> MSG_NO_CONNECTION
+        AuthError.TooManyRequests -> MSG_TOO_MANY_ATTEMPTS
+        else -> MSG_LOGIN_FAILED
+    }
+
     companion object {
         const val MSG_EMAIL_REQUIRED = "Email is required."
         const val MSG_EMAIL_INVALID = "Enter a valid email address."
         const val MSG_PASSWORD_REQUIRED = "Password is required."
+        const val MSG_INVALID_CREDENTIALS = "Email or password is incorrect."
+        const val MSG_ACCOUNT_DISABLED = "This account has been disabled."
+        const val MSG_NO_CONNECTION = "No connection. Check your network and try again."
+        const val MSG_TOO_MANY_ATTEMPTS = "Too many attempts. Try again in a few minutes."
+        const val MSG_LOGIN_FAILED = "Could not log in. Please try again."
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer { LoginViewModel(RepositoryProvider.authRepository) }

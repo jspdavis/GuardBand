@@ -6,15 +6,18 @@ import kotlinx.coroutines.delay
 /**
  * [AuthRepository] backed by [InMemoryStore].
  *
- * Behaviour and error messages match MockRepository exactly (parity with the
- * MVP screens); only the calling convention differs.
+ * Kept as the test double for the Firebase implementation — nothing in the app
+ * wires it any more (see
+ * [RepositoryProvider][com.example.guardband.data.RepositoryProvider]). It
+ * returns the same [AuthError]s as [FirebaseAuthRepository] so the two are
+ * interchangeable, and its session still dies with the process.
  */
 class InMemoryAuthRepository : AuthRepository {
 
     override suspend fun login(email: String, password: String): Result<User> {
         delay(InMemoryStore.SIMULATED_DELAY_MS)
         val match = InMemoryStore.findByCredentials(email, password)
-            ?: return Result.failure(Exception("Invalid email or password."))
+            ?: return Result.failure(AuthError.InvalidCredentials)
         InMemoryStore.setSession(match.id)
         return Result.success(match)
     }
@@ -27,41 +30,27 @@ class InMemoryAuthRepository : AuthRepository {
     ): Result<User> {
         delay(InMemoryStore.SIMULATED_DELAY_MS)
         if (InMemoryStore.emailExists(email)) {
-            return Result.failure(Exception("An account with that email already exists."))
+            return Result.failure(AuthError.EmailAlreadyInUse)
         }
         val newUser = InMemoryStore.addUser(
-            User(name = name, email = email, location = location),
+            User(name = name.trim(), email = email.trim(), location = location.trim()),
             password
         )
         InMemoryStore.setSession(newUser.id)
         return Result.success(newUser)
     }
 
-    override suspend fun requestPasswordReset(email: String): Result<Unit> {
+    /**
+     * Fails with [AuthError.NoSuchUser] for an unknown email, like Firebase
+     * with email-enumeration protection off. Callers are required to treat that
+     * as success, so this is the case that exercises the rule.
+     */
+    override suspend fun sendPasswordReset(email: String): Result<Unit> {
         delay(InMemoryStore.SIMULATED_DELAY_MS)
-        if (!InMemoryStore.emailExists(email)) {
-            return Result.failure(Exception("No account found for that email."))
-        }
-        InMemoryStore.pendingResetCode = "123456" // fixed mock code
-        return Result.success(Unit)
-    }
-
-    /** [email] is unused for parity: the mock checks only the fixed code. */
-    override suspend fun verifyResetCode(email: String, code: String): Result<Unit> {
-        delay(InMemoryStore.SIMULATED_DELAY_MS)
-        return if (code.trim() == InMemoryStore.pendingResetCode) {
+        return if (InMemoryStore.emailExists(email)) {
             Result.success(Unit)
         } else {
-            Result.failure(Exception("Incorrect verification code. Try again."))
-        }
-    }
-
-    override suspend fun resetPassword(email: String, newPassword: String): Result<Unit> {
-        delay(InMemoryStore.SIMULATED_DELAY_MS)
-        return if (InMemoryStore.updatePassword(email, newPassword)) {
-            Result.success(Unit)
-        } else {
-            Result.failure(Exception("Session expired. Please restart the reset flow."))
+            Result.failure(AuthError.NoSuchUser)
         }
     }
 

@@ -19,8 +19,14 @@ object InputValidator {
     fun isValidEmail(email: String): Boolean =
         Patterns.EMAIL_ADDRESS.matcher(email).matches()
 
-    /** True when [password] has at least [min] characters (no trimming). */
-    fun isPasswordLongEnough(password: String, min: Int = 6): Boolean =
+    /**
+     * True when [password] has at least [min] characters (no trimming).
+     *
+     * The default is the app's rule, and it is stricter than Firebase's own
+     * minimum of 6, so a password that passes here is never rejected as
+     * [AuthError.WeakPassword][com.example.guardband.data.repository.AuthError.WeakPassword].
+     */
+    fun isPasswordLongEnough(password: String, min: Int = 8): Boolean =
         password.length >= min
 
     /** Exact, case-sensitive equality. */
