@@ -6,8 +6,8 @@ import kotlinx.coroutines.delay
 /**
  * [ContactRepository] backed by [InMemoryStore].
  *
- * Like MockRepository today, contacts are one global list (not per user)
- * and neither call can fail.
+ * Contacts are one global list (not per user). Only [deleteContact] can fail,
+ * when the id is unknown.
  */
 class InMemoryContactRepository : ContactRepository {
 
@@ -19,5 +19,14 @@ class InMemoryContactRepository : ContactRepository {
     override suspend fun addContact(contact: EmergencyContact): Result<EmergencyContact> {
         delay(InMemoryStore.SIMULATED_DELAY_MS)
         return Result.success(InMemoryStore.addContact(contact))
+    }
+
+    override suspend fun deleteContact(contactId: String): Result<Unit> {
+        delay(InMemoryStore.SIMULATED_DELAY_MS)
+        return if (InMemoryStore.removeContact(contactId)) {
+            Result.success(Unit)
+        } else {
+            Result.failure(Exception("That contact no longer exists."))
+        }
     }
 }

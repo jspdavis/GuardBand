@@ -40,15 +40,15 @@ class LoadingViewModel : ViewModel() {
         countdownJob = null
     }
 
-    /** Only [DEST_DASHBOARD] is defined today; unknown values also go to the Dashboard. */
+    /** Only [DEST_HOME] is defined today; unknown values also go to Home. */
     private fun eventFor(destination: String?): LoadingEvent =
         when (destination) {
-            DEST_DASHBOARD -> LoadingEvent.NavigateToDashboard
-            else -> LoadingEvent.NavigateToDashboard
+            DEST_HOME -> LoadingEvent.NavigateToHome
+            else -> LoadingEvent.NavigateToHome
         }
 
     companion object {
-        const val DEST_DASHBOARD = "dest_dashboard"
+        const val DEST_HOME = "dest_home"
         private const val LOADING_DELAY_MS = 1800L
     }
 }

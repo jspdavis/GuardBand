@@ -86,10 +86,10 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
-        <!-- ── Dashboard ──────────────────────────────────────────────────── -->
+        <!-- ── Home (bottom-nav host; tabs and Settings/Notifications are Fragments) ── -->
 
         <activity
-            android:name=".ui.dashboard.DashboardActivity"
+            android:name=".ui.home.HomeActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 

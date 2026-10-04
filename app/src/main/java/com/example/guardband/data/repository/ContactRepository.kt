@@ -10,4 +10,7 @@ import com.example.guardband.data.model.EmergencyContact
 interface ContactRepository {
     suspend fun getContacts(): Result<List<EmergencyContact>>
     suspend fun addContact(contact: EmergencyContact): Result<EmergencyContact>
+
+    /** Removes the contact with [contactId]. Fails if no such contact exists. */
+    suspend fun deleteContact(contactId: String): Result<Unit>
 }

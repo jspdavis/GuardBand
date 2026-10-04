@@ -1,7 +1,9 @@
 package com.example.guardband.data
 
+import com.example.guardband.data.repository.AlertRepository
 import com.example.guardband.data.repository.AuthRepository
 import com.example.guardband.data.repository.ContactRepository
+import com.example.guardband.data.repository.InMemoryAlertRepository
 import com.example.guardband.data.repository.InMemoryAuthRepository
 import com.example.guardband.data.repository.InMemoryContactRepository
 
@@ -14,4 +16,7 @@ import com.example.guardband.data.repository.InMemoryContactRepository
 object RepositoryProvider {
     val authRepository: AuthRepository by lazy { InMemoryAuthRepository() }
     val contactRepository: ContactRepository by lazy { InMemoryContactRepository() }
+    val alertRepository: AlertRepository by lazy {
+        InMemoryAlertRepository(DeviceConstants.DEFAULT_DEVICE_ID)
+    }
 }

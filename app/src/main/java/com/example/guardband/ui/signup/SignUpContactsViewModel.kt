@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
  * Sign-Up Step 3 — account credentials, the emergency contact, and final
  * registration.
  *
- * Flow: SignUpContactsActivity → LoadingActivity → DashboardActivity
+ * Flow: SignUpContactsActivity → LoadingActivity → HomeActivity
  */
 class SignUpContactsViewModel(
     private val authRepository: AuthRepository,
@@ -59,7 +59,7 @@ class SignUpContactsViewModel(
                 .onSuccess {
                     saveContactIfPresent(contactName, contactPhone, contactRelationship)
                     _uiState.update { it.copy(isLoading = false) }
-                    _events.send(SignUpContactsEvent.NavigateToLoadingDashboard)
+                    _events.send(SignUpContactsEvent.NavigateToLoadingHome)
                 }
                 .onFailure { error ->
                     _uiState.update { it.copy(isLoading = false) }

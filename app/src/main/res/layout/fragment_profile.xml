@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface_bg"
+    tools:context=".ui.profile.ProfileFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/iv_profile_avatar"
+            android:layout_width="88dp"
+            android:layout_height="88dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:background="@color/surface_card"
+            android:contentDescription="@string/cd_user_avatar"
+            android:src="@drawable/ic_profile"
+            app:contentPadding="20dp"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+            app:tint="@color/text_secondary" />
+
+        <TextView
+            android:id="@+id/tv_profile_welcome"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center_horizontal"
+            android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
+            android:textColor="@color/text_primary"
+            tools:text="Welcome back, Alex Rivera" />
+
+        <TextView
+            android:id="@+id/tv_profile_email_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="@string/label_profile_email"
+            android:textAppearance="@style/TextAppearance.GuardBand.LabelMedium"
+            android:textColor="@color/text_secondary" />
+
+        <TextView
+            android:id="@+id/tv_profile_email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
+            android:textColor="@color/text_primary"
+            tools:text="alex@guardband.com" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="16dp"
+            android:background="@color/divider" />
+
+        <TextView
+            android:id="@+id/tv_profile_location_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/label_profile_location"
+            android:textAppearance="@style/TextAppearance.GuardBand.LabelMedium"
+            android:textColor="@color/text_secondary" />
+
+        <TextView
+            android:id="@+id/tv_profile_location"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
+            android:textColor="@color/text_primary"
+            tools:text="San Francisco, CA" />
+
+    </LinearLayout>
+</ScrollView>

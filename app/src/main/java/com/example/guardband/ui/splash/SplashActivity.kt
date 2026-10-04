@@ -8,17 +8,19 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
+import com.example.guardband.ui.home.HomeActivity
 import com.example.guardband.ui.login.LoginActivity
 import kotlinx.coroutines.launch
 
 /**
  * Entry point of the app.
  * Displays the brand splash screen while [SplashViewModel] counts down, then
- * navigates to [LoginActivity], clearing itself from the back-stack.
+ * navigates to [HomeActivity] (signed in) or [LoginActivity] (signed out),
+ * clearing itself from the back-stack.
  */
 class SplashActivity : AppCompatActivity() {
 
-    private val viewModel: SplashViewModel by viewModels()
+    private val viewModel: SplashViewModel by viewModels { SplashViewModel.Factory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +32,10 @@ class SplashActivity : AppCompatActivity() {
                     when (event) {
                         SplashEvent.NavigateToLogin -> {
                             startActivity(Intent(this@SplashActivity, LoginActivity::class.java))
+                            finish()
+                        }
+                        SplashEvent.NavigateToHome -> {
+                            startActivity(Intent(this@SplashActivity, HomeActivity::class.java))
                             finish()
                         }
                     }

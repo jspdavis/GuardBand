@@ -37,26 +37,36 @@ Do not port MVVM code into the MVP checkpoint branches, or MVP code into the MVV
 
 ## Architecture (MVVM, on `mvvm-jedd`)
 
-Every screen is an Activity: View (Activity) ↔ ViewModel ↔ Repository. There is no MVP code left (no Contracts, Presenters or `base/`).
+View ↔ ViewModel ↔ Repository. Pre-auth screens are Activities. After login, everything lives in one host Activity, `HomeActivity`, whose tabs and pushed screens are **Fragments**. That's the one deliberate exception to "every screen is an Activity" (see "Home host" below and `docs/home-host-and-bottom-nav.md`). There is no MVP code left (no Contracts, Presenters or `base/`).
 
 ```
 com/example/guardband/
 ├── data/
-│   ├── model/            User, EmergencyContact (plain data classes; no passwords)
-│   ├── repository/       AuthRepository, ContactRepository (suspend interfaces returning Result<T>)
+│   ├── model/            User, EmergencyContact, Alert (+ AlertType) (plain data classes; no passwords)
+│   ├── repository/       AuthRepository, ContactRepository (suspend, Result<T>)
+│   │                     AlertRepository (Flow<Result<T>>, live reads)
 │   │                     InMemory*Repository + InMemoryStore (current implementation)
+│   ├── DeviceConstants.kt      DEFAULT_DEVICE_ID = "guardband-001" (until pairing exists)
 │   └── RepositoryProvider.kt   manual wiring; swap implementations here
 ├── ui/
-│   ├── splash/    Splash → Login (2 s countdown)
+│   ├── splash/         Splash → Home if signed in, else Login (2 s countdown)
 │   ├── login/
-│   ├── signup/    Name → Location → Contacts
-│   ├── forgot/    Request → Verify → NewPass → Success
-│   ├── loading/   1.8 s transition → Dashboard (Back blocked)
-│   └── dashboard/
+│   ├── signup/         Name → Location → Contacts
+│   ├── forgot/         Request → Verify → NewPass → Success
+│   ├── loading/        1.8 s transition → Home (Back blocked)
+│   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
+│   ├── track/          Track tab (default): user chip, bell, gear, map placeholder, Check-in pill
+│   ├── contacts/       Contacts tab: list + delete
+│   ├── alert/          Alert tab: latest status + incident history
+│   ├── profile/        Profile tab: welcome header + user info
+│   ├── settings/       pushed from Track's gear; holds Log Out
+│   └── notifications/  pushed from Track's bell; placeholder inbox
 └── utils/InputValidator.kt     shared input predicates (no messages)
 ```
 
-Data lives in `InMemoryStore`, a process-local store with seed login `alex@guardband.com` / `password123`, reset code `123456` and a simulated 1.2 s latency. Nothing is persisted and nothing talks to Firebase yet.
+Data lives in `InMemoryStore`, a process-local store with seed login `alex@guardband.com` / `password123`, reset code `123456`, four seeded alerts for `guardband-001` and a simulated 1.2 s latency. Nothing is persisted and nothing talks to Firebase yet. The session dies with the process.
+
+`ui/dashboard/` and `res/layout/activity_dashboard.xml` are gone, replaced by `ui/home/`. Two leftovers from them are still waiting to be removed: the `label_dashboard_*`/`label_your_contacts` strings and the CardView dependency, which now has no user at all.
 
 Conventions (copy `ui/login/*` as the reference):
 - **State:** one `XUiState` data class per screen, held in a `MutableStateFlow` and exposed as a `StateFlow`. Update it only with `_uiState.update { it.copy(...) }`.
@@ -64,9 +74,22 @@ Conventions (copy `ui/login/*` as the reference):
 - **ViewModels** take repositories through the constructor and hold no `Context` or View. They expose `companion object { val Factory = viewModelFactory { initializer { XViewModel(RepositoryProvider.…) } } }`, and Activities use `by viewModels { XViewModel.Factory }`; plain `by viewModels()` is fine when there are no dependencies. User-facing messages are `MSG_*` constants in the ViewModel.
 - **Activities** bind views with `findViewById`, forward raw input and clicks, render state, and execute events (Toast, `startActivity`, `finish`). They collect each flow in its own `lifecycleScope.launch { repeatOnLifecycle(STARTED) { … } }`. Building `Intent`s stays in the Activity.
 - **Wizard data** moves between screens as Intent extras. The Activity passes the extras into the ViewModel's click handler, and the navigation event carries the data back.
-- **Exception:** `ForgotSuccessActivity` has no ViewModel. It's a static screen whose only action is navigation.
+- **Exceptions:** `ForgotSuccessActivity` and `NotificationsFragment` have no ViewModel. Each is a static screen whose only action is navigation.
 
-Declared dependencies: AppCompat, Material, ConstraintLayout, CardView, activity-ktx, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, Firebase Analytics and Firebase Database. Firebase Database is declared but no code uses it yet. README also lists Firebase Auth, OkHttp and Credentials/googleid, but those are **not** declared.
+### Home host (Fragments)
+
+- **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph.
+- **Tabs:** Track (default), Contacts, Alert, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), both opened from Track's top bar. While one is showing, the bar stays visible with no tab checked, and Back (or the screen's back arrow) returns to the last tab. Back on a tab exits.
+- **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check covers Android restoring `HomeActivity` after process death, when the in-memory session is gone. Settings and Notifications are inside the host, so they're covered too.
+- **Fragments follow the Activity conventions,** with these differences:
+  - Use `Fragment(R.layout.x)`, and bind views in `onViewCreated` with `view.findViewById`.
+  - Collect flows with `viewLifecycleOwner.lifecycleScope.launch { viewLifecycleOwner.repeatOnLifecycle(STARTED) { … } }`.
+  - Get the screen's own ViewModel with `by viewModels { XViewModel.Factory }`.
+  - Host navigation goes through the shared `HomeViewModel` via `by activityViewModels { HomeViewModel.Factory }` (e.g. Track's gear calls `homeViewModel.onSettingsClicked()`). The Activity executes the resulting `HomeEvent`; Fragments never cast `requireActivity()` to `HomeActivity`.
+  - A pushed screen's back arrow calls `requireActivity().onBackPressedDispatcher.onBackPressed()`.
+- **Lists** use `ListAdapter` + `DiffUtil` with `findViewById` in the ViewHolder (`ContactAdapter`, `AlertHistoryAdapter`).
+
+Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, Firebase Analytics and Firebase Database. Firebase Database is declared but no code uses it yet. README also lists Firebase Auth, OkHttp and Credentials/googleid, but those are **not** declared.
 
 ## Firebase data contract
 
@@ -77,7 +100,16 @@ The band (or the mock sender) PUTs to the RTDB REST API, and Security Rules vali
 /devices/{deviceId}/history/{sequenceId}    → append-only history
 ```
 
-The alert payload (`schemaVersion: 1`) has these fields: `deviceId`, `type` (`PANIC | CHECKIN | LOW_BATTERY | TRACKING_UPDATE`), `timestamp` (ISO 8601 UTC), `location { lat, lng }`, `battery`, and `sequenceId`. README says to check the `location` field names against the deployed Security Rules before relying on them.
+`SCHEMA.md` is authoritative for the alert payload (v1.0). Its fields are:
+- `schemaVersion`: the **string** `"1.0"`
+- `deviceId`
+- `type`: `PANIC | CHECKIN | LOW_BATTERY | TRACKING_UPDATE`
+- `timestamp`: ISO 8601 UTC
+- `location { lat, lng, accuracyMeters }`
+- `battery { percent, isCharging }`
+- `sequenceId`
+
+`data/model/Alert.kt` mirrors it. Check the field names against the deployed Security Rules before relying on them.
 
 ## Mock sender
 

@@ -49,10 +49,15 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
 
+    // Home host — tab Fragments (by viewModels/activityViewModels) and lists
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.recyclerview)
+
     // OkHttp — only the debug-only MockSender harness (src/debug) uses it
     debugImplementation(libs.okhttp)
 
     // CardView — used in activity_dashboard.xml status card
+    // TODO: remove once the dead ui/dashboard files and activity_dashboard.xml are deleted
     implementation("androidx.cardview:cardview:1.0.0")
 
     // Firebase BoM — manages all Firebase library versions

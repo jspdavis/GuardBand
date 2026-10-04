@@ -1,28 +1,33 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.DeviceConstants
+import com.example.guardband.data.model.Alert
 import com.example.guardband.data.model.EmergencyContact
 import com.example.guardband.data.model.User
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Single in-memory source of truth for users, contacts and the session.
+ * Single in-memory source of truth for users, contacts, alerts and the session,
+ * shared by the InMemory* repositories.
  *
- * Shared by [com.example.guardband.data.MockRepository] (MVP screens) and the
- * InMemory* repositories (MVVM screens) so both see the same data during the
- * migration. Passwords are held in [StoredUser] and never leave this file:
- * every read returns a [User] or a copy of the contact list.
+ * Passwords are held in [StoredUser] and never leave this file: every read
+ * returns a [User] or a copy of the contact list. Nothing is persisted, so the
+ * session is lost when the process dies.
  *
  * Not thread-safe by design — all callers touch it from the main thread
- * (MockRepository via its main-looper Handler, repositories via viewModelScope).
+ * (repositories via viewModelScope).
  */
 internal object InMemoryStore {
 
-    /** Simulated backend latency; matches MockRepository's MOCK_DELAY_MS. */
+    /** Simulated backend latency for every repository call. */
     const val SIMULATED_DELAY_MS = 1200L
 
     /** User record including the credential; private to the data layer. */
     private data class StoredUser(val user: User, val password: String)
 
-    // ── Seed data (identical to the original MockRepository seeds) ────────────
+    // ── Seed data ─────────────────────────────────────────────────────────────
 
     private val users = mutableListOf(
         StoredUser(
@@ -100,4 +105,35 @@ internal object InMemoryStore {
         contacts.add(saved)
         return saved
     }
+
+    /** Removes the contact with [contactId]. Returns false if no such contact. */
+    fun removeContact(contactId: String): Boolean =
+        contacts.removeAll { it.id == contactId }
+
+    // ── Alerts ────────────────────────────────────────────────────────────────
+
+    /**
+     * Seeded alerts for the default device, as the band would write them
+     * (SCHEMA.md v1.0). Observable so a repository can follow changes live.
+     */
+    private val _alerts = MutableStateFlow(
+        listOf(
+            seedAlert(1, "PANIC", "2026-10-03T13:05:12Z", battery = 64),
+            seedAlert(2, "TRACKING_UPDATE", "2026-10-03T13:06:12Z", battery = 64),
+            seedAlert(3, "CHECKIN", "2026-10-04T02:30:00Z", battery = 41),
+            seedAlert(4, "LOW_BATTERY", "2026-10-04T08:45:00Z", battery = 20)
+        )
+    )
+    val alerts: StateFlow<List<Alert>> = _alerts.asStateFlow()
+
+    private fun seedAlert(sequenceId: Long, type: String, timestamp: String, battery: Int) =
+        Alert(
+            schemaVersion = "1.0",
+            deviceId = DeviceConstants.DEFAULT_DEVICE_ID,
+            type = type,
+            timestamp = timestamp,
+            location = Alert.Location(lat = 10.3157, lng = 123.8854, accuracyMeters = 8.5),
+            battery = Alert.Battery(percent = battery, isCharging = false),
+            sequenceId = sequenceId
+        )
 }

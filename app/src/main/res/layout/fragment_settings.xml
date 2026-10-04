@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface_muted"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical"
+    tools:context=".ui.settings.SettingsFragment">
+
+    <!-- ── Top bar ───────────────────────────────────────────────────────── -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp">
+
+        <ImageButton
+            android:id="@+id/ib_settings_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cd_back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/tv_settings_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/label_settings_title"
+            android:textAppearance="@style/TextAppearance.GuardBand.TitleLarge"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+
+    <!-- ── Rows (placeholders) ───────────────────────────────────────────── -->
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_settings_account"
+                style="@style/Widget.GuardBand.SettingsRow"
+                android:text="@string/label_settings_account" />
+
+            <View style="@style/Widget.GuardBand.SettingsDivider" />
+
+            <TextView
+                android:id="@+id/tv_settings_change_password"
+                style="@style/Widget.GuardBand.SettingsRow"
+                android:text="@string/label_settings_change_password" />
+
+            <View style="@style/Widget.GuardBand.SettingsDivider" />
+
+            <TextView
+                android:id="@+id/tv_settings_notifications"
+                style="@style/Widget.GuardBand.SettingsRow"
+                android:text="@string/label_settings_notifications" />
+
+            <View style="@style/Widget.GuardBand.SettingsDivider" />
+
+            <TextView
+                android:id="@+id/tv_settings_privacy"
+                style="@style/Widget.GuardBand.SettingsRow"
+                android:text="@string/label_settings_privacy" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ── Log Out (moved from the old Dashboard) ────────────────────────── -->
+
+    <Button
+        android:id="@+id/btn_settings_logout"
+        style="@style/Widget.GuardBand.Button.Outlined"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/btn_logout" />
+
+</LinearLayout>

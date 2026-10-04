@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
  * Login screen — entry point for returning users.
  *
  * Flow:
- *   Login  →  LoadingActivity  →  DashboardActivity
+ *   Login  →  LoadingActivity  →  HomeActivity
  *   Login  →  SignUpNameActivity
  *   Login  →  ForgotRequestActivity
  */
@@ -81,10 +81,10 @@ class LoginActivity : AppCompatActivity() {
             is LoginEvent.ShowMessage ->
                 Toast.makeText(this, event.text, Toast.LENGTH_SHORT).show()
 
-            LoginEvent.NavigateToLoadingDashboard -> {
+            LoginEvent.NavigateToLoadingHome -> {
                 startActivity(
                     Intent(this, LoadingActivity::class.java).apply {
-                        putExtra(LoadingActivity.EXTRA_DESTINATION, LoadingActivity.DEST_DASHBOARD)
+                        putExtra(LoadingActivity.EXTRA_DESTINATION, LoadingActivity.DEST_HOME)
                     }
                 )
                 finish()

@@ -9,14 +9,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
-import com.example.guardband.ui.dashboard.DashboardActivity
+import com.example.guardband.ui.home.HomeActivity
 import kotlinx.coroutines.launch
 
 /**
- * Transient loading screen shown between auth actions and the Dashboard.
+ * Transient loading screen shown between auth actions and Home.
  *
  * Callers pass [EXTRA_DESTINATION] to tell LoadingActivity where to go next.
- * Currently only [DEST_DASHBOARD] is defined; add more destinations as needed.
+ * Currently only [DEST_HOME] is defined; add more destinations as needed.
  *
  * Automatically advances after [LoadingViewModel]'s delay to simulate a network call.
  */
@@ -24,7 +24,7 @@ class LoadingActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_DESTINATION = "extra_destination"
-        const val DEST_DASHBOARD    = LoadingViewModel.DEST_DASHBOARD
+        const val DEST_HOME    = LoadingViewModel.DEST_HOME
     }
 
     private val viewModel: LoadingViewModel by viewModels()
@@ -60,9 +60,9 @@ class LoadingActivity : AppCompatActivity() {
 
     private fun handleEvent(event: LoadingEvent) {
         when (event) {
-            LoadingEvent.NavigateToDashboard -> {
+            LoadingEvent.NavigateToHome -> {
                 startActivity(
-                    Intent(this, DashboardActivity::class.java).apply {
+                    Intent(this, HomeActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
                 )

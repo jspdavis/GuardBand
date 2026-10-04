@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
  * Login screen logic: credential validation, the login call, and navigation.
  *
  * Flow:
- *   Login  →  LoadingActivity  →  DashboardActivity
+ *   Login  →  LoadingActivity  →  HomeActivity
  *   Login  →  SignUpNameActivity
  *   Login  →  ForgotRequestActivity
  */
@@ -45,7 +45,7 @@ class LoginViewModel(
             authRepository.login(email, password)
                 .onSuccess {
                     _uiState.update { it.copy(isLoading = false) }
-                    _events.send(LoginEvent.NavigateToLoadingDashboard)
+                    _events.send(LoginEvent.NavigateToLoadingHome)
                 }
                 .onFailure { error ->
                     _uiState.update { it.copy(isLoading = false) }

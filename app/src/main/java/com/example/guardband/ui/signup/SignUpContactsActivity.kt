@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
  * Sign-Up Step 3 — user adds an emergency contact and finishes registration.
  *
  * Receives: [EXTRA_NAME], [EXTRA_LOCATION] from SignUpLocationActivity.
- * Flow: SignUpContactsActivity → LoadingActivity → DashboardActivity
+ * Flow: SignUpContactsActivity → LoadingActivity → HomeActivity
  *
  * A single contact block is shown; list expansion can be implemented in a
  * follow-up iteration.
@@ -93,10 +93,10 @@ class SignUpContactsActivity : AppCompatActivity() {
             is SignUpContactsEvent.ShowMessage ->
                 Toast.makeText(this, event.text, Toast.LENGTH_SHORT).show()
 
-            SignUpContactsEvent.NavigateToLoadingDashboard ->
+            SignUpContactsEvent.NavigateToLoadingHome ->
                 startActivity(
                     Intent(this, LoadingActivity::class.java).apply {
-                        putExtra(LoadingActivity.EXTRA_DESTINATION, LoadingActivity.DEST_DASHBOARD)
+                        putExtra(LoadingActivity.EXTRA_DESTINATION, LoadingActivity.DEST_HOME)
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
                 )
