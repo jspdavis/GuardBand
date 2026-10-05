@@ -44,11 +44,14 @@ View ↔ ViewModel ↔ Repository. Pre-auth screens are Activities. After login,
 com/example/guardband/
 ├── data/
 │   ├── model/            User, EmergencyContact, Alert (+ AlertType), GoogleSignInOutcome (plain data classes; no passwords)
-│   ├── repository/       AuthRepository, ContactRepository (suspend, Result<T>)
+│   ├── repository/       AuthRepository (suspend, Result<T>)
+│   │                     ContactRepository (observe = Flow<Result<T>>; CRUD = suspend)
 │   │                     AlertRepository (Flow<Result<T>>, live reads)
-│   │                     UserProfileRepository (writes users/{uid})
+│   │                     UserProfileRepository (reads/writes users/{uid}, incl. the atomic finalize)
 │   │                     AuthError + FirebaseAuthErrorMapper (typed auth failures)
-│   │                     GoogleProfileProvisioning (when Google sign-in may write users/{uid})
+│   │                     ContactError + FirebaseDatabaseErrorMapper (typed RTDB failures)
+│   │                     ContactFields (the one on-disk shape of a contact)
+│   │                     GoogleProfileProvisioning (when a sign-in may write users/{uid}; both paths)
 │   │                     Firebase* = live; InMemory* + InMemoryStore = test doubles
 │   ├── DeviceConstants.kt      DEFAULT_DEVICE_ID = "guardband-001" (until pairing exists)
 │   ├── FirebaseProvider.kt     the one FirebaseAuth / FirebaseDatabase instance
@@ -70,9 +73,9 @@ com/example/guardband/
 └── utils/InputValidator.kt     shared input predicates (no messages)
 ```
 
-**Auth and the user profile are on Firebase** (see "Firebase" below). **Contacts and alerts are still in-memory:** `InMemoryStore` is a process-local store with two seeded contacts, four seeded alerts for `guardband-001` and a simulated 1.2 s latency, and it loses everything when the process dies. Contacts move to the RTDB next; alerts follow when the `devices/{deviceId}` reader lands.
+**Auth, the user profile and contacts are on Firebase** (see "Firebase" and "Contacts and profile data" below). **Alerts are the last in-memory one:** `InMemoryStore` is a process-local store holding four seeded alerts for `guardband-001` and a simulated 1.2 s latency, and it loses everything when the process dies. Alerts move when the `devices/{deviceId}` reader lands.
 
-`InMemoryAuthRepository` is still in the tree but is **not** wired into `RepositoryProvider` — it is the unit-test double for the Firebase implementation and returns the same `AuthError`s, so the two stay interchangeable.
+`InMemoryAuthRepository` and `InMemoryContactRepository` are still in the tree but are **not** wired into `RepositoryProvider` — they are the unit-test doubles for the Firebase implementations and return the same `AuthError`s / `ContactError`s, so each pair stays interchangeable. `InMemoryStore.replaceContacts` exists purely as a test seam, because `addContact` assigns its own id.
 
 `ui/dashboard/` and `res/layout/activity_dashboard.xml` are gone, replaced by `ui/home/`. Two leftovers from them are still waiting to be removed: the `label_dashboard_*`/`label_your_contacts` strings and the CardView dependency, which now has no user at all.
 
@@ -110,7 +113,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 - **Password reset is Firebase's hosted flow.** `sendPasswordResetEmail` emails a link and the user finishes in a browser. The app never sees a reset code, so there is no verify-code or set-new-password screen, and nothing like `otpPlain` or `pendingPassword` is ever written.
 - **No PII in logs.** Never log a uid, an email, a token or Firebase error text.
 - **Never overwrite `app/google-services.json` from another branch,** and don't touch it, `.firebaserc` or any signing config as a side effect of other work.
-- **The `users/{uid}` Security Rules are not deployed.** The proposal in the Prompt 08 report still has to be merged with the existing `devices/` rules in the Console, by hand.
+- **The `users/{uid}` Security Rules are not deployed.** The proposal in the Prompt 10 report still has to be merged with the existing `devices/` rules in the Console, by hand. `RTDBS-RULES.md` in the repo root is a working draft, not what is live.
 
 ## Google sign-in
 
@@ -130,7 +133,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 
 **Routing:** `isNewUser` decides. A returning user goes to Home. A first-time user goes through the remaining sign-up steps (location, emergency contact) in **complete-profile mode** — `SignUpLocationActivity` and `SignUpContactsActivity` carry `EXTRA_COMPLETE_PROFILE`, the credential fields are hidden, nothing is validated against them, and `saveProfile` finishes `users/{uid}` instead of `register` creating an account. In that mode the uid and email come from the **live session**, never from the Intent extras, so a stale extra cannot write to the wrong record.
 
-**The profile write is conditional.** `saveProfile` replaces the whole `users/{uid}` record, so writing it on every Google sign-in would wipe a location the user had already set. `GoogleProfileProvisioning` writes only when the account was just created or the record is confirmed absent; a *failed* existence read writes nothing, because it cannot tell "absent" from "unreachable". A failed write does **not** fail the sign-in — the session already exists by then.
+**The profile write is conditional.** A sign-in has no location to offer, so writing the profile on every sign-in would put an empty one over whatever the user had already set. `GoogleProfileProvisioning` writes only when the account was just created or the record is confirmed absent; a *failed* existence read writes nothing, because it cannot tell "absent" from "unreachable". A failed write does **not** fail the sign-in — the session already exists by then. Despite the name it now serves **both** sign-in paths: email login provisions the same way, so a session always has a `users/{uid}` record behind it. (The name should become `ProfileProvisioning`; the file still needs renaming.)
 
 **Error wording stays neutral.** `ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL` maps to its own `AuthError.AccountExistsWithDifferentCredential`, shown as "This email uses a different sign-in method." It must not name the other provider: saying "that address uses a password" confirms the account exists, which is the whole thing the shared invalid-credentials message exists to prevent.
 
@@ -139,6 +142,26 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 **Never log a token**, an account name or an email, here or anywhere else.
 
 **Not covered by tests:** the Firebase exchange inside `signInWithGoogle` and `GoogleIdTokenProvider` itself. Both need a real `FirebaseAuth` / Credential Manager, and the project declares no mocking library. The testable logic was extracted instead — `GoogleProfileProvisioning` for the write rule, the ViewModels for routing and wording.
+
+## Contacts and profile data
+
+The signed-in user's own record, separate from the band's `devices/` tree:
+
+```
+/users/{uid}/name
+/users/{uid}/email
+/users/{uid}/location
+/users/{uid}/emergency_contacts/{pushId}/{name, phone, relationship}
+```
+
+- **`phone` is always E.164.** `InputValidator.normalizePhoneToE164` is the only thing that decides the stored form: it takes `09XXXXXXXXX`, `639XXXXXXXXX` and `+639XXXXXXXXX` and stores all three as `+639XXXXXXXXX`, and it accepts any other number that is already valid E.164 (`+` and 8–15 digits), stored as typed. It strips spaces, hyphens, parentheses and dots first. ViewModels pass the phone through **untouched** — normalising in a screen would mean two places could disagree. `relationship` is optional and stored as `""` when blank.
+- **Minimum 3, cap 10.** `InputValidator.MIN_CONTACTS` / `MAX_CONTACTS`. Enforced in the **repository**, not just the dialog: a delete that would leave fewer than 3 fails with `ContactError.MinimumContacts`, and an add at 10 with `MaximumContacts`. Editing is always allowed — it is the way out of a wrong number. Security Rules **cannot** enforce these, because RTDB rules cannot count children, so the repository is the last line. The Contacts tab shows "n of 3 minimum" until the user reaches it; **sign-up still asks for only one contact, and it is optional.**
+- **Every mutation is a transaction** on the `emergency_contacts` node, not a write to one child. The bounds are counts over siblings, so a check-then-write would let two devices both pass the cap or both delete below the minimum.
+- **Sign-up finalization is one atomic write.** `UserProfileRepository.finalizeSignUp` puts the profile and every contact into a single multi-path `updateChildren`, so sign-up cannot half-succeed. That is what makes the Retry safe: there is no partial state to reconcile. Registration is deliberately **two** calls — `AuthRepository.createAccount` then `finalizeSignUp` — and the `accountCreated` guard in `SignUpContactsViewModel` means a retry resumes at the write. When they were one call, a failed write left the account created and the only retry went back through account creation, which then failed as "email already in use", so that address could never finish registering.
+- **`saveProfile` merges, never replaces.** It `updateChildren`s its three fields. A `setValue` on `users/{uid}` would delete every emergency contact under it.
+- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`), which is the only way `location` can be filled — `currentUser()` cannot. Profile and Track fall back to the session's values when the record is missing or the read fails, and the location falls back to "Location not set". RTDB disk persistence is **not** enabled.
+- **Failures are typed and mapped by code.** `ContactError` + `FirebaseDatabaseErrorMapper`, on `DatabaseError.getCode()`, never on a message. That code is only reachable through the SDK's completion-listener and `ValueEventListener` callbacks — an awaited `Task` fails with a bare `DatabaseException` carrying localised prose — which is why these repositories wrap the listener forms in `suspendCancellableCoroutine` instead of using `.await()`.
+- **Contact phone numbers are never logged**, and neither are contact names. They are a third party's personal data, not the user's own. Nothing in `data/` logs at all.
 
 ## Firebase data contract
 
