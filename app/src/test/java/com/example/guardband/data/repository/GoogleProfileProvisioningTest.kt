@@ -1,5 +1,6 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.model.EmergencyContact
 import com.example.guardband.data.model.User
 import com.example.guardband.testing.FakeUserProfileRepository
 import kotlinx.coroutines.CancellationException
@@ -88,6 +89,17 @@ class GoogleProfileProvisioningTest {
 
             override suspend fun profileExists(uid: String): Result<Boolean> =
                 Result.success(false)
+
+            override suspend fun fetchProfile(uid: String): Result<User?> =
+                Result.success(null)
+
+            override suspend fun finalizeSignUp(
+                uid: String,
+                name: String,
+                email: String,
+                location: String,
+                contacts: List<EmergencyContact>
+            ): Result<Unit> = Result.success(Unit)
         }
 
         GoogleProfileProvisioning.ensureProfile(cancelling, USER, isNewUser = true)

@@ -4,9 +4,9 @@ package com.example.guardband.data.repository
  * A typed authentication failure, carried by [Result.failure].
  *
  * Carries no message on purpose: the wording belongs to the screen, so each
- * ViewModel maps these to its own `MSG_*` constants. That is the one place the
- * data layer differs from [ContactRepository] and [AlertRepository], which
- * still put the user-facing text in the exception message.
+ * ViewModel maps these to its own `MSG_*` constants. [ContactError] follows the
+ * same rule. [AlertRepository] is the one left that still puts user-facing text
+ * in the exception message.
  *
  * Extends [Exception] only so `Result.failure` accepts it.
  */
@@ -48,6 +48,16 @@ sealed class AuthError : Exception() {
 
     /** The call needed a signed-in user and there was none. */
     object NotSignedIn : AuthError()
+
+    /**
+     * A database read or write was rejected by the Security Rules.
+     *
+     * Only reachable from [UserProfileRepository], which shares this error
+     * type. Distinct from [NotSignedIn]: the session is valid, the rules just
+     * said no - which is the failure to expect while the `users/{uid}` rules
+     * sit undeployed.
+     */
+    object PermissionDenied : AuthError()
 
     /**
      * Anything unmapped. [code] is Firebase's `errorCode` when there was one;

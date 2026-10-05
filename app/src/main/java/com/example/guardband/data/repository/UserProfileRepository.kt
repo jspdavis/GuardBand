@@ -1,5 +1,8 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.model.User
+
 /**
  * The user's own profile record, separate from authentication.
  *
@@ -11,7 +14,14 @@ package com.example.guardband.data.repository
  */
 interface UserProfileRepository {
 
-    /** Creates or replaces the profile for [uid]. */
+    /**
+     * Creates or updates the profile fields for [uid].
+     *
+     * Merges `name`, `email` and `location` and leaves every other child of
+     * `users/{uid}` alone. That matters now that
+     * `users/{uid}/emergency_contacts` exists: this used to replace the whole
+     * record, which would delete every emergency contact the user had.
+     */
     suspend fun saveProfile(
         uid: String,
         name: String,
@@ -20,11 +30,43 @@ interface UserProfileRepository {
     ): Result<Unit>
 
     /**
+     * The stored profile for [uid], or `Result.success(null)` when there is no
+     * record.
+     *
+     * The one read that can fill [User.location], which
+     * [AuthRepository.currentUser] cannot. A missing record is a success with
+     * null, not a failure: an account can legitimately exist without one, and
+     * the caller needs to tell that apart from a read that did not work.
+     */
+    suspend fun fetchProfile(uid: String): Result<User?>
+
+    /**
      * True when a profile record exists at `users/{uid}`.
      *
-     * Exists so Google sign-in can avoid overwriting the profile of a
-     * returning user: [saveProfile] replaces the whole record, which would
-     * wipe a location the user had already set.
+     * Kept alongside [fetchProfile] because [ProfileProvisioning] needs the
+     * existence question answered without caring what is in the record.
      */
     suspend fun profileExists(uid: String): Result<Boolean>
+
+    /**
+     * Writes the profile and [contacts] for a brand-new account in **one**
+     * atomic commit (D5).
+     *
+     * One multi-path write, so sign-up cannot half-succeed: either the profile
+     * and every contact land, or nothing does. That is what makes the retry on
+     * [SignUpContactsViewModel][com.example.guardband.ui.signup.SignUpContactsViewModel]
+     * safe to run again - there is no partial state to reconcile.
+     *
+     * Each contact is validated and normalised first, so an invalid phone fails
+     * the whole call before anything is sent. Only for a new account: the
+     * contacts are written under fresh keys, so calling this on an account that
+     * already has contacts would add duplicates rather than replace them.
+     */
+    suspend fun finalizeSignUp(
+        uid: String,
+        name: String,
+        email: String,
+        location: String,
+        contacts: List<EmergencyContact>
+    ): Result<Unit>
 }

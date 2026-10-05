@@ -12,12 +12,13 @@ import kotlinx.coroutines.flow.asStateFlow
  * Single in-memory source of truth for users, contacts, alerts and the session,
  * shared by the InMemory* repositories.
  *
+ * Nothing in the app reads it any more: auth, the profile and contacts are all
+ * on Firebase, and only [InMemoryAlertRepository] still uses it, for the seeded
+ * alerts. The rest is the unit tests' backing store.
+ *
  * Passwords are held in [StoredUser] and never leave this file: every read
  * returns a [User] or a copy of the contact list. Nothing is persisted, so the
  * session is lost when the process dies.
- *
- * Only the unit tests reach this now: the app's auth goes through
- * [FirebaseAuthRepository], while contacts and alerts are still in-memory.
  *
  * Not thread-safe by design — all callers touch it from the main thread
  * (repositories via viewModelScope).
@@ -44,10 +45,22 @@ internal object InMemoryStore {
         )
     )
 
-    private val contacts = mutableListOf(
-        EmergencyContact("c-01", "Jordan Lee",   "+1-555-0101", "Friend"),
-        EmergencyContact("c-02", "Morgan Smith", "+1-555-0202", "Family")
+    /**
+     * Seeded contacts, in the stored E.164 form the repository guarantees, and
+     * three of them so the seed satisfies
+     * [MIN_CONTACTS][com.example.guardband.utils.InputValidator.MIN_CONTACTS] -
+     * a double seeded below the minimum could not be deleted from at all.
+     *
+     * Observable so a repository can follow changes live, like [alerts].
+     */
+    private val _contacts = MutableStateFlow(
+        listOf(
+            EmergencyContact("c-01", "Jordan Lee",   "+639171234567", "Friend"),
+            EmergencyContact("c-02", "Morgan Smith", "+639181234568", "Family"),
+            EmergencyContact("c-03", "Riley Cruz",   "+639191234569", "Neighbour")
+        )
     )
+    val contacts: StateFlow<List<EmergencyContact>> = _contacts.asStateFlow()
 
     private var currentUserId: String? = null
 
@@ -87,18 +100,41 @@ internal object InMemoryStore {
 
     // ── Contacts ──────────────────────────────────────────────────────────────
 
-    fun getContacts(): List<EmergencyContact> = contacts.toList()
+    fun getContacts(): List<EmergencyContact> = _contacts.value
+
+    /**
+     * Replaces the whole list, ids included.
+     *
+     * A test seam: [addContact] assigns its own id, so there is otherwise no
+     * way to seed a known one - and no way to seed two contacts in the same
+     * millisecond without them colliding.
+     */
+    fun replaceContacts(contacts: List<EmergencyContact>) {
+        _contacts.value = contacts
+    }
 
     /** Stores [contact] with a generated id ("c-<millis>") and returns the stored copy. */
     fun addContact(contact: EmergencyContact): EmergencyContact {
         val saved = contact.copy(id = "c-${System.currentTimeMillis()}")
-        contacts.add(saved)
+        _contacts.value = _contacts.value + saved
         return saved
     }
 
+    /** Replaces the stored fields of [contact]. Returns false if no such contact. */
+    fun updateContact(contact: EmergencyContact): Boolean {
+        val current = _contacts.value
+        if (current.none { it.id == contact.id }) return false
+        _contacts.value = current.map { if (it.id == contact.id) contact else it }
+        return true
+    }
+
     /** Removes the contact with [contactId]. Returns false if no such contact. */
-    fun removeContact(contactId: String): Boolean =
-        contacts.removeAll { it.id == contactId }
+    fun removeContact(contactId: String): Boolean {
+        val current = _contacts.value
+        if (current.none { it.id == contactId }) return false
+        _contacts.value = current.filterNot { it.id == contactId }
+        return true
+    }
 
     // ── Alerts ────────────────────────────────────────────────────────────────
 

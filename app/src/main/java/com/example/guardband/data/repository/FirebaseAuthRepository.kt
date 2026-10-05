@@ -22,30 +22,45 @@ import kotlinx.coroutines.tasks.await
  *
  * @param auth the shared instance from
  *   [FirebaseProvider][com.example.guardband.data.FirebaseProvider].
- * @param userProfileRepository writes `users/{uid}` after a successful sign-up.
- *   Injected rather than called from the ViewModel so that one repository call
- *   still means one completed sign-up. [signInWithGoogle] also reads it, to
- *   avoid overwriting a returning user's profile.
+ * @param userProfileRepository read and conditionally written on every sign-in,
+ *   so a session always has a `users/{uid}` record behind it. Not written by
+ *   [createAccount]: sign-up's own write is the atomic one in
+ *   [UserProfileRepository.finalizeSignUp].
  */
 class FirebaseAuthRepository(
     private val auth: FirebaseAuth,
     private val userProfileRepository: UserProfileRepository
 ) : AuthRepository {
 
+    /**
+     * Signs in and makes sure a profile record exists, the same way
+     * [signInWithGoogle] does.
+     *
+     * An email account can legitimately have no `users/{uid}` record: one made
+     * in the Console has never had one, and one whose sign-up write failed lost
+     * the race to it. Those users used to sign in to a Profile tab with no name
+     * and no email at all. The write is conditional and its failure is ignored
+     * - see [GoogleProfileProvisioning].
+     */
     override suspend fun login(email: String, password: String): Result<User> = authResult {
         val signedIn = auth.signInWithEmailAndPassword(email.trim(), password).await()
-        (signedIn.user ?: throw AuthError.NotSignedIn).toUser()
+        val user = (signedIn.user ?: throw AuthError.NotSignedIn).toUser()
+
+        // Result deliberately ignored - see GoogleProfileProvisioning.ensureProfile.
+        GoogleProfileProvisioning.ensureProfile(userProfileRepository, user, isNewUser = false)
+
+        user
     }
 
     /**
-     * Creates the account, stores [name] as the Firebase display name so
-     * [currentUser] can return it without a database read, then writes the
-     * profile. A failed profile write fails the whole call: the account exists
-     * at that point, but reporting success would hide a half-made account.
+     * Creates the account and stores [name] as the Firebase display name, so
+     * [currentUser] can return it without a database read.
+     *
+     * Writes nothing to the database - see [AuthRepository.createAccount] for
+     * why that is split out.
      */
-    override suspend fun register(
+    override suspend fun createAccount(
         name: String,
-        location: String,
         email: String,
         password: String
     ): Result<User> = authResult {
@@ -53,24 +68,16 @@ class FirebaseAuthRepository(
         val firebaseUser = created.user ?: throw AuthError.NotSignedIn
 
         val displayName = name.trim()
-        val trimmedLocation = location.trim()
 
         firebaseUser.updateProfile(
             UserProfileChangeRequest.Builder().setDisplayName(displayName).build()
         ).await()
 
-        userProfileRepository.saveProfile(
-            uid = firebaseUser.uid,
-            name = displayName,
-            email = firebaseUser.email.orEmpty(),
-            location = trimmedLocation
-        ).getOrThrow()
-
         User(
             id = firebaseUser.uid,
             name = displayName,
             email = firebaseUser.email.orEmpty(),
-            location = trimmedLocation
+            location = ""
         )
     }
 

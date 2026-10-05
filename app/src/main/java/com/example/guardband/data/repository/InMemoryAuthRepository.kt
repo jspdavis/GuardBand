@@ -23,9 +23,13 @@ class InMemoryAuthRepository : AuthRepository {
         return Result.success(match)
     }
 
-    override suspend fun register(
+    /**
+     * Stores the user with an empty location, matching
+     * [FirebaseAuthRepository.createAccount]: the location is part of the
+     * profile record, which this call no longer writes.
+     */
+    override suspend fun createAccount(
         name: String,
-        location: String,
         email: String,
         password: String
     ): Result<User> {
@@ -34,7 +38,7 @@ class InMemoryAuthRepository : AuthRepository {
             return Result.failure(AuthError.EmailAlreadyInUse)
         }
         val newUser = InMemoryStore.addUser(
-            User(name = name.trim(), email = email.trim(), location = location.trim()),
+            User(name = name.trim(), email = email.trim(), location = ""),
             password
         )
         InMemoryStore.setSession(newUser.id)

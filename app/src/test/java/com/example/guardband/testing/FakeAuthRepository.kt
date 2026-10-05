@@ -14,14 +14,14 @@ import com.example.guardband.data.repository.AuthRepository
  */
 class FakeAuthRepository(
     var loginResult: Result<User> = Result.success(DEFAULT_USER),
-    var registerResult: Result<User> = Result.success(DEFAULT_USER),
+    var createAccountResult: Result<User> = Result.success(DEFAULT_USER),
     var sendPasswordResetResult: Result<Unit> = Result.success(Unit),
     var signInWithGoogleResult: Result<GoogleSignInOutcome> = Result.success(RETURNING_GOOGLE_USER),
     private var signedIn: Boolean = false
 ) : AuthRepository {
 
     var loginCalls = 0; private set
-    var registerCalls = 0; private set
+    var createAccountCalls = 0; private set
     var sendPasswordResetCalls = 0; private set
     var signInWithGoogleCalls = 0; private set
     var signOutCalls = 0; private set
@@ -29,23 +29,27 @@ class FakeAuthRepository(
     /** The token of the last [signInWithGoogle] call, so a test can assert it was forwarded. */
     var lastGoogleIdToken: String? = null; private set
 
-    /** Arguments of the last [register] call, so a test can assert what was forwarded. */
-    var lastRegisterArgs: List<String> = emptyList(); private set
+    /** Arguments of the last [createAccount] call, so a test can assert what was forwarded. */
+    var lastCreateAccountArgs: List<String> = emptyList(); private set
 
     override suspend fun login(email: String, password: String): Result<User> {
         loginCalls++
         return loginResult
     }
 
-    override suspend fun register(
+    /**
+     * Signs the new user in on success, like Firebase does, so the caller's
+     * follow-up write can read the uid off [currentUser].
+     */
+    override suspend fun createAccount(
         name: String,
-        location: String,
         email: String,
         password: String
     ): Result<User> {
-        registerCalls++
-        lastRegisterArgs = listOf(name, location, email, password)
-        return registerResult
+        createAccountCalls++
+        lastCreateAccountArgs = listOf(name, email, password)
+        if (createAccountResult.isSuccess) signedIn = true
+        return createAccountResult
     }
 
     override suspend fun signInWithGoogle(idToken: String): Result<GoogleSignInOutcome> {

@@ -20,6 +20,18 @@
         android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
         android:textColor="@color/text_primary" />
 
+    <!-- DESIGN: Jul -->
+    <TextView
+        android:id="@+id/contacts_min_notice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+        android:textColor="@color/text_secondary"
+        android:visibility="gone"
+        tools:text="1 of 3 minimum"
+        tools:visibility="visible" />
+
     <ProgressBar
         android:id="@+id/progress_contacts"
         android:layout_width="wrap_content"
@@ -48,5 +60,13 @@
         android:paddingBottom="16dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         tools:listitem="@layout/item_contact" />
+
+    <!-- DESIGN: Jul -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/contacts_add_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="@string/btn_add_contact" />
 
 </LinearLayout>
