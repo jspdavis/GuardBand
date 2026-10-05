@@ -27,6 +27,17 @@ sealed class AuthError : Exception() {
 
     object EmailAlreadyInUse : AuthError()
 
+    /**
+     * The email already has an account created with a different provider, so
+     * the credential just offered cannot sign in to it.
+     *
+     * Kept separate from [EmailAlreadyInUse] because the two need different
+     * wording: this one is a returning user picking the wrong button, not
+     * someone registering an address that is taken. The message for it must
+     * stay neutral and must not name the other provider.
+     */
+    object AccountExistsWithDifferentCredential : AuthError()
+
     /** Rejected by Firebase's own minimum (6 characters); [InputValidator] asks for 8 first. */
     object WeakPassword : AuthError()
 

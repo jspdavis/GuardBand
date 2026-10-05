@@ -1,5 +1,6 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.model.GoogleSignInOutcome
 import com.example.guardband.data.model.User
 import kotlinx.coroutines.delay
 
@@ -38,6 +39,21 @@ class InMemoryAuthRepository : AuthRepository {
         )
         InMemoryStore.setSession(newUser.id)
         return Result.success(newUser)
+    }
+
+    /**
+     * Not supported: there is no Google to talk to without Firebase, and no
+     * useful way to fake an ID token exchange here.
+     *
+     * Returns [AuthError.Unknown] rather than throwing, so a caller that wires
+     * this double in degrades to "could not sign in" instead of crashing. The
+     * Google path is covered by
+     * [FakeAuthRepository][com.example.guardband.testing.FakeAuthRepository],
+     * which lets a test name the exact outcome it wants.
+     */
+    override suspend fun signInWithGoogle(idToken: String): Result<GoogleSignInOutcome> {
+        delay(InMemoryStore.SIMULATED_DELAY_MS)
+        return Result.failure(AuthError.Unknown(null))
     }
 
     /**

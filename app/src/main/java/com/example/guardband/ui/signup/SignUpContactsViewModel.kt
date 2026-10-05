@@ -103,7 +103,12 @@ class SignUpContactsViewModel(
 
     /** Wording for an [AuthError]. Never shows the exception text. */
     private fun messageFor(error: Throwable): String = when (error) {
-        AuthError.EmailAlreadyInUse -> MSG_EMAIL_IN_USE
+        // Both mean "pick another address": one is taken by a password account,
+        // the other by a Google one. Sign-up does not need to tell them apart,
+        // and saying which provider owns it would leak who has an account.
+        AuthError.EmailAlreadyInUse,
+        AuthError.AccountExistsWithDifferentCredential -> MSG_EMAIL_IN_USE
+
         AuthError.InvalidEmail -> MSG_EMAIL_INVALID
 
         // Only reachable if Firebase's rule is ever stricter than ours.

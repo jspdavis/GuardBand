@@ -32,8 +32,12 @@ internal object FirebaseAuthErrorMapper {
         "ERROR_USER_NOT_FOUND" -> AuthError.NoSuchUser
         "ERROR_USER_DISABLED" -> AuthError.UserDisabled
 
-        "ERROR_EMAIL_ALREADY_IN_USE",
-        "ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL" -> AuthError.EmailAlreadyInUse
+        "ERROR_EMAIL_ALREADY_IN_USE" -> AuthError.EmailAlreadyInUse
+
+        // Its own error, not EmailAlreadyInUse: it means "that address signs in
+        // another way", which reads differently from "that address is taken".
+        "ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL" ->
+            AuthError.AccountExistsWithDifferentCredential
 
         "ERROR_WEAK_PASSWORD" -> AuthError.WeakPassword
         "ERROR_INVALID_EMAIL" -> AuthError.InvalidEmail

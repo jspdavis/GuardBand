@@ -1,5 +1,6 @@
 package com.example.guardband.testing
 
+import com.example.guardband.data.model.GoogleSignInOutcome
 import com.example.guardband.data.model.User
 import com.example.guardband.data.repository.AuthRepository
 
@@ -15,13 +16,18 @@ class FakeAuthRepository(
     var loginResult: Result<User> = Result.success(DEFAULT_USER),
     var registerResult: Result<User> = Result.success(DEFAULT_USER),
     var sendPasswordResetResult: Result<Unit> = Result.success(Unit),
+    var signInWithGoogleResult: Result<GoogleSignInOutcome> = Result.success(RETURNING_GOOGLE_USER),
     private var signedIn: Boolean = false
 ) : AuthRepository {
 
     var loginCalls = 0; private set
     var registerCalls = 0; private set
     var sendPasswordResetCalls = 0; private set
+    var signInWithGoogleCalls = 0; private set
     var signOutCalls = 0; private set
+
+    /** The token of the last [signInWithGoogle] call, so a test can assert it was forwarded. */
+    var lastGoogleIdToken: String? = null; private set
 
     /** Arguments of the last [register] call, so a test can assert what was forwarded. */
     var lastRegisterArgs: List<String> = emptyList(); private set
@@ -40,6 +46,12 @@ class FakeAuthRepository(
         registerCalls++
         lastRegisterArgs = listOf(name, location, email, password)
         return registerResult
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): Result<GoogleSignInOutcome> {
+        signInWithGoogleCalls++
+        lastGoogleIdToken = idToken
+        return signInWithGoogleResult
     }
 
     override suspend fun sendPasswordReset(email: String): Result<Unit> {
@@ -63,5 +75,11 @@ class FakeAuthRepository(
             email = "test@guardband.com",
             location = ""
         )
+
+        /** A Google sign-in that found an existing account: routes to Home. */
+        val RETURNING_GOOGLE_USER = GoogleSignInOutcome(user = DEFAULT_USER, isNewUser = false)
+
+        /** A Google sign-in that just created the account: routes to complete-profile. */
+        val NEW_GOOGLE_USER = GoogleSignInOutcome(user = DEFAULT_USER, isNewUser = true)
     }
 }

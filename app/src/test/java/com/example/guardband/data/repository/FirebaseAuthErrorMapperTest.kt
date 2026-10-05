@@ -30,16 +30,25 @@ class FirebaseAuthErrorMapperTest {
     }
 
     @Test
+    fun `a provider collision is its own error, not EmailAlreadyInUse`() {
+        assertEquals(
+            AuthError.AccountExistsWithDifferentCredential,
+            FirebaseAuthErrorMapper.fromCode("ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL")
+        )
+        // The two must stay distinct: Google sign-in words them differently.
+        assertEquals(
+            AuthError.EmailAlreadyInUse,
+            FirebaseAuthErrorMapper.fromCode("ERROR_EMAIL_ALREADY_IN_USE")
+        )
+    }
+
+    @Test
     fun `maps the remaining documented codes`() {
         assertEquals(AuthError.NoSuchUser, FirebaseAuthErrorMapper.fromCode("ERROR_USER_NOT_FOUND"))
         assertEquals(AuthError.UserDisabled, FirebaseAuthErrorMapper.fromCode("ERROR_USER_DISABLED"))
         assertEquals(
             AuthError.EmailAlreadyInUse,
             FirebaseAuthErrorMapper.fromCode("ERROR_EMAIL_ALREADY_IN_USE")
-        )
-        assertEquals(
-            AuthError.EmailAlreadyInUse,
-            FirebaseAuthErrorMapper.fromCode("ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL")
         )
         assertEquals(AuthError.WeakPassword, FirebaseAuthErrorMapper.fromCode("ERROR_WEAK_PASSWORD"))
         assertEquals(AuthError.InvalidEmail, FirebaseAuthErrorMapper.fromCode("ERROR_INVALID_EMAIL"))

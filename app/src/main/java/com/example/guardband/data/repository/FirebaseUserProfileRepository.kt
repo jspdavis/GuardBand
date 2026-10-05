@@ -47,6 +47,16 @@ class FirebaseUserProfileRepository(
             Result.failure(FirebaseAuthErrorMapper.map(e))
         }
 
+    override suspend fun profileExists(uid: String): Result<Boolean> =
+        try {
+            val snapshot = database.getReference(NODE_USERS).child(uid).get().await()
+            Result.success(snapshot.exists())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(FirebaseAuthErrorMapper.map(e))
+        }
+
     companion object {
         private const val NODE_USERS = "users"
         private const val FIELD_NAME = "name"

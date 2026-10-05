@@ -18,4 +18,13 @@ interface UserProfileRepository {
         email: String,
         location: String
     ): Result<Unit>
+
+    /**
+     * True when a profile record exists at `users/{uid}`.
+     *
+     * Exists so Google sign-in can avoid overwriting the profile of a
+     * returning user: [saveProfile] replaces the whole record, which would
+     * wipe a location the user had already set.
+     */
+    suspend fun profileExists(uid: String): Result<Boolean>
 }

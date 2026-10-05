@@ -1,14 +1,17 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.model.GoogleSignInOutcome
 import com.example.guardband.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
 
 /**
- * [AuthRepository] on Firebase Authentication (email + password).
+ * [AuthRepository] on Firebase Authentication: email + password, plus
+ * Google via [signInWithGoogle].
  *
  * The session is [FirebaseAuth.getCurrentUser], which the SDK persists, so it
  * survives process death — unlike the in-memory session this replaces. That
@@ -21,7 +24,8 @@ import kotlinx.coroutines.tasks.await
  *   [FirebaseProvider][com.example.guardband.data.FirebaseProvider].
  * @param userProfileRepository writes `users/{uid}` after a successful sign-up.
  *   Injected rather than called from the ViewModel so that one repository call
- *   still means one completed sign-up.
+ *   still means one completed sign-up. [signInWithGoogle] also reads it, to
+ *   avoid overwriting a returning user's profile.
  */
 class FirebaseAuthRepository(
     private val auth: FirebaseAuth,
@@ -68,6 +72,27 @@ class FirebaseAuthRepository(
             email = firebaseUser.email.orEmpty(),
             location = trimmedLocation
         )
+    }
+
+    /**
+     * Signs in with a Google ID token and makes sure a profile record exists.
+     *
+     * Unlike [register], a failed profile write does **not** fail the call: the
+     * session already exists by then, so reporting a failure would leave the
+     * user signed in and staring at an error. [GoogleProfileProvisioning] holds
+     * that rule and the reason the write is conditional.
+     */
+    override suspend fun signInWithGoogle(idToken: String): Result<GoogleSignInOutcome> = authResult {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        val signedIn = auth.signInWithCredential(credential).await()
+        val firebaseUser = signedIn.user ?: throw AuthError.NotSignedIn
+        val isNewUser = signedIn.additionalUserInfo?.isNewUser == true
+
+        val user = firebaseUser.toUser()
+        // Result deliberately ignored - see GoogleProfileProvisioning.ensureProfile.
+        GoogleProfileProvisioning.ensureProfile(userProfileRepository, user, isNewUser)
+
+        GoogleSignInOutcome(user = user, isNewUser = isNewUser)
     }
 
     override suspend fun sendPasswordReset(email: String): Result<Unit> = authResult {

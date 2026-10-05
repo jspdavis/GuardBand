@@ -1,5 +1,6 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.model.GoogleSignInOutcome
 import com.example.guardband.data.model.User
 
 /**
@@ -25,6 +26,23 @@ interface AuthRepository {
      * [name] and [location] come from sign-up steps 1 and 2.
      */
     suspend fun register(name: String, location: String, email: String, password: String): Result<User>
+
+    /**
+     * Exchanges a Google ID token for a Firebase session.
+     *
+     * [idToken] is obtained in the UI layer by
+     * [GoogleIdTokenProvider][com.example.guardband.ui.auth.GoogleIdTokenProvider],
+     * because Credential Manager needs an Activity. This layer only ever sees
+     * the token string, never a Credential Manager type.
+     *
+     * The returned [GoogleSignInOutcome.isNewUser] tells the caller whether the
+     * account was just created, so the UI can route a first-time user through
+     * the remaining sign-up steps.
+     *
+     * Fails with [AuthError.AccountExistsWithDifferentCredential] when the
+     * address already has an account made with another provider.
+     */
+    suspend fun signInWithGoogle(idToken: String): Result<GoogleSignInOutcome>
 
     /**
      * Asks Firebase to email a password-reset link.
