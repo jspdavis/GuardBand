@@ -15,6 +15,8 @@ coroutines = "1.9.0"
 fragment = "1.8.2"
 recyclerview = "1.3.2"
 firebaseBom = "32.8.1"
+credentials = "1.3.0"
+googleid = "1.1.1"
 robolectric = "4.12.2"
 
 [libraries]
@@ -39,6 +41,15 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 firebase-database = { group = "com.google.firebase", name = "firebase-database" }
+
+# Google sign-in - Credential Manager with Google ID tokens, never the legacy
+# GoogleSignIn API. These are the newest versions that still build against
+# compileSdk 34: credentials 1.5.0+ and googleid 1.2.0+ both declare
+# minCompileSdk 35. credentials-play-services-auth has a strict constraint on
+# credentials [1.3.0], so the two share one version ref and must move together.
+androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
+googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 
 # await() for Firebase's Task<T>, so repositories can stay suspend functions
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }

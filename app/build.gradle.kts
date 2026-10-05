@@ -70,6 +70,14 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.database)
 
+    // Google sign-in - Credential Manager with Google ID tokens. The legacy
+    // GoogleSignIn API is deliberately not used. credentials-play-services-auth
+    // pulls in play-services-auth transitively as its backend provider; no code
+    // imports it.
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+
     // await() on Firebase's Task<T>, so the repositories stay suspend functions
     implementation(libs.kotlinx.coroutines.play.services)
 
