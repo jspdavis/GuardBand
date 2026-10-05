@@ -43,19 +43,21 @@ View ↔ ViewModel ↔ Repository. Pre-auth screens are Activities. After login,
 ```
 com/example/guardband/
 ├── data/
-│   ├── model/            User, EmergencyContact, Alert (+ AlertType) (plain data classes; no passwords)
+│   ├── model/            User, EmergencyContact, Alert (+ AlertType), GoogleSignInOutcome (plain data classes; no passwords)
 │   ├── repository/       AuthRepository, ContactRepository (suspend, Result<T>)
 │   │                     AlertRepository (Flow<Result<T>>, live reads)
 │   │                     UserProfileRepository (writes users/{uid})
 │   │                     AuthError + FirebaseAuthErrorMapper (typed auth failures)
+│   │                     GoogleProfileProvisioning (when Google sign-in may write users/{uid})
 │   │                     Firebase* = live; InMemory* + InMemoryStore = test doubles
 │   ├── DeviceConstants.kt      DEFAULT_DEVICE_ID = "guardband-001" (until pairing exists)
 │   ├── FirebaseProvider.kt     the one FirebaseAuth / FirebaseDatabase instance
 │   └── RepositoryProvider.kt   manual wiring; swap implementations here
 ├── ui/
 │   ├── splash/         Splash → Home if signed in, else Login (2 s countdown)
-│   ├── login/
-│   ├── signup/         Name → Location → Contacts
+│   ├── auth/           GoogleIdTokenProvider + GoogleIdTokenResult (the only androidx.credentials users)
+│   ├── login/          email + password, and "Continue with Google"
+│   ├── signup/         Name → Location → Contacts; Location → Contacts in complete-profile mode
 │   ├── forgot/         Request → Sent (Firebase emails the link; no OTP screens)
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
@@ -95,11 +97,11 @@ Conventions (copy `ui/login/*` as the reference):
   - A pushed screen's back arrow calls `requireActivity().onBackPressedDispatcher.onBackPressed()`.
 - **Lists** use `ListAdapter` + `DiffUtil` with `findViewById` in the ViewHolder (`ContactAdapter`, `AlertHistoryAdapter`).
 
-Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with Analytics, **Auth** and Database. Tests add kotlinx-coroutines-test and Robolectric. OkHttp stays `debugImplementation`. Everything except CardView now lives in `gradle/libs.versions.toml`. README also lists Credentials/googleid for Google sign-in, which is **not** declared — Google sign-in is not implemented.
+Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with Analytics, **Auth** and Database. Tests add kotlinx-coroutines-test and Robolectric. OkHttp stays `debugImplementation`. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
 
 ## Firebase
 
-Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cloud Functions). Auth is **email + password**; Google sign-in is not implemented.
+Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cloud Functions). Auth is **email + password** and **Google** (see "Google sign-in" below).
 
 - **Firebase calls live only in repository classes.** No Firebase import belongs in an Activity, Fragment or ViewModel. `FirebaseProvider` owns the single `FirebaseAuth` and `FirebaseDatabase`; `FirebaseDatabase.getInstance()` takes the URL from `google-services.json`, so never hardcode it.
 - **The session is `FirebaseAuth.currentUser`,** which the SDK persists, so it survives process death. `currentUser()` is synchronous and safe in a ViewModel's constructor, but it can only fill `id`, `name` (the Firebase display name, set at sign-up) and `email` — **`location` is always empty**, because it lives at `users/{uid}` and needs an async read. Profile and Track therefore show "Location not set" until that read exists.
@@ -109,6 +111,34 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 - **No PII in logs.** Never log a uid, an email, a token or Firebase error text.
 - **Never overwrite `app/google-services.json` from another branch,** and don't touch it, `.firebaserc` or any signing config as a side effect of other work.
 - **The `users/{uid}` Security Rules are not deployed.** The proposal in the Prompt 08 report still has to be merged with the existing `devices/` rules in the Console, by hand.
+
+## Google sign-in
+
+**Credential Manager only.** The legacy `GoogleSignIn` / `play-services-auth` sign-in API is never used. `play-services-auth` is on the classpath solely because `credentials-play-services-auth` needs it as its backend provider; nothing imports it. Do not copy the Google sign-in code, the `default_web_client_id` placeholder or `play-services-auth` from `mvp-checkpoint-local-backup` — that branch uses the legacy API.
+
+**The token flow has three layers, and each one knows the least it can:**
+
+1. **Activity layer.** `ui/auth/GoogleIdTokenProvider` is the *only* class in the app that touches `androidx.credentials`. Credential Manager renders a sheet, so it needs an Activity context — which is exactly why a ViewModel must not own it. It returns a typed `GoogleIdTokenResult`: `Success(idToken)`, `Cancelled`, `NoGoogleAccount`, `Unavailable`, `Network` or `Unknown`. It never swallows an exception into null, and it rethrows `CancellationException`.
+2. **ViewModel.** Receives nothing but the token string (`onGoogleIdToken`) or a `GoogleIdTokenResult` (`onGoogleError`). No Context, no Credential Manager type. `Cancelled` is **silent** — the user dismissed the sheet on purpose and does not need to be told.
+3. **Repository.** `AuthRepository.signInWithGoogle(idToken)` exchanges it with Firebase via `GoogleAuthProvider.getCredential(idToken, null)` + `signInWithCredential`, and returns a `GoogleSignInOutcome(user, isNewUser)`.
+
+**`default_web_client_id` is generated**, not written. The Google Services plugin derives it from the web (`client_type: 3`) `oauth_client` entry in `google-services.json` and emits it into `app/build/generated/res/processDebugGoogleServices/values/values.xml`. Never hardcode a client ID, and never commit one to a source file.
+
+**Every developer must register their own debug SHA-1** in the Firebase Console, then download the regenerated `google-services.json`. Google sign-in fails on an unregistered machine even though the app builds fine — the signing certificate is part of what Google checks. The release keystore's SHA-1 has to be added before any signed build. (`google-services.json` currently holds one Android `oauth_client` entry with one certificate hash.)
+
+**`setFilterByAuthorizedAccounts(false)`** on `GetGoogleIdOption`, so the chooser offers every account on the device. With it true a first-time user is shown an empty sheet.
+
+**Routing:** `isNewUser` decides. A returning user goes to Home. A first-time user goes through the remaining sign-up steps (location, emergency contact) in **complete-profile mode** — `SignUpLocationActivity` and `SignUpContactsActivity` carry `EXTRA_COMPLETE_PROFILE`, the credential fields are hidden, nothing is validated against them, and `saveProfile` finishes `users/{uid}` instead of `register` creating an account. In that mode the uid and email come from the **live session**, never from the Intent extras, so a stale extra cannot write to the wrong record.
+
+**The profile write is conditional.** `saveProfile` replaces the whole `users/{uid}` record, so writing it on every Google sign-in would wipe a location the user had already set. `GoogleProfileProvisioning` writes only when the account was just created or the record is confirmed absent; a *failed* existence read writes nothing, because it cannot tell "absent" from "unreachable". A failed write does **not** fail the sign-in — the session already exists by then.
+
+**Error wording stays neutral.** `ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL` maps to its own `AuthError.AccountExistsWithDifferentCredential`, shown as "This email uses a different sign-in method." It must not name the other provider: saying "that address uses a password" confirms the account exists, which is the whole thing the shared invalid-credentials message exists to prevent.
+
+**Log out clears the credential state.** `SettingsFragment` calls `GoogleIdTokenProvider.clearCredentialState()` before navigating, so the chooser reappears instead of silently reusing the last account. It is bounded by a 2 s timeout and its failures are ignored — the user is already signed out of Firebase, so nothing may keep them on that screen. `HomeViewModel`'s failed auth gate does **not** clear it: that is a dead session, not a user logging out.
+
+**Never log a token**, an account name or an email, here or anywhere else.
+
+**Not covered by tests:** the Firebase exchange inside `signInWithGoogle` and `GoogleIdTokenProvider` itself. Both need a real `FirebaseAuth` / Credential Manager, and the project declares no mocking library. The testable logic was extracted instead — `GoogleProfileProvisioning` for the write rule, the ViewModels for routing and wording.
 
 ## Firebase data contract
 
