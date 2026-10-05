@@ -144,7 +144,7 @@ class SignUpContactsViewModel(
         contactRepository.addContact(
             EmergencyContact(
                 name = name.trim(),
-                phoneNumber = phone.trim(),
+                phone = phone.trim(),
                 relationship = relationship.trim()
             )
         )

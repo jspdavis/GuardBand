@@ -40,7 +40,7 @@ class ContactAdapter(
             tvName.text = contact.name
             tvRelationship.text = contact.relationship
             tvRelationship.visibility = if (contact.relationship.isBlank()) View.GONE else View.VISIBLE
-            tvPhone.text = contact.phoneNumber
+            tvPhone.text = contact.phone
             ibDelete.setOnClickListener { onDeleteClicked(contact) }
         }
     }
