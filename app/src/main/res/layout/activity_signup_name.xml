@@ -65,6 +65,20 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/til_signup_name" />
 
+    <!-- Continue with Google. Endpoint only: Google's own button branding is
+         Jul's. Note the "Step 1 of 3" indicator above does not apply to this
+         path - Google skips straight to location. -->
+    <!-- DESIGN: Jul -->
+    <Button
+        android:id="@+id/signup_google_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/btn_continue_google"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_signup_name_next" />
+
     <!-- Progress indicator -->
     <ProgressBar
         android:id="@+id/progress_signup_name"
@@ -74,6 +88,6 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_signup_name_next" />
+        app:layout_constraintTop_toBottomOf="@id/signup_google_button" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

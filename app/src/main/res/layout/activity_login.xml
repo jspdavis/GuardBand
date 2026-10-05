@@ -99,6 +99,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_login_forgot" />
 
+    <!-- Continue with Google. Endpoint only: Google's own button branding
+         (mark, typography, min width, light/dark variants) is Jul's. -->
+    <!-- DESIGN: Jul -->
+    <Button
+        android:id="@+id/login_google_button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/btn_continue_google"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_login" />
+
     <!-- Progress indicator -->
     <ProgressBar
         android:id="@+id/progress_login"
@@ -108,7 +121,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_login" />
+        app:layout_constraintTop_toBottomOf="@id/login_google_button" />
 
     <!-- Sign-up CTA -->
     <TextView

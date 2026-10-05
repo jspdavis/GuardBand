@@ -16,13 +16,28 @@ import kotlinx.coroutines.launch
 /**
  * Sign-Up Step 2 — user sets their city / region.
  *
- * Receives: [EXTRA_NAME] from SignUpNameActivity.
+ * Receives: [EXTRA_NAME] from SignUpNameActivity, or [EXTRA_NAME],
+ * [EXTRA_EMAIL] and [EXTRA_COMPLETE_PROFILE] from LoginActivity after a
+ * first-time Google sign-in.
+ *
+ * In complete-profile mode the account already exists, so this is the first
+ * step the user sees and the step indicator in the layout no longer matches.
+ *
  * Flow: SignUpLocationActivity → SignUpContactsActivity
  */
 class SignUpLocationActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_NAME = "extra_name"
+
+        /** The Google address, in complete-profile mode only. */
+        const val EXTRA_EMAIL = "extra_email"
+
+        /**
+         * True when a Google sign-in already created the account, so the final
+         * step must save a profile instead of registering.
+         */
+        const val EXTRA_COMPLETE_PROFILE = "extra_complete_profile"
     }
 
     private lateinit var etLocation: EditText
@@ -30,19 +45,26 @@ class SignUpLocationActivity : AppCompatActivity() {
 
     private val viewModel: SignUpLocationViewModel by viewModels()
     private var userName: String = ""
+    private var userEmail: String = ""
+    private var completeProfile: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signup_location)
 
-        userName   = intent.getStringExtra(EXTRA_NAME) ?: ""
+        userName        = intent.getStringExtra(EXTRA_NAME) ?: ""
+        userEmail       = intent.getStringExtra(EXTRA_EMAIL) ?: ""
+        completeProfile = intent.getBooleanExtra(EXTRA_COMPLETE_PROFILE, false)
+
         etLocation = findViewById(R.id.et_signup_location)
         btnNext    = findViewById(R.id.btn_signup_location_next)
 
         btnNext.setOnClickListener {
             viewModel.onNextClicked(
-                name     = userName,
-                location = etLocation.text.toString()
+                name            = userName,
+                location        = etLocation.text.toString(),
+                email           = userEmail,
+                completeProfile = completeProfile
             )
         }
 
@@ -63,6 +85,11 @@ class SignUpLocationActivity : AppCompatActivity() {
                     Intent(this, SignUpContactsActivity::class.java).apply {
                         putExtra(SignUpContactsActivity.EXTRA_NAME, event.name)
                         putExtra(SignUpContactsActivity.EXTRA_LOCATION, event.location)
+                        putExtra(SignUpContactsActivity.EXTRA_EMAIL, event.email)
+                        putExtra(
+                            SignUpContactsActivity.EXTRA_COMPLETE_PROFILE,
+                            event.completeProfile
+                        )
                     }
                 )
         }

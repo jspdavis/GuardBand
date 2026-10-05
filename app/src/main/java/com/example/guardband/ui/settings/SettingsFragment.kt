@@ -13,17 +13,25 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
+import com.example.guardband.ui.auth.GoogleIdTokenProvider
 import com.example.guardband.ui.login.LoginActivity
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Settings, pushed inside the Home host (the bottom bar stays visible with no
  * tab selected). The back arrow goes through the Activity's Back handling,
  * which returns to the last tab.
+ *
+ * Log Out also clears the Credential Manager state, so the Google account
+ * chooser appears again on the next sign-in instead of silently reusing the
+ * last account. That call needs a Context, so it lives here rather than in the
+ * ViewModel.
  */
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private val viewModel: SettingsViewModel by viewModels { SettingsViewModel.Factory }
+    private val googleIdTokenProvider by lazy { GoogleIdTokenProvider(requireActivity()) }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -54,12 +62,34 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             is SettingsEvent.ShowMessage ->
                 Toast.makeText(requireContext(), event.text, Toast.LENGTH_SHORT).show()
 
-            SettingsEvent.NavigateToLogin ->
-                startActivity(
-                    Intent(requireContext(), LoginActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    }
-                )
+            SettingsEvent.NavigateToLogin -> clearCredentialsThenGoToLogin()
         }
+    }
+
+    /**
+     * Forgets the stored Google account, then goes to Login with the back
+     * stack cleared.
+     *
+     * The clear is bounded by [CLEAR_CREDENTIALS_TIMEOUT_MS] and its failures
+     * are swallowed inside the provider: the user has already been signed out
+     * of Firebase by this point, so nothing here may keep them on this screen.
+     * Worst case the chooser remembers the account, which is a nuisance, not a
+     * lock-in.
+     */
+    private fun clearCredentialsThenGoToLogin() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            withTimeoutOrNull(CLEAR_CREDENTIALS_TIMEOUT_MS) {
+                googleIdTokenProvider.clearCredentialState()
+            }
+            startActivity(
+                Intent(requireContext(), LoginActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+            )
+        }
+    }
+
+    private companion object {
+        const val CLEAR_CREDENTIALS_TIMEOUT_MS = 2_000L
     }
 }

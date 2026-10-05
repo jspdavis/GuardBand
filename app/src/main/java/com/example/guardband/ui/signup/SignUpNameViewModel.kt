@@ -27,6 +27,11 @@ class SignUpNameViewModel : ViewModel() {
         _events.trySend(SignUpNameEvent.NavigateToLocation(name.trim()))
     }
 
+    /** "Continue with Google" on the sign-up entry screen. */
+    fun onGoogleSignInClicked() {
+        _events.trySend(SignUpNameEvent.NavigateToGoogleSignIn)
+    }
+
     companion object {
         const val MSG_NAME_REQUIRED = "Please enter your full name."
     }

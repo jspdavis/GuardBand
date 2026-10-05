@@ -11,6 +11,9 @@
     <string name="btn_signup">Create an account</string>
     <string name="btn_forgot">Forgot password?</string>
 
+    <!-- Google sign-in. Wording only; Google's button branding is Jul's. -->
+    <string name="btn_continue_google">Continue with Google</string>
+
     <!-- Sign Up – Name -->
     <string name="label_signup_name_title">What\'s your name?</string>
     <string name="hint_full_name">Full name</string>
