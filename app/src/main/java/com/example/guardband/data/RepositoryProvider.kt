@@ -4,22 +4,21 @@ import com.example.guardband.data.repository.AlertRepository
 import com.example.guardband.data.repository.AuthRepository
 import com.example.guardband.data.repository.ContactRepository
 import com.example.guardband.data.repository.FirebaseAuthRepository
+import com.example.guardband.data.repository.FirebaseContactRepository
 import com.example.guardband.data.repository.FirebaseUserProfileRepository
 import com.example.guardband.data.repository.InMemoryAlertRepository
-import com.example.guardband.data.repository.InMemoryContactRepository
 import com.example.guardband.data.repository.UserProfileRepository
 
 /**
  * Manual wiring for repositories (no DI framework).
  *
- * Auth and the user profile are on Firebase. Contacts and alerts are still
- * in-memory: contacts move to the Realtime Database in Prompt 09, alerts when
- * the band's `devices/{deviceId}` reader lands.
+ * Auth, the user profile and contacts are on Firebase. Alerts are the last
+ * in-memory one; they move when the band's `devices/{deviceId}` reader lands.
  *
- * [InMemoryAuthRepository][com.example.guardband.data.repository.InMemoryAuthRepository]
- * stays in the codebase as the unit-test double and is deliberately not wired
- * here. Firebase instances come from [FirebaseProvider], so this object has no
- * Firebase imports of its own.
+ * The InMemory* implementations of auth and contacts stay in the codebase as
+ * the unit-test doubles and are deliberately not wired here. Firebase instances
+ * come from [FirebaseProvider], so this object has no Firebase imports of its
+ * own.
  */
 object RepositoryProvider {
 
@@ -31,7 +30,9 @@ object RepositoryProvider {
         FirebaseAuthRepository(FirebaseProvider.auth, userProfileRepository)
     }
 
-    val contactRepository: ContactRepository by lazy { InMemoryContactRepository() }
+    val contactRepository: ContactRepository by lazy {
+        FirebaseContactRepository(FirebaseProvider.database, FirebaseProvider.auth)
+    }
 
     val alertRepository: AlertRepository by lazy {
         InMemoryAlertRepository(DeviceConstants.DEFAULT_DEVICE_ID)

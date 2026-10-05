@@ -77,6 +77,7 @@
     <string name="btn_delete">Delete</string>
     <string name="btn_cancel">Cancel</string>
     <string name="btn_save">Save</string>
+    <string name="btn_retry">Retry</string>
     <string name="cd_edit_contact">Edit contact</string>
     <!-- %1$d is how many contacts the user has, %2$d the minimum asked for. -->
     <string name="label_contacts_min_notice">%1$d of %2$d minimum</string>

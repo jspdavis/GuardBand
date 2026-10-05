@@ -28,16 +28,21 @@ import kotlinx.coroutines.launch
  * emergency contact are saved.
  * View ids: et_signup_contacts_email, et_signup_contacts_password,
  * et_contact_name, et_contact_phone, et_contact_relationship,
- * btn_signup_contacts_submit, progress_signup_contacts, the matching til_*
- * wrappers, and - hidden together in complete-profile mode -
- * til_signup_contacts_email, til_signup_contacts_password,
- * tv_signup_contacts_credentials_label,
+ * btn_signup_contacts_submit, btn_signup_contacts_retry,
+ * progress_signup_contacts, the matching til_* wrappers, and - hidden together
+ * in complete-profile mode - til_signup_contacts_email,
+ * til_signup_contacts_password, tv_signup_contacts_credentials_label,
  * divider_signup_contacts_credentials.
  *
  * Flow: SignUpContactsActivity → LoadingActivity → HomeActivity
  *
- * A single contact block is shown; list expansion can be implemented in a
- * follow-up iteration.
+ * Retry appears when the account was created but its profile write failed. It
+ * calls the same handler with the same arguments as Submit - the ViewModel's
+ * own guard is what makes the second call resume at the write instead of
+ * creating a second account.
+ *
+ * A single contact block is shown, and it is optional: the Contacts tab is
+ * where the user is asked to reach the minimum of three.
  */
 class SignUpContactsActivity : AppCompatActivity() {
 
@@ -58,6 +63,7 @@ class SignUpContactsActivity : AppCompatActivity() {
     private lateinit var etContactPhone: EditText
     private lateinit var etContactRelationship: EditText
     private lateinit var btnSubmit: Button
+    private lateinit var btnRetry: Button
     private lateinit var progressBar: ProgressBar
 
     /** Hidden as a group in complete-profile mode. */
@@ -84,6 +90,7 @@ class SignUpContactsActivity : AppCompatActivity() {
         etContactPhone        = findViewById(R.id.et_contact_phone)
         etContactRelationship = findViewById(R.id.et_contact_relationship)
         btnSubmit             = findViewById(R.id.btn_signup_contacts_submit)
+        btnRetry              = findViewById(R.id.btn_signup_contacts_retry)
         progressBar           = findViewById(R.id.progress_signup_contacts)
 
         credentialViews = listOf<View>(
@@ -93,17 +100,9 @@ class SignUpContactsActivity : AppCompatActivity() {
             findViewById(R.id.divider_signup_contacts_credentials)
         )
 
-        btnSubmit.setOnClickListener {
-            viewModel.onSubmitClicked(
-                name                = userName,
-                location            = userLocation,
-                email               = etEmail.text.toString(),
-                password            = etPassword.text.toString(),
-                contactName         = etContactName.text.toString(),
-                contactPhone        = etContactPhone.text.toString(),
-                contactRelationship = etContactRelationship.text.toString()
-            )
-        }
+        btnSubmit.setOnClickListener { submit() }
+        // Deliberately the same call: see the class KDoc.
+        btnRetry.setOnClickListener { submit() }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -117,9 +116,25 @@ class SignUpContactsActivity : AppCompatActivity() {
         }
     }
 
+    private fun submit() = viewModel.onSubmitClicked(
+        name                = userName,
+        location            = userLocation,
+        email               = etEmail.text.toString(),
+        password            = etPassword.text.toString(),
+        contactName         = etContactName.text.toString(),
+        contactPhone        = etContactPhone.text.toString(),
+        contactRelationship = etContactRelationship.text.toString()
+    )
+
     private fun render(state: SignUpContactsUiState) {
         progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
         btnSubmit.isEnabled = !state.isLoading
+
+        btnRetry.visibility = if (state.canRetry) View.VISIBLE else View.GONE
+        btnRetry.isEnabled = !state.isLoading
+        // Submit would only try to create the account a second time, which is
+        // the dead end the retry exists to avoid.
+        btnSubmit.visibility = if (state.canRetry) View.GONE else View.VISIBLE
 
         // GONE, not INVISIBLE: the section must not leave a gap in the
         // LinearLayout when the account already exists.

@@ -161,6 +161,19 @@
             android:layout_marginTop="28dp"
             android:text="@string/btn_submit" />
 
+        <!--
+          Shown only when the account exists but its profile write failed.
+          Re-runs the write; it never creates the account again.
+          DESIGN: Jul
+        -->
+        <Button
+            android:id="@+id/btn_signup_contacts_retry"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/btn_retry"
+            android:visibility="gone" />
+
         <!-- Progress indicator -->
         <ProgressBar
             android:id="@+id/progress_signup_contacts"
