@@ -167,6 +167,8 @@ Legend: ✅ works with (in-memory) data · 🟡 placeholder UI
 - ✅ **Live:** both lists update whenever the repository emits. A failed read keeps the last good data and shows a toast.
 - The latest card is an `<include>` of `item_alert.xml`, bound with the same `AlertHistoryAdapter.AlertViewHolder` the list uses.
 
+> **Superseded.** The Alert tab now reads Firebase, hides `TRACKING_UPDATE`, derives the card from history, and has an error/retry state. The latest card is its own block, not an `<include>`. See **[alert-data.md](alert-data.md)**. The type-colour and timestamp notes below are still accurate.
+
 Type colors:
 
 | Type | Label | Color token |
@@ -195,6 +197,8 @@ Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC 
 ---
 
 ## 6. Data layer
+
+> **Partly superseded.** The `Alert` model below is still accurate. Everything about `AlertRepository`, `InMemoryAlertRepository` and the alert wiring describes the in-memory version that **[alert-data.md](alert-data.md)** replaced. Contacts and the rest of this section are unaffected.
 
 ### `Alert` model, `data/model/Alert.kt`
 
@@ -331,9 +335,16 @@ class ExampleFragment : Fragment(R.layout.fragment_example) {
 
 ---
 
-## 10. Notes for the Firebase pass
+## 10. Notes for the Firebase pass — done
 
-Replacing `InMemoryAlertRepository` with a Firebase-backed one (adapting the checkpoint's `AlertRepository`) needs the following:
+**This pass has landed; see [alert-data.md](alert-data.md).** The notes are kept for the record, with what actually happened:
+
+- The `isCharging` mapper trap was **avoided**, not worked around: `AlertParser` reads the raw wire key, so Firebase's object mapper is never involved.
+- The history-ordering note below is **wrong** and was corrected. RTDB sorts integer-like keys numerically, so `orderByKey().limitToLast(n)` is correct and needs no index. Sorting by the `sequenceId` field in memory is still done, as a guard.
+- Errors are **not** `Exception("<user-facing text>")`. They are typed `AlertError`s mapped by `DatabaseError` code, with the wording held in the ViewModel.
+- The swap really was one line in `RepositoryProvider`, but the ViewModel did change — D1, D2 and D3 live there.
+
+Original notes:
 
 - **`isCharging` mapping:** Firebase's object mapper turns Kotlin's `isCharging` getter into the key `charging`. Annotate the field with `@get:PropertyName("isCharging") @set:PropertyName("isCharging")`, or map the snapshot by hand. Otherwise battery charging always reads `false`.
 - **`.get().await()`** needs `kotlinx-coroutines-play-services`, which isn't declared. Alternatively, use `callbackFlow` only, which the observe methods need anyway.
@@ -349,7 +360,7 @@ Replacing `InMemoryAlertRepository` with a Firebase-backed one (adapting the che
 - Placeholders: the map, the Check-in pill, the map buttons, all four Settings rows and the Notifications inbox.
 - The Track status pill is static. Deriving it from the latest alert (e.g. "Low battery · 20%") is a natural next step.
 - Contacts can't be added or edited from Home yet (FR-06).
-- Everything is in memory: data resets when the process dies, and the user is sent back to Login.
+- ~~Everything is in memory~~ — no longer true. Auth, profile, contacts and alerts are all on Firebase.
 - Fragments keep `lateinit` view references. That's safe here because hidden tab views are never destroyed while the host lives, but don't reuse the pattern with `replace()`.
 - The Figma wasn't available while building, so spacing and copy on Track, Settings and Notifications are approximations to check against it.
 
