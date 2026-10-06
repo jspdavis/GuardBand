@@ -70,8 +70,10 @@ class InputValidatorPhoneTest {
     }
 
     @Test
-    fun `a Philippine landline is accepted with its country code`() {
-        assertEquals("+6321234567", InputValidator.normalizePhoneToE164("+63 2 123 4567"))
+    fun `a Philippine landline is rejected even with its country code`() {
+        // +63 now means "must be a PH mobile". A landline cannot receive the
+        // band's SMS, so there is nothing lost in refusing it here.
+        assertNull(InputValidator.normalizePhoneToE164("+63 2 123 4567"))
     }
 
     // ── Rejected ──────────────────────────────────────────────────────────────
@@ -95,13 +97,27 @@ class InputValidatorPhoneTest {
     }
 
     @Test
-    fun `a too-short Philippine mobile written with a plus survives as generic E164`() {
-        // Not a bug, but the price of D3's "any other valid E.164" rule: once a
-        // number carries a leading +, the only test left is E.164's own length
-        // range, so a mistyped +63 mobile is stored as typed instead of being
-        // normalised or refused. Nothing downstream can catch it either - the
-        // Security Rules check the same pattern.
-        assertEquals("+6391712345", InputValidator.normalizePhoneToE164("+6391712345"))
+    fun `a too-short Philippine mobile written with a plus is rejected`() {
+        // This used to survive as generic E.164: a leading + left only the
+        // length range to check, so a mistyped +63 mobile was stored as typed
+        // and nothing downstream could catch it. +63 is now held to the mobile
+        // shape, which is the whole point of the tightening.
+        assertNull(InputValidator.normalizePhoneToE164("+6391712345"))
+    }
+
+    @Test
+    fun `a too-long Philippine mobile written with a plus is rejected`() {
+        assertNull(InputValidator.normalizePhoneToE164("+6391712345678"))
+    }
+
+    @Test
+    fun `a plus 63 number whose subscriber part does not start with 9 is rejected`() {
+        assertNull(InputValidator.normalizePhoneToE164("+638171234567"))
+    }
+
+    @Test
+    fun `a bare plus 63 is rejected`() {
+        assertNull(InputValidator.normalizePhoneToE164("+63"))
     }
 
     @Test

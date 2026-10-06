@@ -40,14 +40,14 @@ class FirebaseAuthRepository(
      * in the Console has never had one, and one whose sign-up write failed lost
      * the race to it. Those users used to sign in to a Profile tab with no name
      * and no email at all. The write is conditional and its failure is ignored
-     * - see [GoogleProfileProvisioning].
+     * - see [ProfileProvisioning].
      */
     override suspend fun login(email: String, password: String): Result<User> = authResult {
         val signedIn = auth.signInWithEmailAndPassword(email.trim(), password).await()
         val user = (signedIn.user ?: throw AuthError.NotSignedIn).toUser()
 
-        // Result deliberately ignored - see GoogleProfileProvisioning.ensureProfile.
-        GoogleProfileProvisioning.ensureProfile(userProfileRepository, user, isNewUser = false)
+        // Result deliberately ignored - see ProfileProvisioning.ensureProfile.
+        ProfileProvisioning.ensureProfile(userProfileRepository, user, isNewUser = false)
 
         user
     }
@@ -86,7 +86,7 @@ class FirebaseAuthRepository(
      *
      * Unlike [register], a failed profile write does **not** fail the call: the
      * session already exists by then, so reporting a failure would leave the
-     * user signed in and staring at an error. [GoogleProfileProvisioning] holds
+     * user signed in and staring at an error. [ProfileProvisioning] holds
      * that rule and the reason the write is conditional.
      */
     override suspend fun signInWithGoogle(idToken: String): Result<GoogleSignInOutcome> = authResult {
@@ -96,8 +96,8 @@ class FirebaseAuthRepository(
         val isNewUser = signedIn.additionalUserInfo?.isNewUser == true
 
         val user = firebaseUser.toUser()
-        // Result deliberately ignored - see GoogleProfileProvisioning.ensureProfile.
-        GoogleProfileProvisioning.ensureProfile(userProfileRepository, user, isNewUser)
+        // Result deliberately ignored - see ProfileProvisioning.ensureProfile.
+        ProfileProvisioning.ensureProfile(userProfileRepository, user, isNewUser)
 
         GoogleSignInOutcome(user = user, isNewUser = isNewUser)
     }

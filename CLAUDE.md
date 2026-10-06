@@ -51,7 +51,7 @@ com/example/guardband/
 │   │                     AuthError + FirebaseAuthErrorMapper (typed auth failures)
 │   │                     ContactError + FirebaseDatabaseErrorMapper (typed RTDB failures)
 │   │                     ContactFields (the one on-disk shape of a contact)
-│   │                     GoogleProfileProvisioning (when a sign-in may write users/{uid}; both paths)
+│   │                     ProfileProvisioning (when a sign-in may write users/{uid}; both paths)
 │   │                     Firebase* = live; InMemory* + InMemoryStore = test doubles
 │   ├── DeviceConstants.kt      DEFAULT_DEVICE_ID = "guardband-001" (until pairing exists)
 │   ├── FirebaseProvider.kt     the one FirebaseAuth / FirebaseDatabase instance
@@ -133,7 +133,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 
 **Routing:** `isNewUser` decides. A returning user goes to Home. A first-time user goes through the remaining sign-up steps (location, emergency contact) in **complete-profile mode** — `SignUpLocationActivity` and `SignUpContactsActivity` carry `EXTRA_COMPLETE_PROFILE`, the credential fields are hidden, nothing is validated against them, and `saveProfile` finishes `users/{uid}` instead of `register` creating an account. In that mode the uid and email come from the **live session**, never from the Intent extras, so a stale extra cannot write to the wrong record.
 
-**The profile write is conditional.** A sign-in has no location to offer, so writing the profile on every sign-in would put an empty one over whatever the user had already set. `GoogleProfileProvisioning` writes only when the account was just created or the record is confirmed absent; a *failed* existence read writes nothing, because it cannot tell "absent" from "unreachable". A failed write does **not** fail the sign-in — the session already exists by then. Despite the name it now serves **both** sign-in paths: email login provisions the same way, so a session always has a `users/{uid}` record behind it. (The name should become `ProfileProvisioning`; the file still needs renaming.)
+**The profile write is conditional.** A sign-in has no location to offer, so writing the profile on every sign-in would put an empty one over whatever the user had already set. `ProfileProvisioning` writes only when the account was just created or the record is confirmed absent; a *failed* existence read writes nothing, because it cannot tell "absent" from "unreachable". A failed write does **not** fail the sign-in — the session already exists by then. It serves **both** sign-in paths: email login provisions the same way, so a session always has a `users/{uid}` record behind it. (It was `GoogleProfileProvisioning` until the Alert-tab pass renamed it.)
 
 **Error wording stays neutral.** `ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL` maps to its own `AuthError.AccountExistsWithDifferentCredential`, shown as "This email uses a different sign-in method." It must not name the other provider: saying "that address uses a password" confirms the account exists, which is the whole thing the shared invalid-credentials message exists to prevent.
 
@@ -141,7 +141,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 
 **Never log a token**, an account name or an email, here or anywhere else.
 
-**Not covered by tests:** the Firebase exchange inside `signInWithGoogle` and `GoogleIdTokenProvider` itself. Both need a real `FirebaseAuth` / Credential Manager, and the project declares no mocking library. The testable logic was extracted instead — `GoogleProfileProvisioning` for the write rule, the ViewModels for routing and wording.
+**Not covered by tests:** the Firebase exchange inside `signInWithGoogle` and `GoogleIdTokenProvider` itself. Both need a real `FirebaseAuth` / Credential Manager, and the project declares no mocking library. The testable logic was extracted instead — `ProfileProvisioning` for the write rule, the ViewModels for routing and wording.
 
 ## Contacts and profile data
 

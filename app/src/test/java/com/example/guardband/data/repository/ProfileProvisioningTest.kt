@@ -19,13 +19,13 @@ import org.junit.Test
  * exchange itself is not covered here — it needs a real `FirebaseAuth`, and the
  * project declares no mocking library.
  */
-class GoogleProfileProvisioningTest {
+class ProfileProvisioningTest {
 
     private val profiles = FakeUserProfileRepository()
 
     @Test
     fun `a new user gets a profile with name, email and an empty location`() = runTest {
-        val result = GoogleProfileProvisioning.ensureProfile(profiles, USER, isNewUser = true)
+        val result = ProfileProvisioning.ensureProfile(profiles, USER, isNewUser = true)
 
         assertTrue(result!!.isSuccess)
         assertEquals(Triple(USER.name, USER.email, ""), profiles.saved[USER.id])
@@ -33,7 +33,7 @@ class GoogleProfileProvisioningTest {
 
     @Test
     fun `a new user is not asked whether the profile exists`() = runTest {
-        GoogleProfileProvisioning.ensureProfile(profiles, USER, isNewUser = true)
+        ProfileProvisioning.ensureProfile(profiles, USER, isNewUser = true)
 
         assertEquals(0, profiles.profileExistsCalls)
     }
@@ -42,7 +42,7 @@ class GoogleProfileProvisioningTest {
     fun `a returning user with a profile is left completely alone`() = runTest {
         profiles.profileExistsResult = Result.success(true)
 
-        val result = GoogleProfileProvisioning.ensureProfile(profiles, USER, isNewUser = false)
+        val result = ProfileProvisioning.ensureProfile(profiles, USER, isNewUser = false)
 
         assertNull(result)
         assertEquals(0, profiles.saveProfileCalls)
@@ -52,7 +52,7 @@ class GoogleProfileProvisioningTest {
     fun `a returning user whose profile went missing gets it recreated`() = runTest {
         profiles.profileExistsResult = Result.success(false)
 
-        val result = GoogleProfileProvisioning.ensureProfile(profiles, USER, isNewUser = false)
+        val result = ProfileProvisioning.ensureProfile(profiles, USER, isNewUser = false)
 
         assertTrue(result!!.isSuccess)
         assertEquals(Triple(USER.name, USER.email, ""), profiles.saved[USER.id])
@@ -62,7 +62,7 @@ class GoogleProfileProvisioningTest {
     fun `a failed existence read writes nothing, so a location can never be wiped`() = runTest {
         profiles.profileExistsResult = Result.failure(AuthError.Network)
 
-        val result = GoogleProfileProvisioning.ensureProfile(profiles, USER, isNewUser = false)
+        val result = ProfileProvisioning.ensureProfile(profiles, USER, isNewUser = false)
 
         assertNull(result)
         assertEquals(0, profiles.saveProfileCalls)
@@ -72,7 +72,7 @@ class GoogleProfileProvisioningTest {
     fun `a failed write is reported back, not thrown`() = runTest {
         profiles.saveProfileResult = Result.failure(AuthError.Network)
 
-        val result = GoogleProfileProvisioning.ensureProfile(profiles, USER, isNewUser = true)
+        val result = ProfileProvisioning.ensureProfile(profiles, USER, isNewUser = true)
 
         assertEquals(AuthError.Network, result!!.exceptionOrNull())
     }
@@ -102,7 +102,7 @@ class GoogleProfileProvisioningTest {
             ): Result<Unit> = Result.success(Unit)
         }
 
-        GoogleProfileProvisioning.ensureProfile(cancelling, USER, isNewUser = true)
+        ProfileProvisioning.ensureProfile(cancelling, USER, isNewUser = true)
     }
 
     private companion object {

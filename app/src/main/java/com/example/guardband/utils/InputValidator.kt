@@ -54,15 +54,24 @@ object InputValidator {
      * +639171234567  →  +639171234567
      * ```
      *
+     * A number carrying the PH country code is held to the mobile shape and
+     * nothing else: if it starts `+63` but is not `+639` plus nine
+     * digits, it is refused outright rather than falling through to the
+     * generic rule below. Without that guard a mistyped mobile such as
+     * `+6391712345` was simply stored as typed — it is valid E.164 on length
+     * alone, so neither this validator nor the Security Rules could catch it,
+     * and the band would text a number that cannot ring. The cost is that a PH
+     * landline written `+6321234567` is now refused too; emergency contacts
+     * are expected to be reachable by SMS, so a landline was never usable.
+     *
      * Anything else is accepted only if it is already valid E.164 — a leading
      * `+` and 8 to 15 digits — and is then stored exactly as typed. That is
-     * what lets a guardian abroad be reached, and it is also why a PH landline
-     * written `+6321234567` passes while the same number written `021234567`
-     * does not: without the country code there is nothing to normalise it to.
+     * what lets a guardian abroad be reached.
      */
     fun normalizePhoneToE164(raw: String): String? {
         val compact = raw.filterNot { it.isWhitespace() || it in PHONE_SEPARATORS }
         phMobileSubscriberPart(compact)?.let { return PH_COUNTRY_CODE + it }
+        if (compact.startsWith(PH_COUNTRY_CODE)) return null
         return compact.takeIf { E164.matches(it) }
     }
 

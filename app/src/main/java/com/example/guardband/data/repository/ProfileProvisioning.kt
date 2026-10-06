@@ -5,10 +5,9 @@ import com.example.guardband.data.model.User
 /**
  * Decides whether a sign-in should write `users/{uid}`, and writes it.
  *
- * **Serves both sign-in paths despite the name** - Google sign-in and email
- * login both route through [ensureProfile]. The name is left over from when
- * only Google needed it and should become `ProfileProvisioning`; that rename
- * needs the file renamed too, which this pass could not do.
+ * **Serves both sign-in paths** - Google sign-in and email login both route
+ * through [ensureProfile]. (It was called `GoogleProfileProvisioning` while
+ * only Google needed it.)
  *
  * Lives apart from [FirebaseAuthRepository] so it can be unit-tested: the
  * repository's own methods cannot be, because they need a real
@@ -21,7 +20,7 @@ import com.example.guardband.data.model.User
  * already set. Limiting the write to records that do not exist yet is what
  * makes it safe to call on every sign-in.
  */
-internal object GoogleProfileProvisioning {
+internal object ProfileProvisioning {
 
     /**
      * Creates a minimal profile for [user] when it is missing, and otherwise
