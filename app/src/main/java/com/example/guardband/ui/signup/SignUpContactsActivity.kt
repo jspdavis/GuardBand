@@ -20,12 +20,15 @@ import kotlinx.coroutines.launch
 /**
  * Sign-Up Step 3 — user adds an emergency contact and finishes registration.
  *
- * Receives: [EXTRA_NAME] from the name step, and in complete-profile mode
- * [EXTRA_EMAIL] and [EXTRA_COMPLETE_PROFILE] straight from Login.
+ * Receives [EXTRA_NAME], [EXTRA_EMAIL] and [EXTRA_PASSWORD] from the earlier
+ * steps, or [EXTRA_NAME], [EXTRA_EMAIL] and [EXTRA_COMPLETE_PROFILE] straight
+ * from Login.
  *
+ * The credentials are collected by step 1 now, so this screen's own credential
+ * block is always hidden; its views survive only until the layout is restyled.
  * In complete-profile mode (first-time Google sign-in) the account already
- * exists, so the credential section is hidden and only the emergency contact
- * is saved.
+ * exists and the credentials are ignored entirely — the session supplies the
+ * email.
  * View ids: et_signup_contacts_email, et_signup_contacts_password,
  * et_contact_name, et_contact_phone, et_contact_relationship,
  * btn_signup_contacts_submit, btn_signup_contacts_retry,
@@ -49,15 +52,16 @@ class SignUpContactsActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_NAME = "extra_name"
 
-        /** The Google address, in complete-profile mode only. */
+        /** From step 1, or the Google address in complete-profile mode. */
         const val EXTRA_EMAIL = "extra_email"
+
+        /** From step 1. Absent in complete-profile mode, where no account is made. */
+        const val EXTRA_PASSWORD = "extra_password"
 
         /** True when a Google sign-in already created the account. */
         const val EXTRA_COMPLETE_PROFILE = "extra_complete_profile"
     }
 
-    private lateinit var etEmail: EditText
-    private lateinit var etPassword: EditText
     private lateinit var etContactName: EditText
     private lateinit var etContactPhone: EditText
     private lateinit var etContactRelationship: EditText
@@ -65,24 +69,29 @@ class SignUpContactsActivity : AppCompatActivity() {
     private lateinit var btnRetry: Button
     private lateinit var progressBar: ProgressBar
 
-    /** Hidden as a group in complete-profile mode. */
+    /**
+     * Always hidden: step 1 owns the credentials now. Bound only so the views
+     * can be hidden until the layout restyle removes them.
+     */
     private lateinit var credentialViews: List<View>
 
     private val viewModel: SignUpContactsViewModel by viewModels { SignUpContactsViewModel.Factory }
     private var userName: String = ""
+    private var email: String = ""
+    private var password: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signup_contacts)
 
         userName = intent.getStringExtra(EXTRA_NAME) ?: ""
+        email    = intent.getStringExtra(EXTRA_EMAIL) ?: ""
+        password = intent.getStringExtra(EXTRA_PASSWORD) ?: ""
 
         viewModel.setCompleteProfileMode(
             intent.getBooleanExtra(EXTRA_COMPLETE_PROFILE, false)
         )
 
-        etEmail               = findViewById(R.id.et_signup_contacts_email)
-        etPassword            = findViewById(R.id.et_signup_contacts_password)
         etContactName         = findViewById(R.id.et_contact_name)
         etContactPhone        = findViewById(R.id.et_contact_phone)
         etContactRelationship = findViewById(R.id.et_contact_relationship)
@@ -115,8 +124,8 @@ class SignUpContactsActivity : AppCompatActivity() {
 
     private fun submit() = viewModel.onSubmitClicked(
         name                = userName,
-        email               = etEmail.text.toString(),
-        password            = etPassword.text.toString(),
+        email               = email,
+        password            = password,
         contactName         = etContactName.text.toString(),
         contactPhone        = etContactPhone.text.toString(),
         contactRelationship = etContactRelationship.text.toString()
@@ -133,9 +142,8 @@ class SignUpContactsActivity : AppCompatActivity() {
         btnSubmit.visibility = if (state.canRetry) View.GONE else View.VISIBLE
 
         // GONE, not INVISIBLE: the section must not leave a gap in the
-        // LinearLayout when the account already exists.
-        val credentialsVisibility = if (state.completeProfile) View.GONE else View.VISIBLE
-        credentialViews.forEach { it.visibility = credentialsVisibility }
+        // LinearLayout. Unconditional now that step 1 collects the credentials.
+        credentialViews.forEach { it.visibility = View.GONE }
     }
 
     private fun handleEvent(event: SignUpContactsEvent) {

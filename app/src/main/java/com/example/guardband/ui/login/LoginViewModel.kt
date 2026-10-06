@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
  *
  * Flow:
  *   Login  →  LoadingActivity  →  HomeActivity
- *   Login  →  SignUpNameActivity
+ *   Login  →  SignUpAccountActivity
  *   Login  →  ForgotRequestActivity
  *   Login  →  (Google, returning user)  →  LoadingActivity  →  HomeActivity
  *   Login  →  (Google, first-time user) →  SignUpContactsActivity (complete profile)

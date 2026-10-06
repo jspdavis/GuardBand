@@ -23,8 +23,9 @@ import kotlinx.coroutines.launch
  * indicator come from the shared header — see [SignUpStepHeader].
  *
  * Step 2 of 3 in the revamped flow (Account → Name → Contacts → Consent).
- * The last-name field is bound but not yet carried through the wizard; that
- * lands with the flow rewrite.
+ *
+ * Receives [EXTRA_EMAIL] and [EXTRA_PASSWORD] from step 1 and passes them on
+ * untouched — it neither reads nor validates them.
  *
  * The screen has no Google button: that path lives on Login, which offers
  * "Continue with Google" and routes a first-time user through the
@@ -36,11 +37,19 @@ import kotlinx.coroutines.launch
  */
 class SignUpNameActivity : AppCompatActivity() {
 
+    companion object {
+        const val EXTRA_EMAIL = "extra_email"
+        const val EXTRA_PASSWORD = "extra_password"
+    }
+
     private lateinit var etFirstName: EditText
     private lateinit var etLastName: EditText
     private lateinit var btnNext: Button
 
     private val viewModel: SignUpNameViewModel by viewModels()
+
+    private var email: String = ""
+    private var password: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,12 +57,20 @@ class SignUpNameActivity : AppCompatActivity() {
 
         SignUpStepHeader.bind(this, step = 2)
 
+        email    = intent.getStringExtra(EXTRA_EMAIL) ?: ""
+        password = intent.getStringExtra(EXTRA_PASSWORD) ?: ""
+
         etFirstName = findViewById(R.id.et_signup_first_name)
         etLastName  = findViewById(R.id.et_signup_last_name)
         btnNext     = findViewById(R.id.btn_signup_name_next)
 
         btnNext.setOnClickListener {
-            viewModel.onNextClicked(etFirstName.text.toString())
+            viewModel.onNextClicked(
+                firstName = etFirstName.text.toString(),
+                lastName = etLastName.text.toString(),
+                email = email,
+                password = password
+            )
         }
 
         lifecycleScope.launch {
@@ -72,6 +89,8 @@ class SignUpNameActivity : AppCompatActivity() {
                 startActivity(
                     Intent(this, SignUpContactsActivity::class.java).apply {
                         putExtra(SignUpContactsActivity.EXTRA_NAME, event.name)
+                        putExtra(SignUpContactsActivity.EXTRA_EMAIL, event.email)
+                        putExtra(SignUpContactsActivity.EXTRA_PASSWORD, event.password)
                     }
                 )
 

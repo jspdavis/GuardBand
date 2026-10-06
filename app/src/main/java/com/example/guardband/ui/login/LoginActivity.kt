@@ -18,7 +18,7 @@ import com.example.guardband.ui.auth.GoogleIdTokenResult
 import com.example.guardband.ui.forgot.ForgotRequestActivity
 import com.example.guardband.ui.loading.LoadingActivity
 import com.example.guardband.ui.signup.SignUpContactsActivity
-import com.example.guardband.ui.signup.SignUpNameActivity
+import com.example.guardband.ui.signup.SignUpAccountActivity
 import kotlinx.coroutines.launch
 
 /**
@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
  *
  * Flow:
  *   Login  →  LoadingActivity  →  HomeActivity
- *   Login  →  SignUpNameActivity
+ *   Login  →  SignUpAccountActivity
  *   Login  →  ForgotRequestActivity
  *   Login  →  (Google, returning user)  →  LoadingActivity  →  HomeActivity
  *   Login  →  (Google, first-time user) →  SignUpContactsActivity (complete profile)
@@ -111,7 +111,7 @@ class LoginActivity : AppCompatActivity() {
             }
 
             LoginEvent.NavigateToSignUp ->
-                startActivity(Intent(this, SignUpNameActivity::class.java))
+                startActivity(Intent(this, SignUpAccountActivity::class.java))
 
             LoginEvent.NavigateToForgotPassword ->
                 startActivity(Intent(this, ForgotRequestActivity::class.java))
