@@ -49,7 +49,8 @@ com/example/guardband/
 │   │                     AlertRepository (Flow<Result<T>>, live reads)
 │   │                     UserProfileRepository (reads/writes users/{uid}, incl. the atomic finalize)
 │   │                     AuthError + FirebaseAuthErrorMapper (typed auth failures)
-│   │                     ContactError + FirebaseDatabaseErrorMapper (typed RTDB failures)
+│   │                     ContactError + AlertError + FirebaseDatabaseErrorMapper (typed RTDB failures)
+│   │                     AlertParser (wire map → Alert; pure, so it is unit-testable)
 │   │                     ContactFields (the one on-disk shape of a contact)
 │   │                     ProfileProvisioning (when a sign-in may write users/{uid}; both paths)
 │   │                     Firebase* = live; InMemory* + InMemoryStore = test doubles
@@ -73,9 +74,9 @@ com/example/guardband/
 └── utils/InputValidator.kt     shared input predicates (no messages)
 ```
 
-**Auth, the user profile and contacts are on Firebase** (see "Firebase" and "Contacts and profile data" below). **Alerts are the last in-memory one:** `InMemoryStore` is a process-local store holding four seeded alerts for `guardband-001` and a simulated 1.2 s latency, and it loses everything when the process dies. Alerts move when the `devices/{deviceId}` reader lands.
+**Auth, the user profile, contacts and alerts are all on Firebase** (see "Firebase", "Contacts and profile data" and "Alert data" below). Nothing in the app reads `InMemoryStore` any more; it is the unit tests' backing store.
 
-`InMemoryAuthRepository` and `InMemoryContactRepository` are still in the tree but are **not** wired into `RepositoryProvider` — they are the unit-test doubles for the Firebase implementations and return the same `AuthError`s / `ContactError`s, so each pair stays interchangeable. `InMemoryStore.replaceContacts` exists purely as a test seam, because `addContact` assigns its own id.
+`InMemoryAuthRepository`, `InMemoryContactRepository` and `InMemoryAlertRepository` are still in the tree but are **not** wired into `RepositoryProvider` — they are the unit-test doubles for the Firebase implementations and return the same `AuthError`s / `ContactError`s / `AlertError`s, so each pair stays interchangeable. `InMemoryStore.replaceContacts` exists purely as a test seam, because `addContact` assigns its own id.
 
 `ui/dashboard/` and `res/layout/activity_dashboard.xml` are gone, replaced by `ui/home/`. Two leftovers from them are still waiting to be removed: the `label_dashboard_*`/`label_your_contacts` strings and the CardView dependency, which now has no user at all.
 
@@ -181,11 +182,34 @@ The band (or the mock sender) PUTs to the RTDB REST API, and Security Rules vali
 - `battery { percent, isCharging }`
 - `sequenceId`
 
-`data/model/Alert.kt` mirrors it. Check the field names against the deployed Security Rules before relying on them.
+`data/model/Alert.kt` mirrors it and `data/repository/AlertParser.kt` reads it — see "Alert data" below for how. Check the field names against the deployed Security Rules before relying on them.
+
+## Alert data
+
+The Alert tab reads `devices/{deviceId}` live. `SCHEMA.md` is the authority for the payload — if code, this file and `SCHEMA.md` disagree, `SCHEMA.md` wins and the disagreement gets reported rather than silently resolved.
+
+**The locked decisions behind the tab:**
+- **D1** — `PANIC`, `CHECKIN` and `LOW_BATTERY` are shown and colour-coded. `TRACKING_UPDATE` is hidden from the Alert list. An **unrecognised** type is *not* hidden: it is shown as "Unknown alert", so a type a future firmware adds still appears.
+- **D2** — the latest-alert card is the newest **non-tracking** entry derived from history. It deliberately does **not** read `devices/{id}/latest`, because every payload overwrites that node, tracking updates included, so the card would read "Location update" while a panic sat one row below it. `observeLatestAlert` still exists, unsubscribed, for the Track tab.
+- **D3** — read a window of 100 raw entries, drop tracking updates, show at most 50. The window is over *raw* entries, so a chatty band yields fewer than 50 displayable alerts. `AlertHistory` therefore carries `rawCount` and `malformedCount`, which is what lets the empty state say *which* kind of empty it is instead of implying the band is silent.
+- **D4** — one device id, `DeviceConstants.DEFAULT_DEVICE_ID`, supplied through `RepositoryProvider`. No pairing yet, and ViewModels never see a device id.
+- **D5** — `schemaVersion` is parsed as a String, so both `"1.0"` and a bare `1` work.
+
+**Repository contract.** `AlertRepository` exposes `observeLatestAlert()` and `observeAlertHistory(limit)`, both `Flow<Result<T>>`. A failed read is `Result.failure(AlertError)` — never null, never an empty list — and the flow **stays open**, so a reconnect or a rules fix can make the next emission succeed. `AlertError` is mapped from `DatabaseError.getCode()` through `FirebaseDatabaseErrorMapper`, never from a message, and carries no message of its own.
+
+**Ordering is `orderByKey().limitToLast(n)`, and needs no index.** History children are keyed by `sequenceId`, and RTDB sorts integer-like keys numerically and ahead of string keys, so this returns the newest entries. `orderByChild("sequenceId")` would need an `".indexOn": "sequenceId"` rule deployed; `orderByKey` needs none. The window is re-sorted by `sequenceId` in memory anyway, so a key that is *not* integer-like (a push id, a zero-padded number) degrades the window rather than the order within it.
+
+**Parsing is a pure `Map` → `Alert` step in `AlertParser`,** not a method on the repository. A `DataSnapshot` cannot be built in a JVM test and the project declares no mocking library, so putting the logic behind one would have made all of it untestable. `sequenceId`, `type` and `timestamp` are required; a missing `schemaVersion`, `deviceId`, `battery` or `location` is salvaged rather than dropped, which is deliberately more forgiving than `SCHEMA.md`'s receiver-validation list — this is a *reader*, and refusing to show a panic because its battery node was missing would be the wrong failure. **A malformed history entry is skipped and counted, never fatal:** one bad row from a firmware bug must not hide every good row behind it. Only `latest` can fail as `AlertError.ParseFailure`.
+
+**Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and the Alert tab logs nothing either. Same rule as contact phone numbers — see "Contacts and profile data".
+
+**Still in-memory:** `InMemoryStore`'s four seeded alerts, which only `InMemoryAlertRepository` reads, and only in tests.
 
 ## Mock sender
 
-For demos without hardware, Phone A runs `MockSenderActivity`, which sends OkHttp PUTs to the RTDB endpoints, and Phone B runs the receiver screens. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives in the **debug source set** (`app/src/debug/java/.../ui/mocksender/`, plus `app/src/debug/AndroidManifest.xml`, which gives it its own "GuardBand Mock Sender" launcher icon), so release builds contain neither the code nor the icon. OkHttp is `debugImplementation` for the same reason. `INGEST_ALERT_URL` in `AlertSender.kt` is still a placeholder, and it POSTs to a Cloud Function, which doesn't match the RTDB-REST design above. The payload follows `SCHEMA.md`.
+For demos without hardware, Phone A runs `MockSenderActivity` and Phone B runs the receiver screens. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives in the **debug source set** (`app/src/debug/java/.../ui/mocksender/`, plus `app/src/debug/AndroidManifest.xml`, which gives it its own "GuardBand Mock Sender" launcher icon), so release builds contain neither the code nor the icon. OkHttp is `debugImplementation` for the same reason. **It cannot currently write anything.** `INGEST_ALERT_URL` in `AlertSender.kt` is still the literal `"REPLACE_ME_ONCE_DEPLOYED"`, and it `POST`s to a Cloud Function — which the Spark plan cannot host, and which doesn't match the RTDB-REST design above. So every send fails, and because `sequenceId++` only runs on success it stays pinned at `1`. **Until that is fixed, the only way to put a test alert in the database is the Firebase Console.** The fix is one constant and one verb: `PUT` to `/devices/guardband-001/latest.json` and `/devices/guardband-001/history/<sequenceId>.json` on the RTDB REST endpoint.
+
+The payload itself follows `SCHEMA.md` and satisfies the `devices` validation: all six required children, `type` one of the four enum names, `percent` 0–100, `isCharging` boolean, `sequenceId` numeric. Its timestamps carry milliseconds (`...SSS'Z'`) where `SCHEMA.md`'s example does not; both are valid ISO 8601 and `AlertFormatting` parses both. `ui/mocksender/AlertType` is a **second, private copy** of the enum, kept deliberately: the harness is throwaway debug-only code, and de-duplicating it would mean editing `app/src/debug/`. It has no `fromWire`, so the two can drift — `data/model/AlertType` is the one the app uses.
 
 ## UI workflow (agent vs. designer)
 - Figma is the visual source of truth and is owned by Jul. The agent does not need the wireframes pasted in.
