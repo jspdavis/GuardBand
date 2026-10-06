@@ -53,6 +53,38 @@ internal object FirebaseDatabaseErrorMapper {
         else -> ContactError.Unknown(code)
     }
 
+    // ── Alerts ────────────────────────────────────────────────────────────────
+
+    /**
+     * The same mapping in [AlertError]'s vocabulary, for [AlertRepository].
+     *
+     * [AlertError.ParseFailure] is deliberately absent here: it describes the
+     * payload, not the connection, so nothing in a [DatabaseError] can produce
+     * it.
+     */
+    fun mapToAlertError(error: DatabaseError): AlertError = fromCodeToAlert(error.code)
+
+    /**
+     * Maps one [DatabaseError.getCode]. Unrecognised codes become
+     * [AlertError.Unknown].
+     *
+     * Split out of [mapToAlertError] for the same reason [fromCode] is: a
+     * [DatabaseError] cannot be constructed in a JVM test, so the mapping is
+     * tested through the code instead.
+     */
+    fun fromCodeToAlert(code: Int): AlertError = when (code) {
+        DatabaseError.PERMISSION_DENIED -> AlertError.PermissionDenied
+
+        DatabaseError.NETWORK_ERROR,
+        DatabaseError.DISCONNECTED,
+        DatabaseError.UNAVAILABLE -> AlertError.Network
+
+        DatabaseError.EXPIRED_TOKEN,
+        DatabaseError.INVALID_TOKEN -> AlertError.NotSignedIn
+
+        else -> AlertError.Unknown(code)
+    }
+
     // ── Profile ───────────────────────────────────────────────────────────────
 
     /**

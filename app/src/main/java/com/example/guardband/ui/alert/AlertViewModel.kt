@@ -50,7 +50,7 @@ class AlertViewModel(
                         state.copy(
                             isLoading = false,
                             latest = latestResult.getOrElse { state.latest },
-                            history = historyResult.getOrElse { state.history }
+                            history = historyResult.getOrNull()?.alerts ?: state.history
                         )
                     }
                     (latestResult.exceptionOrNull() ?: historyResult.exceptionOrNull())

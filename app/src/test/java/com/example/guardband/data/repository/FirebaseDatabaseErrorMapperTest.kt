@@ -88,4 +88,59 @@ class FirebaseDatabaseErrorMapperTest {
             assertEquals(0, error.stackTrace.size)
         }
     }
+
+    // -- Alerts -------------------------------------------------------------
+
+    @Test
+    fun `permission denied maps to its own alert error`() {
+        assertEquals(
+            AlertError.PermissionDenied,
+            FirebaseDatabaseErrorMapper.fromCodeToAlert(DatabaseError.PERMISSION_DENIED)
+        )
+    }
+
+    @Test
+    fun `every form of not reaching the server maps to an alert Network error`() {
+        listOf(
+            DatabaseError.NETWORK_ERROR,
+            DatabaseError.DISCONNECTED,
+            DatabaseError.UNAVAILABLE
+        ).forEach { code ->
+            assertEquals(AlertError.Network, FirebaseDatabaseErrorMapper.fromCodeToAlert(code))
+        }
+    }
+
+    @Test
+    fun `a dead token reads as not signed in for alerts too`() {
+        listOf(
+            DatabaseError.EXPIRED_TOKEN,
+            DatabaseError.INVALID_TOKEN
+        ).forEach { code ->
+            assertEquals(AlertError.NotSignedIn, FirebaseDatabaseErrorMapper.fromCodeToAlert(code))
+        }
+    }
+
+    @Test
+    fun `an unrecognised code becomes an alert Unknown carrying it`() {
+        assertEquals(
+            AlertError.Unknown(-99),
+            FirebaseDatabaseErrorMapper.fromCodeToAlert(-99)
+        )
+    }
+
+    @Test
+    fun `no AlertError carries a message or a stack trace`() {
+        val errors = listOf(
+            AlertError.Network,
+            AlertError.PermissionDenied,
+            AlertError.NotSignedIn,
+            AlertError.ParseFailure,
+            AlertError.Unknown(-7)
+        )
+
+        errors.forEach { error ->
+            assertEquals(null, error.message)
+            assertEquals(0, error.stackTrace.size)
+        }
+    }
 }
