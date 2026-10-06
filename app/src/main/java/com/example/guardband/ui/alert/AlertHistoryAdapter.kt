@@ -14,6 +14,10 @@ import com.example.guardband.data.model.Alert
 /**
  * Incident-history rows for the Alert tab (`item_alert.xml`), keyed by
  * sequenceId. Adapted from the checkpoint's AlertHistoryAdapter.
+ *
+ * Rows only. The latest-alert card used to share this ViewHolder through an
+ * `<include>`, which meant constructing one by hand outside any RecyclerView;
+ * it is its own block in `fragment_alert.xml` now.
  */
 class AlertHistoryAdapter : ListAdapter<Alert, AlertHistoryAdapter.AlertViewHolder>(AlertDiff) {
 
@@ -27,10 +31,7 @@ class AlertHistoryAdapter : ListAdapter<Alert, AlertHistoryAdapter.AlertViewHold
         holder.bind(getItem(position))
     }
 
-    /**
-     * Binds one `item_alert.xml` view. Also used directly by [AlertFragment]
-     * for the latest-alert card, which includes the same layout.
-     */
+    /** Binds one `item_alert.xml` row. */
     class AlertViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val viewDot: View = itemView.findViewById(R.id.view_item_alert_dot)
         private val tvType: TextView = itemView.findViewById(R.id.tv_item_alert_type)

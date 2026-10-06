@@ -3,13 +3,19 @@ package com.example.guardband.testing
 import com.example.guardband.data.model.Alert
 import com.example.guardband.data.repository.AlertHistory
 import com.example.guardband.data.repository.AlertRepository
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableSharedFlow
 
 /**
- * [AlertRepository] holding its emissions in flows, so a test can push new
+ * [AlertRepository] whose emissions a test drives by hand, so it can push new
  * data or a failure at a live collector mid-test.
+ *
+ * Backed by a replaying [MutableSharedFlow] rather than a `StateFlow`, because
+ * a StateFlow drops an emission equal to the one before it - which would make
+ * "the same history, but this time the read failed" invisible to the
+ * collector. The replay also means a value emitted *before* the ViewModel is
+ * built still reaches it.
  *
  * Unlike [InMemoryAlertRepository][com.example.guardband.data.repository.InMemoryAlertRepository]
  * this one can fail, which is what the error and retry paths need.
@@ -19,14 +25,13 @@ class FakeAlertRepository(
     latest: Alert? = null
 ) : AlertRepository {
 
-    private val historyState = MutableStateFlow(history)
-    private val latestState = MutableStateFlow(latest)
+    private val historyFlow = replayingFlow<Result<AlertHistory>>()
+    private val latestFlow = replayingFlow<Result<Alert?>>()
 
-    /** Emitted instead of the history when a test wants that read to fail. */
-    var historyResult: Result<AlertHistory>? = null
-
-    /** Emitted instead of the latest alert when a test wants that read to fail. */
-    var latestResult: Result<Alert?>? = null
+    init {
+        historyFlow.tryEmit(Result.success(history))
+        latestFlow.tryEmit(Result.success(latest))
+    }
 
     /** Every `limit` ever passed to [observeAlertHistory], in call order. */
     val requestedLimits = mutableListOf<Int>()
@@ -35,37 +40,53 @@ class FakeAlertRepository(
     var historySubscriptions = 0
         private set
 
-    override fun observeLatestAlert(): Flow<Result<Alert?>> =
-        latestState.map { latestResult ?: Result.success(it) }
+    /**
+     * How many times a collector subscribed to the latest-alert flow.
+     *
+     * The Alert tab must leave this at zero: D2 derives its card from history,
+     * so opening a second listener on `devices/{id}/latest` would be waste.
+     */
+    var latestSubscriptions = 0
+        private set
+
+    override fun observeLatestAlert(): Flow<Result<Alert?>> {
+        latestSubscriptions++
+        return latestFlow
+    }
 
     override fun observeAlertHistory(limit: Int): Flow<Result<AlertHistory>> {
         requestedLimits += limit
         historySubscriptions++
-        return historyState.map { historyResult ?: Result.success(it) }
+        return historyFlow
     }
 
     /** Pushes a new history at any live collector. */
     fun emitHistory(history: AlertHistory) {
-        historyResult = null
-        historyState.value = history
+        historyFlow.tryEmit(Result.success(history))
     }
 
     /** Pushes a new latest alert at any live collector. */
     fun emitLatest(alert: Alert?) {
-        latestResult = null
-        latestState.value = alert
+        latestFlow.tryEmit(Result.success(alert))
     }
 
-    /**
-     * Makes the next history emission fail, and nudges the flow so a live
-     * collector actually sees it.
-     */
+    /** Makes the history read fail, now and for the next subscriber. */
     fun failHistory(error: Throwable) {
-        historyResult = Result.failure(error)
-        historyState.value = historyState.value.copy()
+        historyFlow.tryEmit(Result.failure(error))
+    }
+
+    /** Makes the latest read fail, now and for the next subscriber. */
+    fun failLatest(error: Throwable) {
+        latestFlow.tryEmit(Result.failure(error))
     }
 
     companion object {
+        private fun <T> replayingFlow() = MutableSharedFlow<T>(
+            replay = 1,
+            extraBufferCapacity = 8,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
+
         /** An alert with SCHEMA.md's shape; override what a test cares about. */
         fun alert(
             sequenceId: Long,
