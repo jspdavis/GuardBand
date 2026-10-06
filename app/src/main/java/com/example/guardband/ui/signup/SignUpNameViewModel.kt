@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
  *
  * No UiState: the step has no async work and never shows its progress bar.
  *
- * Flow: SignUpNameActivity → SignUpLocationActivity
+ * Flow: SignUpNameActivity → SignUpContactsActivity
  */
 class SignUpNameViewModel : ViewModel() {
 
@@ -24,7 +24,7 @@ class SignUpNameViewModel : ViewModel() {
             _events.trySend(SignUpNameEvent.ShowMessage(MSG_NAME_REQUIRED))
             return
         }
-        _events.trySend(SignUpNameEvent.NavigateToLocation(name.trim()))
+        _events.trySend(SignUpNameEvent.NavigateToContacts(name.trim()))
     }
 
     /** "Continue with Google" on the sign-up entry screen. */

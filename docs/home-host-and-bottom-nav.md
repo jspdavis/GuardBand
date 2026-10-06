@@ -146,14 +146,14 @@ Fragments reach `HomeViewModel` with `by activityViewModels { HomeViewModel.Fact
 Legend: ✅ works with (in-memory) data · 🟡 placeholder UI
 
 ### Track (default tab), `ui/track/`
-- ✅ **User chip:** avatar circle, name and location of the signed-in user (falls back to "User" / "Location not set").
+- ✅ **User chip:** avatar circle and name of the signed-in user (falls back to "User"). *The location line was removed with the `location` field — see below.*
 - ✅ **Bell** → Notifications, **gear** → Settings (through `HomeViewModel`).
 - 🟡 **Map:** grey `surface_muted` area with a "Live map coming soon" label.
 - 🟡 **Status pill:** static "You are protected." with a green dot. It isn't driven by alert data yet.
 - 🟡 **Round map buttons** (layers, recenter): toast "The live map isn't available yet."
 - 🟡 **Check-in pill:** toast "Check-ins come from the band: double-press its button."
 
-`TrackViewModel` holds `TrackUiState(userName, userLocation)` and `TrackEvent.ShowMessage`.
+`TrackViewModel` holds `TrackUiState(userName)` and `TrackEvent.ShowMessage`. It no longer takes a `UserProfileRepository`.
 
 ### Contacts, `ui/contacts/`
 - ✅ **List:** a `RecyclerView` with `ContactAdapter` (`ListAdapter` + `DiffUtil` keyed by `id`) and `item_contact.xml` rows: avatar, name, relationship, phone and a delete icon.
@@ -182,7 +182,7 @@ Type colors:
 Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC with or without milliseconds: SCHEMA.md's example has none, and the debug mock sender writes them. The result is shown in local time as "Oct 4, 4:45 PM". A value it can't parse is shown raw. `SimpleDateFormat` is used because `java.time` needs API 26 and minSdk is 24.
 
 ### Profile, `ui/profile/`
-- ✅ Avatar, "Welcome back, *name*", email and location. Read-only.
+- ✅ Avatar, "Welcome back, *name*" and email. Read-only.
 - The rest of the tab's content is **not yet defined**.
 
 ### Settings (pushed), `ui/settings/`
@@ -404,4 +404,4 @@ Run `gradlew.bat assembleDebug`, then on a device:
 - [✓] Back from Login doesn't return to Home.
 
 **Sign-up path**
-- [✓] Sign up a new user → Loading → Home. The chip and Profile show the new name and location, and Contacts includes the new contact.
+- [✓] Sign up a new user → Loading → Home. The chip and Profile show the new name, and Contacts includes the new contact.

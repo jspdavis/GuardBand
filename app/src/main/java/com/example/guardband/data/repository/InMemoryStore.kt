@@ -38,8 +38,7 @@ internal object InMemoryStore {
             user = User(
                 id = "mock-user-001",
                 name = "Alex Rivera",
-                email = "alex@guardband.com",
-                location = "San Francisco, CA"
+                email = "alex@guardband.com"
             ),
             password = "password123"
         )

@@ -20,8 +20,8 @@ class FakeUserProfileRepository(
     var finalizeSignUpResult: Result<Unit> = Result.success(Unit)
 ) : UserProfileRepository {
 
-    /** uid → (name, email, location), in call order. */
-    val saved = mutableMapOf<String, Triple<String, String, String>>()
+    /** uid → (name, email), in call order. */
+    val saved = mutableMapOf<String, Pair<String, String>>()
 
     /** uid → the contacts passed to [finalizeSignUp]. */
     val finalizedContacts = mutableMapOf<String, List<EmergencyContact>>()
@@ -34,12 +34,11 @@ class FakeUserProfileRepository(
     override suspend fun saveProfile(
         uid: String,
         name: String,
-        email: String,
-        location: String
+        email: String
     ): Result<Unit> {
         saveProfileCalls++
         if (saveProfileResult.isSuccess) {
-            saved[uid] = Triple(name, email, location)
+            saved[uid] = Pair(name, email)
         }
         return saveProfileResult
     }
@@ -51,7 +50,7 @@ class FakeUserProfileRepository(
 
         val record = saved[uid] ?: return Result.success(null)
         return Result.success(
-            User(id = uid, name = record.first, email = record.second, location = record.third)
+            User(id = uid, name = record.first, email = record.second)
         )
     }
 
@@ -69,12 +68,11 @@ class FakeUserProfileRepository(
         uid: String,
         name: String,
         email: String,
-        location: String,
         contacts: List<EmergencyContact>
     ): Result<Unit> {
         finalizeSignUpCalls++
         if (finalizeSignUpResult.isSuccess) {
-            saved[uid] = Triple(name, email, location)
+            saved[uid] = Pair(name, email)
             finalizedContacts[uid] = contacts
         }
         return finalizeSignUpResult

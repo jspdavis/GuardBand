@@ -17,7 +17,7 @@ interface UserProfileRepository {
     /**
      * Creates or updates the profile fields for [uid].
      *
-     * Merges `name`, `email` and `location` and leaves every other child of
+     * Merges `name` and `email` and leaves every other child of
      * `users/{uid}` alone. That matters now that
      * `users/{uid}/emergency_contacts` exists: this used to replace the whole
      * record, which would delete every emergency contact the user had.
@@ -25,17 +25,14 @@ interface UserProfileRepository {
     suspend fun saveProfile(
         uid: String,
         name: String,
-        email: String,
-        location: String
+        email: String
     ): Result<Unit>
 
     /**
      * The stored profile for [uid], or `Result.success(null)` when there is no
      * record.
      *
-     * The one read that can fill [User.location], which
-     * [AuthRepository.currentUser] cannot. A missing record is a success with
-     * null, not a failure: an account can legitimately exist without one, and
+     * A missing record is a success with null, not a failure: an account can legitimately exist without one, and
      * the caller needs to tell that apart from a read that did not work.
      */
     suspend fun fetchProfile(uid: String): Result<User?>
@@ -66,7 +63,6 @@ interface UserProfileRepository {
         uid: String,
         name: String,
         email: String,
-        location: String,
         contacts: List<EmergencyContact>
     ): Result<Unit>
 }

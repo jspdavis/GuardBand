@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Sign-up Step 2 of 3 — Name (first + last).
+    Sign-up Step 1 of 3 — Account (email + password + confirm).
 
-    Same design as it had; the shared pieces now come from
-    view_signup_step_header.xml and the Widget/TextAppearance.GuardBand.SignUp*
-    styles, so a restyle happens in one place instead of four layouts.
+    Credentials are collected here but the Firebase account is NOT created
+    until the final Consent screen, so abandoning the wizard leaves nothing
+    behind. See SignUpAccountActivity.
 -->
 <!-- DESIGN: Jul -->
 <androidx.constraintlayout.widget.ConstraintLayout
@@ -12,10 +12,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     style="@style/Widget.GuardBand.SignUpStep"
-    tools:context=".ui.signup.SignUpNameActivity">
+    tools:context=".ui.signup.SignUpAccountActivity">
 
     <include
-        android:id="@+id/header_signup_name"
+        android:id="@+id/header_signup_account"
         layout="@layout/view_signup_step_header"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -24,97 +24,126 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/tv_signup_name_title"
+        android:id="@+id/tv_signup_account_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:text="@string/label_signup_name_title"
+        android:text="@string/label_signup_account_title"
         android:textAppearance="@style/TextAppearance.GuardBand.SignUpTitle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/header_signup_name" />
+        app:layout_constraintTop_toBottomOf="@id/header_signup_account" />
 
     <TextView
-        android:id="@+id/tv_signup_name_subtitle"
+        android:id="@+id/tv_signup_account_subtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="@string/label_signup_name_subtitle"
+        android:text="@string/label_signup_account_subtitle"
         android:textAppearance="@style/TextAppearance.GuardBand.SignUpSubtitle"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_signup_name_title" />
+        app:layout_constraintTop_toBottomOf="@id/tv_signup_account_title" />
 
-    <!-- First name -->
+    <!-- Email -->
     <TextView
-        android:id="@+id/tv_signup_first_name_label"
+        android:id="@+id/tv_signup_email_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:text="@string/label_field_first_name"
+        android:text="@string/label_field_email"
         android:textAppearance="@style/TextAppearance.GuardBand.SignUpFieldLabel"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_signup_name_subtitle" />
+        app:layout_constraintTop_toBottomOf="@id/tv_signup_account_subtitle" />
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/til_signup_first_name"
+        android:id="@+id/til_signup_email"
         style="@style/Widget.GuardBand.SignUpInput"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_signup_first_name_label">
+        app:layout_constraintTop_toBottomOf="@id/tv_signup_email_label">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_signup_first_name"
+            android:id="@+id/et_signup_email"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/hint_first_name"
-            android:inputType="textPersonName|textCapWords"
+            android:hint="@string/hint_email"
+            android:inputType="textEmailAddress"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Last name -->
+    <!-- Password -->
     <TextView
-        android:id="@+id/tv_signup_last_name_label"
+        android:id="@+id/tv_signup_password_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="@string/label_field_last_name"
+        android:text="@string/label_field_password"
         android:textAppearance="@style/TextAppearance.GuardBand.SignUpFieldLabel"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/til_signup_first_name" />
+        app:layout_constraintTop_toBottomOf="@id/til_signup_email" />
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/til_signup_last_name"
+        android:id="@+id/til_signup_password"
         style="@style/Widget.GuardBand.SignUpInput"
+        app:endIconMode="password_toggle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_signup_last_name_label">
+        app:layout_constraintTop_toBottomOf="@id/tv_signup_password_label">
 
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_signup_last_name"
+            android:id="@+id/et_signup_password"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/hint_last_name"
-            android:inputType="textPersonName|textCapWords"
+            android:hint="@string/hint_password"
+            android:inputType="textPassword"
+            android:maxLines="1" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Confirm password -->
+    <TextView
+        android:id="@+id/tv_signup_confirm_password_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/label_field_confirm_password"
+        android:textAppearance="@style/TextAppearance.GuardBand.SignUpFieldLabel"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/til_signup_password" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_signup_confirm_password"
+        style="@style/Widget.GuardBand.SignUpInput"
+        app:endIconMode="password_toggle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_signup_confirm_password_label">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_signup_confirm_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_confirm_password"
+            android:inputType="textPassword"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <Button
-        android:id="@+id/btn_signup_name_next"
+        android:id="@+id/btn_signup_account_next"
         style="@style/Widget.GuardBand.SignUpContinue"
         android:text="@string/btn_continue"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/til_signup_last_name" />
+        app:layout_constraintTop_toBottomOf="@id/til_signup_confirm_password" />
 
     <ProgressBar
-        android:id="@+id/progress_signup_name"
+        android:id="@+id/progress_signup_account"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_signup_name_next"
+        app:layout_constraintTop_toBottomOf="@id/btn_signup_account_next"
         tools:visibility="visible" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -76,8 +76,7 @@ class FakeAuthRepository(
         val DEFAULT_USER = User(
             id = "uid-1",
             name = "Test User",
-            email = "test@guardband.com",
-            location = ""
+            email = "test@guardband.com"
         )
 
         /** A Google sign-in that found an existing account: routes to Home. */

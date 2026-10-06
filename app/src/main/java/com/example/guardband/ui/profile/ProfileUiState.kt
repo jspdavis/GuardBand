@@ -6,14 +6,12 @@ data class ProfileUiState(
      * True until the `users/{uid}` read lands.
      *
      * The other fields are already populated from the session while this is
-     * true, so the screen shows the user's name immediately and only the
-     * location arrives late.
+     * true, so the screen is never blank; the read only replaces them with the
+     * stored record, which is authoritative.
      */
     val isLoading: Boolean = false,
 
     /** Welcome-header name (already falls back to "User"). */
     val userName: String = "",
-    val email: String = "",
-    /** Already falls back to "Location not set". */
-    val location: String = ""
+    val email: String = ""
 )

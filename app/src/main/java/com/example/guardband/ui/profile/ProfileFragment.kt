@@ -11,12 +11,11 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import kotlinx.coroutines.launch
 
-/** Profile tab: avatar, welcome header, email and location. */
+/** Profile tab: avatar, welcome header and email. */
 class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
     private lateinit var tvWelcome: TextView
     private lateinit var tvEmail: TextView
-    private lateinit var tvLocation: TextView
 
     private val viewModel: ProfileViewModel by viewModels { ProfileViewModel.Factory }
 
@@ -25,7 +24,6 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
         tvWelcome  = view.findViewById(R.id.tv_profile_welcome)
         tvEmail    = view.findViewById(R.id.tv_profile_email)
-        tvLocation = view.findViewById(R.id.tv_profile_location)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -37,6 +35,5 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
     private fun render(state: ProfileUiState) {
         tvWelcome.text = getString(R.string.label_profile_welcome, state.userName)
         tvEmail.text = state.email
-        tvLocation.text = state.location
     }
 }

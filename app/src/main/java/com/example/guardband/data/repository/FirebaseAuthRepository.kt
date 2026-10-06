@@ -76,8 +76,7 @@ class FirebaseAuthRepository(
         User(
             id = firebaseUser.uid,
             name = displayName,
-            email = firebaseUser.email.orEmpty(),
-            location = ""
+            email = firebaseUser.email.orEmpty()
         )
     }
 
@@ -106,7 +105,6 @@ class FirebaseAuthRepository(
         auth.sendPasswordResetEmail(email.trim()).await()
     }
 
-    /** `location` is empty by contract — see [AuthRepository.currentUser]. */
     override fun currentUser(): User? = auth.currentUser?.toUser()
 
     override fun isLoggedIn(): Boolean = auth.currentUser != null
@@ -116,8 +114,7 @@ class FirebaseAuthRepository(
     private fun FirebaseUser.toUser(): User = User(
         id = uid,
         name = displayName.orEmpty(),
-        email = email.orEmpty(),
-        location = ""
+        email = email.orEmpty()
     )
 
     /**

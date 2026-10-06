@@ -55,29 +55,6 @@
             android:textColor="@color/text_primary"
             tools:text="alex@guardband.com" />
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="16dp"
-            android:background="@color/divider" />
-
-        <TextView
-            android:id="@+id/tv_profile_location_label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/label_profile_location"
-            android:textAppearance="@style/TextAppearance.GuardBand.LabelMedium"
-            android:textColor="@color/text_secondary" />
-
-        <TextView
-            android:id="@+id/tv_profile_location"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
-            android:textColor="@color/text_primary"
-            tools:text="San Francisco, CA" />
 
     </LinearLayout>
 </ScrollView>

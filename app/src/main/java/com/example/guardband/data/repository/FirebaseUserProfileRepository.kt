@@ -37,14 +37,12 @@ class FirebaseUserProfileRepository(
     override suspend fun saveProfile(
         uid: String,
         name: String,
-        email: String,
-        location: String
+        email: String
     ): Result<Unit> = profileResult {
         userRef(uid).update(
             mapOf(
                 FIELD_NAME to name,
-                FIELD_EMAIL to email,
-                FIELD_LOCATION to location
+                FIELD_EMAIL to email
             )
         )
     }
@@ -57,8 +55,7 @@ class FirebaseUserProfileRepository(
             User(
                 id = uid,
                 name = snapshot.child(FIELD_NAME).value?.toString().orEmpty(),
-                email = snapshot.child(FIELD_EMAIL).value?.toString().orEmpty(),
-                location = snapshot.child(FIELD_LOCATION).value?.toString().orEmpty()
+                email = snapshot.child(FIELD_EMAIL).value?.toString().orEmpty()
             )
         }
     }
@@ -71,7 +68,6 @@ class FirebaseUserProfileRepository(
         uid: String,
         name: String,
         email: String,
-        location: String,
         contacts: List<EmergencyContact>
     ): Result<Unit> = profileResult {
         val contactsRef = userRef(uid).child(ContactFields.NODE_EMERGENCY_CONTACTS)
@@ -82,8 +78,7 @@ class FirebaseUserProfileRepository(
         // is harmless on a new account but a trap if this is ever reused.
         val updates = mutableMapOf<String, Any?>(
             "$NODE_USERS/$uid/$FIELD_NAME" to name,
-            "$NODE_USERS/$uid/$FIELD_EMAIL" to email,
-            "$NODE_USERS/$uid/$FIELD_LOCATION" to location
+            "$NODE_USERS/$uid/$FIELD_EMAIL" to email
         )
 
         contacts.forEach { contact ->
@@ -159,6 +154,5 @@ class FirebaseUserProfileRepository(
         const val NODE_USERS = "users"
         const val FIELD_NAME = "name"
         const val FIELD_EMAIL = "email"
-        const val FIELD_LOCATION = "location"
     }
 }

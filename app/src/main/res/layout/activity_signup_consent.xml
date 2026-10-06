@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Sign-up final screen — Consent.
+
+    Deliberately outside the step indicator, so this one carries a bare back
+    arrow instead of view_signup_step_header: the user has finished the three
+    steps and this is the commit point.
+
+    This is where the account is actually created: createAccount() then
+    finalizeSignUp(), so abandoning any earlier step leaves nothing behind.
+    btn_signup_consent_create stays disabled until the box is ticked.
+-->
+<!-- DESIGN: Jul -->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.GuardBand.SignUpStep"
+    tools:context=".ui.signup.SignUpConsentActivity">
+
+    <ImageButton
+        android:id="@+id/btn_signup_back"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/cd_back"
+        android:padding="8dp"
+        android:src="@drawable/ic_arrow_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_signup_consent_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="@string/label_signup_consent_title"
+        android:textAppearance="@style/TextAppearance.GuardBand.SignUpTitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_signup_back" />
+
+    <TextView
+        android:id="@+id/tv_signup_consent_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="@string/label_signup_consent_subtitle"
+        android:textAppearance="@style/TextAppearance.GuardBand.SignUpSubtitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_signup_consent_title" />
+
+    <!-- The statement is the checkbox's own label, so tapping the text toggles
+         it and TalkBack reads the two as one control.
+         DESIGN: Jul — "Privacy Notice" should become a link once the notice
+         has a URL; it is plain text for now rather than a dead link. -->
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/cb_signup_consent"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="0dp"
+        android:text="@string/label_signup_consent_statement"
+        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+        android:textColor="@color/text_primary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_signup_consent_subtitle" />
+
+    <Button
+        android:id="@+id/btn_signup_consent_create"
+        style="@style/Widget.GuardBand.SignUpContinue"
+        android:enabled="false"
+        android:text="@string/btn_signup_create_account"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cb_signup_consent" />
+
+    <!-- Shown when createAccount or finalizeSignUp fails. Retry resumes at the
+         write, so a failed profile write never re-creates the account. -->
+    <Button
+        android:id="@+id/btn_signup_consent_retry"
+        style="@style/Widget.GuardBand.Button.Outlined"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/btn_alert_retry"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_signup_consent_create"
+        tools:visibility="visible" />
+
+    <ProgressBar
+        android:id="@+id/progress_signup_consent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_signup_consent_retry"
+        tools:visibility="visible" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

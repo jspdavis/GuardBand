@@ -5,14 +5,48 @@
     <string name="splash_tagline">Stay safe. Stay connected.</string>
 
     <!-- Login -->
+    <string name="label_login_welcome">Welcome to GuardBand</string>
+    <string name="label_login_subtitle">Let\'s get you signed up!</string>
     <string name="hint_email">Email address</string>
     <string name="hint_password">Password</string>
     <string name="btn_login">Log In</string>
-    <string name="btn_signup">Create an account</string>
-    <string name="btn_forgot">Forgot password?</string>
+    <string name="btn_forgot">Forgot Password?</string>
+    <string name="label_login_or">or</string>
+    <string name="label_login_signup_prompt">Don\'t have an account?</string>
+    <string name="btn_signup">Create an Account</string>
 
     <!-- Google sign-in. Wording only; Google's button branding is Jul's. -->
     <string name="btn_continue_google">Continue with Google</string>
+
+    <!-- Sign-up wizard: shared -->
+    <string name="label_signup_step">Step %1$d/%2$d</string>
+    <string name="btn_continue">Continue</string>
+
+    <!-- Sign Up – Step 1, Account -->
+    <string name="label_signup_account_title">Create your account</string>
+    <string name="label_signup_account_subtitle">You\'ll use this to sign in.</string>
+    <string name="label_field_email">Email</string>
+    <string name="label_field_password">Password</string>
+    <string name="label_field_confirm_password">Confirm Password</string>
+    <string name="hint_confirm_password">Confirm password</string>
+
+    <!-- Sign Up – Step 2, Name -->
+    <string name="label_signup_name_subtitle">This will be used to address you.</string>
+    <string name="label_field_first_name">First Name</string>
+    <string name="label_field_last_name">Last Name</string>
+    <string name="hint_first_name">First name</string>
+    <string name="hint_last_name">Last name</string>
+
+    <!-- Sign Up – Step 3, Emergency contacts -->
+    <string name="label_signup_contacts_subtitle">These are the people your band texts when you need help.</string>
+    <string name="label_signup_contacts_minimum">%1$d of %2$d minimum</string>
+    <string name="btn_signup_add_contact">Add contact</string>
+
+    <!-- Sign Up – Consent (outside the step indicator) -->
+    <string name="label_signup_consent_title">Before you finish</string>
+    <string name="label_signup_consent_subtitle">One last thing, and it matters.</string>
+    <string name="label_signup_consent_statement">I agree to the Privacy Notice, I\'m 18 or older (or have a guardian\'s permission), and the person wearing the band knows and agrees to be tracked.</string>
+    <string name="btn_signup_create_account">Create account</string>
 
     <!-- Sign Up – Name -->
     <string name="label_signup_name_title">What\'s your name?</string>
@@ -20,8 +54,6 @@
     <string name="btn_next">Next</string>
 
     <!-- Sign Up – Location -->
-    <string name="label_signup_location_title">Where are you based?</string>
-    <string name="hint_location">City or region</string>
 
     <!-- Sign Up – Contacts -->
     <string name="label_signup_contacts_title">Add emergency contacts</string>
@@ -103,7 +135,6 @@
     <!-- Profile -->
     <string name="label_profile_welcome">Welcome back, %1$s</string>
     <string name="label_profile_email">Email</string>
-    <string name="label_profile_location">Location</string>
 
     <!-- Settings -->
     <string name="label_settings_title">Settings</string>

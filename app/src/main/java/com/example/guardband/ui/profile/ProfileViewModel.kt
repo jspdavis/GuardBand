@@ -19,14 +19,12 @@ import kotlinx.coroutines.launch
  * No events: nothing on the screen acts yet.
  *
  * The name and email come from the session synchronously, so the header is
- * never blank. The location needs the `users/{uid}` record, which only an async
- * read can supply — see [AuthRepository.currentUser] — so the state starts with
- * the session's values and is filled in when that read lands.
+ * never blank, and the `users/{uid}` read then replaces them with the stored
+ * record — see [AuthRepository.currentUser].
  *
  * A read that finds no record, or fails, leaves the session's values in place.
  * The session is the better fallback than an error screen here: the user's own
- * name and address are still worth showing, and the location simply stays
- * [DEFAULT_LOCATION].
+ * name and address are still worth showing.
  */
 class ProfileViewModel(
     private val authRepository: AuthRepository,
@@ -56,9 +54,7 @@ class ProfileViewModel(
                         state.copy(
                             isLoading = false,
                             userName = profile?.name?.takeUnless { it.isBlank() } ?: state.userName,
-                            email = profile?.email?.takeUnless { it.isBlank() } ?: state.email,
-                            location = profile?.location?.takeUnless { it.isBlank() }
-                                ?: DEFAULT_LOCATION
+                            email = profile?.email?.takeUnless { it.isBlank() } ?: state.email
                         )
                     }
                 }
@@ -68,20 +64,18 @@ class ProfileViewModel(
         }
     }
 
-    /** What the session alone can fill: everything but the location. */
+    /** What the session alone can fill, before the record read lands. */
     private fun sessionState(): ProfileUiState {
         val user = authRepository.currentUser()
         return ProfileUiState(
             isLoading = true,
             userName = user?.name?.takeUnless { it.isBlank() } ?: DEFAULT_USER_NAME,
-            email = user?.email.orEmpty(),
-            location = DEFAULT_LOCATION
+            email = user?.email.orEmpty()
         )
     }
 
     companion object {
         const val DEFAULT_USER_NAME = "User"
-        const val DEFAULT_LOCATION = "Location not set"
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

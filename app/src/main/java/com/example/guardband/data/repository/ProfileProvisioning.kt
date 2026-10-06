@@ -14,10 +14,9 @@ import com.example.guardband.data.model.User
  * [com.google.firebase.auth.FirebaseAuth] and the project declares no mocking
  * library.
  *
- * The rule exists because the profile write cannot distinguish "the user has
- * not set a location" from "do not touch the location". A sign-in has no
- * location to offer, so it would write an empty one over whatever the user had
- * already set. Limiting the write to records that do not exist yet is what
+ * The rule exists because a sign-in only knows what the provider hands it.
+ * Writing on every sign-in would put that thin version over whatever the user
+ * already has. Limiting the write to records that do not exist yet is what
  * makes it safe to call on every sign-in.
  */
 internal object ProfileProvisioning {
@@ -30,11 +29,6 @@ internal object ProfileProvisioning {
      * certainly no record) or when the record is confirmed absent. A *failed*
      * existence read writes nothing: it cannot tell an absent record from an
      * unreachable one, and skipping is the option that cannot destroy data.
-     *
-     * `location` is always written empty - neither Google nor an email login
-     * supplies one. For a first-time Google user the complete-profile steps
-     * fill it in next; for an email login it means the record exists with the
-     * name and address, which is strictly better than no record at all.
      *
      * Returns the write's [Result], or null when no write was attempted.
      * Callers deliberately ignore a failure: the Firebase session already
@@ -56,8 +50,7 @@ internal object ProfileProvisioning {
         return userProfileRepository.saveProfile(
             uid = user.id,
             name = user.name,
-            email = user.email,
-            location = ""
+            email = user.email
         )
     }
 }

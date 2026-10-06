@@ -74,25 +74,24 @@ class SignUpContactsViewModelTest {
 
         val uid = FakeAuthRepository.DEFAULT_USER.id
         assertEquals(
-            Triple("Alex Rivera", FakeAuthRepository.DEFAULT_USER.email, "Cebu City"),
+            Pair("Alex Rivera", FakeAuthRepository.DEFAULT_USER.email),
             profiles.saved[uid]
         )
         assertEquals("Jordan Lee", profiles.finalizedContacts[uid]!!.single().name)
     }
 
     @Test
-    fun `the location from the earlier step reaches the write`() = runTest {
+    fun `the name from the earlier step reaches the write`() = runTest {
         submit()
         viewModel.events.first()
 
-        assertEquals("Cebu City", profiles.saved[FakeAuthRepository.DEFAULT_USER.id]!!.third)
+        assertEquals("Alex Rivera", profiles.saved[FakeAuthRepository.DEFAULT_USER.id]!!.first)
     }
 
     @Test
     fun `a blank contact block is no contact rather than an error`() = runTest {
         viewModel.onSubmitClicked(
             name = "Alex Rivera",
-            location = "Cebu City",
             email = "alex@guardband.com",
             password = "password123",
             contactName = "",
@@ -209,7 +208,6 @@ class SignUpContactsViewModelTest {
         // Blank credentials would fail validation on a first submit.
         viewModel.onSubmitClicked(
             name = "Alex Rivera",
-            location = "Cebu City",
             email = "",
             password = "",
             contactName = "Jordan Lee",
@@ -262,7 +260,7 @@ class SignUpContactsViewModelTest {
         assertEquals(0, auth.createAccountCalls)
         assertEquals(1, profiles.finalizeSignUpCalls)
         assertEquals(
-            Triple("Alex Rivera", FakeAuthRepository.DEFAULT_USER.email, "Cebu City"),
+            Pair("Alex Rivera", FakeAuthRepository.DEFAULT_USER.email),
             profiles.saved[FakeAuthRepository.DEFAULT_USER.id]
         )
     }
@@ -273,7 +271,6 @@ class SignUpContactsViewModelTest {
 
         vm.onSubmitClicked(
             name = "Alex Rivera",
-            location = "Cebu City",
             email = "attacker@example.com",
             password = "",
             contactName = "",
@@ -295,7 +292,6 @@ class SignUpContactsViewModelTest {
         // Blank email and password would fail validation in register mode.
         vm.onSubmitClicked(
             name = "Alex Rivera",
-            location = "Cebu City",
             email = "",
             password = "",
             contactName = "",
@@ -367,7 +363,6 @@ class SignUpContactsViewModelTest {
 
     private fun submit(vm: SignUpContactsViewModel) = vm.onSubmitClicked(
         name = "Alex Rivera",
-        location = "Cebu City",
         email = "alex@guardband.com",
         password = "password123",
         contactName = "Jordan Lee",
@@ -382,7 +377,6 @@ class SignUpContactsViewModelTest {
         contactPhone: String = "+63-917-000-0000"
     ) = viewModel.onSubmitClicked(
         name = "Alex Rivera",
-        location = "Cebu City",
         email = email,
         password = password,
         contactName = contactName,

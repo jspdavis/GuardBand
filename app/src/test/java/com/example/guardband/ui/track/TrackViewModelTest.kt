@@ -1,9 +1,6 @@
 package com.example.guardband.ui.track
 
-import com.example.guardband.data.model.User
-import com.example.guardband.data.repository.AuthError
 import com.example.guardband.testing.FakeAuthRepository
-import com.example.guardband.testing.FakeUserProfileRepository
 import com.example.guardband.testing.MainDispatcherRule
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -11,71 +8,34 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
-/** Track tab: the user chip's location, and the placeholder click handlers. */
+/**
+ * Track tab: the user chip's name, and the placeholder click handlers.
+ *
+ * The chip used to carry the user's typed city from `users/{uid}`; that field
+ * is gone, so the tab no longer reads the profile record at all and takes only
+ * an [com.example.guardband.data.repository.AuthRepository].
+ */
 class TrackViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val profiles = FakeUserProfileRepository()
-
     private fun viewModel(signedIn: Boolean = true) =
-        TrackViewModel(FakeAuthRepository(signedIn = signedIn), profiles)
-
-    private val storedProfile = User(
-        id = "uid-1",
-        name = "Alex Rivera",
-        email = "alex@guardband.com",
-        location = "Cebu City"
-    )
+        TrackViewModel(FakeAuthRepository(signedIn = signedIn))
 
     @Test
-    fun `the chip shows the stored location once the read lands`() = runTest {
-        profiles.fetchProfileResult = Result.success(storedProfile)
-
-        val state = viewModel().uiState.first { it.userLocation != TrackViewModel.DEFAULT_LOCATION }
-
-        assertEquals("Cebu City", state.userLocation)
-    }
-
-    @Test
-    fun `the chip starts on the fallback, because the session cannot supply a location`() {
+    fun `the chip shows the session's name`() {
         val vm = viewModel()
 
-        assertEquals(TrackViewModel.DEFAULT_LOCATION, vm.uiState.value.userLocation)
+        // No flow collection: this is the state the screen renders immediately.
         assertEquals(FakeAuthRepository.DEFAULT_USER.name, vm.uiState.value.userName)
     }
 
     @Test
-    fun `a missing record leaves the fallback in place`() = runTest {
-        profiles.fetchProfileResult = Result.success(null)
-        val vm = viewModel()
+    fun `no session falls back to the default name`() {
+        val vm = viewModel(signedIn = false)
 
-        profiles.let { } // read has already been launched by init
-        assertEquals(TrackViewModel.DEFAULT_LOCATION, vm.uiState.first().userLocation)
-    }
-
-    @Test
-    fun `a failed read leaves the fallback in place rather than reporting an error`() = runTest {
-        profiles.fetchProfileResult = Result.failure(AuthError.Network)
-        val vm = viewModel()
-
-        assertEquals(TrackViewModel.DEFAULT_LOCATION, vm.uiState.first().userLocation)
-    }
-
-    @Test
-    fun `a blank stored location leaves the fallback in place`() = runTest {
-        profiles.fetchProfileResult = Result.success(storedProfile.copy(location = "   "))
-        val vm = viewModel()
-
-        assertEquals(TrackViewModel.DEFAULT_LOCATION, vm.uiState.first().userLocation)
-    }
-
-    @Test
-    fun `no session means no read`() = runTest {
-        viewModel(signedIn = false)
-
-        assertEquals(0, profiles.fetchProfileCalls)
+        assertEquals(TrackViewModel.DEFAULT_USER_NAME, vm.uiState.value.userName)
     }
 
     @Test
@@ -95,6 +55,18 @@ class TrackViewModelTest {
         val vm = viewModel()
 
         vm.onRecenterClicked()
+
+        assertEquals(
+            TrackViewModel.MSG_MAP_UNAVAILABLE,
+            (vm.events.first() as TrackEvent.ShowMessage).text
+        )
+    }
+
+    @Test
+    fun `the layers control says the same`() = runTest {
+        val vm = viewModel()
+
+        vm.onLayersClicked()
 
         assertEquals(
             TrackViewModel.MSG_MAP_UNAVAILABLE,

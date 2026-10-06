@@ -62,13 +62,12 @@ class SignUpContactsViewModel(
      * either way, and the [SignUpContactsUiState.accountCreated] guard below is
      * what makes the second call resume instead of start over.
      *
-     * [name]/[location] come from the previous steps. The credentials are passed
+     * [name] comes from the previous step. The credentials are passed
      * to the repository untrimmed, as before; the contact fields are trimmed and
      * normalised.
      */
     fun onSubmitClicked(
         name: String,
-        location: String,
         email: String,
         password: String,
         contactName: String,
@@ -92,7 +91,6 @@ class SignUpContactsViewModel(
                 uid = user.id,
                 name = name.trim().ifEmpty { user.name },
                 email = user.email,
-                location = location,
                 contacts = contacts
             )
             return
@@ -101,7 +99,7 @@ class SignUpContactsViewModel(
         if (_uiState.value.accountCreated) {
             // A previous attempt got the account made and the write failed.
             // Resuming at the write is the whole point of the split.
-            retryFinalize(name, location, contacts)
+            retryFinalize(name, contacts)
             return
         }
 
@@ -118,7 +116,6 @@ class SignUpContactsViewModel(
                         // attempt and every retry write the identical record.
                         name = name.trim().ifEmpty { user.name },
                         email = user.email,
-                        location = location,
                         contacts = contacts
                     )
                 }
@@ -145,7 +142,7 @@ class SignUpContactsViewModel(
      * signed the user out between attempts, which is reported rather than
      * written past.
      */
-    private fun retryFinalize(name: String, location: String, contacts: List<EmergencyContact>) {
+    private fun retryFinalize(name: String, contacts: List<EmergencyContact>) {
         val user = authRepository.currentUser()
         if (user == null) {
             _events.trySend(SignUpContactsEvent.ShowMessage(MSG_SESSION_EXPIRED))
@@ -155,7 +152,6 @@ class SignUpContactsViewModel(
             uid = user.id,
             name = name.trim().ifEmpty { user.name },
             email = user.email,
-            location = location,
             contacts = contacts
         )
     }
@@ -164,12 +160,11 @@ class SignUpContactsViewModel(
         uid: String,
         name: String,
         email: String,
-        location: String,
         contacts: List<EmergencyContact>
     ) {
         _uiState.update { it.copy(isLoading = true, canRetry = false) }
         viewModelScope.launch {
-            finalizeNow(uid, name, email, location, contacts)
+            finalizeNow(uid, name, email, contacts)
         }
     }
 
@@ -183,14 +178,12 @@ class SignUpContactsViewModel(
         uid: String,
         name: String,
         email: String,
-        location: String,
         contacts: List<EmergencyContact>
     ) {
         userProfileRepository.finalizeSignUp(
             uid = uid,
             name = name.trim(),
             email = email,
-            location = location.trim(),
             contacts = contacts
         )
             .onSuccess {

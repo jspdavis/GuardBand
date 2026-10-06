@@ -24,11 +24,11 @@ class ProfileProvisioningTest {
     private val profiles = FakeUserProfileRepository()
 
     @Test
-    fun `a new user gets a profile with name, email and an empty location`() = runTest {
+    fun `a new user gets a profile with their name and email`() = runTest {
         val result = ProfileProvisioning.ensureProfile(profiles, USER, isNewUser = true)
 
         assertTrue(result!!.isSuccess)
-        assertEquals(Triple(USER.name, USER.email, ""), profiles.saved[USER.id])
+        assertEquals(Pair(USER.name, USER.email), profiles.saved[USER.id])
     }
 
     @Test
@@ -55,11 +55,11 @@ class ProfileProvisioningTest {
         val result = ProfileProvisioning.ensureProfile(profiles, USER, isNewUser = false)
 
         assertTrue(result!!.isSuccess)
-        assertEquals(Triple(USER.name, USER.email, ""), profiles.saved[USER.id])
+        assertEquals(Pair(USER.name, USER.email), profiles.saved[USER.id])
     }
 
     @Test
-    fun `a failed existence read writes nothing, so a location can never be wiped`() = runTest {
+    fun `a failed existence read writes nothing, so a record can never be clobbered`() = runTest {
         profiles.profileExistsResult = Result.failure(AuthError.Network)
 
         val result = ProfileProvisioning.ensureProfile(profiles, USER, isNewUser = false)
@@ -83,8 +83,7 @@ class ProfileProvisioningTest {
             override suspend fun saveProfile(
                 uid: String,
                 name: String,
-                email: String,
-                location: String
+                email: String
             ): Result<Unit> = throw CancellationException("cancelled mid-write")
 
             override suspend fun profileExists(uid: String): Result<Boolean> =
@@ -97,7 +96,6 @@ class ProfileProvisioningTest {
                 uid: String,
                 name: String,
                 email: String,
-                location: String,
                 contacts: List<EmergencyContact>
             ): Result<Unit> = Result.success(Unit)
         }
@@ -109,8 +107,7 @@ class ProfileProvisioningTest {
         val USER = User(
             id = "uid-google-1",
             name = "Google User",
-            email = "google.user@example.com",
-            location = ""
+            email = "google.user@example.com"
         )
     }
 }

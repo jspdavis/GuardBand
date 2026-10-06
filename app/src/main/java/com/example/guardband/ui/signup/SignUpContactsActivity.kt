@@ -20,12 +20,12 @@ import kotlinx.coroutines.launch
 /**
  * Sign-Up Step 3 — user adds an emergency contact and finishes registration.
  *
- * Receives: [EXTRA_NAME], [EXTRA_LOCATION], and in complete-profile mode
- * [EXTRA_EMAIL] and [EXTRA_COMPLETE_PROFILE], all from SignUpLocationActivity.
+ * Receives: [EXTRA_NAME] from the name step, and in complete-profile mode
+ * [EXTRA_EMAIL] and [EXTRA_COMPLETE_PROFILE] straight from Login.
  *
  * In complete-profile mode (first-time Google sign-in) the account already
- * exists, so the credential section is hidden and only the location and the
- * emergency contact are saved.
+ * exists, so the credential section is hidden and only the emergency contact
+ * is saved.
  * View ids: et_signup_contacts_email, et_signup_contacts_password,
  * et_contact_name, et_contact_phone, et_contact_relationship,
  * btn_signup_contacts_submit, btn_signup_contacts_retry,
@@ -47,8 +47,7 @@ import kotlinx.coroutines.launch
 class SignUpContactsActivity : AppCompatActivity() {
 
     companion object {
-        const val EXTRA_NAME     = "extra_name"
-        const val EXTRA_LOCATION = "extra_location"
+        const val EXTRA_NAME = "extra_name"
 
         /** The Google address, in complete-profile mode only. */
         const val EXTRA_EMAIL = "extra_email"
@@ -71,14 +70,12 @@ class SignUpContactsActivity : AppCompatActivity() {
 
     private val viewModel: SignUpContactsViewModel by viewModels { SignUpContactsViewModel.Factory }
     private var userName: String = ""
-    private var userLocation: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signup_contacts)
 
-        userName     = intent.getStringExtra(EXTRA_NAME)     ?: ""
-        userLocation = intent.getStringExtra(EXTRA_LOCATION) ?: ""
+        userName = intent.getStringExtra(EXTRA_NAME) ?: ""
 
         viewModel.setCompleteProfileMode(
             intent.getBooleanExtra(EXTRA_COMPLETE_PROFILE, false)
@@ -118,7 +115,6 @@ class SignUpContactsActivity : AppCompatActivity() {
 
     private fun submit() = viewModel.onSubmitClicked(
         name                = userName,
-        location            = userLocation,
         email               = etEmail.text.toString(),
         password            = etPassword.text.toString(),
         contactName         = etContactName.text.toString(),

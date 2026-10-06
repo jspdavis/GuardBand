@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
  *   Login  →  SignUpNameActivity
  *   Login  →  ForgotRequestActivity
  *   Login  →  (Google, returning user)  →  LoadingActivity  →  HomeActivity
- *   Login  →  (Google, first-time user) →  SignUpLocationActivity (complete profile)
+ *   Login  →  (Google, first-time user) →  SignUpContactsActivity (complete profile)
  */
 class LoginViewModel(
     private val authRepository: AuthRepository

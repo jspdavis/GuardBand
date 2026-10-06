@@ -168,6 +168,50 @@
         <item name="android:background">@color/divider</item>
     </style>
 
+    <!-- Sign-up wizard
+         One place for the step layouts' shared look, so a restyle touches this
+         file and not four layouts. Geometry here is the agreed concept; exact
+         values are still Jul's.
+    -->
+    <!-- DESIGN: Jul -->
+    <style name="Widget.GuardBand.SignUpStep" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:background">@color/surface_bg</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:paddingTop">96dp</item>
+        <item name="android:paddingBottom">32dp</item>
+    </style>
+
+    <style name="TextAppearance.GuardBand.SignUpTitle" parent="TextAppearance.GuardBand.HeadlineSmall">
+        <item name="android:textColor">@color/brand_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.GuardBand.SignUpSubtitle" parent="TextAppearance.GuardBand.BodySmall">
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Standalone label above a field, the pattern the step layouts use
+         instead of a floating hint. -->
+    <style name="TextAppearance.GuardBand.SignUpFieldLabel" parent="TextAppearance.GuardBand.BodySmall">
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <style name="Widget.GuardBand.SignUpInput" parent="Widget.GuardBand.TextInputLayout">
+        <item name="hintEnabled">false</item>
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">8dp</item>
+    </style>
+
+    <style name="Widget.GuardBand.SignUpContinue" parent="Widget.GuardBand.Button">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">24dp</item>
+    </style>
+
     <!-- Shapes -->
     <style name="ShapeAppearance.GuardBand.Circle" parent="">
         <item name="cornerFamily">rounded</item>

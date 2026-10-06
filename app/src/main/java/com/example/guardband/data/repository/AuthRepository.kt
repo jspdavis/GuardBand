@@ -69,11 +69,10 @@ interface AuthRepository {
      * The signed-in user, or null. Synchronous, so it is safe in a ViewModel's
      * constructor.
      *
-     * Fills `id`, `name` (the Firebase display name) and `email` only.
-     * `location` is always empty, because it lives at `users/{uid}` and needs
-     * an async read: a screen that shows a location reads it with
-     * [UserProfileRepository.fetchProfile] and uses this only as the fallback
-     * for when no record exists yet.
+     * Fills `id`, `name` (the Firebase display name) and `email`, which is
+     * the whole of [User]. A screen wanting the stored record reads it with
+     * [UserProfileRepository.fetchProfile] and uses this as the fallback for
+     * when no record exists yet.
      */
     fun currentUser(): User?
 

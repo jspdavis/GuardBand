@@ -13,7 +13,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
-/** Profile tab: the session fills the header, the async read fills the location. */
+/**
+ * Profile tab: the session fills the header immediately, then the
+ * `users/{uid}` read replaces it with the stored record.
+ *
+ * The location field is gone, so the read now only carries the name and email.
+ */
 class ProfileViewModelTest {
 
     @get:Rule
@@ -24,16 +29,8 @@ class ProfileViewModelTest {
     private fun viewModel(signedIn: Boolean = true) =
         ProfileViewModel(FakeAuthRepository(signedIn = signedIn), profiles)
 
-    @Test
-    fun `the stored location replaces the fallback once the read lands`() = runTest {
-        profiles.fetchProfileResult = Result.success(
-            User(id = "uid-1", name = "Alex Rivera", email = "alex@guardband.com", location = "Cebu City")
-        )
-
-        val state = viewModel().uiState.first { !it.isLoading }
-
-        assertEquals("Cebu City", state.location)
-    }
+    private val storedProfile =
+        User(id = "uid-1", name = "Alex Rivera", email = "alex@guardband.com")
 
     @Test
     fun `the header is filled from the session before the read lands`() {
@@ -43,7 +40,16 @@ class ProfileViewModelTest {
         assertTrue(vm.uiState.value.isLoading)
         assertEquals(FakeAuthRepository.DEFAULT_USER.name, vm.uiState.value.userName)
         assertEquals(FakeAuthRepository.DEFAULT_USER.email, vm.uiState.value.email)
-        assertEquals(ProfileViewModel.DEFAULT_LOCATION, vm.uiState.value.location)
+    }
+
+    @Test
+    fun `the stored record replaces the session values once the read lands`() = runTest {
+        profiles.fetchProfileResult = Result.success(storedProfile)
+
+        val state = viewModel().uiState.first { !it.isLoading }
+
+        assertEquals("Alex Rivera", state.userName)
+        assertEquals("alex@guardband.com", state.email)
     }
 
     @Test
@@ -54,7 +60,6 @@ class ProfileViewModelTest {
 
         assertEquals(FakeAuthRepository.DEFAULT_USER.name, state.userName)
         assertEquals(FakeAuthRepository.DEFAULT_USER.email, state.email)
-        assertEquals(ProfileViewModel.DEFAULT_LOCATION, state.location)
     }
 
     @Test
@@ -64,29 +69,16 @@ class ProfileViewModelTest {
         val state = viewModel().uiState.first { !it.isLoading }
 
         assertEquals(FakeAuthRepository.DEFAULT_USER.name, state.userName)
-        assertEquals(ProfileViewModel.DEFAULT_LOCATION, state.location)
+        assertEquals(FakeAuthRepository.DEFAULT_USER.email, state.email)
     }
 
     @Test
-    fun `a blank stored location falls back rather than showing nothing`() = runTest {
-        profiles.fetchProfileResult = Result.success(
-            User(id = "uid-1", name = "Alex Rivera", email = "alex@guardband.com", location = "   ")
-        )
+    fun `a blank stored name falls back to the session rather than showing nothing`() = runTest {
+        profiles.fetchProfileResult = Result.success(storedProfile.copy(name = "   "))
 
         val state = viewModel().uiState.first { !it.isLoading }
 
-        assertEquals(ProfileViewModel.DEFAULT_LOCATION, state.location)
-    }
-
-    @Test
-    fun `the stored name wins over the session display name`() = runTest {
-        profiles.fetchProfileResult = Result.success(
-            User(id = "uid-1", name = "Alex Rivera", email = "alex@guardband.com", location = "Cebu City")
-        )
-
-        val state = viewModel().uiState.first { !it.isLoading }
-
-        assertEquals("Alex Rivera", state.userName)
+        assertEquals(FakeAuthRepository.DEFAULT_USER.name, state.userName)
     }
 
     @Test

@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -18,7 +17,7 @@ import com.example.guardband.ui.auth.GoogleIdTokenProvider
 import com.example.guardband.ui.auth.GoogleIdTokenResult
 import com.example.guardband.ui.forgot.ForgotRequestActivity
 import com.example.guardband.ui.loading.LoadingActivity
-import com.example.guardband.ui.signup.SignUpLocationActivity
+import com.example.guardband.ui.signup.SignUpContactsActivity
 import com.example.guardband.ui.signup.SignUpNameActivity
 import kotlinx.coroutines.launch
 
@@ -26,8 +25,9 @@ import kotlinx.coroutines.launch
  * Login screen — entry point for returning users.
  *
  * View ids: et_login_email, et_login_password, btn_login, login_google_button,
- * progress_login, tv_login_signup, tv_login_forgot, til_login_email,
- * til_login_password, iv_login_logo, tv_login_title.
+ * tv_login_signup, tv_login_forgot, til_login_email,
+ * til_login_password, tv_login_title, tv_login_subtitle, tv_login_email_label,
+ * tv_login_or, tv_login_signup_prompt.
  *
  * Google sign-in: the chooser needs an Activity, so [GoogleIdTokenProvider]
  * runs here and the ViewModel only ever receives the token string or a
@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
  *   Login  →  SignUpNameActivity
  *   Login  →  ForgotRequestActivity
  *   Login  →  (Google, returning user)  →  LoadingActivity  →  HomeActivity
- *   Login  →  (Google, first-time user) →  SignUpLocationActivity (complete profile)
+ *   Login  →  (Google, first-time user) →  SignUpContactsActivity (complete profile)
  */
 class LoginActivity : AppCompatActivity() {
 
@@ -47,7 +47,6 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var btnLogin: Button
     private lateinit var tvSignUp: TextView
     private lateinit var tvForgot: TextView
-    private lateinit var progressBar: ProgressBar
     private lateinit var btnGoogle: Button
 
     private val viewModel: LoginViewModel by viewModels { LoginViewModel.Factory }
@@ -62,7 +61,6 @@ class LoginActivity : AppCompatActivity() {
         btnLogin    = findViewById(R.id.btn_login)
         tvSignUp    = findViewById(R.id.tv_login_signup)
         tvForgot    = findViewById(R.id.tv_login_forgot)
-        progressBar = findViewById(R.id.progress_login)
         btnGoogle   = findViewById(R.id.login_google_button)
 
         btnLogin.setOnClickListener {
@@ -90,9 +88,10 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun render(state: LoginUiState) {
-        progressBar.visibility = if (state.isBusy) View.VISIBLE else View.GONE
         // Both buttons go flat while either sign-in runs, so neither can start
-        // a second attempt on top of the first.
+        // a second attempt on top of the first. That is the only busy signal
+        // on this screen: the design has no spinner, so there is no
+        // progress_login to bind.
         btnLogin.isEnabled = !state.isBusy
         btnGoogle.isEnabled = !state.isBusy
     }
@@ -119,10 +118,10 @@ class LoginActivity : AppCompatActivity() {
 
             is LoginEvent.NavigateToCompleteProfile ->
                 startActivity(
-                    Intent(this, SignUpLocationActivity::class.java).apply {
-                        putExtra(SignUpLocationActivity.EXTRA_NAME, event.name)
-                        putExtra(SignUpLocationActivity.EXTRA_EMAIL, event.email)
-                        putExtra(SignUpLocationActivity.EXTRA_COMPLETE_PROFILE, true)
+                    Intent(this, SignUpContactsActivity::class.java).apply {
+                        putExtra(SignUpContactsActivity.EXTRA_NAME, event.name)
+                        putExtra(SignUpContactsActivity.EXTRA_EMAIL, event.email)
+                        putExtra(SignUpContactsActivity.EXTRA_COMPLETE_PROFILE, true)
                     }
                 )
 

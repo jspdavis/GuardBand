@@ -28,7 +28,6 @@ import kotlinx.coroutines.launch
 class TrackFragment : Fragment(R.layout.fragment_track) {
 
     private lateinit var tvUserName: TextView
-    private lateinit var tvUserLocation: TextView
 
     private val viewModel: TrackViewModel by viewModels { TrackViewModel.Factory }
     private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
@@ -37,7 +36,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         super.onViewCreated(view, savedInstanceState)
 
         tvUserName     = view.findViewById(R.id.tv_track_user_name)
-        tvUserLocation = view.findViewById(R.id.tv_track_user_location)
 
         view.findViewById<ImageButton>(R.id.ib_track_notifications)
             .setOnClickListener { homeViewModel.onNotificationsClicked() }
@@ -64,7 +62,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
     private fun render(state: TrackUiState) {
         tvUserName.text = state.userName
-        tvUserLocation.text = state.userLocation
     }
 
     private fun handleEvent(event: TrackEvent) {

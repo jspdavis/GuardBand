@@ -61,7 +61,7 @@ com/example/guardband/
 │   ├── splash/         Splash → Home if signed in, else Login (2 s countdown)
 │   ├── auth/           GoogleIdTokenProvider + GoogleIdTokenResult (the only androidx.credentials users)
 │   ├── login/          email + password, and "Continue with Google"
-│   ├── signup/         Name → Location → Contacts; Location → Contacts in complete-profile mode
+│   ├── signup/         Name → Contacts; Contacts alone in complete-profile mode
 │   ├── forgot/         Request → Sent (Firebase emails the link; no OTP screens)
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
@@ -82,7 +82,7 @@ com/example/guardband/
 
 Conventions (copy `ui/login/*` as the reference):
 - **State:** one `XUiState` data class per screen, held in a `MutableStateFlow` and exposed as a `StateFlow`. Update it only with `_uiState.update { it.copy(...) }`.
-- **Events:** one-shot events (navigate, toast) go in a sealed `XEvent` sent through `Channel(Channel.BUFFERED)` and exposed with `receiveAsFlow()`. Never encode navigation as state. A screen with no state of its own (Splash, Loading, Sign-up Name/Location) has events only.
+- **Events:** one-shot events (navigate, toast) go in a sealed `XEvent` sent through `Channel(Channel.BUFFERED)` and exposed with `receiveAsFlow()`. Never encode navigation as state. A screen with no state of its own (Splash, Loading, Sign-up Name) has events only.
 - **ViewModels** take repositories through the constructor and hold no `Context` or View. They expose `companion object { val Factory = viewModelFactory { initializer { XViewModel(RepositoryProvider.…) } } }`, and Activities use `by viewModels { XViewModel.Factory }`; plain `by viewModels()` is fine when there are no dependencies. User-facing messages are `MSG_*` constants in the ViewModel — including the wording for every `AuthError`, which each screen maps itself in a private `messageFor(error)`. Those messages stay in Kotlin rather than `strings.xml` precisely because a ViewModel holds no `Context`.
 - **Activities** bind views with `findViewById`, forward raw input and clicks, render state, and execute events (Toast, `startActivity`, `finish`). They collect each flow in its own `lifecycleScope.launch { repeatOnLifecycle(STARTED) { … } }`. Building `Intent`s stays in the Activity.
 - **Wizard data** moves between screens as Intent extras. The Activity passes the extras into the ViewModel's click handler, and the navigation event carries the data back.
@@ -108,7 +108,7 @@ Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unus
 Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cloud Functions). Auth is **email + password** and **Google** (see "Google sign-in" below).
 
 - **Firebase calls live only in repository classes.** No Firebase import belongs in an Activity, Fragment or ViewModel. `FirebaseProvider` owns the single `FirebaseAuth` and `FirebaseDatabase`; `FirebaseDatabase.getInstance()` takes the URL from `google-services.json`, so never hardcode it.
-- **The session is `FirebaseAuth.currentUser`,** which the SDK persists, so it survives process death. `currentUser()` is synchronous and safe in a ViewModel's constructor, but it can only fill `id`, `name` (the Firebase display name, set at sign-up) and `email` — **`location` is always empty**, because it lives at `users/{uid}` and needs an async read. Profile and Track therefore show "Location not set" until that read exists.
+- **The session is `FirebaseAuth.currentUser`,** which the SDK persists, so it survives process death. `currentUser()` is synchronous and safe in a ViewModel's constructor, but it fills `id`, `name` (the Firebase display name, set at sign-up) and `email`, which is the whole of `User`. Profile still reads `users/{uid}` because the stored record is authoritative, but the screen is never blank while it waits.
 - **Failures are typed.** Repositories return `Result.failure(AuthError)`, and `FirebaseAuthErrorMapper` maps `FirebaseAuthException.errorCode`, never the exception message — messages are localised and change between SDK versions. `AuthError` carries no message and suppresses its stack trace, so Firebase text cannot reach a log or a Toast.
 - **Login must not distinguish a wrong password from an unknown account,** and forgot-password must confirm identically for an unregistered email. With email-enumeration protection on, Firebase returns the same code for both anyway; the UI must not undo that.
 - **Password reset is Firebase's hosted flow.** `sendPasswordResetEmail` emails a link and the user finishes in a browser. The app never sees a reset code, so there is no verify-code or set-new-password screen, and nothing like `otpPlain` or `pendingPassword` is ever written.
@@ -132,7 +132,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 
 **`setFilterByAuthorizedAccounts(false)`** on `GetGoogleIdOption`, so the chooser offers every account on the device. With it true a first-time user is shown an empty sheet.
 
-**Routing:** `isNewUser` decides. A returning user goes to Home. A first-time user goes through the remaining sign-up steps (location, emergency contact) in **complete-profile mode** — `SignUpLocationActivity` and `SignUpContactsActivity` carry `EXTRA_COMPLETE_PROFILE`, the credential fields are hidden, nothing is validated against them, and `saveProfile` finishes `users/{uid}` instead of `register` creating an account. In that mode the uid and email come from the **live session**, never from the Intent extras, so a stale extra cannot write to the wrong record.
+**Routing:** `isNewUser` decides. A returning user goes to Home. A first-time user goes through the remaining sign-up step (emergency contacts) in **complete-profile mode** — `SignUpContactsActivity` carries `EXTRA_COMPLETE_PROFILE`, the credential fields are hidden, nothing is validated against them, and `saveProfile` finishes `users/{uid}` instead of `register` creating an account. In that mode the uid and email come from the **live session**, never from the Intent extras, so a stale extra cannot write to the wrong record.
 
 **The profile write is conditional.** A sign-in has no location to offer, so writing the profile on every sign-in would put an empty one over whatever the user had already set. `ProfileProvisioning` writes only when the account was just created or the record is confirmed absent; a *failed* existence read writes nothing, because it cannot tell "absent" from "unreachable". A failed write does **not** fail the sign-in — the session already exists by then. It serves **both** sign-in paths: email login provisions the same way, so a session always has a `users/{uid}` record behind it. (It was `GoogleProfileProvisioning` until the Alert-tab pass renamed it.)
 
@@ -151,16 +151,16 @@ The signed-in user's own record, separate from the band's `devices/` tree:
 ```
 /users/{uid}/name
 /users/{uid}/email
-/users/{uid}/location
 /users/{uid}/emergency_contacts/{pushId}/{name, phone, relationship}
 ```
 
+- **There is no `location`.** It was a city or region typed at sign-up, and it was dropped with the sign-up revamp: the band's GPS is the real location, and a stale self-reported city on the Track chip was worse than nothing. The field, its sign-up step and its Profile/Track rows are gone — don't reintroduce it without deciding what reads it.
 - **`phone` is always E.164.** `InputValidator.normalizePhoneToE164` is the only thing that decides the stored form: it takes `09XXXXXXXXX`, `639XXXXXXXXX` and `+639XXXXXXXXX` and stores all three as `+639XXXXXXXXX`, and it accepts any other number that is already valid E.164 (`+` and 8–15 digits), stored as typed. It strips spaces, hyphens, parentheses and dots first. ViewModels pass the phone through **untouched** — normalising in a screen would mean two places could disagree. `relationship` is optional and stored as `""` when blank.
 - **Minimum 3, cap 10.** `InputValidator.MIN_CONTACTS` / `MAX_CONTACTS`. Enforced in the **repository**, not just the dialog: a delete that would leave fewer than 3 fails with `ContactError.MinimumContacts`, and an add at 10 with `MaximumContacts`. Editing is always allowed — it is the way out of a wrong number. Security Rules **cannot** enforce these, because RTDB rules cannot count children, so the repository is the last line. The Contacts tab shows "n of 3 minimum" until the user reaches it; **sign-up still asks for only one contact, and it is optional.**
 - **Every mutation is a transaction** on the `emergency_contacts` node, not a write to one child. The bounds are counts over siblings, so a check-then-write would let two devices both pass the cap or both delete below the minimum.
 - **Sign-up finalization is one atomic write.** `UserProfileRepository.finalizeSignUp` puts the profile and every contact into a single multi-path `updateChildren`, so sign-up cannot half-succeed. That is what makes the Retry safe: there is no partial state to reconcile. Registration is deliberately **two** calls — `AuthRepository.createAccount` then `finalizeSignUp` — and the `accountCreated` guard in `SignUpContactsViewModel` means a retry resumes at the write. When they were one call, a failed write left the account created and the only retry went back through account creation, which then failed as "email already in use", so that address could never finish registering.
 - **`saveProfile` merges, never replaces.** It `updateChildren`s its three fields. A `setValue` on `users/{uid}` would delete every emergency contact under it.
-- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`), which is the only way `location` can be filled — `currentUser()` cannot. Profile and Track fall back to the session's values when the record is missing or the read fails, and the location falls back to "Location not set". RTDB disk persistence is **not** enabled.
+- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all — its chip is the session's name. RTDB disk persistence is **not** enabled.
 - **Failures are typed and mapped by code.** `ContactError` + `FirebaseDatabaseErrorMapper`, on `DatabaseError.getCode()`, never on a message. That code is only reachable through the SDK's completion-listener and `ValueEventListener` callbacks — an awaited `Task` fails with a bare `DatabaseException` carrying localised prose — which is why these repositories wrap the listener forms in `suspendCancellableCoroutine` instead of using `.await()`.
 - **Contact phone numbers are never logged**, and neither are contact names. They are a third party's personal data, not the user's own. Nothing in `data/` logs at all.
 
@@ -223,6 +223,8 @@ The payload itself follows `SCHEMA.md` and satisfies the `devices` validation: a
 - Layouts use plain `findViewById` with snake_case IDs prefixed by screen (`et_login_email`, `btn_login`). There is no ViewBinding or Compose.
 - Every Activity is locked to portrait in the manifest. New Activities must be added there.
 - **An unescaped apostrophe in a string resource** fails `mergeDebugResources` with `Can not extract resource from ParsedResource`, naming neither the string nor the line. Write it `\'`.
+- **A `--` inside an XML comment** fails `mergeDebugResources` with a `SAXParseException` — "The string “--” is not permitted within comments". Unlike the apostrophe it does name the file and line. Don’t rule off a comment with a row of dashes.
+- **A duplicated `<string name="…">`** fails with "Found item String/x more than one time". Shared names like `cd_back` already exist — grep before adding one.
 - JVM unit tests need **Robolectric** wherever `InputValidator` is reached, because it uses `android.util.Patterns`, and wherever a `FirebaseException` is constructed, because its constructor calls `android.text.TextUtils`.
 
 ## Working agreements
