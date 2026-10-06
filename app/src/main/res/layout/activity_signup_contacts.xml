@@ -1,187 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<!--
+    Sign-up Step 3 of 3 — Emergency contacts.
+
+    Contacts are staged here and written by the Consent screen, so there is no
+    progress bar and no retry: nothing on this screen can fail.
+
+    Rows reuse item_contact.xml and the editor reuses dialog_contact_editor.xml,
+    the same ones the Contacts tab uses.
+-->
+<!-- DESIGN: Jul -->
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/surface_bg"
+    style="@style/Widget.GuardBand.SignUpStep"
+    android:orientation="vertical"
     tools:context=".ui.signup.SignUpContactsActivity">
 
-    <LinearLayout
+    <include
+        android:id="@+id/header_signup_contacts"
+        layout="@layout/view_signup_step_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/tv_signup_contacts_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:layout_marginTop="32dp"
+        android:text="@string/label_signup_contacts_title"
+        android:textAppearance="@style/TextAppearance.GuardBand.SignUpTitle" />
 
-        <!-- Step indicator -->
-        <TextView
-            android:id="@+id/tv_signup_step_contacts"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Step 3 of 3"
-            android:textAppearance="@style/TextAppearance.GuardBand.LabelMedium"
-            android:textColor="@color/text_secondary" />
+    <TextView
+        android:id="@+id/tv_signup_contacts_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="@string/label_signup_contacts_subtitle"
+        android:textAppearance="@style/TextAppearance.GuardBand.SignUpSubtitle" />
 
-        <!-- Title -->
-        <TextView
-            android:id="@+id/tv_signup_contacts_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/label_signup_contacts_title"
-            android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
-            android:textColor="@color/text_primary" />
+    <!-- "n of 3 minimum": a nudge, not a gate. Sign-up requires one. -->
+    <TextView
+        android:id="@+id/signup_contacts_min_notice"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+        android:textColor="@color/text_secondary"
+        tools:text="0 of 3 minimum" />
 
-        <!-- Divider. Has an id so the whole credentials section can be hidden
-             in complete-profile mode (Google sign-in). -->
-        <View
-            android:id="@+id/divider_signup_contacts_credentials"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="8dp"
-            android:background="@color/divider" />
+    <TextView
+        android:id="@+id/tv_signup_contacts_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/label_signup_contacts_empty"
+        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+        android:textColor="@color/text_secondary"
+        android:visibility="gone"
+        tools:visibility="visible" />
 
-        <!-- Section: Account credentials -->
-        <TextView
-            android:id="@+id/tv_signup_contacts_credentials_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Account credentials"
-            android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
-            android:textColor="@color/text_secondary" />
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_signup_contacts"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        tools:listitem="@layout/item_contact" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_signup_contacts_email"
-            style="@style/Widget.GuardBand.TextInputLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/hint_email">
+    <Button
+        android:id="@+id/btn_signup_contacts_add"
+        style="@style/Widget.GuardBand.Button.Outlined"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/btn_signup_add_contact" />
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_signup_contacts_email"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textEmailAddress"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
+    <Button
+        android:id="@+id/btn_signup_contacts_next"
+        style="@style/Widget.GuardBand.SignUpContinue"
+        android:layout_width="match_parent"
+        android:text="@string/btn_continue" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_signup_contacts_password"
-            style="@style/Widget.GuardBand.TextInputLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/hint_password"
-            app:passwordToggleEnabled="true">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_signup_contacts_password"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textPassword"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginBottom="8dp"
-            android:background="@color/divider" />
-
-        <!-- Section: Emergency contact -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Emergency contact"
-            android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
-            android:textColor="@color/text_secondary" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_contact_name"
-            style="@style/Widget.GuardBand.TextInputLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/hint_contact_name">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_contact_name"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textPersonName|textCapWords"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_contact_phone"
-            style="@style/Widget.GuardBand.TextInputLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/hint_contact_phone"
-            app:endIconDrawable="@drawable/ic_phone"
-            app:endIconMode="custom"
-            app:endIconTint="@color/text_primary">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_contact_phone"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="phone"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_contact_relationship"
-            style="@style/Widget.GuardBand.TextInputLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/hint_contact_relationship">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_contact_relationship"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textCapSentences"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Submit button -->
-        <Button
-            android:id="@+id/btn_signup_contacts_submit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="@string/btn_submit" />
-
-        <!--
-          Shown only when the account exists but its profile write failed.
-          Re-runs the write; it never creates the account again.
-          DESIGN: Jul
-        -->
-        <Button
-            android:id="@+id/btn_signup_contacts_retry"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/btn_retry"
-            android:visibility="gone" />
-
-        <!-- Progress indicator -->
-        <ProgressBar
-            android:id="@+id/progress_signup_contacts"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="12dp"
-            android:visibility="gone" />
-
-    </LinearLayout>
-</ScrollView>
+</LinearLayout>

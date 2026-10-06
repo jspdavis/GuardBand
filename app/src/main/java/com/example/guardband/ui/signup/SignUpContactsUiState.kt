@@ -1,33 +1,37 @@
 package com.example.guardband.ui.signup
 
-/** Render state for [SignUpContactsActivity]. */
+import com.example.guardband.data.model.EmergencyContact
+
+/**
+ * Render state for [SignUpContactsActivity].
+ *
+ * Nothing here has been written yet. The contacts are **staged in memory**
+ * until the Consent screen submits them, which is what lets the whole sign-up
+ * commit in one atomic write.
+ */
 data class SignUpContactsUiState(
-    /** True while a repository call is in flight: button disabled, progress visible. */
-    val isLoading: Boolean = false,
+    /** Staged contacts, in the order they were added. */
+    val contacts: List<EmergencyContact> = emptyList(),
 
     /**
      * True when a Google sign-in already created the account.
      *
-     * The email and password fields are hidden and never validated: there is
-     * no account to create, only a profile to finish.
+     * Carried through to Consent, which then finishes the profile instead of
+     * creating anything.
      */
     val completeProfile: Boolean = false,
 
-    /**
-     * True once the Firebase account exists.
-     *
-     * The guard that stops a second submit from calling `createAccount` again,
-     * which would fail as "email already in use" and strand the address - see
-     * [SignUpContactsViewModel].
-     */
-    val accountCreated: Boolean = false,
+    /** Continue is enabled once at least [SignUpContactsViewModel.MIN_AT_SIGNUP] is staged. */
+    val canContinue: Boolean = false,
 
     /**
-     * True when the account is made but its profile write failed, so the
-     * screen shows Retry.
+     * True while the user is below the recommended
+     * [MIN_CONTACTS][com.example.guardband.utils.InputValidator.MIN_CONTACTS],
+     * which shows the "n of 3 minimum" banner.
      *
-     * Retry re-runs only the write. There is nothing to undo first, because
-     * that write is atomic.
+     * A nudge, not a gate: sign-up only requires one. The band can be in use
+     * with fewer than three, and refusing to finish would be worse than
+     * starting with one.
      */
-    val canRetry: Boolean = false
+    val showMinimumNotice: Boolean = true
 )

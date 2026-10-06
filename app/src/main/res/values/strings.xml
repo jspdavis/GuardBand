@@ -41,6 +41,7 @@
     <string name="label_signup_contacts_subtitle">These are the people your band texts when you need help.</string>
     <string name="label_signup_contacts_minimum">%1$d of %2$d minimum</string>
     <string name="btn_signup_add_contact">Add contact</string>
+    <string name="label_signup_contacts_empty">No contacts added yet.</string>
 
     <!-- Sign Up – Consent (outside the step indicator) -->
     <string name="label_signup_consent_title">Before you finish</string>

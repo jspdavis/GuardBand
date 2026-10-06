@@ -46,8 +46,12 @@ interface UserProfileRepository {
     suspend fun profileExists(uid: String): Result<Boolean>
 
     /**
-     * Writes the profile and [contacts] for a brand-new account in **one**
-     * atomic commit (D5).
+     * Writes the profile, [contacts] and the consent record for a brand-new
+     * account in **one** atomic commit (D5).
+     *
+     * [consentVersion] is stored alongside a server timestamp. A ticked box
+     * that leaves no trace is no use as a consent record, and putting it in
+     * this same write means a profile can never exist without one.
      *
      * One multi-path write, so sign-up cannot half-succeed: either the profile
      * and every contact land, or nothing does. That is what makes the retry on
@@ -63,6 +67,19 @@ interface UserProfileRepository {
         uid: String,
         name: String,
         email: String,
-        contacts: List<EmergencyContact>
+        contacts: List<EmergencyContact>,
+        consentVersion: String
     ): Result<Unit>
+
+    companion object {
+        /**
+         * The wording the user agreed to, stored with their consent.
+         *
+         * Versioned so a reworded notice can be told apart from this one, and
+         * can require agreeing again. Bump it whenever
+         * `label_signup_consent_statement` changes in a way that alters what
+         * is being agreed to.
+         */
+        const val CONSENT_VERSION = "1.0"
+    }
 }

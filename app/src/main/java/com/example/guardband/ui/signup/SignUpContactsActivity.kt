@@ -2,10 +2,9 @@ package com.example.guardband.ui.signup
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
-import android.widget.EditText
-import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -13,39 +12,31 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
-import com.example.guardband.ui.loading.LoadingActivity
+import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.ui.contacts.ContactAdapter
+import com.example.guardband.utils.InputValidator
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
 
 /**
- * Sign-Up Step 3 — user adds an emergency contact and finishes registration.
+ * Sign-Up Step 3 of 3 — the emergency contacts.
  *
  * Receives [EXTRA_NAME], [EXTRA_EMAIL] and [EXTRA_PASSWORD] from the earlier
  * steps, or [EXTRA_NAME], [EXTRA_EMAIL] and [EXTRA_COMPLETE_PROFILE] straight
- * from Login.
+ * from Login. All of it is passed on to Consent, which is where anything is
+ * written.
  *
- * The credentials are collected by step 1 now, so this screen's own credential
- * block is always hidden; its views survive only until the layout is restyled.
- * In complete-profile mode (first-time Google sign-in) the account already
- * exists and the credentials are ignored entirely — the session supplies the
- * email.
- * View ids: et_signup_contacts_email, et_signup_contacts_password,
- * et_contact_name, et_contact_phone, et_contact_relationship,
- * btn_signup_contacts_submit, btn_signup_contacts_retry,
- * progress_signup_contacts, the matching til_* wrappers, and - hidden together
- * in complete-profile mode - til_signup_contacts_email,
- * til_signup_contacts_password, tv_signup_contacts_credentials_label,
- * divider_signup_contacts_credentials.
+ * View ids: tv_signup_contacts_title, tv_signup_contacts_subtitle,
+ * signup_contacts_min_notice, tv_signup_contacts_empty, rv_signup_contacts,
+ * btn_signup_contacts_add, btn_signup_contacts_next. Rows come from
+ * `item_contact.xml` and the editor from `dialog_contact_editor.xml` — both
+ * shared with the Contacts tab. The back arrow and step indicator come from
+ * the shared header; see [SignUpStepHeader].
  *
- * Flow: SignUpContactsActivity → LoadingActivity → HomeActivity
- *
- * Retry appears when the account was created but its profile write failed. It
- * calls the same handler with the same arguments as Submit - the ViewModel's
- * own guard is what makes the second call resume at the write instead of
- * creating a second account.
- *
- * A single contact block is shown, and it is optional: the Contacts tab is
- * where the user is asked to reach the minimum of three.
+ * Flow: SignUpContactsActivity → SignUpConsentActivity
  */
 class SignUpContactsActivity : AppCompatActivity() {
 
@@ -62,20 +53,14 @@ class SignUpContactsActivity : AppCompatActivity() {
         const val EXTRA_COMPLETE_PROFILE = "extra_complete_profile"
     }
 
-    private lateinit var etContactName: EditText
-    private lateinit var etContactPhone: EditText
-    private lateinit var etContactRelationship: EditText
-    private lateinit var btnSubmit: Button
-    private lateinit var btnRetry: Button
-    private lateinit var progressBar: ProgressBar
+    private lateinit var tvMinNotice: TextView
+    private lateinit var tvEmpty: TextView
+    private lateinit var btnAdd: Button
+    private lateinit var btnNext: Button
+    private lateinit var adapter: ContactAdapter
 
-    /**
-     * Always hidden: step 1 owns the credentials now. Bound only so the views
-     * can be hidden until the layout restyle removes them.
-     */
-    private lateinit var credentialViews: List<View>
+    private val viewModel: SignUpContactsViewModel by viewModels()
 
-    private val viewModel: SignUpContactsViewModel by viewModels { SignUpContactsViewModel.Factory }
     private var userName: String = ""
     private var email: String = ""
     private var password: String = ""
@@ -83,6 +68,8 @@ class SignUpContactsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signup_contacts)
+
+        SignUpStepHeader.bind(this, step = 3)
 
         userName = intent.getStringExtra(EXTRA_NAME) ?: ""
         email    = intent.getStringExtra(EXTRA_EMAIL) ?: ""
@@ -92,23 +79,21 @@ class SignUpContactsActivity : AppCompatActivity() {
             intent.getBooleanExtra(EXTRA_COMPLETE_PROFILE, false)
         )
 
-        etContactName         = findViewById(R.id.et_contact_name)
-        etContactPhone        = findViewById(R.id.et_contact_phone)
-        etContactRelationship = findViewById(R.id.et_contact_relationship)
-        btnSubmit             = findViewById(R.id.btn_signup_contacts_submit)
-        btnRetry              = findViewById(R.id.btn_signup_contacts_retry)
-        progressBar           = findViewById(R.id.progress_signup_contacts)
+        tvMinNotice = findViewById(R.id.signup_contacts_min_notice)
+        tvEmpty     = findViewById(R.id.tv_signup_contacts_empty)
+        btnAdd      = findViewById(R.id.btn_signup_contacts_add)
+        btnNext     = findViewById(R.id.btn_signup_contacts_next)
 
-        credentialViews = listOf<View>(
-            findViewById(R.id.til_signup_contacts_email),
-            findViewById(R.id.til_signup_contacts_password),
-            findViewById<TextView>(R.id.tv_signup_contacts_credentials_label),
-            findViewById(R.id.divider_signup_contacts_credentials)
+        adapter = ContactAdapter(
+            onEditClicked = viewModel::onEditClicked,
+            onDeleteClicked = { viewModel.onDeleteClicked(it.id) }
         )
+        findViewById<RecyclerView>(R.id.rv_signup_contacts).adapter = adapter
 
-        btnSubmit.setOnClickListener { submit() }
-        // Deliberately the same call: see the class KDoc.
-        btnRetry.setOnClickListener { submit() }
+        btnAdd.setOnClickListener { viewModel.onAddClicked() }
+        btnNext.setOnClickListener {
+            viewModel.onContinueClicked(name = userName, email = email, password = password)
+        }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -122,28 +107,21 @@ class SignUpContactsActivity : AppCompatActivity() {
         }
     }
 
-    private fun submit() = viewModel.onSubmitClicked(
-        name                = userName,
-        email               = email,
-        password            = password,
-        contactName         = etContactName.text.toString(),
-        contactPhone        = etContactPhone.text.toString(),
-        contactRelationship = etContactRelationship.text.toString()
-    )
-
     private fun render(state: SignUpContactsUiState) {
-        progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
-        btnSubmit.isEnabled = !state.isLoading
+        btnNext.isEnabled = state.canContinue
 
-        btnRetry.visibility = if (state.canRetry) View.VISIBLE else View.GONE
-        btnRetry.isEnabled = !state.isLoading
-        // Submit would only try to create the account a second time, which is
-        // the dead end the retry exists to avoid.
-        btnSubmit.visibility = if (state.canRetry) View.GONE else View.VISIBLE
+        tvEmpty.visibility = if (state.contacts.isEmpty()) View.VISIBLE else View.GONE
 
-        // GONE, not INVISIBLE: the section must not leave a gap in the
-        // LinearLayout. Unconditional now that step 1 collects the credentials.
-        credentialViews.forEach { it.visibility = View.GONE }
+        tvMinNotice.visibility = if (state.showMinimumNotice) View.VISIBLE else View.GONE
+        if (state.showMinimumNotice) {
+            tvMinNotice.text = getString(
+                R.string.label_signup_contacts_minimum,
+                state.contacts.size,
+                InputValidator.MIN_CONTACTS
+            )
+        }
+
+        adapter.submitList(state.contacts)
     }
 
     private fun handleEvent(event: SignUpContactsEvent) {
@@ -151,13 +129,60 @@ class SignUpContactsActivity : AppCompatActivity() {
             is SignUpContactsEvent.ShowMessage ->
                 Toast.makeText(this, event.text, Toast.LENGTH_SHORT).show()
 
-            SignUpContactsEvent.NavigateToLoadingHome ->
+            is SignUpContactsEvent.ShowContactEditor -> showEditor(event.contact)
+
+            is SignUpContactsEvent.NavigateToConsent ->
                 startActivity(
-                    Intent(this, LoadingActivity::class.java).apply {
-                        putExtra(LoadingActivity.EXTRA_DESTINATION, LoadingActivity.DEST_HOME)
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    Intent(this, SignUpConsentActivity::class.java).apply {
+                        putExtra(SignUpConsentActivity.EXTRA_NAME, event.name)
+                        putExtra(SignUpConsentActivity.EXTRA_EMAIL, event.email)
+                        putExtra(SignUpConsentActivity.EXTRA_PASSWORD, event.password)
+                        putExtra(
+                            SignUpConsentActivity.EXTRA_COMPLETE_PROFILE,
+                            event.completeProfile
+                        )
+                        putParcelableArrayListExtra(
+                            SignUpConsentActivity.EXTRA_CONTACTS,
+                            ArrayList(event.contacts)
+                        )
                     }
                 )
         }
+    }
+
+    /**
+     * The same add/edit dialog the Contacts tab uses. A null [contact] means
+     * add; otherwise the fields start on the staged values and the draft id
+     * rides back so the ViewModel replaces rather than appends.
+     */
+    private fun showEditor(contact: EmergencyContact?) {
+        val content = LayoutInflater.from(this)
+            .inflate(R.layout.dialog_contact_editor, null)
+
+        val etName = content.findViewById<TextInputEditText>(R.id.contact_name_input)
+        val etPhone = content.findViewById<TextInputEditText>(R.id.contact_phone_input)
+        val etRelationship =
+            content.findViewById<TextInputEditText>(R.id.contact_relationship_input)
+
+        etName.setText(contact?.name.orEmpty())
+        etPhone.setText(contact?.phone.orEmpty())
+        etRelationship.setText(contact?.relationship.orEmpty())
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(
+                if (contact == null) R.string.dialog_contact_add_title
+                else R.string.dialog_contact_edit_title
+            )
+            .setView(content)
+            .setNegativeButton(R.string.btn_cancel, null)
+            .setPositiveButton(R.string.btn_save) { _, _ ->
+                viewModel.onEditorSubmitted(
+                    contactId = contact?.id.orEmpty(),
+                    name = etName.text.toString(),
+                    phone = etPhone.text.toString(),
+                    relationship = etRelationship.text.toString()
+                )
+            }
+            .show()
     }
 }

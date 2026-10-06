@@ -96,7 +96,8 @@ class ProfileProvisioningTest {
                 uid: String,
                 name: String,
                 email: String,
-                contacts: List<EmergencyContact>
+                contacts: List<EmergencyContact>,
+                consentVersion: String
             ): Result<Unit> = Result.success(Unit)
         }
 

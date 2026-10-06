@@ -26,6 +26,9 @@ class FakeUserProfileRepository(
     /** uid → the contacts passed to [finalizeSignUp]. */
     val finalizedContacts = mutableMapOf<String, List<EmergencyContact>>()
 
+    /** uid → the consent version recorded with the write. */
+    val recordedConsent = mutableMapOf<String, String>()
+
     var saveProfileCalls = 0; private set
     var profileExistsCalls = 0; private set
     var fetchProfileCalls = 0; private set
@@ -68,12 +71,14 @@ class FakeUserProfileRepository(
         uid: String,
         name: String,
         email: String,
-        contacts: List<EmergencyContact>
+        contacts: List<EmergencyContact>,
+        consentVersion: String
     ): Result<Unit> {
         finalizeSignUpCalls++
         if (finalizeSignUpResult.isSuccess) {
             saved[uid] = Pair(name, email)
             finalizedContacts[uid] = contacts
+            recordedConsent[uid] = consentVersion
         }
         return finalizeSignUpResult
     }

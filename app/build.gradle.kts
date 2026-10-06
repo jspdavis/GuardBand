@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    // EmergencyContact travels between the sign-up steps as an Intent extra.
+    id("kotlin-parcelize")
     id("com.google.gms.google-services")
 }
 

@@ -6,6 +6,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -68,7 +69,8 @@ class FirebaseUserProfileRepository(
         uid: String,
         name: String,
         email: String,
-        contacts: List<EmergencyContact>
+        contacts: List<EmergencyContact>,
+        consentVersion: String
     ): Result<Unit> = profileResult {
         val contactsRef = userRef(uid).child(ContactFields.NODE_EMERGENCY_CONTACTS)
 
@@ -78,7 +80,13 @@ class FirebaseUserProfileRepository(
         // is harmless on a new account but a trap if this is ever reused.
         val updates = mutableMapOf<String, Any?>(
             "$NODE_USERS/$uid/$FIELD_NAME" to name,
-            "$NODE_USERS/$uid/$FIELD_EMAIL" to email
+            "$NODE_USERS/$uid/$FIELD_EMAIL" to email,
+            "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_ACCEPTED" to true,
+            "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_VERSION" to consentVersion,
+            // Server time, not the handset's: a device clock can be wrong or
+            // deliberately set, and this is the field that says when the user
+            // actually agreed.
+            "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_AT" to ServerValue.TIMESTAMP
         )
 
         contacts.forEach { contact ->
@@ -154,5 +162,9 @@ class FirebaseUserProfileRepository(
         const val NODE_USERS = "users"
         const val FIELD_NAME = "name"
         const val FIELD_EMAIL = "email"
+        const val NODE_CONSENT = "consent"
+        const val FIELD_CONSENT_ACCEPTED = "accepted"
+        const val FIELD_CONSENT_VERSION = "version"
+        const val FIELD_CONSENT_AT = "acceptedAt"
     }
 }
