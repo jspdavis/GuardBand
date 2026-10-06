@@ -23,24 +23,47 @@ internal object SignUpStepHeader {
     const val TOTAL_STEPS = 3
 
     /**
-     * Fills the first [step] bars, writes "Step n/3", and points the back
-     * arrow at the dispatcher so it behaves exactly like the system Back.
+     * Fills the first [step] bars, writes "Step n/3", and wires the back arrow.
      *
      * @param step 1-based position in the indicator.
      */
     fun bind(activity: ComponentActivity, step: Int) {
         require(step in 1..TOTAL_STEPS) { "step out of range" }
 
-        activity.findViewById<TextView>(R.id.tv_signup_step_label).text =
-            activity.getString(R.string.label_signup_step, step, TOTAL_STEPS)
+        activity.findViewById<TextView>(R.id.tv_signup_step_label).apply {
+            visibility = View.VISIBLE
+            text = activity.getString(R.string.label_signup_step, step, TOTAL_STEPS)
+        }
 
         bars(activity).forEachIndexed { index, bar ->
+            bar.visibility = View.VISIBLE
             bar.setBackgroundResource(
                 if (index < step) R.drawable.bg_progress_active
                 else R.drawable.bg_progress_inactive
             )
         }
 
+        wireBack(activity)
+    }
+
+    /**
+     * Shows the back arrow but no indicator, for a screen that is not part of
+     * a numbered journey.
+     *
+     * A first-time Google user skips steps 1 and 2 — the credential and the
+     * name both come from the account — so contacts is the only step they are
+     * shown. "Step 3/3" would be a lie about where they are, and "Step 1/1" is
+     * no better, so the counter goes away rather than counting to one.
+     */
+    fun bindBackOnly(activity: ComponentActivity) {
+        activity.findViewById<TextView>(R.id.tv_signup_step_label).visibility = View.GONE
+        bars(activity).forEach { it.visibility = View.GONE }
+
+        wireBack(activity)
+    }
+
+    /** Points the back arrow at the dispatcher, so it matches the system Back. */
+    private fun wireBack(activity: ComponentActivity) {
         activity.findViewById<ImageButton>(R.id.btn_signup_back).setOnClickListener {
             activity.onBackPressedDispatcher.onBackPressed()
         }

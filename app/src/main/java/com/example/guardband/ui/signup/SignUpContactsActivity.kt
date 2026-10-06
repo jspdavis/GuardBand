@@ -34,7 +34,8 @@ import kotlinx.coroutines.launch
  * btn_signup_contacts_add, btn_signup_contacts_next. Rows come from
  * `item_contact.xml` and the editor from `dialog_contact_editor.xml` — both
  * shared with the Contacts tab. The back arrow and step indicator come from
- * the shared header; see [SignUpStepHeader].
+ * the shared header; see [SignUpStepHeader]. In complete-profile mode the
+ * indicator is hidden, because this is then the only step.
  *
  * Flow: SignUpContactsActivity → SignUpConsentActivity
  */
@@ -69,15 +70,17 @@ class SignUpContactsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signup_contacts)
 
-        SignUpStepHeader.bind(this, step = 3)
-
         userName = intent.getStringExtra(EXTRA_NAME) ?: ""
         email    = intent.getStringExtra(EXTRA_EMAIL) ?: ""
         password = intent.getStringExtra(EXTRA_PASSWORD) ?: ""
 
-        viewModel.setCompleteProfileMode(
-            intent.getBooleanExtra(EXTRA_COMPLETE_PROFILE, false)
-        )
+        val completeProfile = intent.getBooleanExtra(EXTRA_COMPLETE_PROFILE, false)
+        viewModel.setCompleteProfileMode(completeProfile)
+
+        // A first-time Google user skips steps 1 and 2, so this is the only
+        // step they see - counting it as 3 of 3 would misreport where they are.
+        if (completeProfile) SignUpStepHeader.bindBackOnly(this)
+        else SignUpStepHeader.bind(this, step = 3)
 
         tvMinNotice = findViewById(R.id.signup_contacts_min_notice)
         tvEmpty     = findViewById(R.id.tv_signup_contacts_empty)
