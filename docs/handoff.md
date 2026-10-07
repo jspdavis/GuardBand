@@ -300,23 +300,43 @@ would show the alert nowhere in the Alert tab *and* leave a permanent hole in
 the history. The sequence id is consumed the moment its history row lands, so a
 retry cannot overwrite a good row.
 
-**The sequence id is seeded from the server,** by reading
-`latest/sequenceId` once per `AlertSender` instance. The old `sequenceId = 1`
-field meant a relaunched harness overwrote the rows it wrote last run, which
-would have made the Alert tab's own history unreliable to test against. A
-missing path reads as the body `null` — not an error — and starts at 1. A
-genuine read failure **fails the send**, deliberately: the `PUT` was about to
-fail the same way. It can only lag if a previous run wrote history and then
-failed on `latest`.
+**The sequence id is seeded from the server,** by reading the history keys
+with `?shallow=true` once per `AlertSender` instance and taking the highest
+integer-parseable one. The old `sequenceId = 1` field meant a relaunched
+harness overwrote the rows it wrote last run, which would have made the Alert
+tab's own history unreliable to test against.
+
+`shallow` rather than ordering by key and taking the last one: RTDB sorts
+integer-like keys *ahead* of string keys, so a `limitToLast(1)` would hand back
+a **string** key if the node ever picked one up from the Console — which is the
+one case this read exists to survive. A max over the integer-parseable keys
+cannot be fooled that way, and it skips downloading a payload. A missing node
+reads as the body `null` — not an error — and starts at 1; a genuine read
+failure **fails the send**, deliberately, because the `PUT` was about to fail
+the same way.
+
+**Walk mode** sends a `TRACKING_UPDATE` every 5 s around a ~165 m loop centred
+on Cebu City, with the battery draining as it goes. The interval is far below
+FR-09's real 60 s on purpose: a demo should show the marker moving within
+seconds, and anything under the Track tab's staleness threshold keeps the band
+reading as online. Two deliberate stops: it cancels in `onPause`, because a
+walk still writing under a backgrounded harness would make a dead band look
+alive, and a failed step stops the whole walk rather than rewriting the same
+error every 5 s and hiding which step first broke.
 
 **The database URL comes from `FirebaseProvider`,** so the harness follows
 `google-services.json` to whichever project the build points at. This is a
 Firebase import outside a repository, which the app's layering forbids — the
 harness is explicitly outside that layering, and the alternative was a
-hardcoded URL, which is forbidden everywhere. `AlertType` stays a duplicated
-private enum as before, but the **device id** now comes from
-`DeviceConstants.DEFAULT_DEVICE_ID`: a drifting device id would write alerts
-the app never reads.
+hardcoded URL, which is forbidden everywhere.
+
+**The duplicated `AlertType` is gone.** It was kept on the reasoning that
+de-duplicating it would mean editing `app/src/debug/`; that does not hold, since
+the debug source set imports from `main` freely. The harness now uses
+`data/model/AlertType` and `DeviceConstants.DEFAULT_DEVICE_ID`, because a
+drifting enum or device id would have it writing alerts the app never reads.
+The dependency still points one way only: nothing in `main` knows the harness
+exists.
 
 **Writes are unauthenticated,** relying on `".write": true` under
 `devices/{$deviceId}` in `RTDBS-RULES.md`. See §5 — tightening that is a
@@ -336,8 +356,12 @@ pass:
 3. Open the Alert tab on the receiver and confirm the panic shows.
 4. Tap **TRACKING_UPDATE**. It must update `latest` and **not** appear in the
    Alert list (decision D1).
-5. Kill and reopen the Mock Sender, send again, and confirm the new id is
-   `N+2`, not `1` — that is the server-seeding working.
+5. Kill and reopen the Mock Sender, send again, and confirm the new id
+   continues the sequence rather than restarting at `1` — that is the
+   server-seeding working.
+6. Tap **Start walk**. The status line should count up (`Walking: n sent,
+   latest #N`) every 5 s, and `latest.location` should trace a circle. Tap
+   **Stop walk**, or background the harness, and it must stop.
 
 If a send fails, the status line carries the HTTP code and path. A **401** means
 the `devices` rules are tighter than the draft; a **400** means the payload

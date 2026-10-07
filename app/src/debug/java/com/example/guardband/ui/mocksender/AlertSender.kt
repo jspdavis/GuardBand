@@ -2,17 +2,23 @@ package com.example.guardband.ui.mocksender
 
 import com.example.guardband.data.DeviceConstants
 import com.example.guardband.data.FirebaseProvider
+import com.example.guardband.data.model.AlertType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.sin
 import kotlin.random.Random
 
 /**
@@ -25,16 +31,13 @@ import kotlin.random.Random
  * Spark plan cannot host one, and the `devices` Security Rules already do the
  * payload validation that `ingestAlert` was going to do.
  *
- * Two deliberate choices, both because this is throwaway debug-only code
- * rather than part of the app's architecture:
- *
- *  - It reads the database URL from [FirebaseProvider] instead of hardcoding
- *    one, so the harness follows `google-services.json` to whichever project
- *    the build points at. That is a Firebase import outside a repository,
- *    which the app's layering forbids; the harness is outside that layering,
- *    and the alternative was a hardcoded URL, which is forbidden everywhere.
- *  - [AlertType] stays a private second copy of the enum, as documented, but
- *    the device id comes from [DeviceConstants] so the two cannot drift.
+ * It reads the database URL from [FirebaseProvider] instead of hardcoding one,
+ * so the harness follows `google-services.json` to whichever project the build
+ * points at. That is a Firebase import outside a repository, which the layering
+ * of the app forbids; the harness is throwaway debug-only code that sits outside
+ * that layering, and the alternative was a hardcoded URL, which is forbidden
+ * everywhere. The device id and [AlertType] both come from the production
+ * `data/` classes, so the harness cannot drift from what the app reads.
  */
 class AlertSender {
 
@@ -48,13 +51,51 @@ class AlertSender {
      */
     private var nextSequenceId: Int? = null
 
+    /** How many walk steps have been sent, which is what moves the marker. */
+    private var walkStep = 0
+
     private val databaseUrl: String by lazy {
         FirebaseProvider.database.reference.toString().trimEnd('/')
     }
 
     /**
-     * Writes one alert to the database.
+     * Writes one alert of [type] at a randomised position near Cebu City.
      *
+     * @return the sequenceId that was written, or the failure that stopped it
+     */
+    suspend fun sendAlert(type: AlertType): Result<Int> {
+        val lat = CEBU_LAT + Random.nextDouble(-0.01, 0.01)
+        val lng = CEBU_LNG + Random.nextDouble(-0.01, 0.01)
+        return send(type, lat, lng, Random.nextInt(20, 101))
+    }
+
+    /**
+     * Writes one TRACKING_UPDATE at the next position along the walk loop, so
+     * repeated calls move the Track marker. The battery drains as it goes, so a
+     * demo shows the status panel changing rather than a frozen number.
+     */
+    suspend fun sendWalkStep(): Result<Int> {
+        val step = walkStep
+        val angle = 2 * Math.PI * (step % WALK_STEPS) / WALK_STEPS
+        val lat = CEBU_LAT + WALK_RADIUS_DEG * sin(angle)
+        // Longitude degrees shrink with latitude, so dividing by cos(lat) keeps
+        // the loop round on the ground instead of stretched east-west.
+        val lng = CEBU_LNG + WALK_RADIUS_DEG * cos(angle) / cos(Math.toRadians(CEBU_LAT))
+
+        return send(
+            type = AlertType.TRACKING_UPDATE,
+            lat = lat,
+            lng = lng,
+            batteryPercent = max(WALK_BATTERY_FLOOR, WALK_BATTERY_START - step / 2)
+        ).onSuccess { walkStep = step + 1 }
+    }
+
+    /** Resets the walk to the start of the loop. */
+    fun resetWalk() {
+        walkStep = 0
+    }
+
+    /**
      * History is written before `latest` on purpose. The Alert tab derives
      * everything it shows from history, so a half-finished send that got as
      * far as history is still visible there and only leaves the Track-facing
@@ -62,14 +103,16 @@ class AlertSender {
      * would show the alert nowhere in the Alert tab and leave a permanent hole
      * in the history. For the same reason the sequence id is consumed as soon
      * as its history row lands, so a retry cannot overwrite a good row.
-     *
-     * @param type The type of alert to send
-     * @return the sequenceId that was written, or the failure that stopped it
      */
-    suspend fun sendAlert(type: AlertType): Result<Int> = withContext(Dispatchers.IO) {
+    private suspend fun send(
+        type: AlertType,
+        lat: Double,
+        lng: Double,
+        batteryPercent: Int
+    ): Result<Int> = withContext(Dispatchers.IO) {
         try {
-            val sequenceId = nextSequenceId ?: (readLatestSequenceId() + 1)
-            val payload = buildPayload(type, sequenceId)
+            val sequenceId = nextSequenceId ?: (readHighestHistoryKey() + 1)
+            val payload = buildPayload(type, sequenceId, lat, lng, batteryPercent)
 
             putJson("devices/$DEVICE_ID/history/$sequenceId.json", payload)
             nextSequenceId = sequenceId + 1
@@ -82,27 +125,41 @@ class AlertSender {
     }
 
     /**
-     * The highest sequence id already in the database, or 0 when the device has
-     * never reported. A missing path returns the body `null`, not an error, so
-     * only a genuine read failure throws - and that is worth failing the send
-     * for, because a PUT would be about to fail the same way.
+     * The highest sequenceId already in history, or 0 when the band has never
+     * reported. Read once per harness instance, then cached in
+     * [nextSequenceId].
      *
-     * This reads `latest`, which every send overwrites, so it is the real high
-     * water mark. It can only lag if a previous send wrote history and then
-     * failed on `latest`; within one run the cached [nextSequenceId] covers
-     * that, across runs it would re-use one id.
+     * Uses `shallow=true`, which returns the keys alone, rather than ordering
+     * by key and taking the last one. RTDB sorts integer-like keys ahead of
+     * string keys, so a limitToLast of 1 would hand back a *string* key if the
+     * node ever picked one up from the Console - the one case this read exists
+     * to survive. Taking the max over the integer-parseable keys cannot be
+     * fooled that way, and it skips downloading a payload.
+     *
+     * A missing node returns the body `null`, not an error, so only a genuine
+     * read failure throws - and that is worth failing the send for, because
+     * the PUT was about to fail the same way.
      */
-    private fun readLatestSequenceId(): Int {
-        val request = Request.Builder()
-            .url("$databaseUrl/devices/$DEVICE_ID/latest/sequenceId.json")
-            .get()
+    private fun readHighestHistoryKey(): Int {
+        val url = "$databaseUrl/devices/$DEVICE_ID/history.json".toHttpUrl()
+            .newBuilder()
+            .addQueryParameter("shallow", "true")
             .build()
 
-        client.newCall(request).execute().use { response ->
+        client.newCall(Request.Builder().url(url).get().build()).execute().use { response ->
             if (!response.isSuccessful) {
-                throw IOException("HTTP ${response.code} reading the last sequenceId")
+                throw IOException("HTTP ${response.code} reading the history keys")
             }
-            return response.body?.string()?.trim()?.toIntOrNull() ?: 0
+            val body = response.body?.string()?.trim()
+            if (body.isNullOrEmpty() || body == "null") return 0
+
+            val keys = JSONObject(body).keys()
+            var highest = 0
+            while (keys.hasNext()) {
+                val numeric = keys.next().toIntOrNull() ?: continue
+                if (numeric > highest) highest = numeric
+            }
+            return highest
         }
     }
 
@@ -122,12 +179,14 @@ class AlertSender {
         }
     }
 
-    private fun buildPayload(type: AlertType, sequenceId: Int): String {
-        // Hardcoded/randomized values for mock testing
-        val batteryPercent = Random.nextInt(20, 101)
+    private fun buildPayload(
+        type: AlertType,
+        sequenceId: Int,
+        lat: Double,
+        lng: Double,
+        batteryPercent: Int
+    ): String {
         val isCharging = Random.nextBoolean()
-        val lat = 10.3157 + (Random.nextDouble(-0.01, 0.01)) // Cebu area with slight variation
-        val lng = 123.8854 + (Random.nextDouble(-0.01, 0.01))
         val accuracy = Random.nextDouble(5.0, 15.0)
 
         return """
@@ -159,8 +218,22 @@ class AlertSender {
             .apply { timeZone = TimeZone.getTimeZone("UTC") }
             .format(Date())
 
-    private companion object {
-        val JSON = "application/json".toMediaType()
-        const val DEVICE_ID = DeviceConstants.DEFAULT_DEVICE_ID
+    companion object {
+        /** Cebu City, matching the example coordinates in SCHEMA.md. */
+        const val CEBU_LAT = 10.3157
+        const val CEBU_LNG = 123.8854
+
+        /**
+         * The walk loop: [WALK_STEPS] positions around a circle of
+         * [WALK_RADIUS_DEG] degrees, roughly 165 m - far enough for the marker
+         * to move visibly at street zoom, small enough to stay in Cebu City.
+         */
+        private const val WALK_STEPS = 24
+        private const val WALK_RADIUS_DEG = 0.0015
+        private const val WALK_BATTERY_START = 95
+        private const val WALK_BATTERY_FLOOR = 20
+
+        private val JSON = "application/json".toMediaType()
+        private const val DEVICE_ID = DeviceConstants.DEFAULT_DEVICE_ID
     }
 }

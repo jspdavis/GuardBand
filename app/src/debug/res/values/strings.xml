@@ -2,4 +2,11 @@
 <resources>
     <!-- Launcher label for the debug-only MockSenderActivity -->
     <string name="mock_sender_label">GuardBand Mock Sender</string>
+
+    <!-- Walk mode: TRACKING_UPDATEs on a timer, so the Track marker moves.
+         The button label is set from code because it toggles. -->
+    <string name="mock_sender_walk_start">Start walk (moving tracking updates)</string>
+    <string name="mock_sender_walk_stop">Stop walk</string>
+    <string name="mock_sender_walk_stopped">Walk stopped</string>
+    <string name="mock_sender_walk_paused">Walk stopped (harness left the foreground)</string>
 </resources>

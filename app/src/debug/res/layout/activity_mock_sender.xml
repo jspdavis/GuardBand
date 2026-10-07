@@ -55,8 +55,17 @@
         android:layout_height="wrap_content"
         android:text="Simulate Tracking Update"
         android:textAllCaps="false"
-        android:layout_marginBottom="32dp"
+        android:layout_marginBottom="12dp"
         android:backgroundTint="#388E3C" />
+
+    <Button
+        android:id="@+id/btnWalk"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/mock_sender_walk_start"
+        android:textAllCaps="false"
+        android:layout_marginBottom="32dp"
+        android:backgroundTint="#6A1B9A" />
 
     <View
         android:layout_width="match_parent"
