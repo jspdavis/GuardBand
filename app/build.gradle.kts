@@ -59,6 +59,10 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.recyclerview)
 
+    // Track tab map — OpenStreetMap tiles, no API key. Configured in one place
+    // by ui/track/OsmdroidConfig (user agent + app-specific tile cache).
+    implementation(libs.osmdroid.android)
+
     // OkHttp — only the debug-only MockSender harness (src/debug) uses it
     debugImplementation(libs.okhttp)
 

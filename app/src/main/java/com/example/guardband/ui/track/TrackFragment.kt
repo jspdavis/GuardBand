@@ -1,5 +1,8 @@
 package com.example.guardband.ui.track
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -68,6 +71,25 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         when (event) {
             is TrackEvent.ShowMessage ->
                 Toast.makeText(requireContext(), event.text, Toast.LENGTH_SHORT).show()
+
+            is TrackEvent.OpenNavigation -> openNavigation(event.url)
+        }
+    }
+
+    /**
+     * D6: hands the position to whatever maps app the device has, via a plain
+     * `ACTION_VIEW` on Google Maps' keyless universal URL.
+     *
+     * A phone with nothing registered for it throws
+     * [ActivityNotFoundException], which is reported back through the
+     * ViewModel so the wording stays with every other user-facing message
+     * rather than being invented here.
+     */
+    private fun openNavigation(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: ActivityNotFoundException) {
+            viewModel.onNavigationUnavailable()
         }
     }
 }
