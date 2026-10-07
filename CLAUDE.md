@@ -67,7 +67,8 @@ com/example/guardband/
 │   ├── forgot/         Request → Sent (Firebase emails the link; no OTP screens)
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
-│   ├── track/          Track tab (default): user chip, bell, gear, map placeholder, Check-in pill
+│   ├── track/          Track tab (default): user chip, bell, gear, osmdroid map, band status panel, Navigate + Check-in
+│   │                 BandStatus + NavigationUrl + OsmdroidConfig (pure helpers; see "Track and map")
 │   ├── contacts/       Contacts tab: list + delete
 │   ├── alert/          Alert tab: latest status + incident history
 │   ├── profile/        Profile tab: welcome header + user info
@@ -103,7 +104,7 @@ Conventions (copy `ui/login/*` as the reference):
   - A pushed screen's back arrow calls `requireActivity().onBackPressedDispatcher.onBackPressed()`.
 - **Lists** use `ListAdapter` + `DiffUtil` with `findViewById` in the ViewHolder (`ContactAdapter`, `AlertHistoryAdapter`).
 
-Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with Analytics, **Auth** and Database. Tests add kotlinx-coroutines-test and Robolectric. OkHttp stays `debugImplementation`. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
+Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with Analytics, **Auth** and Database. The Track map adds **osmdroid-android 6.1.20** (see "Track and map"). Tests add kotlinx-coroutines-test and Robolectric. OkHttp stays `debugImplementation`. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
 
 ## Firebase
 
@@ -209,6 +210,87 @@ The Alert tab reads `devices/{deviceId}` live. `SCHEMA.md` is the authority for 
 **Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and the Alert tab logs nothing either. Same rule as contact phone numbers — see "Contacts and profile data".
 
 **Still in-memory:** `InMemoryStore`'s four seeded alerts, which only `InMemoryAlertRepository` reads, and only in tests.
+
+## Track and map
+
+The Track tab reads `devices/{deviceId}/latest` live and puts the band's last
+known position on an OpenStreetMap map. `SCHEMA.md` is the authority for the
+payload, as everywhere else.
+
+**osmdroid, not the Maps SDK.** `osmdroid-android 6.1.20`, chosen because it
+needs no API key and no billing-enabled GCP project. It is safe on compileSdk
+34 without a bump: its POM declares **zero dependencies** and it publishes no
+Gradle module metadata, so there is none of the `minCompileSdk` constraint that
+pins androidx-credentials at 1.3.0.
+
+**`ui/track/OsmdroidConfig` is the one place it is configured.** Two things must
+be right before a single tile is requested, and the Fragment therefore calls it
+in `onCreate`, before the layout inflates and builds the `MapView`:
+- **The user agent is the package name.** OSM's tile servers answer **403** to
+  the library default, and the map comes up blank with nothing in the log to
+  explain it.
+- **Both cache paths point at `cacheDir`**, so tiles live in app-specific
+  storage and need **no storage permission** on any API level. osmdroid's own
+  default wants external storage.
+
+**No phone-location permission, ever.** The band supplies the location, not the
+handset. The merged manifest adds only four *optional* `uses-feature` entries
+from osmdroid (`location.network`, `location.gps`, `telephony`, `wifi`, all
+`required="false"`) and **no** `uses-permission` at all; `ACCESS_NETWORK_STATE`
+was already there via Firebase. Never add `ACCESS_FINE_LOCATION` or
+`ACCESS_COARSE_LOCATION`, and never use osmdroid's `MyLocationNewOverlay` —
+that is the class that would drag them back in.
+
+**"Reporting", not "Online".** `BandStatus.ONLINE_THRESHOLD_MS` is **180 s**,
+three of FR-09's 60 s tracking intervals, so one dropped update does not flip
+the badge. Be careful what it can mean: FR-09 tracking is *post-alert* and
+stops after 30 minutes, so an **idle band legitimately sends nothing and will
+read as stale**. The badge therefore says whether the band is reporting *right
+now* — which is all a timestamp can honestly support — and the screen leads with
+"Last seen X ago". Calling it "Online" would read as a claim about the wearer.
+A future timestamp counts as reporting, not stale: the band's clock can run
+ahead of the phone's.
+
+**Staleness is recomputed on a timer, not only when data arrives.** A band that
+goes quiet emits nothing, so without the ticker the badge could never leave
+"Reporting" — it would hold whatever it said when the last report landed.
+`TrackViewModel.TICK_INTERVAL_MS` is 30 s, and the ticker is **injected as a
+`Flow<Unit>`** rather than looped internally so a test can drive it and never be
+left holding an endless `delay`.
+
+**The last known position is retained** across reports that carry none. A
+tracking ping with no fix means the band is talking but cannot see the sky, and
+blanking the map in that moment throws away the most useful thing on screen.
+Battery follows the same rule. `hasReported` is separate from `hasFix` so the
+screen can tell "the band has never said anything" from "it is reporting without
+a fix" — both have no coordinates and read very differently.
+
+**Recentring belongs to the Fragment, not the ViewModel.** Where the camera
+points is view state, like a scroll offset. Following is switched off by a touch
+listener on `ACTION_MOVE`, not a `MapListener`: a listener cannot tell the
+user's pan from the camera moves the screen makes itself, and a tap gives only
+DOWN and UP, so tapping the map keeps following. Recenter turns it back on; with
+no fix it returns to the default Cebu City view rather than refusing.
+
+**The `MapView` is detached by hand** in `onDestroyView` (plus `onResume` /
+`onPause`). osmdroid holds a tile cache, a worker and overlay references, so
+without it the Fragment's view leaks.
+
+**Coordinates are never logged.** Same rule as contact phone numbers and
+alerts — see "Alert data". Neither the Track tab nor anything in `data/` logs.
+
+**`BandStatus` duplicates `AlertFormatting`'s two ISO-8601 patterns** for now,
+because sharing them would mean editing the Alert tab. Folding them into one
+helper is a one-line change whenever that tab is next open.
+
+**Not for production as-is:** OpenStreetMap's public tile servers are a
+volunteer-funded service whose usage policy is written for light use. A real
+deployment needs its own tile source or a commercial provider.
+
+**Not covered by tests:** `OsmdroidConfig`, the `MapView` lifecycle, the marker
+and the D4 follow logic. All of it needs a real `Context`, a running map or an
+instrumented test, and the project declares no mocking library. The testable
+logic was lifted out instead — `BandStatus`, `NavigationUrl` and the ViewModel.
 
 ## Mock sender
 

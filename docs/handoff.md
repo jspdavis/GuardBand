@@ -266,14 +266,12 @@ still the template.
    consent flow is built; this is what makes it mean something.
 2. **Deploy the Security Rules**, including the new `consent` subtree and the
    phone `.validate`, and close the world-readable `devices/` read.
-3. **Track tab + map** (the original Prompt 12). `observeLatestAlert` exists
-   with **no production caller** — Track shows no band data at all today, not
-   location, battery or last-seen. The data half is unblocked; the map itself
-   needs a Maps SDK key and a billing-enabled GCP project, so it is worth
-   splitting the two.
-4. **Delete account** in Settings.
+3. **Delete account** in Settings.
+4. **A real tile source** before anything public. The map is on OpenStreetMap's
+   public servers, whose usage policy is written for light use (§11).
 
-(The mock sender fix that used to be item 3 is done — §10.)
+(The mock sender fix and the Track tab + map that used to be items 3 and 4 are
+both done — §10 and §11.)
 
 ---
 
@@ -366,3 +364,65 @@ pass:
 If a send fails, the status line carries the HTTP code and path. A **401** means
 the `devices` rules are tighter than the draft; a **400** means the payload
 failed a `.validate`.
+
+---
+
+## 11. The Track tab and its map
+
+`feature/track-map`, three commits on top of the mock sender work. The tab reads
+`devices/{deviceId}/latest` live — the one screen that should, since it wants the
+newest ping whatever kind it was, which is exactly why the Alert tab derives its
+card from history instead (D2). Full rules in
+[`../CLAUDE.md`](../CLAUDE.md) under "Track and map"; what matters on pickup:
+
+**osmdroid 6.1.20, no API key and no billing.** Verified safe on compileSdk 34:
+zero dependencies in its POM, no Gradle module metadata, so no `minCompileSdk`
+constraint. The merged manifest gains **no permission at all** from it — only
+four optional `uses-feature` entries.
+
+**Do not add a phone-location permission, and do not use
+`MyLocationNewOverlay`.** The band supplies the position. That overlay is the one
+thing in osmdroid that would require `ACCESS_FINE_LOCATION`.
+
+**The badge says "Reporting", not "Online", on purpose.** The threshold is 180 s
+(3 × FR-09's 60 s), but FR-09 tracking is *post-alert* and stops after 30
+minutes — so an idle, perfectly healthy band sends nothing and reads as stale.
+The honest signal is "Last seen X ago", which is why that line leads. Don't
+relabel the badge without deciding what a band heartbeat would look like, which
+is firmware that does not exist.
+
+**The staleness ticker is load-bearing.** A band going quiet emits nothing, so
+without it the badge could never leave "Reporting". It is injected as a
+`Flow<Unit>`; tests pass `emptyFlow()`. **Don't convert it to an internal
+`while (true) { delay(…) }`** — any test then calling `advanceUntilIdle()` hangs
+forever instead of failing.
+
+**Three unfinished or deliberate gaps:**
+
+| | |
+|---|---|
+| **The layers button and the Check-in pill are UI-only stubs** | D7. Check-in is FR-10's band double-press; the app must never send one. |
+| **`BandStatus` duplicates `AlertFormatting`'s two ISO patterns** | Sharing them means editing the Alert tab, which the pass was scoped out of. One-line fix when that tab is next open. |
+| **OSM's public tile servers** | Volunteer-funded, usage policy written for light use. Needs a real tile source before any public demo. |
+
+### Verifying it
+
+Nothing in the UI layer is instrumented-tested, so the map needs a manual pass.
+`OsmdroidConfig`, the `MapView` lifecycle, the marker and the D4 follow logic
+are **not** covered — all need a real Context or a running map.
+
+1. Open the Track tab with an empty `devices/guardband-001`. Expect the Cebu
+   City view at zoom 13 and "Your band hasn't reported yet." No status panel.
+2. Send one **PANIC** from the Mock Sender (§10). A marker appears, the camera
+   moves to it at street zoom, and the panel reads "Reporting · Last seen just
+   now · Battery n%".
+3. **Start walk.** The marker should trace a circle every 5 s and the battery
+   should tick down.
+4. Stop the walk and wait **3 minutes**. The badge must flip to "Not reporting"
+   on its own, with no app interaction — that is the ticker.
+5. **Pan the map,** then send another alert: the camera must *not* jump. Tap
+   recenter: it should move to the band and resume following.
+6. Tap **Navigate** — a maps app opens on the band's position. It is disabled
+   whenever there is no fix.
+7. Background the app with the Track tab open and confirm RTDB traffic stops
+   (the same check `alert-data.md` asks for).
