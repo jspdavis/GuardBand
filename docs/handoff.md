@@ -9,6 +9,9 @@ up — what is done, what is deliberately not, and what needs a human.
 `mvvm-main` is **22 commits ahead of `origin/mvvm-main`** and has not been
 pushed. 13 of those predate this work.
 
+**Uncommitted, in the working tree:** the mock sender now writes to the RTDB
+REST API (§10). `assembleDebug` + `testDebugUnitTest` green, 253 tests.
+
 ---
 
 ## 1. Read these first
@@ -19,7 +22,7 @@ pushed. 13 of those predate this work.
 | How alerts are read from RTDB | [`alert-data.md`](alert-data.md) |
 | The post-login host and its tabs | [`home-host-and-bottom-nav.md`](home-host-and-bottom-nav.md) |
 | The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md) — **authoritative** |
-| Draft Security Rules (**not deployed**) | [`../RTDBS-RULES.md`](../RTDBS-RULES.md) — untracked |
+| Draft Security Rules (**not deployed**) | [`../RTDBS-RULES.md`](../RTDBS-RULES.md) — committed in `3ccf153` |
 
 The sign-up flow has no deep-dive of its own; §3 below is it.
 
@@ -176,9 +179,8 @@ the error/empty/stale split, what is and is not tested — in
 | | Where | Notes |
 |---|---|---|
 | **Privacy Notice is not a link** | `activity_signup_consent.xml` | Marked `DESIGN: Jul`. Until it points at a real notice, the consent record references wording the user cannot read. **This is the one that matters most** — it undermines the consent record. |
-| **`users/{uid}` Security Rules not deployed** | `RTDBS-RULES.md` (untracked draft) | Must be merged with the existing `devices/` rules in the Console **by hand**. Now also needs a `consent` subtree and a `phone` `.validate`. |
-| **`devices/` history is world-readable** in the draft | `RTDBS-RULES.md` | `".read": true` on wearer coordinates. Close before any public demo. |
-| **Mock sender writes nothing** | `app/src/debug/.../AlertSender.kt` | `INGEST_ALERT_URL` is still `"REPLACE_ME_ONCE_DEPLOYED"` and it POSTs to a Cloud Function the Spark plan cannot host. **The Console is currently the only way to inject a test alert.** |
+| **`users/{uid}` Security Rules not deployed** | `RTDBS-RULES.md` (committed draft) | Must be merged with the existing `devices/` rules in the Console **by hand**. Now also needs a `consent` subtree and a `phone` `.validate`. |
+| **`devices/` history is world-readable** in the draft | `RTDBS-RULES.md` | `".read": true` on wearer coordinates. Close before any public demo. Note the **write** side is also open, and the mock sender depends on it — tightening `".write"` to require auth means teaching `AlertSender` to send an `?auth=` token (§10). |
 | **Delete account** | — | Not started. Privacy law and Play expect it for apps with accounts. |
 | **`SignUpNameViewModel.onGoogleSignInClicked`** | `ui/signup/` | Unreachable — no Google button on the name screen since the redesign. Kept on purpose, flagged in its KDoc. |
 | **`bg_signup_continue.xml`** | `res/drawable/` | Committed but unused; `Widget.GuardBand.SignUpContinue` replaced it. Fold it into the style or delete it. |
@@ -264,8 +266,79 @@ still the template.
    consent flow is built; this is what makes it mean something.
 2. **Deploy the Security Rules**, including the new `consent` subtree and the
    phone `.validate`, and close the world-readable `devices/` read.
-3. **Fix the mock sender** — one constant and one verb (`PUT` to the RTDB REST
-   endpoints) — so testing stops depending on the Console.
-4. **Track tab + map** (the original Prompt 12), now that `observeLatestAlert`
-   is wired and unused.
-5. **Delete account** in Settings.
+3. **Track tab + map** (the original Prompt 12). `observeLatestAlert` exists
+   with **no production caller** — Track shows no band data at all today, not
+   location, battery or last-seen. The data half is unblocked; the map itself
+   needs a Maps SDK key and a billing-enabled GCP project, so it is worth
+   splitting the two.
+4. **Delete account** in Settings.
+
+(The mock sender fix that used to be item 3 is done — §10.)
+
+---
+
+## 10. The mock sender (now writes)
+
+`app/src/debug/.../AlertSender.kt` no longer POSTs to a Cloud Function that
+does not exist. It writes straight to the RTDB REST API, the way the band will,
+so **the Firebase Console is no longer the only way to inject a test alert**.
+Install the debug build and open the "GuardBand Mock Sender" launcher icon.
+
+Per send, in this order:
+
+```
+PUT {databaseUrl}/devices/guardband-001/history/{sequenceId}.json
+PUT {databaseUrl}/devices/guardband-001/latest.json
+```
+
+### The four decisions
+
+**History before `latest`.** The Alert tab derives everything from history
+(decision D2 in `alert-data.md`), so a send that got as far as history is still
+visible there and only leaves the Track-facing `latest` node stale. The reverse
+would show the alert nowhere in the Alert tab *and* leave a permanent hole in
+the history. The sequence id is consumed the moment its history row lands, so a
+retry cannot overwrite a good row.
+
+**The sequence id is seeded from the server,** by reading
+`latest/sequenceId` once per `AlertSender` instance. The old `sequenceId = 1`
+field meant a relaunched harness overwrote the rows it wrote last run, which
+would have made the Alert tab's own history unreliable to test against. A
+missing path reads as the body `null` — not an error — and starts at 1. A
+genuine read failure **fails the send**, deliberately: the `PUT` was about to
+fail the same way. It can only lag if a previous run wrote history and then
+failed on `latest`.
+
+**The database URL comes from `FirebaseProvider`,** so the harness follows
+`google-services.json` to whichever project the build points at. This is a
+Firebase import outside a repository, which the app's layering forbids — the
+harness is explicitly outside that layering, and the alternative was a
+hardcoded URL, which is forbidden everywhere. `AlertType` stays a duplicated
+private enum as before, but the **device id** now comes from
+`DeviceConstants.DEFAULT_DEVICE_ID`: a drifting device id would write alerts
+the app never reads.
+
+**Writes are unauthenticated,** relying on `".write": true` under
+`devices/{$deviceId}` in `RTDBS-RULES.md`. See §5 — tightening that is a
+reasonable thing to want, and it means teaching `AlertSender` to append an
+`?auth=` token.
+
+### Verifying it
+
+Not covered by tests, and cannot be: it is debug-only code whose whole job is a
+network call, and the project declares no mocking library. It needs one manual
+pass:
+
+1. Open the Mock Sender, tap **PANIC**. The status line should read
+   `✓ Sent PANIC as #N` — the `#N` is the history key, so it can be checked
+   against the Console directly.
+2. Confirm `devices/guardband-001/history/N` and `.../latest` both appeared.
+3. Open the Alert tab on the receiver and confirm the panic shows.
+4. Tap **TRACKING_UPDATE**. It must update `latest` and **not** appear in the
+   Alert list (decision D1).
+5. Kill and reopen the Mock Sender, send again, and confirm the new id is
+   `N+2`, not `1` — that is the server-seeding working.
+
+If a send fails, the status line carries the HTTP code and path. A **401** means
+the `devices` rules are tighter than the draft; a **400** means the payload
+failed a `.validate`.

@@ -14,6 +14,9 @@ import kotlinx.coroutines.launch
  * This activity stands in for ESP32 firmware and should be considered scaffolding/disposable
  * once real hardware exists. It deliberately avoids the MVVM pattern since it's not part of
  * the permanent app architecture.
+ *
+ * Each button writes one alert straight to the Realtime Database through
+ * [AlertSender]; the status line reports the history key it landed under.
  */
 class MockSenderActivity : AppCompatActivity() {
 
@@ -65,8 +68,10 @@ class MockSenderActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val result = alertSender.sendAlert(type)
             
-            result.onSuccess {
-                tvStatus.text = "✓ Sent ${type.name} successfully"
+            result.onSuccess { sequenceId ->
+                // The sequenceId is shown because it is the history key the
+                // Alert tab reads, so a demo can be checked against the Console.
+                tvStatus.text = "✓ Sent ${type.name} as #$sequenceId"
             }.onFailure { error ->
                 tvStatus.text = "✗ Failed: ${error.message}"
             }
