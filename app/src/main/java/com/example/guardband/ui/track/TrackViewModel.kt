@@ -113,18 +113,6 @@ class TrackViewModel(
         _events.trySend(TrackEvent.ShowMessage(MSG_MAP_LAYERS_UNAVAILABLE))
     }
 
-    /**
-     * Placeholder until the map exists.
-     *
-     * D4 makes recentring the map's own business - camera position is view
-     * state, like a scroll offset, and the Fragment that owns the `MapView`
-     * will own it. Until Phase 3 puts a map there, saying so is more honest
-     * than a button that does nothing.
-     */
-    fun onRecenterClicked() {
-        _events.trySend(TrackEvent.ShowMessage(MSG_MAP_UNAVAILABLE))
-    }
-
     private fun observeLatest() {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
@@ -246,9 +234,6 @@ class TrackViewModel(
         const val MSG_CHECK_IN_ON_BAND =
             "Check-ins come from the band: double-press its button."
         const val MSG_MAP_LAYERS_UNAVAILABLE = "Map layers aren't available yet."
-
-        /** Dropped in Phase 3, when recentring becomes the map's own job. */
-        const val MSG_MAP_UNAVAILABLE = "The live map isn't available yet."
         const val MSG_NAVIGATION_UNAVAILABLE = "No app on this phone can open maps."
 
         const val MSG_LOAD_FAILED = "Couldn't load your band's location."

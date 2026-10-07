@@ -8,6 +8,51 @@
     android:background="@color/surface_bg"
     tools:context=".ui.track.TrackFragment">
 
+    <!-- DESIGN: Jul — spacing, colours and the status panel's shape are
+         placeholders. Every view below uses theme tokens only. -->
+
+    <!-- ── Map: fills everything under the top bar ──────────────────────── -->
+    <!-- Drawn first so the chip, status panel and controls sit on top of it.
+         OsmdroidConfig must run before this is inflated, which is why the
+         Fragment applies it in onCreate. -->
+
+    <org.osmdroid.views.MapView
+        android:id="@+id/track_map_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Shown instead of a marker when there is no position: the band has
+         never reported, it has reported with no fix, or the read failed. -->
+
+    <TextView
+        android:id="@+id/track_empty_view"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:background="@drawable/bg_pill"
+        android:drawablePadding="8dp"
+        android:gravity="center"
+        android:paddingStart="20dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="16dp"
+        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+        android:textColor="@color/text_secondary"
+        android:visibility="gone"
+        app:drawableTint="@color/text_hint"
+        app:drawableTopCompat="@drawable/ic_map"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="@string/label_track_no_fix"
+        tools:visibility="visible" />
+
     <!-- ── Top bar: user chip · bell · gear ─────────────────────────────── -->
 
     <LinearLayout
@@ -24,10 +69,10 @@
         android:paddingTop="6dp"
         android:paddingEnd="16dp"
         android:paddingBottom="6dp"
+        app:layout_constrainedWidth="true"
         app:layout_constraintEnd_toStartOf="@id/ib_track_notifications"
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constrainedWidth="true"
         app:layout_constraintTop_toTopOf="parent">
 
         <com.google.android.material.imageview.ShapeableImageView
@@ -85,51 +130,62 @@
         app:layout_constraintTop_toTopOf="@id/ll_track_user_chip"
         app:tint="@color/text_primary" />
 
-    <!-- ── Map placeholder ───────────────────────────────────────────────── -->
+    <!-- ── Band status panel ────────────────────────────────────────────── -->
+    <!-- Hidden until the band has reported at all; there is nothing truthful
+         to put in it before then. -->
 
-    <TextView
-        android:id="@+id/tv_track_map_placeholder"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="12dp"
-        android:background="@color/surface_muted"
-        android:drawablePadding="8dp"
-        android:gravity="center"
-        android:text="@string/label_track_map_placeholder"
-        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
-        android:textColor="@color/text_secondary"
-        app:drawableTint="@color/text_hint"
-        app:drawableTopCompat="@drawable/ic_map"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ll_track_user_chip" />
-
-    <!-- Device status pill (static until the Alert data drives it) -->
-    <TextView
-        android:id="@+id/tv_track_status"
+    <LinearLayout
+        android:id="@+id/ll_track_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:background="@drawable/bg_pill"
-        android:drawablePadding="8dp"
-        android:gravity="center_vertical"
-        android:paddingStart="14dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="8dp"
-        android:text="@string/label_track_status"
-        android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
-        android:textColor="@color/text_primary"
-        app:drawableStartCompat="@drawable/bg_status_dot"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="18dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="10dp"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/tv_track_map_placeholder" />
+        app:layout_constraintTop_toBottomOf="@id/ll_track_user_chip"
+        tools:visibility="visible">
 
-    <!-- ── Round map controls (UI only) ──────────────────────────────────── -->
+        <TextView
+            android:id="@+id/track_online_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawablePadding="8dp"
+            android:gravity="center_vertical"
+            android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
+            android:textColor="@color/text_primary"
+            app:drawableStartCompat="@drawable/bg_status_dot"
+            tools:text="@string/label_track_reporting" />
+
+        <TextView
+            android:id="@+id/track_last_seen"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+            android:textColor="@color/text_secondary"
+            tools:text="@string/label_track_last_seen_just_now" />
+
+        <TextView
+            android:id="@+id/track_battery"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+            android:textColor="@color/text_secondary"
+            tools:text="Battery 64%" />
+
+    </LinearLayout>
+
+    <!-- ── Round map controls ───────────────────────────────────────────── -->
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_track_layers"
+        android:id="@+id/track_layers_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
@@ -138,13 +194,13 @@
         android:src="@drawable/ic_layers"
         app:backgroundTint="@color/white"
         app:fabSize="mini"
-        app:layout_constraintBottom_toTopOf="@id/fab_track_recenter"
+        app:layout_constraintBottom_toTopOf="@id/track_recenter_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
         app:tint="@color/text_primary" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_track_recenter"
+        android:id="@+id/track_recenter_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
@@ -153,15 +209,34 @@
         android:src="@drawable/ic_navigation"
         app:backgroundTint="@color/white"
         app:fabSize="mini"
-        app:layout_constraintBottom_toTopOf="@id/btn_track_check_in"
+        app:layout_constraintBottom_toTopOf="@id/track_navigate_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
         app:tint="@color/text_primary" />
 
-    <!-- ── Check-in pill (UI only; FR-10 check-in is a band double-press) ── -->
+    <!-- ── Bottom actions ───────────────────────────────────────────────── -->
+    <!-- Navigate is disabled until there is a fix (D6). Check-in is UI only:
+         FR-10 check-in is a double-press on the band, so the app never sends
+         one (D7). -->
 
     <Button
-        android:id="@+id/btn_track_check_in"
+        android:id="@+id/track_navigate_button"
+        style="@style/Widget.GuardBand.Button.Outlined"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:enabled="false"
+        android:paddingStart="24dp"
+        android:paddingEnd="28dp"
+        android:text="@string/btn_track_navigate"
+        app:cornerRadius="24dp"
+        app:icon="@drawable/ic_navigation"
+        app:layout_constraintBottom_toTopOf="@id/track_checkin_pill"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/track_checkin_pill"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"

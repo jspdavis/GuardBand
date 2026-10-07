@@ -304,17 +304,8 @@ class TrackViewModelTest {
         assertEquals(0, repository.requestedLimits.size)
     }
 
-    @Test
-    fun `recenter says the map is not available yet, until Phase 3 adds one`() = runTest {
-        val vm = viewModel()
-
-        vm.onRecenterClicked()
-
-        assertEquals(
-            TrackViewModel.MSG_MAP_UNAVAILABLE,
-            (vm.events.first() as TrackEvent.ShowMessage).text
-        )
-    }
+    // Recentring is deliberately not here: D4 makes it the map's own business,
+    // so it lives in TrackFragment and has no ViewModel surface to test.
 
     @Test
     fun `the layers control says it is not available yet`() = runTest {

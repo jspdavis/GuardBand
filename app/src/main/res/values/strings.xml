@@ -95,11 +95,44 @@
     <string name="cd_open_settings">Settings</string>
     <string name="cd_open_notifications">Notifications</string>
     <string name="cd_user_avatar">Profile picture</string>
-    <string name="label_track_status">You are protected.</string>
-    <string name="label_track_map_placeholder">Live map coming soon</string>
     <string name="btn_check_in">Check in</string>
+    <string name="btn_track_navigate">Navigate</string>
     <string name="cd_map_recenter">Center on band</string>
     <string name="cd_map_layers">Map layers</string>
+    <string name="label_track_marker_title">Your band</string>
+
+    <!-- Band status panel. "Reporting" rather than "Online": FR-09 tracking is
+         post-alert and stops after 30 minutes, so an idle band legitimately
+         sends nothing. The badge says whether it is reporting right now, which
+         is all the timestamp can honestly support — "Online" would read as a
+         claim about the wearer. The last-seen line is the primary signal. -->
+    <string name="label_track_reporting">Reporting</string>
+    <string name="label_track_not_reporting">Not reporting</string>
+
+    <!-- Anything under a minute is "just now": second-level precision is noise
+         here, and "Last seen 0 seconds ago" reads badly. -->
+    <string name="label_track_last_seen_just_now">Last seen just now</string>
+    <plurals name="label_track_last_seen_minutes">
+        <item quantity="one">Last seen %d minute ago</item>
+        <item quantity="other">Last seen %d minutes ago</item>
+    </plurals>
+    <plurals name="label_track_last_seen_hours">
+        <item quantity="one">Last seen %d hour ago</item>
+        <item quantity="other">Last seen %d hours ago</item>
+    </plurals>
+    <plurals name="label_track_last_seen_days">
+        <item quantity="one">Last seen %d day ago</item>
+        <item quantity="other">Last seen %d days ago</item>
+    </plurals>
+
+    <string name="label_track_battery">Battery %1$d%%</string>
+    <string name="label_track_battery_charging">Battery %1$d%% · Charging</string>
+    <string name="label_track_battery_unknown">Battery unknown</string>
+
+    <!-- Two different silences: the band has never written anything, versus it
+         is reporting but has no GPS fix. -->
+    <string name="label_track_never_reported">Your band hasn\'t reported yet.</string>
+    <string name="label_track_no_fix">No location fix yet</string>
 
     <!-- Contacts -->
     <string name="label_contacts_title">Emergency Contacts</string>
