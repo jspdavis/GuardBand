@@ -21,6 +21,7 @@ REST API (§10). `assembleDebug` + `testDebugUnitTest` green, 253 tests.
 | The agent's working rules, conventions, gotchas | [`../CLAUDE.md`](../CLAUDE.md) |
 | How alerts are read from RTDB | [`alert-data.md`](alert-data.md) |
 | The post-login host and its tabs | [`home-host-and-bottom-nav.md`](home-host-and-bottom-nav.md) |
+| **Running a demo with no hardware** | [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) — both launchers, end to end |
 | The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md) — **authoritative** |
 | Draft Security Rules (**not deployed**) | [`../RTDBS-RULES.md`](../RTDBS-RULES.md) — committed in `3ccf153` |
 
@@ -345,7 +346,8 @@ reasonable thing to want, and it means teaching `AlertSender` to append an
 
 Not covered by tests, and cannot be: it is debug-only code whose whole job is a
 network call, and the project declares no mocking library. It needs one manual
-pass:
+pass — the fuller version, with the receiver end alongside it, is in
+[`mock-sender-and-receiver.md`](mock-sender-and-receiver.md):
 
 1. Open the Mock Sender, tap **PANIC**. The status line should read
    `✓ Sent PANIC as #N` — the `#N` is the history key, so it can be checked
@@ -409,7 +411,9 @@ forever instead of failing.
 
 Nothing in the UI layer is instrumented-tested, so the map needs a manual pass.
 `OsmdroidConfig`, the `MapView` lifecycle, the marker and the D4 follow logic
-are **not** covered — all need a real Context or a running map.
+are **not** covered — all need a real Context or a running map. Walkthroughs for
+all of it are in
+[`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) §6.
 
 1. Open the Track tab with an empty `devices/guardband-001`. Expect the Cebu
    City view at zoom 13 and "Your band hasn't reported yet." No status panel.

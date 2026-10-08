@@ -294,7 +294,9 @@ logic was lifted out instead — `BandStatus`, `NavigationUrl` and the ViewModel
 
 ## Mock sender
 
-For demos without hardware, Phone A runs `MockSenderActivity` and Phone B runs the receiver screens. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives in the **debug source set** (`app/src/debug/java/.../ui/mocksender/`, plus `app/src/debug/AndroidManifest.xml`, which gives it its own "GuardBand Mock Sender" launcher icon), so release builds contain neither the code nor the icon. OkHttp is `debugImplementation` for the same reason.
+> Operating manual for both launchers, end to end: [docs/mock-sender-and-receiver.md](docs/mock-sender-and-receiver.md).
+
+For demos without hardware, Phone A runs `MockSenderActivity` and Phone B runs the receiver screens. Both icons belong to **one install** — same `applicationId` — so a single phone can play both ends. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives in the **debug source set** (`app/src/debug/java/.../ui/mocksender/`, plus `app/src/debug/AndroidManifest.xml`, which gives it its own "GuardBand Mock Sender" launcher icon), so release builds contain neither the code nor the icon. OkHttp is `debugImplementation` for the same reason.
 
 **`AlertSender` writes straight to the RTDB REST API,** as the band will: one `PUT` to `/devices/{id}/history/{sequenceId}.json`, then one to `/devices/{id}/latest.json`. There is no Cloud Function in the path — the Spark plan cannot host one, and the `devices` Security Rules already do the validation `ingestAlert` was going to do. (`SCHEMA.md`'s "Receiver validation requirements" still describes that Function; the payload shape it specifies is unchanged.)
 
