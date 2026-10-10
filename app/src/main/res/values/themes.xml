@@ -161,6 +161,15 @@
         <item name="drawableTint">@color/text_hint</item>
     </style>
 
+    <!-- A settings row for an irreversible action. Colour only: the geometry
+         stays the plain row, so the two line up in the same list.
+    -->
+    <!-- DESIGN: Jul -->
+    <style name="Widget.GuardBand.SettingsRow.Destructive" parent="Widget.GuardBand.SettingsRow">
+        <item name="android:textColor">@color/error_red</item>
+        <item name="drawableTint">@color/error_red</item>
+    </style>
+
     <style name="Widget.GuardBand.SettingsDivider" parent="">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">1dp</item>
