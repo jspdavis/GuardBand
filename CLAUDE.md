@@ -170,6 +170,69 @@ The signed-in user's own record, separate from the band's `devices/` tree:
 - **Failures are typed and mapped by code.** `ContactError` + `FirebaseDatabaseErrorMapper`, on `DatabaseError.getCode()`, never on a message. That code is only reachable through the SDK's completion-listener and `ValueEventListener` callbacks — an awaited `Task` fails with a bare `DatabaseException` carrying localised prose — which is why these repositories wrap the listener forms in `suspendCancellableCoroutine` instead of using `.await()`.
 - **Contact phone numbers are never logged**, and neither are contact names. They are a third party's personal data, not the user's own. Nothing in `data/` logs at all.
 
+## Account deletion
+
+A destructive row at the bottom of Settings, driven by
+`ui/settings/DeleteAccountViewModel` — its own ViewModel, because
+`SettingsViewModel` is deliberately events-only for a static screen and this
+flow has six steps, two guards and a credential prompt.
+
+**The order of operations is the design, and reversing it loses data for good:**
+
+1. **Re-authenticate.** Firebase refuses `delete()` on a session that has been
+   sitting around (`AuthError.RequiresRecentLogin`). A password account types
+   its password; a Google account goes back through the chooser.
+2. **Remove `users/{uid}`** in **one** `removeValue` — profile fields, every
+   emergency contact and the consent record — **while still signed in.** The
+   rules authorise it with `auth.uid == $uid`, so once step 3 succeeds there is
+   no session left that could make this write and the subtree is orphaned
+   permanently.
+3. **Delete the Auth user.**
+4. **Go to Login** with the back stack cleared, through the same
+   `clearCredentialsThenGoToLogin` that Log Out uses.
+
+**Which credential it asks for comes from `AuthRepository.currentUserProviders()`,
+and `PASSWORD` wins a mixed account.** Providers are read off
+`FirebaseUser.providerData` — `getProviderId()` returns the literal
+`"firebase"` for the user object and says nothing about how they sign in. A
+mixed account cannot be created by this app anyway (Firebase's
+one-account-per-email setting turns a second method into
+`AccountExistsWithDifferentCredential` rather than a link), and for
+re-authentication either credential satisfies Firebase equally, so the
+tie-break is UX: a password needs no chooser and no second account picked by
+mistake. An account whose providers are all unrecognised **refuses to start**
+rather than guessing one.
+
+**A half-finished delete must not strand anyone.** `profileDeleted` and
+`reauthenticated` are the guards — the same idea as `accountCreated` in
+`SignUpConsentViewModel` — and Retry re-runs only what has not landed.
+`profileDeleted` is the point of no return: from there the state may only
+reach `DONE` or sit in `FAILED` offering Retry, **Cancel is ignored**, and the
+failure is a card in the layout rather than a dialog, because a dialog can be
+dismissed into nothing. Tapping the row again resumes instead of re-confirming.
+A `RequiresRecentLogin` on step 3 clears `reauthenticated`, so Retry goes back
+through the prompt rather than into a call Firebase will refuse again.
+
+**`devices/` is never touched.** `guardband-001` is shared by every install
+until pairing exists, so one user's deletion must not take the band's history
+with it — and the modal says so, rather than implying everything is gone.
+
+**Known gap:** if step 2 succeeds, step 3 fails and the user gives up, the
+account survives with no record behind it, and the next sign-in has
+`ProfileProvisioning` write a fresh minimal `users/{uid}` from the session's
+name and email. Nothing leaks, but the account comes back thinner rather than
+staying deleted. Closing it properly needs a "deletion pending" marker that
+`ProfileProvisioning` honours.
+
+**No rules change was needed.** `users/$uid` already has
+`".write": "auth != null && auth.uid == $uid"`, a removal is a write of null
+at that path, and there are no `.validate` rules under `users` (RTDB skips
+them on deletes regardless).
+
+**Not covered by tests:** `reauthenticate` and `delete` themselves, which need
+a real `FirebaseAuth`. The sequencing, the wording and both guards are covered
+— `DeleteAccountViewModelTest`, 28 tests.
+
 ## Firebase data contract
 
 The band (or the mock sender) PUTs to the RTDB REST API, and Security Rules validate the payloads:

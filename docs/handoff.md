@@ -268,19 +268,18 @@ still the template.
    consent flow is built; this is what makes it mean something.
 2. **Deploy the Security Rules**, including the new `consent` subtree and the
    phone `.validate`, and close the world-readable `devices/` read.
-3. **Delete account** in Settings.
-4. **A real tile source** before anything public. The map is on OpenStreetMap's
+3. **A real tile source** before anything public. The map is on OpenStreetMap's
    public servers, whose usage policy is written for light use (§11). Being
    correctly identified is not the same as being entitled to the traffic — the
    user agent fix only stopped the `com.example.*` block.
-5. **Rename `applicationId` off `com.example.*`** *if* this is ever published:
+4. **Rename `applicationId` off `com.example.*`** *if* this is ever published:
    Play rejects the prefix, and `applicationId` cannot be changed after a first
    release. It no longer affects the map (the user agent is independent of it),
    so it is a publishing prerequisite, not a bug — and it means re-registering
    the Firebase app and every debug SHA-1.
 
-(The mock sender fix and the Track tab + map that used to be items 3 and 4 are
-both done — §10 and §11.)
+(The mock sender fix, the Track tab + map, and Delete account are all done —
+§10, §11 and CLAUDE.md's "Account deletion".)
 
 ---
 
