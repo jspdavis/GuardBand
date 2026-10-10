@@ -10,7 +10,7 @@ import com.example.guardband.R
  * Notifications inbox, pushed inside the Home host from Track's bell (the
  * bottom bar stays visible with no tab selected).
  *
- * Deliberately has no ViewModel, like ForgotSuccessActivity: a static
+ * Deliberately has no ViewModel, the only screen without one: a static
  * placeholder whose only action is Back. Give it one when the inbox gets data.
  */
 class NotificationsFragment : Fragment(R.layout.fragment_notifications) {

@@ -192,7 +192,7 @@ Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC 
 
 ### Notifications (pushed), `ui/notifications/`
 - 🟡 Static empty inbox: "No notifications yet."
-- It has **no ViewModel**, the same exception as `ForgotSuccessActivity`. Add one when the inbox gets data.
+- It has **no ViewModel**, and is now the only screen without one (`ForgotSuccessActivity` was the other; the forgot-password rework removed it). Add one when the inbox gets data.
 
 ---
 

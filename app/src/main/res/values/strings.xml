@@ -67,14 +67,28 @@
     <!-- Forgot – Request -->
     <string name="label_forgot_request_title">Reset your password</string>
     <string name="label_forgot_request_subtitle">Enter the email linked to your account.</string>
+    <string name="label_forgot_sent_subtitle">If an account exists for that address, we\'ve sent it a link to reset your password. Open it on this phone.</string>
+    <string name="btn_request_reset_link">Request Password Reset Link</string>
+    <string name="btn_resend_link">Resend link</string>
+    <string name="btn_resend_link_in">Resend link in %1$ds</string>
+    <string name="cd_forgot_request_progress">Sending the reset link</string>
+
+    <!-- New Credentials (the in-app password reset) -->
+    <string name="label_reset_title">New credentials</string>
+    <string name="label_reset_for_email">Resetting password for %1$s</string>
+    <string name="label_password_criteria_title">Your password must:</string>
+    <string name="label_password_rule_length">be at least 8 characters</string>
+    <string name="label_password_rule_match">match the confirmation</string>
+    <string name="hint_new_password">New password</string>
+    <string name="btn_reset_request_new">Request a new link</string>
+    <string name="cd_reset_progress">Checking your reset link</string>
+    <string name="msg_password_reset_done">Password updated. Sign in with your new password.</string>
     <string name="btn_send_link">Send reset link</string>
 
     <!-- Forgot – Sent: the confirmation. The reset itself happens on
          Firebase's own hosted page, so there is no verify-code or
          new-password step, and the wording must not reveal whether the
          account exists. -->
-    <string name="label_forgot_success_title">Check your email</string>
-    <string name="label_forgot_success_subtitle">If an account exists for that address, we\'ve sent it a link to reset your password.</string>
     <string name="btn_back_to_login">Back to Login</string>
 
     <!-- Loading -->

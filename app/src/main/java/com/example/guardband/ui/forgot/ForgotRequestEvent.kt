@@ -1,12 +1,12 @@
 package com.example.guardband.ui.forgot
 
-/** One-shot events emitted by [ForgotRequestViewModel]. */
+/**
+ * One-shot events emitted by [ForgotRequestViewModel].
+ *
+ * `NavigateToSent` is gone. The confirmation is the same screen in a different
+ * state now ([ForgotRequestUiState.sent]), because Resend has to happen where
+ * the email address still is.
+ */
 sealed interface ForgotRequestEvent {
     data class ShowMessage(val text: String) : ForgotRequestEvent
-
-    /**
-     * The reset email was requested. Carries no email and no account status:
-     * the screen must look identical whether or not the account exists.
-     */
-    object NavigateToSent : ForgotRequestEvent
 }
