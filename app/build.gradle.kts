@@ -6,6 +6,24 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// The password-reset link, in ONE place.
+//
+// Firebase appends ?mode=resetPassword&oobCode=... to whatever action URL the
+// Console's "Password reset" email template points at. These two values are
+// what makes that URL open GuardBand instead of Firebase's hosted page, so
+// they have to agree across three files at once: the manifest's App Link
+// intent filter, the parser that checks the incoming URL, and
+// hosting/public/.well-known/assetlinks.json.
+//
+// They are declared here and pushed out as a manifest placeholder and a
+// BuildConfig field rather than written three times. Change them here and
+// redeploy hosting; see docs/forgot-password.md.
+//
+// Do NOT use a path under /__/auth/ : that prefix is reserved by Firebase
+// Hosting for its own reserved URLs.
+val resetLinkHost = "guardband-aae65.web.app"
+val resetLinkPath = "/reset"
+
 android {
     namespace = "com.example.guardband"
     compileSdk = 34
@@ -18,6 +36,19 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Read by AndroidManifest.xml's App Link intent filter.
+        manifestPlaceholders["resetLinkHost"] = resetLinkHost
+        manifestPlaceholders["resetLinkPath"] = resetLinkPath
+
+        // Read by ResetPasswordActivity, which hands them to ResetLinkParser.
+        buildConfigField("String", "RESET_LINK_HOST", "\"$resetLinkHost\"")
+        buildConfigField("String", "RESET_LINK_PATH", "\"$resetLinkPath\"")
+    }
+
+    // buildConfigField needs this explicitly from AGP 8 onwards.
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {

@@ -60,8 +60,7 @@
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- ── Forgot Password (request + confirmation; the reset itself is ──
-             ── Firebase's own hosted page) ───────────────────────────────── -->
+        <!-- ── Forgot Password ────────────────────────────────────────────── -->
 
         <activity
             android:name=".ui.forgot.ForgotRequestActivity"
@@ -69,10 +68,44 @@
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- ── New Credentials (the reset itself, in the app) ──────────────
+             The one exported Activity: Firebase's reset email links here, so
+             an external click has to be able to reach it. Everything it
+             trusts from that Intent goes through ResetLinkParser first.
+
+             autoVerify makes this an App Link rather than a plain deep link,
+             so Android opens the app with no disambiguation dialog. That
+             depends on assetlinks.json being served from the host below;
+             docs/forgot-password.md has the deploy and the SHA-256 step.
+
+             Host and path come from manifestPlaceholders, declared once in
+             app/build.gradle.kts and read by the parser as BuildConfig
+             fields. Never a path under /__/auth/ : Firebase Hosting
+             reserves that prefix.
+
+             singleTop plus onNewIntent, so a second link tapped while this
+             is open replaces the code instead of stacking another copy.
+        -->
+
         <activity
-            android:name=".ui.forgot.ForgotSuccessActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
+            android:name=".ui.reset.ResetPasswordActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize">
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="${resetLinkHost}"
+                    android:path="${resetLinkPath}" />
+            </intent-filter>
+        </activity>
 
         <!-- ── Loading ────────────────────────────────────────────────────── -->
 
