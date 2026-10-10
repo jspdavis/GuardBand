@@ -213,6 +213,9 @@ The Alert tab reads `devices/{deviceId}` live. `SCHEMA.md` is the authority for 
 
 ## Track and map
 
+> The map library itself - why osmdroid, the user agent, the tile source and
+> the blocked-tile trap: [docs/osmdroid.md](docs/osmdroid.md).
+
 The Track tab reads `devices/{deviceId}/latest` live and puts the band's last
 known position on an OpenStreetMap map. `SCHEMA.md` is the authority for the
 payload, as everywhere else.
@@ -226,12 +229,35 @@ pins androidx-credentials at 1.3.0.
 **`ui/track/OsmdroidConfig` is the one place it is configured.** Two things must
 be right before a single tile is requested, and the Fragment therefore calls it
 in `onCreate`, before the layout inflates and builds the `MapView`:
-- **The user agent is the package name.** OSM's tile servers answer **403** to
-  the library default, and the map comes up blank with nothing in the log to
-  explain it.
+- **The user agent is a fixed, app-specific string**, `OsmdroidConfig.USER_AGENT`
+  — **not** the package name. OSM's usage policy wants a unique, identifiable
+  User-Agent, and their servers block shared ones: both `osmdroid` (the library
+  default) and the `com.example.*` prefix the project template generates, which
+  is still this app's `applicationId`. The block arrives as **HTTP 200 with a
+  PNG** reading "access blocked", not as an error, so osmdroid renders and
+  caches it like a good tile and the log says nothing. Deriving the agent from
+  the package or the version is what `ui/track/GuardBandTileSource` exists to
+  prevent — see below.
 - **Both cache paths point at `cacheDir`**, so tiles live in app-specific
   storage and need **no storage permission** on any API level. osmdroid's own
   default wants external storage.
+
+**`ui/track/GuardBandTileSource` replaces `TileSourceFactory.MAPNIK`, and must
+not be "simplified" back to it.** `MAPNIK` is built with
+`TileSourcePolicy(2, 15)`, and 15 is all four flags including
+`FLAG_USER_AGENT_NORMALIZED`; with that flag osmdroid's `TileDownloader`
+ignores `userAgentValue` and sends `packageName/versionCode` instead —
+`com.example.guardband/1`, which is blocked. The replacement is the same
+server, tiles and attribution with every `MAPNIK` restriction **except**
+normalization. Two consequences worth knowing:
+- **Never call `Configuration.getInstance().load(context, prefs)`.** It is the
+  only thing that computes the normalized agent, and it would re-break the map
+  on any tile source that normalizes. Dropping the flag and avoiding `load()`
+  are independent guards; keep both.
+- **Its name is deliberately not "Mapnik"**, because osmdroid keys cache rows
+  by `(key, provider)` where `provider` is the source name. A new name starts
+  on clean rows rather than re-serving the blocked images already cached under
+  `Mapnik`.
 
 **No phone-location permission, ever.** The band supplies the location, not the
 handset. The merged manifest adds only four *optional* `uses-feature` entries

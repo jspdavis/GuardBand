@@ -22,6 +22,7 @@ REST API (§10). `assembleDebug` + `testDebugUnitTest` green, 253 tests.
 | How alerts are read from RTDB | [`alert-data.md`](alert-data.md) |
 | The post-login host and its tabs | [`home-host-and-bottom-nav.md`](home-host-and-bottom-nav.md) |
 | **Running a demo with no hardware** | [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) — both launchers, end to end |
+| The map library and its configuration | [`osmdroid.md`](osmdroid.md) — **read before touching the map** |
 | The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md) — **authoritative** |
 | Draft Security Rules (**not deployed**) | [`../RTDBS-RULES.md`](../RTDBS-RULES.md) — committed in `3ccf153` |
 
@@ -269,7 +270,14 @@ still the template.
    phone `.validate`, and close the world-readable `devices/` read.
 3. **Delete account** in Settings.
 4. **A real tile source** before anything public. The map is on OpenStreetMap's
-   public servers, whose usage policy is written for light use (§11).
+   public servers, whose usage policy is written for light use (§11). Being
+   correctly identified is not the same as being entitled to the traffic — the
+   user agent fix only stopped the `com.example.*` block.
+5. **Rename `applicationId` off `com.example.*`** *if* this is ever published:
+   Play rejects the prefix, and `applicationId` cannot be changed after a first
+   release. It no longer affects the map (the user agent is independent of it),
+   so it is a publishing prerequisite, not a bug — and it means re-registering
+   the Firebase app and every debug SHA-1.
 
 (The mock sender fix and the Track tab + map that used to be items 3 and 4 are
 both done — §10 and §11.)

@@ -289,7 +289,8 @@ payloads, missing fields and unknown types — see §9.
 | `✗ Failed: HTTP 401 …` | Deployed rules are tighter than the draft. The sender writes unauthenticated; it would need an `?auth=` token. |
 | `✗ Failed: HTTP 400 …` | A `.validate` rejected the payload — check the enum name, `percent` 0–100, and all six required children. |
 | `✗ Failed:` a network error | No connectivity, or the database URL from `google-services.json` is wrong. |
-| **Map is blank/grey, everything else works** | The osmdroid user agent. OSM's tile servers answer **403** to a library default and log nothing useful. `OsmdroidConfig` must run before the `MapView` is built. |
+| **Every tile reads "access blocked"** | The user agent. OSM blocks shared identifiers — `osmdroid` and the `com.example.*` prefix that is still this app's `applicationId`. The block is an **HTTP 200 PNG** with the text drawn in, so osmdroid caches and draws it and the log stays clean. `OsmdroidConfig.USER_AGENT` and `GuardBandTileSource` are the two halves of the fix; neither works alone — [`osmdroid.md`](osmdroid.md). |
+| **Map is blank/grey, everything else works** | `OsmdroidConfig` did not run before the `MapView` was built. It must be applied in `onCreate`, ahead of inflation. |
 | Marker never appears, panel does | Reporting without a fix (§G), or the payload has no `location`. |
 | Badge stuck on **Reporting** after the band goes quiet | The 30 s staleness ticker (§D). |
 | Camera won't follow the band | Expected after you pan. Tap recenter. |

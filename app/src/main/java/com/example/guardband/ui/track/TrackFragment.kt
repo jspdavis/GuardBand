@@ -21,7 +21,6 @@ import com.example.guardband.data.model.Alert
 import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
@@ -78,7 +77,8 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Before the layout inflates: the MapView is built in onCreateView, and
-        // a tile request made with the wrong user agent comes back 403.
+        // a tile requested with the wrong user agent comes back as a "blocked"
+        // image that then sits in the cache. See OsmdroidConfig.
         OsmdroidConfig.apply(requireContext())
     }
 
@@ -143,7 +143,8 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     // ── Map ───────────────────────────────────────────────────────────────────
 
     private fun setUpMap() {
-        mapView.setTileSource(TileSourceFactory.MAPNIK)
+        // Not TileSourceFactory.MAPNIK - see GuardBandTileSource for why.
+        mapView.setTileSource(GuardBandTileSource.OSM)
         mapView.setMultiTouchControls(true)
         // The layout supplies its own round controls.
         mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
