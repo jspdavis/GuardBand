@@ -99,6 +99,9 @@ class ProfileProvisioningTest {
                 contacts: List<EmergencyContact>,
                 consentVersion: String
             ): Result<Unit> = Result.success(Unit)
+
+            override suspend fun deleteProfile(uid: String): Result<Unit> =
+                Result.success(Unit)
         }
 
         ProfileProvisioning.ensureProfile(cancelling, USER, isNewUser = true)

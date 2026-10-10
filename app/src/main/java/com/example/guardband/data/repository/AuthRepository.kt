@@ -1,6 +1,7 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.GoogleSignInOutcome
+import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.model.User
 
 /**
@@ -75,6 +76,70 @@ interface AuthRepository {
      * when no record exists yet.
      */
     fun currentUser(): User?
+
+    /**
+     * Which providers the signed-in account can be reached by, or an empty set
+     * when there is no session.
+     *
+     * Synchronous, like [currentUser], so a ViewModel can branch on it without
+     * a coroutine. It answers "what must I ask the user for to re-authenticate
+     * them", which is the only thing it is used for.
+     *
+     * An account made by this app has exactly one provider: Firebase's
+     * one-account-per-email setting is what turns a second method into
+     * [AuthError.AccountExistsWithDifferentCredential] instead of a link. A
+     * set is returned anyway, because a linked account made elsewhere would
+     * report both and the caller has to choose.
+     *
+     * An unrecognised provider id is dropped, so the set can be empty for a
+     * live session. The caller must treat that as "cannot re-authenticate"
+     * rather than assuming a default.
+     */
+    fun currentUserProviders(): Set<SignInProvider>
+
+    /**
+     * Proves the signed-in user still knows their password, so that
+     * [deleteAccount] is allowed.
+     *
+     * The email comes from the **live session**, never from the screen: the
+     * same reasoning complete-profile mode uses, so a stale field cannot
+     * re-authenticate against the wrong record. Only [password] is passed in,
+     * and it is never stored, logged or written.
+     *
+     * Fails with [AuthError.InvalidCredentials] for a wrong password and
+     * [AuthError.NotSignedIn] when the session has gone.
+     */
+    suspend fun reauthenticateWithPassword(password: String): Result<Unit>
+
+    /**
+     * The Google equivalent of [reauthenticateWithPassword]: proves the user
+     * still holds the account by presenting a fresh ID token.
+     *
+     * [idToken] comes from
+     * [GoogleIdTokenProvider][com.example.guardband.ui.auth.GoogleIdTokenProvider]
+     * in the UI layer, for the same reason sign-in does — Credential Manager
+     * needs an Activity.
+     *
+     * Fails with [AuthError.UserMismatch] when the chosen Google account is
+     * not the signed-in one. The chooser offers every account on the device,
+     * so that is an easy mistake rather than an exotic one.
+     */
+    suspend fun reauthenticateWithGoogle(idToken: String): Result<Unit>
+
+    /**
+     * Deletes the Firebase Auth user, ending the account.
+     *
+     * **Deletes nothing from the database.** The `users/{uid}` subtree is
+     * removed separately by [UserProfileRepository.deleteProfile], and it has
+     * to go **first**: the rules authorise that write with `auth.uid`, so once
+     * this call succeeds there is no longer a session that can make it.
+     *
+     * Fails with [AuthError.RequiresRecentLogin] unless a re-authentication
+     * happened recently enough, which is why both `reauthenticate` calls
+     * exist. The session is already gone on success, so there is nothing left
+     * to sign out of.
+     */
+    suspend fun deleteAccount(): Result<Unit>
 
     fun isLoggedIn(): Boolean
     fun signOut()

@@ -1,6 +1,7 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.GoogleSignInOutcome
+import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.model.User
 import kotlinx.coroutines.delay
 
@@ -70,6 +71,46 @@ class InMemoryAuthRepository : AuthRepository {
     }
 
     override fun currentUser(): User? = InMemoryStore.currentUser()
+
+    /**
+     * Always [SignInProvider.PASSWORD] for a live session: this double only
+     * knows how to make password accounts, and [signInWithGoogle] is not
+     * supported.
+     */
+    override fun currentUserProviders(): Set<SignInProvider> =
+        if (currentUser() == null) emptySet() else setOf(SignInProvider.PASSWORD)
+
+    override suspend fun reauthenticateWithPassword(password: String): Result<Unit> {
+        delay(InMemoryStore.SIMULATED_DELAY_MS)
+        val user = currentUser() ?: return Result.failure(AuthError.NotSignedIn)
+        return if (InMemoryStore.passwordMatches(user.id, password)) {
+            Result.success(Unit)
+        } else {
+            Result.failure(AuthError.InvalidCredentials)
+        }
+    }
+
+    /** Not supported, for the same reason [signInWithGoogle] is not. */
+    override suspend fun reauthenticateWithGoogle(idToken: String): Result<Unit> {
+        delay(InMemoryStore.SIMULATED_DELAY_MS)
+        return Result.failure(AuthError.Unknown(null))
+    }
+
+    /**
+     * Removes the user and the session, so the double ends in the same state
+     * Firebase leaves behind.
+     *
+     * It does **not** check for a recent login: there is no token to go stale,
+     * so [AuthError.RequiresRecentLogin] is a Firebase-only outcome and a test
+     * that wants it uses
+     * [FakeAuthRepository][com.example.guardband.testing.FakeAuthRepository].
+     */
+    override suspend fun deleteAccount(): Result<Unit> {
+        delay(InMemoryStore.SIMULATED_DELAY_MS)
+        val user = currentUser() ?: return Result.failure(AuthError.NotSignedIn)
+        InMemoryStore.removeUser(user.id)
+        return Result.success(Unit)
+    }
 
     override fun isLoggedIn(): Boolean = currentUser() != null
 

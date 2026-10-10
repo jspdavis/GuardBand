@@ -32,6 +32,11 @@ internal object FirebaseAuthErrorMapper {
         "ERROR_USER_NOT_FOUND" -> AuthError.NoSuchUser
         "ERROR_USER_DISABLED" -> AuthError.UserDisabled
 
+        // Both are re-authentication outcomes, so they only arise from the
+        // Delete account flow today.
+        "ERROR_REQUIRES_RECENT_LOGIN" -> AuthError.RequiresRecentLogin
+        "ERROR_USER_MISMATCH" -> AuthError.UserMismatch
+
         "ERROR_EMAIL_ALREADY_IN_USE" -> AuthError.EmailAlreadyInUse
 
         // Its own error, not EmailAlreadyInUse: it means "that address signs in

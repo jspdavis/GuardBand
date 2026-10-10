@@ -1,7 +1,9 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.GoogleSignInOutcome
+import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.model.User
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -106,6 +108,58 @@ class FirebaseAuthRepository(
     }
 
     override fun currentUser(): User? = auth.currentUser?.toUser()
+
+    // -- Re-authentication and deletion ----------------------------------------
+
+    /**
+     * Reads the providers off `providerData`, not off
+     * [FirebaseUser.getProviderId], which returns the literal `"firebase"` for
+     * the user object itself and so says nothing about how they sign in.
+     *
+     * The `"firebase"` entry `providerData` also contains maps to null and is
+     * dropped, along with any provider this app does not offer.
+     */
+    override fun currentUserProviders(): Set<SignInProvider> =
+        auth.currentUser?.providerData.orEmpty().mapNotNullTo(mutableSetOf()) { info ->
+            when (info.providerId) {
+                EmailAuthProvider.PROVIDER_ID -> SignInProvider.PASSWORD
+                GoogleAuthProvider.PROVIDER_ID -> SignInProvider.GOOGLE
+                else -> null
+            }
+        }
+
+    /**
+     * The email is taken from the live session rather than accepted as an
+     * argument, so the credential can only ever be built for the account that
+     * is actually signed in.
+     *
+     * A password provider always has an email, so a blank one means the
+     * session is not what the caller thinks it is.
+     */
+    override suspend fun reauthenticateWithPassword(password: String): Result<Unit> = authResult {
+        val user = auth.currentUser ?: throw AuthError.NotSignedIn
+        val email = user.email?.takeIf { it.isNotBlank() } ?: throw AuthError.NotSignedIn
+        user.reauthenticate(EmailAuthProvider.getCredential(email, password)).await()
+    }
+
+    override suspend fun reauthenticateWithGoogle(idToken: String): Result<Unit> = authResult {
+        val user = auth.currentUser ?: throw AuthError.NotSignedIn
+        user.reauthenticate(GoogleAuthProvider.getCredential(idToken, null)).await()
+    }
+
+    /**
+     * Deletes the Auth user only. The database subtree is
+     * [UserProfileRepository.deleteProfile]'s job and must already be gone -
+     * see [AuthRepository.deleteAccount].
+     *
+     * Firebase clears `currentUser` itself on success, so no `signOut` is
+     * needed here; the caller still calls it, because a session that somehow
+     * survived would put a deleted account back through the Splash gate.
+     */
+    override suspend fun deleteAccount(): Result<Unit> = authResult {
+        val user = auth.currentUser ?: throw AuthError.NotSignedIn
+        user.delete().await()
+    }
 
     override fun isLoggedIn(): Boolean = auth.currentUser != null
 

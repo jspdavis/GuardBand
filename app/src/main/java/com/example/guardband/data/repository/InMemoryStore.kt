@@ -84,6 +84,23 @@ internal object InMemoryStore {
         return newUser
     }
 
+    /** True when [password] is the stored password for [userId]. */
+    fun passwordMatches(userId: String, password: String): Boolean =
+        users.find { it.user.id == userId }?.password == password
+
+    /**
+     * Removes the user with [userId] and clears the session if it was theirs.
+     *
+     * The counterpart of [addUser], added so [InMemoryAuthRepository] can
+     * honour `deleteAccount` instead of pretending to. A seam for the tests,
+     * like [replaceContacts].
+     */
+    fun removeUser(userId: String): Boolean {
+        val removed = users.removeAll { it.user.id == userId }
+        if (removed && currentUserId == userId) currentUserId = null
+        return removed
+    }
+
     // ── Session ───────────────────────────────────────────────────────────────
 
     fun setSession(userId: String) {

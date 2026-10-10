@@ -50,6 +50,30 @@ sealed class AuthError : Exception() {
     object NotSignedIn : AuthError()
 
     /**
+     * The account needs a more recent login before this operation is allowed.
+     *
+     * Firebase refuses `delete()` and a password change on a session that has
+     * been sitting around, however valid it is. Not a credential failure and
+     * not a dead session: the way out is to re-authenticate and try again,
+     * which is why Delete account asks for the password or a fresh Google
+     * token before it touches anything.
+     */
+    object RequiresRecentLogin : AuthError()
+
+    /**
+     * The credential offered belongs to a different account than the one
+     * signed in.
+     *
+     * Reachable on re-authentication, not on sign-in. The Google chooser is
+     * built with `setFilterByAuthorizedAccounts(false)` so it offers every
+     * account on the device, which makes picking the wrong one easy; Firebase
+     * answers `ERROR_USER_MISMATCH` rather than quietly signing in as somebody
+     * else. The wording for it may say the account is different, because the
+     * user just chose it themselves - nothing is being revealed.
+     */
+    object UserMismatch : AuthError()
+
+    /**
      * A database read or write was rejected by the Security Rules.
      *
      * Only reachable from [UserProfileRepository], which shares this error

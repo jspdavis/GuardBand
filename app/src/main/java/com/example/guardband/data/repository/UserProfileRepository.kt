@@ -71,6 +71,24 @@ interface UserProfileRepository {
         consentVersion: String
     ): Result<Unit>
 
+    /**
+     * Removes the whole `users/{uid}` subtree — profile fields, every
+     * emergency contact and the consent record — in **one** write.
+     *
+     * One removal rather than a child-by-child delete, so there is no order in
+     * which it can half-succeed and no partial record left to reconcile. That
+     * is the same reasoning as [finalizeSignUp], in reverse.
+     *
+     * Must run **while the user is still signed in**: the `users/{uid}` rules
+     * authorise it with `auth.uid == $uid`, so it is unauthorised the moment
+     * [AuthRepository.deleteAccount] succeeds.
+     *
+     * A node that is already absent is a success, not a failure. RTDB treats
+     * removing nothing as a no-op, and a retry after a half-finished delete
+     * depends on that.
+     */
+    suspend fun deleteProfile(uid: String): Result<Unit>
+
     companion object {
         /**
          * The wording the user agreed to, stored with their consent.

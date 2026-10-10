@@ -101,6 +101,10 @@ class FirebaseUserProfileRepository(
         database.reference.update(updates)
     }
 
+    override suspend fun deleteProfile(uid: String): Result<Unit> = profileResult {
+        userRef(uid).remove()
+    }
+
     // ── Plumbing ──────────────────────────────────────────────────────────────
 
     private fun userRef(uid: String): DatabaseReference =
@@ -111,6 +115,26 @@ class FirebaseUserProfileRepository(
         suspendCancellableCoroutine { continuation ->
             updateChildren(values) { error, _ ->
                 if (!continuation.isActive) return@updateChildren
+                if (error == null) {
+                    continuation.resume(Unit)
+                } else {
+                    continuation.resumeWithException(
+                        FirebaseDatabaseErrorMapper.mapToAuthError(error)
+                    )
+                }
+            }
+        }
+
+    /**
+     * [DatabaseReference.removeValue], suspending, with the error code kept.
+     *
+     * Removing an absent node succeeds, which is what a retry after a
+     * half-finished delete relies on.
+     */
+    private suspend fun DatabaseReference.remove(): Unit =
+        suspendCancellableCoroutine { continuation ->
+            removeValue { error, _ ->
+                if (!continuation.isActive) return@removeValue
                 if (error == null) {
                     continuation.resume(Unit)
                 } else {

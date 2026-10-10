@@ -62,6 +62,24 @@ class FirebaseAuthErrorMapperTest {
         )
     }
 
+    /**
+     * Both only arise on re-authentication, which is why they appeared with
+     * Delete account. Unmapped, RequiresRecentLogin would land on
+     * [AuthError.Unknown] and the flow could not tell "ask again" apart from
+     * "that did not work".
+     */
+    @Test
+    fun `maps the re-authentication codes`() {
+        assertEquals(
+            AuthError.RequiresRecentLogin,
+            FirebaseAuthErrorMapper.fromCode("ERROR_REQUIRES_RECENT_LOGIN")
+        )
+        assertEquals(
+            AuthError.UserMismatch,
+            FirebaseAuthErrorMapper.fromCode("ERROR_USER_MISMATCH")
+        )
+    }
+
     @Test
     fun `an unrecognised code is kept on Unknown`() {
         assertEquals(
