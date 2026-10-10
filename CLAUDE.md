@@ -64,7 +64,9 @@ com/example/guardband/
 │   ├── auth/           GoogleIdTokenProvider + GoogleIdTokenResult (the only androidx.credentials users)
 │   ├── login/          email + password, and "Continue with Google"
 │   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode
-│   ├── forgot/         Request → Sent (Firebase emails the link; no OTP screens)
+│   ├── forgot/         one screen: email → "check your email" + Resend (60 s cooldown)
+│   ├── reset/          New Credentials, opened by the App Link in the reset email
+│   │                 ResetLinkParser (pure; the trust boundary) + ViewModel
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
 │   ├── track/          Track tab (default): user chip, bell, gear, osmdroid map, band status panel, Navigate + Check-in
@@ -74,7 +76,9 @@ com/example/guardband/
 │   ├── profile/        Profile tab: welcome header + user info
 │   ├── settings/       pushed from Track's gear; holds Log Out
 │   └── notifications/  pushed from Track's bell; placeholder inbox
-└── utils/InputValidator.kt     shared input predicates (no messages)
+└── utils/
+    ├── InputValidator.kt       shared input predicates (no messages)
+    └── PasswordCriteria.kt     which password rules the typed pair satisfies
 ```
 
 **Auth, the user profile, contacts and alerts are all on Firebase** (see "Firebase", "Contacts and profile data" and "Alert data" below). Nothing in the app reads `InMemoryStore` any more; it is the unit tests' backing store.
@@ -89,7 +93,7 @@ Conventions (copy `ui/login/*` as the reference):
 - **ViewModels** take repositories through the constructor and hold no `Context` or View. They expose `companion object { val Factory = viewModelFactory { initializer { XViewModel(RepositoryProvider.…) } } }`, and Activities use `by viewModels { XViewModel.Factory }`; plain `by viewModels()` is fine when there are no dependencies. User-facing messages are `MSG_*` constants in the ViewModel — including the wording for every `AuthError`, which each screen maps itself in a private `messageFor(error)`. Those messages stay in Kotlin rather than `strings.xml` precisely because a ViewModel holds no `Context`.
 - **Activities** bind views with `findViewById`, forward raw input and clicks, render state, and execute events (Toast, `startActivity`, `finish`). They collect each flow in its own `lifecycleScope.launch { repeatOnLifecycle(STARTED) { … } }`. Building `Intent`s stays in the Activity.
 - **Wizard data** moves between screens as Intent extras. The Activity passes the extras into the ViewModel's click handler, and the navigation event carries the data back.
-- **Exceptions:** `ForgotSuccessActivity` and `NotificationsFragment` have no ViewModel. Each is a static screen whose only action is navigation.
+- **Exception:** `NotificationsFragment` has no ViewModel. It is a static screen whose only action is navigation, and the last one of its kind - `ForgotSuccessActivity` was the other, and it is gone (see "Forgot password").
 
 ### Home host (Fragments)
 
@@ -114,7 +118,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 - **The session is `FirebaseAuth.currentUser`,** which the SDK persists, so it survives process death. `currentUser()` is synchronous and safe in a ViewModel's constructor, but it fills `id`, `name` (the Firebase display name, set at sign-up) and `email`, which is the whole of `User`. Profile still reads `users/{uid}` because the stored record is authoritative, but the screen is never blank while it waits.
 - **Failures are typed.** Repositories return `Result.failure(AuthError)`, and `FirebaseAuthErrorMapper` maps `FirebaseAuthException.errorCode`, never the exception message — messages are localised and change between SDK versions. `AuthError` carries no message and suppresses its stack trace, so Firebase text cannot reach a log or a Toast.
 - **Login must not distinguish a wrong password from an unknown account,** and forgot-password must confirm identically for an unregistered email. With email-enumeration protection on, Firebase returns the same code for both anyway; the UI must not undo that.
-- **Password reset is Firebase's hosted flow.** `sendPasswordResetEmail` emails a link and the user finishes in a browser. The app never sees a reset code, so there is no verify-code or set-new-password screen, and nothing like `otpPlain` or `pendingPassword` is ever written.
+- **Password reset happens in the app, not in a browser.** `sendPasswordResetEmail` still sends Firebase's own email, but the link in it is an Android App Link onto `ResetPasswordActivity`, so the new password is set inside GuardBand. Nothing like `otpPlain` or `pendingPassword` is ever written, and there is still **no typed verification code** — see "Forgot password" below.
 - **No PII in logs.** Never log a uid, an email, a token or Firebase error text.
 - **Never overwrite `app/google-services.json` from another branch,** and don't touch it, `.firebaserc` or any signing config as a side effect of other work.
 - **The `users/{uid}` Security Rules are not deployed.** The proposal in the Prompt 10 report still has to be merged with the existing `devices/` rules in the Console, by hand. `RTDBS-RULES.md` in the repo root is a working draft, not what is live.
@@ -146,6 +150,78 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 **Never log a token**, an account name or an email, here or anywhere else.
 
 **Not covered by tests:** the Firebase exchange inside `signInWithGoogle` and `GoogleIdTokenProvider` itself. Both need a real `FirebaseAuth` / Credential Manager, and the project declares no mocking library. The testable logic was extracted instead — `ProfileProvisioning` for the write rule, the ViewModels for routing and wording.
+
+## Forgot password
+
+> The whole flow, the one-place host/path constant, the hosting files and the
+> manual steps: [docs/forgot-password.md](docs/forgot-password.md).
+
+**No typed-code reset without a server. Ever.** A six-digit code has to be
+generated somewhere trusted, kept somewhere the user can neither read nor
+write, compared server-side, and exchanged for a password change through the
+Admin SDK. The Spark plan has no Cloud Function to do any of it. A client-only
+version - the code minted in the app, or held in RTDB - puts the thing that
+authorises a password change exactly where an attacker already is. **Do not
+build the wireframe's five-box "Code Verification" screen**, and treat the
+world-readable `password_resets` node still sitting in the `RTDBS-RULES.md`
+draft as the leftover of an earlier attempt at this, not as a design.
+
+**What happens instead.** Firebase sends its own reset email, which proves the
+user controls the inbox. The link is an **Android App Link** onto
+`ui/reset/ResetPasswordActivity`, not Firebase's hosted page, so the password
+is set in the app with `verifyPasswordResetCode` then `confirmPasswordReset`.
+Neither call needs a signed-in user, and if one happens to be signed in the
+flow neither reads nor disturbs that session.
+
+**The host and path are declared once**, as `resetLinkHost` / `resetLinkPath`
+in `app/build.gradle.kts`, and pushed out as a `manifestPlaceholders` pair for
+the intent filter and a `buildConfigField` pair for the parser. Three files
+have to agree on them, the third being `hosting/public/.well-known/assetlinks.json`,
+which is served rather than built. Never put the path under `/__/auth/` -
+Firebase Hosting reserves that prefix.
+
+**`ResetPasswordActivity` is the one `exported="true"` Activity in the app**,
+because an external click has to reach it. `ui/reset/ResetLinkParser` is
+therefore the trust boundary: it re-checks scheme, host, path, `mode` and a
+non-blank `oobCode`, because **an intent filter is a router, not a validator**.
+It takes a `String` and uses `java.net.URI` rather than `android.net.Uri` so it
+is a plain JVM test, takes the **first** occurrence of a repeated query
+parameter so an appended `mode=` cannot override Firebase's, and returns a bare
+null rather than a reason - the URL contains the code, so no reject path may
+describe what it saw.
+
+**The `oobCode` lives only in `ResetPasswordViewModel`** - never an Intent
+extra, saved instance state, a log or analytics. The cost is that it does not
+survive process death, and the user re-opens the email link.
+
+**The request screen is one screen with two faces.** `ForgotSuccessActivity` is
+gone: resending needs the address, so the confirmation became
+`ForgotRequestUiState.sent` on the screen that still has it. Resend is on a 60 s
+cooldown, recomputed from an injected `Clock` on each tick of an injected
+`Flow<Unit>` - the same pattern as `TrackViewModel`'s staleness ticker, and for
+the same reason, so a test never waits and is never left holding an endless
+`delay`.
+
+**The enumeration property survives, and must keep surviving.**
+`AuthError.NoSuchUser` and `AuthError.InvalidEmail` are reported as success.
+The sent wording, the cooldown and the resend confirmation are identical for a
+registered and an unregistered address, and a test compares the two states
+field for field.
+
+**Password rules are `PasswordCriteria`'s, which are `InputValidator`'s.** The
+criteria list the user reads and the gate on Submit are the same value, so the
+screen can never refuse a password it just ticked green.
+`ui/auth/PasswordCriteriaList` binds `view_password_criteria.xml` and does the
+tinting - an `<include>` plus a binder object, the same shape as
+`SignUpStepHeader`. Sign-up and a future change-password screen are the other
+candidates for it; adding a rule means a predicate in `InputValidator`, a field
+on `PasswordCriteria` and a row in that layout, never a length comparison
+written out again.
+
+**Nothing is deployed.** `hosting/` is created but not pushed, `assetlinks.json`
+still holds `REPLACE_WITH_*` placeholders, and the Console action URL is still
+the default, so **the App Link cannot work yet** and the email link opens the
+fallback page. The doc's §1 is the checklist.
 
 ## Contacts and profile data
 

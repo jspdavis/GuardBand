@@ -1,0 +1,43 @@
+{
+  "//": [
+    "Firebase Hosting for the password-reset App Link. NOT DEPLOYED YET.",
+    "",
+    "Its one job is to serve two files from guardband-aae65.web.app:",
+    "  /.well-known/assetlinks.json  - proves this domain belongs to the app,",
+    "                                  which is what makes android:autoVerify",
+    "                                  work and opens the app with no chooser",
+    "  /reset                        - the fallback page, for a link opened",
+    "                                  where GuardBand is not installed",
+    "",
+    "The ignore list below is the important part. Firebase Hosting's default",
+    "ignore includes '**/.*', which silently drops every dotfolder - including",
+    ".well-known/. Deploying with the default list gives a 404 on assetlinks",
+    "and an App Link that never verifies, with nothing in the deploy output to",
+    "say why. The list here keeps firebase.json and node_modules out but omits",
+    "the dotfile glob on purpose.",
+    "",
+    "No redirects and no rewrites: assetlinks.json has to be served directly,",
+    "as application/json, at exactly that path. A redirect fails verification.",
+    "",
+    "Deploy with:  firebase deploy --only hosting",
+    "See docs/forgot-password.md for the whole checklist."
+  ],
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "/.well-known/assetlinks.json",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      }
+    ]
+  }
+}
