@@ -78,7 +78,8 @@ com/example/guardband/
 │   └── notifications/  pushed from Track's bell; placeholder inbox
 └── utils/
     ├── InputValidator.kt       shared input predicates (no messages)
-    └── PasswordCriteria.kt     which password rules the typed pair satisfies
+    ├── PasswordCriteria.kt     which password rules the typed pair satisfies
+    └── HostedPages.kt          URLs of the pages served from the Hosting domain
 ```
 
 **Auth, the user profile, contacts and alerts are all on Firebase** (see "Firebase", "Contacts and profile data" and "Alert data" below). Nothing in the app reads `InMemoryStore` any more; it is the unit tests' backing store.
@@ -121,7 +122,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 - **Password reset happens in the app, not in a browser.** `sendPasswordResetEmail` still sends Firebase's own email, but the link in it is an Android App Link onto `ResetPasswordActivity`, so the new password is set inside GuardBand. Nothing like `otpPlain` or `pendingPassword` is ever written, and there is still **no typed verification code** — see "Forgot password" below.
 - **No PII in logs.** Never log a uid, an email, a token or Firebase error text.
 - **Never overwrite `app/google-services.json` from another branch,** and don't touch it, `.firebaserc` or any signing config as a side effect of other work.
-- **The `users/{uid}` Security Rules are not deployed.** The proposal in the Prompt 10 report still has to be merged with the existing `devices/` rules in the Console, by hand. `RTDBS-RULES.md` in the repo root is a working draft, not what is live.
+- **The `users/{uid}` Security Rules are not deployed.** `RTDBS-RULES.md` is a working draft, not what is live, and it has to be **merged** with the live rules by hand rather than pasted over them - nobody has read the deployed rules from the tooling side. The draft now carries its own "Merging into the Console" steps and eight Rules Playground tests, which are the only test suite rules get (there is no emulator suite). Its `devices/` block is deliberately unchanged and deliberately world-readable and world-writable; closing it needs device pairing.
 
 ## Google sign-in
 
@@ -308,6 +309,76 @@ them on deletes regardless).
 **Not covered by tests:** `reauthenticate` and `delete` themselves, which need
 a real `FirebaseAuth`. The sequencing, the wording and both guards are covered
 — `DeleteAccountViewModelTest`, 28 tests.
+
+## Privacy, consent and the hosted pages
+
+> The notice, the delete-account page, the consent version log, the rules'
+> phone pattern and the human checklist:
+> [docs/privacy-and-consent.md](docs/privacy-and-consent.md).
+
+**Two static pages are served from the Firebase Hosting domain**, alongside the
+password-reset fallback: `/privacy` (the Privacy Notice) and `/delete-account`.
+Both are **hosted rather than in-app screens** on purpose - somebody who has
+uninstalled GuardBand still needs to read what they agreed to and find out how
+to get their data removed. Neither runs a script.
+
+**One host constant, four paths, declared once** at the top of
+`app/build.gradle.kts`: `hostingHost`, `resetLinkPath`, `privacyPath`,
+`deleteAccountPath`. They reach the manifest as `manifestPlaceholders` and the
+code as `buildConfigField`s. `utils/HostedPages` is the **only** place a URL on
+that domain is built; nothing else may spell one out. (`HOSTING_HOST` was
+`RESET_LINK_HOST` until the notice started sharing the domain.)
+
+**The notice's version and `CONSENT_VERSION` move together.** Bumping
+`UserProfileRepository.CONSENT_VERSION` means editing
+`hosting/public/privacy/index.html`'s displayed version and adding a row to
+the log in `docs/privacy-and-consent.md`, **in the same commit**. The point of
+storing a version with somebody's consent is being able to say which words
+they agreed to, and that fails the moment the number cannot be matched to a
+document. It is a **String** (`"1.1"`), not a number, so `"1.10"` can follow
+`"1.9"`.
+
+**The consent statement stays plain text and the link is a separate button.**
+The statement is the `MaterialCheckBox`'s own `android:text` so that tapping
+the words toggles the box and TalkBack reads the two as one control. A
+`ClickableSpan` inside that label fights the toggle and loses that reading, so
+the link is `btn_signup_consent_privacy` directly beneath it. Don't "improve"
+it into a span.
+
+**Opening either page is a plain `ACTION_VIEW`** - no custom-tabs dependency,
+no permission. A phone with nothing registered for `https` throws
+`ActivityNotFoundException`, which goes back through the ViewModel so the
+wording stays with every other `MSG_*`, the same shape as Track's Navigate
+button.
+
+**Settings has two privacy rows on purpose.** "Privacy & security" is a
+placeholder for a screen nobody has built; "Privacy Notice" opens the hosted
+document. Pointing the placeholder at the notice would make the row mean
+something other than its label.
+
+**The draft rules' `phone` `.validate` and `InputValidator` must stay in
+step.** The app normalises to E.164 **before** writing
+(`ContactFields.validated`), so the rule matches the *stored* form, never what
+was typed. Its three branches are a PH mobile plus the generic E.164 case split
+by first digit, because the app refuses anything starting `+63` that is not a
+PH mobile and RTDB's regex has no negative lookahead. Change one, change the
+other.
+
+**The notice states only what the code does.** Undecided facts carry a
+`DECISION: Jul` rather than a plausible default, it claims compliance with
+nothing, and both pages keep a **DRAFT** banner until a human has reviewed
+them. Two findings worth knowing: **Firebase Analytics is on the classpath and
+no app code calls it**, so the app collects an app-instance id, device model,
+OS version, region and an advertising id without a line of code saying so; and
+**OpenStreetMap's tile servers see the phone's IP and the area being viewed**
+on every tile. Both are disclosed in the notice.
+
+**Known gap, documented not fixed:** `ProfileProvisioning` writes only `name`
+and `email`, so `users/{uid}` can exist with no `consent` subtree - including
+after a failed account deletion, where the next sign-in repopulates a thin
+record. **Do not add `users/$uid/.validate: newData.hasChildren(['consent'])`**
+as a fix: it would fail that legitimate write and leave the user with no
+profile at all. The options are in the doc.
 
 ## Firebase data contract
 

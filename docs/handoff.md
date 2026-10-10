@@ -24,6 +24,7 @@ REST API (§10). `assembleDebug` + `testDebugUnitTest` green, 253 tests.
 | **Running a demo with no hardware** | [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) — both launchers, end to end |
 | The map library and its configuration | [`osmdroid.md`](osmdroid.md) — **read before touching the map** |
 | The in-app password reset | [`forgot-password.md`](forgot-password.md) — **its §1 is a human checklist; nothing works until that is done** |
+| The Privacy Notice, consent versions and the rules draft | [`privacy-and-consent.md`](privacy-and-consent.md) — **§1 is a human checklist; the notice is DRAFT and unreviewed** |
 | The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md) — **authoritative** |
 | Draft Security Rules (**not deployed**) | [`../RTDBS-RULES.md`](../RTDBS-RULES.md) — committed in `3ccf153` |
 
@@ -181,11 +182,11 @@ the error/empty/stale split, what is and is not tested — in
 
 | | Where | Notes |
 |---|---|---|
-| **Privacy Notice is not a link** | `activity_signup_consent.xml` | Marked `DESIGN: Jul`. Until it points at a real notice, the consent record references wording the user cannot read. **This is the one that matters most** — it undermines the consent record. |
-| **`users/{uid}` Security Rules not deployed** | `RTDBS-RULES.md` (committed draft) | Must be merged with the existing `devices/` rules in the Console **by hand**. Now also needs a `consent` subtree and a `phone` `.validate`. |
+| **Privacy Notice: written, not reviewed or deployed** | [`privacy-and-consent.md`](privacy-and-consent.md) §1 | The notice exists at `hosting/public/privacy/index.html`, the consent step links to it, and `CONSENT_VERSION` is `1.1`. **But it is a DRAFT with unfilled placeholders and seven `DECISION: Jul` items, and Hosting is not deployed**, so the link does not resolve yet. It needs a human review before the banner comes off — it describes how real people's data is handled. |
+| **No re-consent flow** | — | Users who accepted `1.0` keep `1.0` and are never re-prompted. Building one means deciding what happens to an account that declines. |
+| **`users/{uid}` Security Rules not deployed** | `RTDBS-RULES.md` (committed draft) | Must be merged with the live rules in the Console **by hand** — the draft now carries the steps and eight Playground tests. The `consent` subtree and the `phone` `.validate` are written; the legacy nodes are gone from the draft but **their data is still in the database**. |
 | **Password reset is built but not deployed** | [`forgot-password.md`](forgot-password.md) §1 | Hosting is not initialized, `assetlinks.json` still holds `REPLACE_WITH_*`, and the Console action URL is still the default, so the App Link cannot verify and the email link opens the fallback page. |
-| **Dead `password_resets` node** in the draft | `RTDBS-RULES.md` | `".read": true, ".write": true`, world-readable *and* world-writable, left over from an abandoned typed-code reset. No code references it. Delete it from the draft. |
-| **`phone_index` / `email_index`** in the draft | `RTDBS-RULES.md` | Both `".read": true`, also unreferenced MVP leftovers, and a read of either would answer the enumeration question the auth screens refuse. Delete them too. |
+| **Legacy nodes: out of the draft, still in the database** | Console — `password_resets`, `phone_index`, `email_index` | All three were grepped against `app/src`: **0 references each**. Their rules are removed from the draft, but removing a rule does not remove stored data — it makes it unreachable. **Export, then delete the nodes** ([`privacy-and-consent.md`](privacy-and-consent.md) §1 step 4). `password_resets` was world-readable *and* world-writable. |
 | **`devices/` history is world-readable** in the draft | `RTDBS-RULES.md` | `".read": true` on wearer coordinates. Close before any public demo. Note the **write** side is also open, and the mock sender depends on it — tightening `".write"` to require auth means teaching `AlertSender` to send an `?auth=` token (§10). |
 | **`SignUpNameViewModel.onGoogleSignInClicked`** | `ui/signup/` | Unreachable — no Google button on the name screen since the redesign. Kept on purpose, flagged in its KDoc. |
 | **`bg_signup_continue.xml`** | `res/drawable/` | Committed but unused; `Widget.GuardBand.SignUpContinue` replaced it. Fold it into the style or delete it. |
@@ -209,7 +210,14 @@ the error/empty/stale split, what is and is not tested — in
   prints it. The release keystore's SHA-256 is needed before any signed build.
 - **Deploying Firebase Hosting** from `hosting/`, and setting the password-reset
   action URL in the Console. [`forgot-password.md`](forgot-password.md) §1 is
-  the checklist.
+  the checklist. The same deploy publishes `/privacy` and `/delete-account`.
+- **Reviewing the Privacy Notice** before its DRAFT banner comes off, and
+  resolving its seven `DECISION: Jul` items. It describes how real people's
+  data is handled, including emergency contacts who never signed up, and it was
+  drafted by an agent from the code — which is a reason for a human to read it,
+  not a reason to trust it.
+- **Exporting and deleting the legacy database nodes**, after the grep in
+  [`privacy-and-consent.md`](privacy-and-consent.md) §3.
 - **Manual testing of the Alert tab** — the checklist in
   [`alert-data.md` §12](alert-data.md) works from the Console.
 - **Figma** is the visual source of truth and is Jul's. Everything above uses
