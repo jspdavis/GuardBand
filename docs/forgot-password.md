@@ -6,7 +6,7 @@ password is set inside the app.
 
 | | |
 |---|---|
-| **Branch** | `feature/account-actions` |
+| **Branch** | `mvvm-main` |
 | **Status** | `assembleDebug` + `testDebugUnitTest` green, 383 tests, 0 failures. **Nothing is deployed and the App Link cannot work yet** — see §1. |
 | **Link host** | `guardband-aae65.web.app` |
 | **Link path** | `/reset` |
