@@ -17,7 +17,8 @@ class FakeUserProfileRepository(
     var saveProfileResult: Result<Unit> = Result.success(Unit),
     var profileExistsResult: Result<Boolean>? = null,
     var fetchProfileResult: Result<User?>? = null,
-    var finalizeSignUpResult: Result<Unit> = Result.success(Unit)
+    var finalizeSignUpResult: Result<Unit> = Result.success(Unit),
+    var deleteProfileResult: Result<Unit> = Result.success(Unit)
 ) : UserProfileRepository {
 
     /** uid → (name, email), in call order. */
@@ -33,6 +34,10 @@ class FakeUserProfileRepository(
     var profileExistsCalls = 0; private set
     var fetchProfileCalls = 0; private set
     var finalizeSignUpCalls = 0; private set
+    var deleteProfileCalls = 0; private set
+
+    /** The uids passed to [deleteProfile], in call order. */
+    val deletedUids = mutableListOf<String>()
 
     override suspend fun saveProfile(
         uid: String,
@@ -61,6 +66,24 @@ class FakeUserProfileRepository(
     override suspend fun profileExists(uid: String): Result<Boolean> {
         profileExistsCalls++
         return profileExistsResult ?: Result.success(saved.containsKey(uid))
+    }
+
+    /**
+     * Removes everything recorded for [uid] on success, so a later
+     * [fetchProfile] agrees that the record is gone.
+     *
+     * A uid that was never saved still succeeds: RTDB treats removing nothing
+     * as a no-op, and the retry path after a half-finished delete relies on it.
+     */
+    override suspend fun deleteProfile(uid: String): Result<Unit> {
+        deleteProfileCalls++
+        deletedUids += uid
+        if (deleteProfileResult.isSuccess) {
+            saved.remove(uid)
+            finalizedContacts.remove(uid)
+            recordedConsent.remove(uid)
+        }
+        return deleteProfileResult
     }
 
     /**

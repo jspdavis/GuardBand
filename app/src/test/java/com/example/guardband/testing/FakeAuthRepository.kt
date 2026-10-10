@@ -1,6 +1,7 @@
 package com.example.guardband.testing
 
 import com.example.guardband.data.model.GoogleSignInOutcome
+import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.model.User
 import com.example.guardband.data.repository.AuthRepository
 
@@ -17,6 +18,11 @@ class FakeAuthRepository(
     var createAccountResult: Result<User> = Result.success(DEFAULT_USER),
     var sendPasswordResetResult: Result<Unit> = Result.success(Unit),
     var signInWithGoogleResult: Result<GoogleSignInOutcome> = Result.success(RETURNING_GOOGLE_USER),
+    var reauthenticateWithPasswordResult: Result<Unit> = Result.success(Unit),
+    var reauthenticateWithGoogleResult: Result<Unit> = Result.success(Unit),
+    var deleteAccountResult: Result<Unit> = Result.success(Unit),
+    /** What the account can sign in with. Empty means an unusable session. */
+    var providers: Set<SignInProvider> = setOf(SignInProvider.PASSWORD),
     private var signedIn: Boolean = false
 ) : AuthRepository {
 
@@ -25,9 +31,19 @@ class FakeAuthRepository(
     var sendPasswordResetCalls = 0; private set
     var signInWithGoogleCalls = 0; private set
     var signOutCalls = 0; private set
+    var reauthenticateWithPasswordCalls = 0; private set
+    var reauthenticateWithGoogleCalls = 0; private set
+    var deleteAccountCalls = 0; private set
 
     /** The token of the last [signInWithGoogle] call, so a test can assert it was forwarded. */
     var lastGoogleIdToken: String? = null; private set
+
+    /** The password of the last [reauthenticateWithPassword] call. */
+    var lastReauthPassword: String? = null; private set
+
+    /** The token of the last [reauthenticateWithGoogle] call. */
+    var lastReauthGoogleIdToken: String? = null; private set
+
 
     /** Arguments of the last [createAccount] call, so a test can assert what was forwarded. */
     var lastCreateAccountArgs: List<String> = emptyList(); private set
@@ -64,6 +80,33 @@ class FakeAuthRepository(
     }
 
     override fun currentUser(): User? = DEFAULT_USER.takeIf { signedIn }
+
+    override fun currentUserProviders(): Set<SignInProvider> =
+        if (signedIn) providers else emptySet()
+
+    override suspend fun reauthenticateWithPassword(password: String): Result<Unit> {
+        reauthenticateWithPasswordCalls++
+        lastReauthPassword = password
+        return reauthenticateWithPasswordResult
+    }
+
+    override suspend fun reauthenticateWithGoogle(idToken: String): Result<Unit> {
+        reauthenticateWithGoogleCalls++
+        lastReauthGoogleIdToken = idToken
+        return reauthenticateWithGoogleResult
+    }
+
+    /** Signs the user out on success, like Firebase's own `delete()` does. */
+    override suspend fun deleteAccount(): Result<Unit> {
+        deleteAccountCalls++
+        if (deleteAccountResult.isSuccess) signedIn = false
+        return deleteAccountResult
+    }
+
+    /** Lets a test kill the session between calls, which Firebase can do at any point. */
+    fun forceSignOut() {
+        signedIn = false
+    }
 
     override fun isLoggedIn(): Boolean = signedIn
 
