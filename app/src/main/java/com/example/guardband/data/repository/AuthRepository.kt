@@ -67,6 +67,39 @@ interface AuthRepository {
     suspend fun sendPasswordReset(email: String): Result<Unit>
 
     /**
+     * Checks a password-reset code from an email link and returns the address
+     * it belongs to.
+     *
+     * **Needs no signed-in user.** The code itself is the authorisation, which
+     * is the whole point: the person following the link has lost their
+     * password and cannot sign in. If someone *is* signed in, this neither
+     * uses nor disturbs that session.
+     *
+     * The returned email is shown so the user can see which account they are
+     * about to change. It is never logged.
+     *
+     * Fails with [AuthError.ExpiredActionCode] or
+     * [AuthError.InvalidActionCode] for a link that is too old, already spent,
+     * or superseded by a later request.
+     */
+    suspend fun verifyPasswordResetCode(code: String): Result<String>
+
+    /**
+     * Sets a new password using a reset code, completing the flow
+     * [verifyPasswordResetCode] began.
+     *
+     * Also needs no signed-in user, and does **not** sign anyone in: the user
+     * goes to Login afterwards and signs in with what they just chose.
+     *
+     * The code is single-use, so a failure other than [AuthError.WeakPassword]
+     * may well have consumed it; the screen treats an action-code failure here
+     * as "request a new link" rather than offering a retry.
+     *
+     * Neither [code] nor [newPassword] is logged, stored or put in an Intent.
+     */
+    suspend fun confirmPasswordReset(code: String, newPassword: String): Result<Unit>
+
+    /**
      * The signed-in user, or null. Synchronous, so it is safe in a ViewModel's
      * constructor.
      *

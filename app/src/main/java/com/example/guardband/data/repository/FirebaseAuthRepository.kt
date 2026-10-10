@@ -107,6 +107,21 @@ class FirebaseAuthRepository(
         auth.sendPasswordResetEmail(email.trim()).await()
     }
 
+    /**
+     * Returns the email Firebase has on file for the code. Project-level, not
+     * session-level: `auth.currentUser` is neither read nor changed.
+     */
+    override suspend fun verifyPasswordResetCode(code: String): Result<String> = authResult {
+        auth.verifyPasswordResetCode(code).await()
+    }
+
+    override suspend fun confirmPasswordReset(
+        code: String,
+        newPassword: String
+    ): Result<Unit> = authResult {
+        auth.confirmPasswordReset(code, newPassword).await()
+    }
+
     override fun currentUser(): User? = auth.currentUser?.toUser()
 
     // -- Re-authentication and deletion ----------------------------------------

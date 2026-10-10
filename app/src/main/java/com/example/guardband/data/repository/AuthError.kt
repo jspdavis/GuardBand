@@ -42,6 +42,25 @@ sealed class AuthError : Exception() {
     object WeakPassword : AuthError()
 
     object InvalidEmail : AuthError()
+
+    /**
+     * The password-reset link has expired.
+     *
+     * Firebase's own expiry, not the app's: reset codes are short-lived by
+     * design. The only way forward is a new email, so the screen offers that
+     * rather than a Retry.
+     */
+    object ExpiredActionCode : AuthError()
+
+    /**
+     * The password-reset code is not usable: already spent, revoked by a later
+     * reset request, or simply wrong.
+     *
+     * Kept separate from [ExpiredActionCode] only because "it expired" and
+     * "that link has already been used" are different things to be told. Both
+     * end the same way, with a fresh request.
+     */
+    object InvalidActionCode : AuthError()
     object UserDisabled : AuthError()
     object Network : AuthError()
     object TooManyRequests : AuthError()

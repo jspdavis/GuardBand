@@ -70,6 +70,25 @@ class InMemoryAuthRepository : AuthRepository {
         }
     }
 
+    /**
+     * Not supported: there is no email, so there is no out-of-band code to
+     * check. Returns [AuthError.InvalidActionCode], which is what a caller
+     * would make of a code this double could never have issued.
+     */
+    override suspend fun verifyPasswordResetCode(code: String): Result<String> {
+        delay(InMemoryStore.SIMULATED_DELAY_MS)
+        return Result.failure(AuthError.InvalidActionCode)
+    }
+
+    /** Not supported, for the same reason as [verifyPasswordResetCode]. */
+    override suspend fun confirmPasswordReset(
+        code: String,
+        newPassword: String
+    ): Result<Unit> {
+        delay(InMemoryStore.SIMULATED_DELAY_MS)
+        return Result.failure(AuthError.InvalidActionCode)
+    }
+
     override fun currentUser(): User? = InMemoryStore.currentUser()
 
     /**

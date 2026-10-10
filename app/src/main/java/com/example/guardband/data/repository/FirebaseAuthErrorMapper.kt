@@ -46,6 +46,12 @@ internal object FirebaseAuthErrorMapper {
 
         "ERROR_WEAK_PASSWORD" -> AuthError.WeakPassword
         "ERROR_INVALID_EMAIL" -> AuthError.InvalidEmail
+
+        // Out-of-band codes, so only the password-reset link flow sees these.
+        // FirebaseAuthActionCodeException carries them and extends
+        // FirebaseAuthException, so map() already routes it here.
+        "ERROR_EXPIRED_ACTION_CODE" -> AuthError.ExpiredActionCode
+        "ERROR_INVALID_ACTION_CODE" -> AuthError.InvalidActionCode
         "ERROR_TOO_MANY_REQUESTS" -> AuthError.TooManyRequests
         "ERROR_NETWORK_REQUEST_FAILED" -> AuthError.Network
 

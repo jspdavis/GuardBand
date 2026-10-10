@@ -21,6 +21,8 @@ class FakeAuthRepository(
     var reauthenticateWithPasswordResult: Result<Unit> = Result.success(Unit),
     var reauthenticateWithGoogleResult: Result<Unit> = Result.success(Unit),
     var deleteAccountResult: Result<Unit> = Result.success(Unit),
+    var verifyPasswordResetCodeResult: Result<String> = Result.success(RESET_EMAIL),
+    var confirmPasswordResetResult: Result<Unit> = Result.success(Unit),
     /** What the account can sign in with. Empty means an unusable session. */
     var providers: Set<SignInProvider> = setOf(SignInProvider.PASSWORD),
     private var signedIn: Boolean = false
@@ -34,9 +36,17 @@ class FakeAuthRepository(
     var reauthenticateWithPasswordCalls = 0; private set
     var reauthenticateWithGoogleCalls = 0; private set
     var deleteAccountCalls = 0; private set
+    var verifyPasswordResetCodeCalls = 0; private set
+    var confirmPasswordResetCalls = 0; private set
 
     /** The token of the last [signInWithGoogle] call, so a test can assert it was forwarded. */
     var lastGoogleIdToken: String? = null; private set
+
+    /** The code of the last reset call, so a test can assert it was forwarded. */
+    var lastResetCode: String? = null; private set
+
+    /** The password handed to the last [confirmPasswordReset] call. */
+    var lastNewPassword: String? = null; private set
 
     /** The password of the last [reauthenticateWithPassword] call. */
     var lastReauthPassword: String? = null; private set
@@ -79,6 +89,22 @@ class FakeAuthRepository(
         return sendPasswordResetResult
     }
 
+    override suspend fun verifyPasswordResetCode(code: String): Result<String> {
+        verifyPasswordResetCodeCalls++
+        lastResetCode = code
+        return verifyPasswordResetCodeResult
+    }
+
+    override suspend fun confirmPasswordReset(
+        code: String,
+        newPassword: String
+    ): Result<Unit> {
+        confirmPasswordResetCalls++
+        lastResetCode = code
+        lastNewPassword = newPassword
+        return confirmPasswordResetResult
+    }
+
     override fun currentUser(): User? = DEFAULT_USER.takeIf { signedIn }
 
     override fun currentUserProviders(): Set<SignInProvider> =
@@ -116,6 +142,9 @@ class FakeAuthRepository(
     }
 
     companion object {
+        /** What a successful code check reports back. */
+        const val RESET_EMAIL = "reset@guardband.com"
+
         val DEFAULT_USER = User(
             id = "uid-1",
             name = "Test User",
