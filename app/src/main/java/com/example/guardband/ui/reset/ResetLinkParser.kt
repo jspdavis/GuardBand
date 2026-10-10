@@ -24,7 +24,7 @@ import java.net.URLDecoder
  *
  * The host and path are passed in rather than read from `BuildConfig`, so this
  * object depends on nothing and a test can hand it a deliberately wrong host.
- * Their single source of truth is `resetLinkHost` / `resetLinkPath` in
+ * Their single source of truth is `hostingHost` / `resetLinkPath` in
  * `app/build.gradle.kts`.
  */
 internal object ResetLinkParser {

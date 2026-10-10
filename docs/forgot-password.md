@@ -10,7 +10,7 @@ password is set inside the app.
 | **Status** | `assembleDebug` + `testDebugUnitTest` green, 383 tests, 0 failures. **Nothing is deployed and the App Link cannot work yet** — see §1. |
 | **Link host** | `guardband-aae65.web.app` |
 | **Link path** | `/reset` |
-| **Declared in** | [`../app/build.gradle.kts`](../app/build.gradle.kts) — `resetLinkHost` / `resetLinkPath`, one place (§3) |
+| **Declared in** | [`../app/build.gradle.kts`](../app/build.gradle.kts) — `hostingHost` / `resetLinkPath`, one place (§3) |
 | **Screens** | [`ui/forgot/`](../app/src/main/java/com/example/guardband/ui/forgot/), [`ui/reset/`](../app/src/main/java/com/example/guardband/ui/reset/) |
 | **Hosting files** | [`../hosting/`](../hosting/) — created, **not deployed** |
 | **Related** | [`../CLAUDE.md`](../CLAUDE.md) ("Forgot password") |
@@ -94,7 +94,7 @@ that checks an incoming URL, and `assetlinks.json` on the server. They are
 declared **once**, at the top of `app/build.gradle.kts`:
 
 ```kotlin
-val resetLinkHost = "guardband-aae65.web.app"
+val hostingHost = "guardband-aae65.web.app"
 val resetLinkPath = "/reset"
 ```
 
@@ -102,8 +102,8 @@ and pushed out two ways:
 
 | Consumer | Via |
 |---|---|
-| `AndroidManifest.xml` intent filter | `manifestPlaceholders["resetLinkHost"]` / `["resetLinkPath"]` → `${resetLinkHost}` |
-| `ResetPasswordActivity` → `ResetLinkParser` | `buildConfigField` → `BuildConfig.RESET_LINK_HOST` / `RESET_LINK_PATH` |
+| `AndroidManifest.xml` intent filter | `manifestPlaceholders["hostingHost"]` / `["resetLinkPath"]` → `${hostingHost}` |
+| `ResetPasswordActivity` → `ResetLinkParser` | `buildConfigField` → `BuildConfig.HOSTING_HOST` / `RESET_LINK_PATH` |
 | `hosting/public/.well-known/assetlinks.json` | by hand — it is served, not built |
 
 `buildConfigField` needs `buildFeatures { buildConfig = true }`, which AGP 8

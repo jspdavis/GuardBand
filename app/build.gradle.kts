@@ -6,7 +6,7 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-// The password-reset link, in ONE place.
+// The Hosting domain and the paths served from it, in ONE place.
 //
 // Firebase appends ?mode=resetPassword&oobCode=... to whatever action URL the
 // Console's "Password reset" email template points at. These two values are
@@ -21,8 +21,18 @@ plugins {
 //
 // Do NOT use a path under /__/auth/ : that prefix is reserved by Firebase
 // Hosting for its own reserved URLs.
-val resetLinkHost = "guardband-aae65.web.app"
+val hostingHost = "guardband-aae65.web.app"
+
+// The App Link target. Its host doubles as the host for every hosted page
+// below, which is why the constant is not called resetLinkHost any more.
 val resetLinkPath = "/reset"
+
+// Static pages served from the same domain. Linked from the consent screen and
+// from Settings, and both are reachable without the app, which is the point:
+// someone who has deleted the app still needs to be able to read the notice
+// and find out how to get their data removed.
+val privacyPath = "/privacy"
+val deleteAccountPath = "/delete-account"
 
 android {
     namespace = "com.example.guardband"
@@ -38,12 +48,17 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Read by AndroidManifest.xml's App Link intent filter.
-        manifestPlaceholders["resetLinkHost"] = resetLinkHost
+        manifestPlaceholders["hostingHost"] = hostingHost
         manifestPlaceholders["resetLinkPath"] = resetLinkPath
 
-        // Read by ResetPasswordActivity, which hands them to ResetLinkParser.
-        buildConfigField("String", "RESET_LINK_HOST", "\"$resetLinkHost\"")
+        // HOSTING_HOST + RESET_LINK_PATH are read by ResetPasswordActivity,
+        // which hands them to ResetLinkParser. The other two are read by
+        // HostedPages, which builds the URLs the consent screen and Settings
+        // open. One host for all three, so a domain change is one edit here.
+        buildConfigField("String", "HOSTING_HOST", "\"$hostingHost\"")
         buildConfigField("String", "RESET_LINK_PATH", "\"$resetLinkPath\"")
+        buildConfigField("String", "PRIVACY_PATH", "\"$privacyPath\"")
+        buildConfigField("String", "DELETE_ACCOUNT_PATH", "\"$deleteAccountPath\"")
     }
 
     // buildConfigField needs this explicitly from AGP 8 onwards.
