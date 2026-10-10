@@ -1,6 +1,8 @@
 package com.example.guardband.ui.settings
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -42,7 +44,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  *
  * View ids: ib_settings_back, tv_settings_title, tv_settings_account,
  * tv_settings_change_password, tv_settings_notifications, tv_settings_privacy,
- * btn_settings_logout, card_settings_delete_failure, tv_settings_delete_error,
+ * tv_settings_privacy_notice, btn_settings_logout,
+ * card_settings_delete_failure, tv_settings_delete_error,
  * btn_settings_delete_retry, tv_settings_delete_account,
  * progress_settings_delete.
  */
@@ -56,6 +59,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private lateinit var placeholderRows: List<TextView>
     private lateinit var btnLogout: Button
+    private lateinit var tvPrivacyNotice: TextView
     private lateinit var tvDeleteAccount: TextView
     private lateinit var cardDeleteFailure: MaterialCardView
     private lateinit var tvDeleteError: TextView
@@ -92,6 +96,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 setOnClickListener { viewModel.onPlaceholderRowClicked() }
             }
         }
+
+        tvPrivacyNotice = view.findViewById(R.id.tv_settings_privacy_notice)
+        tvPrivacyNotice.setOnClickListener { viewModel.onPrivacyNoticeClicked() }
 
         btnLogout = view.findViewById(R.id.btn_settings_logout)
         btnLogout.setOnClickListener { viewModel.onLogoutClicked() }
@@ -135,6 +142,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         val enabled = !state.isBusy
         placeholderRows.forEach { it.isEnabled = enabled }
         btnLogout.isEnabled = enabled
+        tvPrivacyNotice.isEnabled = enabled
         tvDeleteAccount.isEnabled = enabled
         btnDeleteRetry.isEnabled = enabled
 
@@ -155,6 +163,24 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 Toast.makeText(requireContext(), event.text, Toast.LENGTH_SHORT).show()
 
             SettingsEvent.NavigateToLogin -> clearCredentialsThenGoToLogin()
+
+            is SettingsEvent.OpenUrl -> openUrl(event.url)
+        }
+    }
+
+    /**
+     * Opens a hosted page in whatever browser the phone has.
+     *
+     * A plain `ACTION_VIEW`, so it needs no permission and no extra
+     * dependency. A phone with nothing registered for `https` throws
+     * [ActivityNotFoundException], which goes back through the ViewModel so
+     * the wording stays with every other user-facing message.
+     */
+    private fun openUrl(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: ActivityNotFoundException) {
+            viewModel.onBrowserUnavailable()
         }
     }
 

@@ -1,26 +1,34 @@
 {
   "//": [
-    "Firebase Hosting for the password-reset App Link. NOT DEPLOYED YET.",
+    "Firebase Hosting for GuardBand's three public pages. NOT DEPLOYED YET.",
     "",
-    "Its one job is to serve two files from guardband-aae65.web.app:",
     "  /.well-known/assetlinks.json  - proves this domain belongs to the app,",
     "                                  which is what makes android:autoVerify",
-    "                                  work and opens the app with no chooser",
-    "  /reset                        - the fallback page, for a link opened",
+    "                                  work and opens the password-reset link",
+    "                                  in the app with no chooser",
+    "  /reset                        - fallback page, for a reset link opened",
     "                                  where GuardBand is not installed",
+    "  /privacy                      - the Privacy Notice, linked from the",
+    "                                  sign-up consent step and from Settings",
+    "  /delete-account               - how to delete an account, reachable",
+    "                                  without the app on purpose",
     "",
-    "The ignore list below is the important part. Firebase Hosting's default",
-    "ignore includes '**/.*', which silently drops every dotfolder - including",
+    "The ignore list is the important part. Firebase Hosting's default ignore",
+    "includes '**/.*', which silently drops every dotfolder - including",
     ".well-known/. Deploying with the default list gives a 404 on assetlinks",
     "and an App Link that never verifies, with nothing in the deploy output to",
     "say why. The list here keeps firebase.json and node_modules out but omits",
-    "the dotfile glob on purpose.",
+    "the dotfile glob on purpose. Do not tidy it back in.",
     "",
-    "No redirects and no rewrites: assetlinks.json has to be served directly,",
-    "as application/json, at exactly that path. A redirect fails verification.",
+    "cleanUrls + trailingSlash:false so /privacy, /delete-account and /reset",
+    "are each served directly, rather than 301-ing to a trailing-slash form.",
+    "Neither setting touches assetlinks.json: cleanUrls only strips .html, and",
+    "the file is not a directory index. There are no redirects and no rewrites",
+    "at all, because assetlinks.json has to be served directly, as",
+    "application/json, at exactly that path - a redirect fails verification.",
     "",
     "Deploy with:  firebase deploy --only hosting",
-    "See docs/forgot-password.md for the whole checklist."
+    "Checklists: docs/forgot-password.md and docs/privacy-and-consent.md."
   ],
   "hosting": {
     "public": "public",
@@ -28,6 +36,8 @@
       "firebase.json",
       "**/node_modules/**"
     ],
+    "cleanUrls": true,
+    "trailingSlash": false,
     "headers": [
       {
         "source": "/.well-known/assetlinks.json",

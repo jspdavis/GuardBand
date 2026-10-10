@@ -10,6 +10,7 @@ import com.example.guardband.data.model.EmergencyContact
 import com.example.guardband.data.repository.AuthError
 import com.example.guardband.data.repository.AuthRepository
 import com.example.guardband.data.repository.UserProfileRepository
+import com.example.guardband.utils.HostedPages
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,6 +62,27 @@ class SignUpConsentViewModel(
 
     fun onConsentChanged(given: Boolean) {
         _uiState.update { it.copy(consentGiven = given) }
+    }
+
+    /**
+     * The "Read the Privacy Notice" link.
+     *
+     * Deliberately not gated on anything: the whole point is that it can be
+     * read **before** agreeing, and the box is ticked to say it was.
+     */
+    fun onPrivacyNoticeClicked() {
+        _events.trySend(SignUpConsentEvent.OpenPrivacyNotice(HostedPages.privacyNotice))
+    }
+
+    /**
+     * No app on the phone can open a web page.
+     *
+     * The wording lives here with every other user-facing message, the same
+     * way [com.example.guardband.ui.track.TrackViewModel] handles a phone with
+     * no maps app, rather than being invented in the Activity.
+     */
+    fun onPrivacyNoticeUnavailable() {
+        _events.trySend(SignUpConsentEvent.ShowMessage(MSG_NO_BROWSER))
     }
 
     /**
@@ -232,6 +254,8 @@ class SignUpConsentViewModel(
 
     companion object {
         const val MSG_CONSENT_REQUIRED = "Please agree before creating your account."
+        const val MSG_NO_BROWSER =
+            "No app on this phone can open the Privacy Notice."
         const val MSG_EMAIL_INVALID = "Enter a valid email address."
         const val MSG_PASSWORD_TOO_SHORT = "Password must be at least 8 characters."
         const val MSG_EMAIL_IN_USE = "An account with that email already exists."

@@ -97,7 +97,22 @@ interface UserProfileRepository {
          * can require agreeing again. Bump it whenever
          * `label_signup_consent_statement` changes in a way that alters what
          * is being agreed to.
+         *
+         * **It moves with the Privacy Notice.** The notice page shows its own
+         * version, and the two must always read the same: the point of storing
+         * a version is to know which words somebody agreed to, which is no use
+         * if the number cannot be matched to a document. Bumping it means
+         * editing `hosting/public/privacy/index.html` and adding a row to
+         * `docs/privacy-and-consent.md` in the same commit.
+         *
+         * A **String**, not a number, so "1.10" can follow "1.9" without
+         * sorting before it. The Security Rules draft validates it as a string
+         * for the same reason.
+         *
+         * Bumped to 1.1 when the consent step gained a working link to the
+         * notice. Existing records keep 1.0, and **nobody is re-prompted** -
+         * there is no re-consent flow yet.
          */
-        const val CONSENT_VERSION = "1.0"
+        const val CONSENT_VERSION = "1.1"
     }
 }

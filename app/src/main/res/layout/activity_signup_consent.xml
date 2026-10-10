@@ -52,8 +52,11 @@
 
     <!-- The statement is the checkbox's own label, so tapping the text toggles
          it and TalkBack reads the two as one control.
-         DESIGN: Jul — "Privacy Notice" should become a link once the notice
-         has a URL; it is plain text for now rather than a dead link. -->
+         The statement stays plain text and the link is the separate button
+         below it. A ClickableSpan inside a checkbox label fights the toggle
+         (a tap on the link would also tick the box, or not, depending on
+         where exactly it landed) and costs the single-control reading above.
+         DESIGN: Jul -->
     <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/cb_signup_consent"
         android:layout_width="0dp"
@@ -68,6 +71,22 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_signup_consent_subtitle" />
 
+    <!-- The notice itself, opened in the browser. A hosted page rather than
+         an in-app screen, so somebody who has uninstalled GuardBand can still
+         read what they agreed to. Its URL is HostedPages.privacyNotice.
+    -->
+    <!-- DESIGN: Jul -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_signup_consent_privacy"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="4dp"
+        android:text="@string/btn_signup_consent_privacy"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cb_signup_consent" />
+
     <Button
         android:id="@+id/btn_signup_consent_create"
         style="@style/Widget.GuardBand.SignUpContinue"
@@ -75,7 +94,7 @@
         android:text="@string/btn_signup_create_account"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cb_signup_consent" />
+        app:layout_constraintTop_toBottomOf="@id/btn_signup_consent_privacy" />
 
     <!-- Shown when createAccount or finalizeSignUp fails. Retry resumes at the
          write, so a failed profile write never re-creates the account. -->
