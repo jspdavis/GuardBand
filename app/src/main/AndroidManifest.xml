@@ -80,8 +80,10 @@
 
              Host and path come from manifestPlaceholders, declared once in
              app/build.gradle.kts and read by the parser as BuildConfig
-             fields. Never a path under /__/auth/ : Firebase Hosting
-             reserves that prefix.
+             fields. They are Firebase's own default action handler on
+             firebaseapp.com, because the project cannot change the
+             Console's action URL. android:path, never pathPrefix: the OAuth
+             redirect handler lives on the same host.
 
              singleTop plus onNewIntent, so a second link tapped while this
              is open replaces the code instead of stacking another copy.
@@ -102,7 +104,7 @@
 
                 <data
                     android:scheme="https"
-                    android:host="${hostingHost}"
+                    android:host="${resetLinkHost}"
                     android:path="${resetLinkPath}" />
             </intent-filter>
         </activity>

@@ -174,12 +174,28 @@ is set in the app with `verifyPasswordResetCode` then `confirmPasswordReset`.
 Neither call needs a signed-in user, and if one happens to be signed in the
 flow neither reads nor disturbs that session.
 
+**The link is Firebase's own default handler**, `https://guardband-aae65.firebaseapp.com/__/auth/action`,
+because **the project cannot change the Console's action URL**: Firebase
+refuses it with `EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED`, from the Console and from
+the API alike. So the app claims the link Firebase already sends rather than
+moving it. `firebaseapp.com` serves the same Hosting site as `web.app`, so the
+one deployed `assetlinks.json` verifies both. Without the app, the link opens
+Firebase's own reset page, which completes the reset in the browser.
+
 **The host and path are declared once**, as `resetLinkHost` / `resetLinkPath`
 in `app/build.gradle.kts`, and pushed out as a `manifestPlaceholders` pair for
 the intent filter and a `buildConfigField` pair for the parser. Three files
 have to agree on them, the third being `hosting/public/.well-known/assetlinks.json`,
-which is served rather than built. Never put the path under `/__/auth/` -
-Firebase Hosting reserves that prefix.
+which is served rather than built.
+
+**Never host a page of your own under `/__/`.** Firebase serves that prefix
+itself, so a file deployed there is shadowed and never reached. Claiming
+Firebase's own `/__/auth/action` is the one exception, and it is **an exact
+`android:path`, never `pathPrefix`**: `/__/auth/handler`, the OAuth redirect
+handler, is on the same host. Every Firebase email action (`verifyEmail`,
+`recoverEmail`, ...) arrives at that one path, so the parser's
+`mode=resetPassword` check is what keeps the others out; adding email
+verification later means deciding what the app does with those links.
 
 **`ResetPasswordActivity` is the one `exported="true"` Activity in the app**,
 because an external click has to reach it. `ui/reset/ResetLinkParser` is
@@ -219,10 +235,10 @@ candidates for it; adding a rule means a predicate in `InputValidator`, a field
 on `PasswordCriteria` and a row in that layout, never a length comparison
 written out again.
 
-**Nothing is deployed.** `hosting/` is created but not pushed, `assetlinks.json`
-still holds `REPLACE_WITH_*` placeholders, and the Console action URL is still
-the default, so **the App Link cannot work yet** and the email link opens the
-fallback page. The doc's §1 is the checklist.
+**Hosting is deployed** (2026-10-11) with one debug SHA-256 in
+`assetlinks.json`; Google's Digital Asset Links checker reports both hosts as
+linked for it. Every other developer's debug SHA-256, and a release one, still
+has to be added. The doc's §1 is the checklist.
 
 ## Contacts and profile data
 
@@ -316,18 +332,19 @@ a real `FirebaseAuth`. The sequencing, the wording and both guards are covered
 > phone pattern and the human checklist:
 > [docs/privacy-and-consent.md](docs/privacy-and-consent.md).
 
-**Two static pages are served from the Firebase Hosting domain**, alongside the
-password-reset fallback: `/privacy` (the Privacy Notice) and `/delete-account`.
-Both are **hosted rather than in-app screens** on purpose - somebody who has
-uninstalled GuardBand still needs to read what they agreed to and find out how
-to get their data removed. Neither runs a script.
+**Two static pages are served from the Firebase Hosting domain**:
+`/privacy` (the Privacy Notice) and `/delete-account`, plus a root page that
+links both and `/.well-known/assetlinks.json`. Both are **hosted rather than
+in-app screens** on purpose - somebody who has uninstalled GuardBand still
+needs to read what they agreed to and find out how to get their data removed.
+Nothing there runs a script.
 
-**One host constant, four paths, declared once** at the top of
-`app/build.gradle.kts`: `hostingHost`, `resetLinkPath`, `privacyPath`,
-`deleteAccountPath`. They reach the manifest as `manifestPlaceholders` and the
-code as `buildConfigField`s. `utils/HostedPages` is the **only** place a URL on
-that domain is built; nothing else may spell one out. (`HOSTING_HOST` was
-`RESET_LINK_HOST` until the notice started sharing the domain.)
+**One host constant, two paths, declared once** at the top of
+`app/build.gradle.kts`: `hostingHost` (`guardband-aae65.web.app`),
+`privacyPath`, `deleteAccountPath`. They reach the code as `buildConfigField`s.
+`utils/HostedPages` is the **only** place a URL on that domain is built;
+nothing else may spell one out. The reset link has its own
+`resetLinkHost` (`firebaseapp.com`) - see "Forgot password".
 
 **The notice's version and `CONSENT_VERSION` move together.** Bumping
 `UserProfileRepository.CONSENT_VERSION` means editing

@@ -6,31 +6,37 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-// The Hosting domain and the paths served from it, in ONE place.
+// The password-reset App Link, in ONE place.
 //
-// Firebase appends ?mode=resetPassword&oobCode=... to whatever action URL the
-// Console's "Password reset" email template points at. These two values are
-// what makes that URL open GuardBand instead of Firebase's hosted page, so
-// they have to agree across three files at once: the manifest's App Link
-// intent filter, the parser that checks the incoming URL, and
-// hosting/public/.well-known/assetlinks.json.
+// This is Firebase's OWN default action handler, not a page of ours. The
+// project cannot change the Console's action URL (Firebase refuses it with
+// EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED), so instead of moving the link the app
+// claims the one Firebase already sends:
+//   https://guardband-aae65.firebaseapp.com/__/auth/action?mode=resetPassword&oobCode=...
+// firebaseapp.com serves the same Hosting site as web.app, so the
+// assetlinks.json deployed from hosting/ verifies this host too. Without the
+// app, the link opens Firebase's own reset page, which completes the reset in
+// the browser.
 //
-// They are declared here and pushed out as a manifest placeholder and a
-// BuildConfig field rather than written three times. Change them here and
-// redeploy hosting; see docs/forgot-password.md.
+// Three files have to agree on these: the manifest's App Link intent filter,
+// the parser that checks the incoming URL, and
+// hosting/public/.well-known/assetlinks.json. They are pushed out as manifest
+// placeholders and BuildConfig fields rather than written three times. See
+// docs/forgot-password.md.
 //
-// Do NOT use a path under /__/auth/ : that prefix is reserved by Firebase
-// Hosting for its own reserved URLs.
+// Never host a page of our own under /__/ : Firebase serves that prefix itself,
+// so a deployed file there is never reached. Claiming Firebase's handler is the
+// one exception, and only at this exact path. The manifest uses android:path,
+// never pathPrefix, because /__/auth/handler (OAuth redirects) is on the same
+// host.
+val resetLinkHost = "guardband-aae65.firebaseapp.com"
+val resetLinkPath = "/__/auth/action"
+
+// The Hosting domain for the static pages the app opens. Linked from the
+// consent screen and from Settings, and both are reachable without the app,
+// which is the point: someone who has deleted the app still needs to be able
+// to read the notice and find out how to get their data removed.
 val hostingHost = "guardband-aae65.web.app"
-
-// The App Link target. Its host doubles as the host for every hosted page
-// below, which is why the constant is not called resetLinkHost any more.
-val resetLinkPath = "/reset"
-
-// Static pages served from the same domain. Linked from the consent screen and
-// from Settings, and both are reachable without the app, which is the point:
-// someone who has deleted the app still needs to be able to read the notice
-// and find out how to get their data removed.
 val privacyPath = "/privacy"
 val deleteAccountPath = "/delete-account"
 
@@ -48,15 +54,16 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Read by AndroidManifest.xml's App Link intent filter.
-        manifestPlaceholders["hostingHost"] = hostingHost
+        manifestPlaceholders["resetLinkHost"] = resetLinkHost
         manifestPlaceholders["resetLinkPath"] = resetLinkPath
 
-        // HOSTING_HOST + RESET_LINK_PATH are read by ResetPasswordActivity,
-        // which hands them to ResetLinkParser. The other two are read by
+        // RESET_LINK_HOST + RESET_LINK_PATH are read by ResetPasswordActivity,
+        // which hands them to ResetLinkParser. The other three are read by
         // HostedPages, which builds the URLs the consent screen and Settings
-        // open. One host for all three, so a domain change is one edit here.
-        buildConfigField("String", "HOSTING_HOST", "\"$hostingHost\"")
+        // open.
+        buildConfigField("String", "RESET_LINK_HOST", "\"$resetLinkHost\"")
         buildConfigField("String", "RESET_LINK_PATH", "\"$resetLinkPath\"")
+        buildConfigField("String", "HOSTING_HOST", "\"$hostingHost\"")
         buildConfigField("String", "PRIVACY_PATH", "\"$privacyPath\"")
         buildConfigField("String", "DELETE_ACCOUNT_PATH", "\"$deleteAccountPath\"")
     }

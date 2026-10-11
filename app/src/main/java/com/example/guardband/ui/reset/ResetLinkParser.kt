@@ -24,8 +24,10 @@ import java.net.URLDecoder
  *
  * The host and path are passed in rather than read from `BuildConfig`, so this
  * object depends on nothing and a test can hand it a deliberately wrong host.
- * Their single source of truth is `hostingHost` / `resetLinkPath` in
- * `app/build.gradle.kts`.
+ * Their single source of truth is `resetLinkHost` / `resetLinkPath` in
+ * `app/build.gradle.kts`: Firebase's own default action handler, which every
+ * email action shares. That is why the `mode` check below is load-bearing, not
+ * a formality.
  */
 internal object ResetLinkParser {
 

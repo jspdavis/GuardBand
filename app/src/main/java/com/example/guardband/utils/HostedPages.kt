@@ -6,8 +6,9 @@ import com.example.guardband.BuildConfig
  * The URLs of the static pages served from the project's Firebase Hosting
  * domain.
  *
- * **The host is `BuildConfig.HOSTING_HOST`, the same one the password-reset App
- * Link uses.** It and the paths are declared once in `app/build.gradle.kts`;
+ * **The host is `BuildConfig.HOSTING_HOST`.** The password-reset App Link is on
+ * a different host, Firebase's own `firebaseapp.com` handler, so it is not
+ * built here. The host and paths are declared once in `app/build.gradle.kts`;
  * nothing else in the app may spell out a URL on that domain. See
  * `docs/privacy-and-consent.md` and `docs/forgot-password.md`.
  *

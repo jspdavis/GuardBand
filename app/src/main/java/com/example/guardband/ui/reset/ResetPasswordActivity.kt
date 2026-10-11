@@ -35,9 +35,9 @@ import kotlinx.coroutines.launch
  * and mode rather than assuming the manifest filter was only matched
  * honestly.
  *
- * The host and path come from `BuildConfig.HOSTING_HOST` /
- * `RESET_LINK_PATH`, which the manifest's intent filter also reads as a
- * manifest placeholder. Both are declared once in `app/build.gradle.kts` —
+ * The host and path come from `BuildConfig.RESET_LINK_HOST` /
+ * `RESET_LINK_PATH`, which the manifest's intent filter also reads as
+ * manifest placeholders. Both are declared once in `app/build.gradle.kts` —
  * see `docs/forgot-password.md`.
  *
  * **Nothing here logs**, and the `oobCode` never leaves the ViewModel: not
@@ -162,7 +162,7 @@ class ResetPasswordActivity : AppCompatActivity() {
         val code = url?.let {
             ResetLinkParser.oobCodeFrom(
                 url = it,
-                expectedHost = BuildConfig.HOSTING_HOST,
+                expectedHost = BuildConfig.RESET_LINK_HOST,
                 expectedPath = BuildConfig.RESET_LINK_PATH
             )
         }

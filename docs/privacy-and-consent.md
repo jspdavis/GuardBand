@@ -24,7 +24,7 @@ notice is not finished.**
 |---|---|---|
 | 1 | **Fill the placeholders.** `REPLACE_WITH_RESPONSIBLE_PARTY` and `REPLACE_WITH_CONTACT_EMAIL` appear in both pages. Then resolve every `DECISION: Jul` — the list is in §4. | Jul |
 | 2 | **Have the notice reviewed** by the project adviser or the university's data privacy contact, then remove the `DRAFT, pending review` banner from both pages. **This text describes how real people's data is handled, including third parties who never signed up. It was drafted by an AI from the code and must not be treated as final because of that.** | Jul + adviser |
-| 3 | **Deploy Hosting:** `firebase deploy --only hosting` from `hosting/`. Then open `/privacy`, `/delete-account` **and `/reset`**, and confirm `/.well-known/assetlinks.json` still returns JSON — §5 explains why that last one is the one to check. | Jul |
+| 3 | **Deploy Hosting:** `firebase deploy --only hosting` from `hosting/`. Then open `/privacy` and `/delete-account`, and confirm `/.well-known/assetlinks.json` still returns JSON — §5 explains why that last one is the one to check. | Jul |
 | 4 | **Back up, then delete the legacy nodes** in the Console: `password_resets`, `phone_index`, `email_index`. **Export the JSON first.** Removing a rule does not remove stored data; it makes it unreachable instead. The grep that justifies this is in §3. | Jul |
 | 5 | **Merge the draft rules into the live rules by hand**, following "Merging into the Console" at the top of `RTDBS-RULES.md`, and run all eight Rules Playground tests. **Copy the live rules out before you touch them** — nobody has a record of them. | Jul |
 | 6 | **Manual app test** — §6. | anyone |
@@ -84,24 +84,22 @@ export-then-delete for that reason.
 
 ## 5. How the URLs are wired
 
-One host, three paths, declared once at the top of `app/build.gradle.kts`:
+One host, two paths, declared once at the top of `app/build.gradle.kts`:
 
 ```kotlin
 val hostingHost = "guardband-aae65.web.app"
-val resetLinkPath = "/reset"
 val privacyPath = "/privacy"
 val deleteAccountPath = "/delete-account"
 ```
 
 | Consumer | Via |
 |---|---|
-| App Link intent filter | `manifestPlaceholders["hostingHost"]` / `["resetLinkPath"]` |
-| `ResetLinkParser` | `BuildConfig.HOSTING_HOST` / `RESET_LINK_PATH` |
 | Consent screen, Settings row | `HostedPages.privacyNotice` / `.deleteAccount`, from `BuildConfig` |
 
-`HOSTING_HOST` used to be `RESET_LINK_HOST`. It was renamed when the notice
-started sharing the domain: one host constant with an accurate name beats two
-with the same value.
+The password-reset App Link used to share this host, at `/reset`. It now has
+its own `resetLinkHost`, Firebase's default handler on `firebaseapp.com`,
+because the project cannot change the Console's action URL
+(`forgot-password.md` §3). The `/reset` page is gone.
 
 **`HostedPages.url` is forgiving about slashes** — a host that picked up a
 trailing one or a path that lost its leading one both still produce a working
@@ -109,8 +107,8 @@ URL, because those are edits somebody will make in the build file and neither
 should 404. `HostedPagesTest` also asserts the two real URLs, so a slip there
 fails a test rather than shipping a dead link.
 
-**Hosting serves all three directly.** `firebase.json` sets `cleanUrls: true`
-and `trailingSlash: false`, so `/privacy`, `/delete-account` and `/reset` are
+**Hosting serves the pages directly.** `firebase.json` sets `cleanUrls: true`
+and `trailingSlash: false`, so `/privacy` and `/delete-account` are
 each a 200 rather than a 301 to a trailing-slash form. Neither setting touches
 `/.well-known/assetlinks.json` — `cleanUrls` only strips `.html`, and the file
 is not a directory index — but **check it after every deploy anyway**, because
@@ -160,8 +158,7 @@ agreed to and find out how to get their data removed. An in-app-only notice
 cannot serve either.
 
 **Neither page runs a script.** No analytics, no fonts, no Firebase web SDK. A
-page about data handling should not itself be a data-collection surface, and
-`/reset` has a stronger version of the same rule (`forgot-password.md` §6).
+page about data handling should not itself be a data-collection surface.
 
 **The notice states only what the code does.** Where a fact is undecided it
 carries a `DECISION: Jul` rather than a plausible-sounding default. A notice
