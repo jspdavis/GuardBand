@@ -184,10 +184,8 @@ the error/empty/stale split, what is and is not tested — in
 |---|---|---|
 | **Privacy Notice: written, not reviewed or deployed** | [`privacy-and-consent.md`](privacy-and-consent.md) §1 | The notice exists at `hosting/public/privacy/index.html`, the consent step links to it, and `CONSENT_VERSION` is `1.1`. Every placeholder and `DECISION: Jul` was resolved on 2026-10-11 (§4 of that doc), and Firebase Analytics was dropped. Hosting is deployed, so the link resolves, **but the page is still a DRAFT**. It needs a human review before the banner comes off — it describes how real people's data is handled. |
 | **No re-consent flow** | — | Users who accepted `1.0` keep `1.0` and are never re-prompted. Building one means deciding what happens to an account that declines. |
-| **Legacy node data still to delete** | `RTDBS-RULES.md`, Console Data tab | The rules are **deployed** (2026-10-11): `users/` validation, the legacy rules gone, and the missing `history` `.read` that was 401-ing the Alert tab and mock sender. The `password_resets`, `phone_index` and `email_index` **data** is still in the database until it is exported and deleted. |
-| **Password reset: deployed, not yet tested on a device** | [`forgot-password.md`](forgot-password.md) §1 | Hosting is live and `assetlinks.json` holds one debug SHA-256. The Console action URL **cannot be changed** (`EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED`), so the App Link now claims Firebase's own default handler on `firebaseapp.com` instead. Other developers' fingerprints are still missing, and the device check and manual pass have not run. |
-| **Legacy nodes: out of the draft, still in the database** | Console — `password_resets`, `phone_index`, `email_index` | All three were grepped against `app/src`: **0 references each**. Their rules are removed from the draft, but removing a rule does not remove stored data — it makes it unreachable. **Export, then delete the nodes** ([`privacy-and-consent.md`](privacy-and-consent.md) §1 step 4). `password_resets` was world-readable *and* world-writable. |
-| **`devices/` history is world-readable** in the draft | `RTDBS-RULES.md` | `".read": true` on wearer coordinates. Close before any public demo. Note the **write** side is also open, and the mock sender depends on it — tightening `".write"` to require auth means teaching `AlertSender` to send an `?auth=` token (§10). |
+| **Password reset: other developers' fingerprints** | [`forgot-password.md`](forgot-password.md) §1 | Deployed and passed its manual test on 2026-10-11. The Console action URL **cannot be changed** (`EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED`), so the App Link claims Firebase's own default handler on `firebaseapp.com`. `assetlinks.json` holds **one** developer's debug SHA-256; on any other machine's build the link opens in the browser until theirs is added. |
+| **`devices/` history is world-readable** | `RTDBS-RULES.md` | `".read": true` on wearer coordinates. Close before any public demo. Note the **write** side is also open, and the mock sender depends on it — tightening `".write"` to require auth means teaching `AlertSender` to send an `?auth=` token (§10). |
 | **`SignUpNameViewModel.onGoogleSignInClicked`** | `ui/signup/` | Unreachable — no Google button on the name screen since the redesign. Kept on purpose, flagged in its KDoc. |
 | **`bg_signup_continue.xml`** | `res/drawable/` | Committed but unused; `Widget.GuardBand.SignUpContinue` replaced it. Fold it into the style or delete it. |
 | **`item_contact.xml` edit icon** | `res/layout/` | Placeholder — there is no pencil drawable. |
@@ -196,9 +194,9 @@ the error/empty/stale split, what is and is not tested — in
 
 ## 6. Needs a human, not an agent
 
-- **Deploying Security Rules** — Console only, and the draft must be merged with
-  what is already live. Nobody has seen the deployed `devices/` rules from the
-  tooling side; everything written about them is inferred from the draft.
+- **Deploying Security Rules** — Console only. `RTDBS-RULES.md` is the source
+  of truth since 2026-10-11: edit it, strip the `//` keys, paste the whole
+  file, run the Playground tests, publish.
 - **Registering your own debug SHA-1** in the Firebase Console, then
   re-downloading `google-services.json`. **Google sign-in fails on an
   unregistered machine even though the app builds fine.** The release keystore's
@@ -216,10 +214,10 @@ the error/empty/stale split, what is and is not tested — in
   data is handled, including emergency contacts who never signed up, and it was
   drafted by an agent from the code — which is a reason for a human to read it,
   not a reason to trust it.
-- **Exporting and deleting the legacy database nodes**, after the grep in
-  [`privacy-and-consent.md`](privacy-and-consent.md) §3.
-- **Manual testing of the Alert tab** — the checklist in
-  [`alert-data.md` §12](alert-data.md) works from the Console.
+- **Manual testing of the Alert tab, the Track tab and the mock sender** —
+  [`alert-data.md` §12](alert-data.md) and
+  [`mock-sender-and-receiver.md` §6](mock-sender-and-receiver.md). Handed to a
+  teammate on 2026-10-11; none of the three has had a full human pass yet.
 - **Figma** is the visual source of truth and is Jul's. Everything above uses
   theme tokens and placeholder spacing; `DESIGN: Jul` marks the spots.
 
@@ -283,10 +281,19 @@ still the template.
 
 ## 9. Suggested next steps
 
-1. **Give the Privacy Notice a URL and make it a link.** Everything else in the
-   consent flow is built; this is what makes it mean something.
-2. **Deploy the Security Rules**, including the new `consent` subtree and the
-   phone `.validate`, and close the world-readable `devices/` read.
+1. **Real GPS location — next, agreed 2026-10-11.** Today the mock sender
+   reports a random point within about 1 km of central Cebu City
+   (`AlertSender.kt`), and nothing in the app uses a real position, so the
+   Track tab shows somewhere plausible rather than where anyone is. The team
+   wants real GPS instead. **Decide the scope first**: most likely the mock
+   sender reporting Phone A's own fix, as the band's NEO-6M will. It collides
+   with a standing rule: CLAUDE.md says "no phone-location permission, ever"
+   and forbids `ACCESS_FINE_LOCATION`. That rule was written for the receiver
+   app. A permission declared only in `app/src/debug/AndroidManifest.xml`
+   would keep it out of release builds, but the rule has to be consciously
+   amended either way, not quietly broken.
+2. **Close the world-readable `devices/` read.** The rules are deployed
+   (2026-10-11); this part needs device pairing first (§5).
 3. **A real tile source** before anything public. The map is on OpenStreetMap's
    public servers, whose usage policy is written for light use (§11). Being
    correctly identified is not the same as being entitled to the traffic — the
