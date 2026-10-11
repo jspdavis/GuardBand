@@ -1,0 +1,108 @@
+package com.example.guardband.testing
+
+import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.model.User
+import com.example.guardband.data.repository.UserProfileRepository
+
+/**
+ * [UserProfileRepository] that records what was written, so a test can assert
+ * whether a profile was created, left alone, or overwritten.
+ *
+ * Profiles are keyed by uid in [saved]. [profileExistsResult] is separate from
+ * that map on purpose: a test needs to simulate a read failure without also
+ * claiming the record is absent, and [fetchProfileResult] exists for the same
+ * reason.
+ */
+class FakeUserProfileRepository(
+    var saveProfileResult: Result<Unit> = Result.success(Unit),
+    var profileExistsResult: Result<Boolean>? = null,
+    var fetchProfileResult: Result<User?>? = null,
+    var finalizeSignUpResult: Result<Unit> = Result.success(Unit),
+    var deleteProfileResult: Result<Unit> = Result.success(Unit)
+) : UserProfileRepository {
+
+    /** uid → (name, email), in call order. */
+    val saved = mutableMapOf<String, Pair<String, String>>()
+
+    /** uid → the contacts passed to [finalizeSignUp]. */
+    val finalizedContacts = mutableMapOf<String, List<EmergencyContact>>()
+
+    /** uid → the consent version recorded with the write. */
+    val recordedConsent = mutableMapOf<String, String>()
+
+    var saveProfileCalls = 0; private set
+    var profileExistsCalls = 0; private set
+    var fetchProfileCalls = 0; private set
+    var finalizeSignUpCalls = 0; private set
+    var deleteProfileCalls = 0; private set
+
+    /** The uids passed to [deleteProfile], in call order. */
+    val deletedUids = mutableListOf<String>()
+
+    override suspend fun saveProfile(
+        uid: String,
+        name: String,
+        email: String
+    ): Result<Unit> {
+        saveProfileCalls++
+        if (saveProfileResult.isSuccess) {
+            saved[uid] = Pair(name, email)
+        }
+        return saveProfileResult
+    }
+
+    /** Falls back to [saved] unless a test pins the answer. */
+    override suspend fun fetchProfile(uid: String): Result<User?> {
+        fetchProfileCalls++
+        fetchProfileResult?.let { return it }
+
+        val record = saved[uid] ?: return Result.success(null)
+        return Result.success(
+            User(id = uid, name = record.first, email = record.second)
+        )
+    }
+
+    /** Falls back to whether [saved] holds [uid] unless a test pins the answer. */
+    override suspend fun profileExists(uid: String): Result<Boolean> {
+        profileExistsCalls++
+        return profileExistsResult ?: Result.success(saved.containsKey(uid))
+    }
+
+    /**
+     * Removes everything recorded for [uid] on success, so a later
+     * [fetchProfile] agrees that the record is gone.
+     *
+     * A uid that was never saved still succeeds: RTDB treats removing nothing
+     * as a no-op, and the retry path after a half-finished delete relies on it.
+     */
+    override suspend fun deleteProfile(uid: String): Result<Unit> {
+        deleteProfileCalls++
+        deletedUids += uid
+        if (deleteProfileResult.isSuccess) {
+            saved.remove(uid)
+            finalizedContacts.remove(uid)
+            recordedConsent.remove(uid)
+        }
+        return deleteProfileResult
+    }
+
+    /**
+     * Records the profile and the contacts together, so a test can assert the
+     * all-or-nothing behaviour: on a pinned failure **neither** is recorded.
+     */
+    override suspend fun finalizeSignUp(
+        uid: String,
+        name: String,
+        email: String,
+        contacts: List<EmergencyContact>,
+        consentVersion: String
+    ): Result<Unit> {
+        finalizeSignUpCalls++
+        if (finalizeSignUpResult.isSuccess) {
+            saved[uid] = Pair(name, email)
+            finalizedContacts[uid] = contacts
+            recordedConsent[uid] = consentVersion
+        }
+        return finalizeSignUpResult
+    }
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.example.guardband",
+      "sha256_cert_fingerprints": [
+        "3F:91:96:92:1D:35:82:3D:C2:14:31:66:96:C2:1A:04:70:E7:F2:9C:CB:BA:BB:E6:5B:D6:B5:C3:C9:09:F0:1C"
+      ]
+    }
+  }
+]

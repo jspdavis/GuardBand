@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Shared top bar for every sign-up step: back arrow, a centred "Step n/3",
+    and three progress bars flanking it.
+
+    Included once per step layout, so the ids below are unique within each
+    screen. Which bar is active is set in code by SignUpStepHeader.bind(),
+    because an <include> cannot vary its children's attributes per use site.
+
+    There is deliberately no "Skip": every step in the flow is required.
+-->
+<!-- DESIGN: Jul -->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ImageButton
+        android:id="@+id/btn_signup_back"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/cd_back"
+        android:padding="8dp"
+        android:src="@drawable/ic_arrow_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_signup_step_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.GuardBand.LabelMedium"
+        android:textColor="@color/text_secondary"
+        app:layout_constraintBottom_toBottomOf="@id/btn_signup_back"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/btn_signup_back"
+        tools:text="Step 1/3" />
+
+    <View
+        android:id="@+id/progress_step_one"
+        android:layout_width="46dp"
+        android:layout_height="4dp"
+        android:layout_marginEnd="6dp"
+        android:background="@drawable/bg_progress_inactive"
+        app:layout_constraintBottom_toBottomOf="@id/tv_signup_step_label"
+        app:layout_constraintEnd_toStartOf="@id/tv_signup_step_label"
+        app:layout_constraintTop_toTopOf="@id/tv_signup_step_label" />
+
+    <View
+        android:id="@+id/progress_step_two"
+        android:layout_width="46dp"
+        android:layout_height="4dp"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/bg_progress_inactive"
+        app:layout_constraintBottom_toBottomOf="@id/tv_signup_step_label"
+        app:layout_constraintStart_toEndOf="@id/tv_signup_step_label"
+        app:layout_constraintTop_toTopOf="@id/tv_signup_step_label" />
+
+    <View
+        android:id="@+id/progress_step_three"
+        android:layout_width="46dp"
+        android:layout_height="4dp"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/bg_progress_inactive"
+        app:layout_constraintBottom_toBottomOf="@id/tv_signup_step_label"
+        app:layout_constraintStart_toEndOf="@id/progress_step_two"
+        app:layout_constraintTop_toTopOf="@id/tv_signup_step_label" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

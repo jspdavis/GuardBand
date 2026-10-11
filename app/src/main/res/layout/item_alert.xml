@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    One alert (Alert tab): a history row, and also the latest-alert card via <include>.
+    Adapted from the checkpoint's item_alert_history.xml.
+-->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardBackgroundColor="@color/surface_card"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <View
+                android:id="@+id/view_item_alert_dot"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:background="@drawable/bg_status_dot" />
+
+            <TextView
+                android:id="@+id/tv_item_alert_type"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:textAppearance="@style/TextAppearance.GuardBand.TitleSmall"
+                android:textColor="@color/text_primary"
+                tools:text="Panic" />
+
+            <TextView
+                android:id="@+id/tv_item_alert_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                android:textColor="@color/text_secondary"
+                tools:text="Oct 3, 9:05 PM" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_item_alert_location"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+            android:textColor="@color/text_secondary"
+            tools:text="10.31570, 123.88540" />
+
+        <TextView
+            android:id="@+id/tv_item_alert_battery"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+            android:textColor="@color/text_secondary"
+            tools:text="Battery 64%" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

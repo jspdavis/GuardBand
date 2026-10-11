@@ -1,0 +1,118 @@
+package com.example.guardband.data.repository
+
+import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.model.User
+
+/**
+ * The user's own profile record, separate from authentication.
+ *
+ * Only ever holds what the user typed during sign-up. Passwords, reset codes
+ * and tokens are never written here.
+ *
+ * Same conventions as [AuthRepository]: suspend, and failures come back as
+ * [Result.failure] carrying an [AuthError].
+ */
+interface UserProfileRepository {
+
+    /**
+     * Creates or updates the profile fields for [uid].
+     *
+     * Merges `name` and `email` and leaves every other child of
+     * `users/{uid}` alone. That matters now that
+     * `users/{uid}/emergency_contacts` exists: this used to replace the whole
+     * record, which would delete every emergency contact the user had.
+     */
+    suspend fun saveProfile(
+        uid: String,
+        name: String,
+        email: String
+    ): Result<Unit>
+
+    /**
+     * The stored profile for [uid], or `Result.success(null)` when there is no
+     * record.
+     *
+     * A missing record is a success with null, not a failure: an account can legitimately exist without one, and
+     * the caller needs to tell that apart from a read that did not work.
+     */
+    suspend fun fetchProfile(uid: String): Result<User?>
+
+    /**
+     * True when a profile record exists at `users/{uid}`.
+     *
+     * Kept alongside [fetchProfile] because [ProfileProvisioning] needs the
+     * existence question answered without caring what is in the record.
+     */
+    suspend fun profileExists(uid: String): Result<Boolean>
+
+    /**
+     * Writes the profile, [contacts] and the consent record for a brand-new
+     * account in **one** atomic commit (D5).
+     *
+     * [consentVersion] is stored alongside a server timestamp. A ticked box
+     * that leaves no trace is no use as a consent record, and putting it in
+     * this same write means a profile can never exist without one.
+     *
+     * One multi-path write, so sign-up cannot half-succeed: either the profile
+     * and every contact land, or nothing does. That is what makes the retry on
+     * [SignUpContactsViewModel][com.example.guardband.ui.signup.SignUpContactsViewModel]
+     * safe to run again - there is no partial state to reconcile.
+     *
+     * Each contact is validated and normalised first, so an invalid phone fails
+     * the whole call before anything is sent. Only for a new account: the
+     * contacts are written under fresh keys, so calling this on an account that
+     * already has contacts would add duplicates rather than replace them.
+     */
+    suspend fun finalizeSignUp(
+        uid: String,
+        name: String,
+        email: String,
+        contacts: List<EmergencyContact>,
+        consentVersion: String
+    ): Result<Unit>
+
+    /**
+     * Removes the whole `users/{uid}` subtree — profile fields, every
+     * emergency contact and the consent record — in **one** write.
+     *
+     * One removal rather than a child-by-child delete, so there is no order in
+     * which it can half-succeed and no partial record left to reconcile. That
+     * is the same reasoning as [finalizeSignUp], in reverse.
+     *
+     * Must run **while the user is still signed in**: the `users/{uid}` rules
+     * authorise it with `auth.uid == $uid`, so it is unauthorised the moment
+     * [AuthRepository.deleteAccount] succeeds.
+     *
+     * A node that is already absent is a success, not a failure. RTDB treats
+     * removing nothing as a no-op, and a retry after a half-finished delete
+     * depends on that.
+     */
+    suspend fun deleteProfile(uid: String): Result<Unit>
+
+    companion object {
+        /**
+         * The wording the user agreed to, stored with their consent.
+         *
+         * Versioned so a reworded notice can be told apart from this one, and
+         * can require agreeing again. Bump it whenever
+         * `label_signup_consent_statement` changes in a way that alters what
+         * is being agreed to.
+         *
+         * **It moves with the Privacy Notice.** The notice page shows its own
+         * version, and the two must always read the same: the point of storing
+         * a version is to know which words somebody agreed to, which is no use
+         * if the number cannot be matched to a document. Bumping it means
+         * editing `hosting/public/privacy/index.html` and adding a row to
+         * `docs/privacy-and-consent.md` in the same commit.
+         *
+         * A **String**, not a number, so "1.10" can follow "1.9" without
+         * sorting before it. The Security Rules draft validates it as a string
+         * for the same reason.
+         *
+         * Bumped to 1.1 when the consent step gained a working link to the
+         * notice. Existing records keep 1.0, and **nobody is re-prompted** -
+         * there is no re-consent flow yet.
+         */
+        const val CONSENT_VERSION = "1.1"
+    }
+}

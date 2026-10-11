@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_track"
+        android:icon="@drawable/ic_map"
+        android:title="@string/tab_track" />
+
+    <item
+        android:id="@+id/nav_contacts"
+        android:icon="@drawable/ic_group"
+        android:title="@string/tab_contacts" />
+
+    <item
+        android:id="@+id/nav_alert"
+        android:icon="@drawable/ic_warning"
+        android:title="@string/tab_alert" />
+
+    <item
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/ic_profile"
+        android:title="@string/tab_profile" />
+</menu>

@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Forget Password: ask for a reset link, then wait for the email.
+  One screen, two faces. The "check your email" half used to be a second
+  Activity; it became a state when Resend arrived, because resending needs the
+  address and only this screen has it.
+  Endpoints only. DESIGN: Jul owns spacing, typography and colour here.
+-->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -7,29 +14,45 @@
     android:layout_height="match_parent"
     android:background="@color/surface_bg"
     android:padding="24dp"
-    tools:context=".features.forgot.ForgotRequestActivity">
+    tools:context=".ui.forgot.ForgotRequestActivity">
+
+    <ImageButton
+        android:id="@+id/ib_forgot_request_back"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="-12dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/cd_back"
+        android:src="@drawable/ic_arrow_back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/text_primary" />
 
     <!-- Title -->
     <TextView
         android:id="@+id/tv_forgot_request_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="24dp"
         android:text="@string/label_forgot_request_title"
-        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+        android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
         android:textColor="@color/text_primary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/ib_forgot_request_back" />
 
-    <!-- Subtitle -->
+    <!--
+      Swapped between "enter your email" and "check your email" by the
+      Activity. The sent wording says nothing about whether the address is
+      registered.
+    -->
     <TextView
         android:id="@+id/tv_forgot_request_subtitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="@string/label_forgot_request_subtitle"
-        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
         android:textColor="@color/text_secondary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -38,7 +61,7 @@
     <!-- Email input -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_forgot_request_email"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        style="@style/Widget.GuardBand.TextInputLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
@@ -55,16 +78,27 @@
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Send button -->
+    <!-- Request / Resend. Its label and enabled state both come from the state. -->
     <Button
         android:id="@+id/btn_forgot_request_send"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="@string/btn_send_link"
+        android:text="@string/btn_request_reset_link"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/til_forgot_request_email" />
+
+    <Button
+        android:id="@+id/btn_forgot_request_cancel"
+        style="@style/Widget.GuardBand.Button.Outlined"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/btn_cancel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_forgot_request_send" />
 
     <!-- Progress indicator -->
     <ProgressBar
@@ -72,9 +106,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
+        android:contentDescription="@string/cd_forgot_request_progress"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_forgot_request_send" />
+        app:layout_constraintTop_toBottomOf="@id/btn_forgot_request_cancel" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

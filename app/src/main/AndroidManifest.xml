@@ -31,25 +31,31 @@
         <!-- ── Auth ───────────────────────────────────────────────────────── -->
 
         <activity
-            android:name=".ui.auth.LoginActivity"
+            android:name=".ui.login.LoginActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ui.auth.SignUpNameActivity"
+            android:name=".ui.signup.SignUpAccountActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ui.auth.SignUpLocationActivity"
+            android:name=".ui.signup.SignUpNameActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ui.auth.SignUpContactsActivity"
+            android:name=".ui.signup.SignUpContactsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.signup.SignUpConsentActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
@@ -62,22 +68,46 @@
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize" />
 
-        <activity
-            android:name=".ui.forgot.ForgotVerifyActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize" />
+        <!-- ── New Credentials (the reset itself, in the app) ──────────────
+             The one exported Activity: Firebase's reset email links here, so
+             an external click has to be able to reach it. Everything it
+             trusts from that Intent goes through ResetLinkParser first.
+
+             autoVerify makes this an App Link rather than a plain deep link,
+             so Android opens the app with no disambiguation dialog. That
+             depends on assetlinks.json being served from the host below;
+             docs/forgot-password.md has the deploy and the SHA-256 step.
+
+             Host and path come from manifestPlaceholders, declared once in
+             app/build.gradle.kts and read by the parser as BuildConfig
+             fields. They are Firebase's own default action handler on
+             firebaseapp.com, because the project cannot change the
+             Console's action URL. android:path, never pathPrefix: the OAuth
+             redirect handler lives on the same host.
+
+             singleTop plus onNewIntent, so a second link tapped while this
+             is open replaces the code instead of stacking another copy.
+        -->
 
         <activity
-            android:name=".ui.forgot.ForgotNewPassActivity"
-            android:exported="false"
+            android:name=".ui.reset.ResetPasswordActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize" />
+            android:windowSoftInputMode="adjustResize">
 
-        <activity
-            android:name=".ui.forgot.ForgotSuccessActivity"
-            android:exported="false"
-            android:screenOrientation="portrait" />
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="${resetLinkHost}"
+                    android:path="${resetLinkPath}" />
+            </intent-filter>
+        </activity>
 
         <!-- ── Loading ────────────────────────────────────────────────────── -->
 
@@ -86,17 +116,12 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
-        <!-- ── Dashboard ──────────────────────────────────────────────────── -->
+        <!-- ── Home (bottom-nav host; tabs and Settings/Notifications are Fragments) ── -->
 
         <activity
-            android:name=".ui.dashboard.DashboardActivity"
+            android:name=".ui.home.HomeActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
-
-        <!-- ── Legacy (retained, no longer launcher) ─────────────────────── -->
-        <activity
-            android:name=".ui.main.MainActivity"
-            android:exported="false" />
 
     </application>
 

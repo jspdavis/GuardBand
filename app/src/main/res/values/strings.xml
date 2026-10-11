@@ -5,11 +5,50 @@
     <string name="splash_tagline">Stay safe. Stay connected.</string>
 
     <!-- Login -->
+    <string name="label_login_welcome">Welcome to GuardBand</string>
+    <string name="label_login_subtitle">Let\'s get you signed up!</string>
     <string name="hint_email">Email address</string>
     <string name="hint_password">Password</string>
     <string name="btn_login">Log In</string>
-    <string name="btn_signup">Create an account</string>
-    <string name="btn_forgot">Forgot password?</string>
+    <string name="btn_forgot">Forgot Password?</string>
+    <string name="label_login_or">or</string>
+    <string name="label_login_signup_prompt">Don\'t have an account?</string>
+    <string name="btn_signup">Create an Account</string>
+
+    <!-- Google sign-in. Wording only; Google's button branding is Jul's. -->
+    <string name="btn_continue_google">Continue with Google</string>
+
+    <!-- Sign-up wizard: shared -->
+    <string name="label_signup_step">Step %1$d/%2$d</string>
+    <string name="btn_continue">Continue</string>
+
+    <!-- Sign Up – Step 1, Account -->
+    <string name="label_signup_account_title">Create your account</string>
+    <string name="label_signup_account_subtitle">You\'ll use this to sign in.</string>
+    <string name="label_field_email">Email</string>
+    <string name="label_field_password">Password</string>
+    <string name="label_field_confirm_password">Confirm Password</string>
+    <string name="hint_confirm_password">Confirm password</string>
+
+    <!-- Sign Up – Step 2, Name -->
+    <string name="label_signup_name_subtitle">This will be used to address you.</string>
+    <string name="label_field_first_name">First Name</string>
+    <string name="label_field_last_name">Last Name</string>
+    <string name="hint_first_name">First name</string>
+    <string name="hint_last_name">Last name</string>
+
+    <!-- Sign Up – Step 3, Emergency contacts -->
+    <string name="label_signup_contacts_subtitle">These are the people your band texts when you need help.</string>
+    <string name="label_signup_contacts_minimum">%1$d of %2$d minimum</string>
+    <string name="btn_signup_add_contact">Add contact</string>
+    <string name="label_signup_contacts_empty">No contacts added yet.</string>
+
+    <!-- Sign Up – Consent (outside the step indicator) -->
+    <string name="label_signup_consent_title">Before you finish</string>
+    <string name="label_signup_consent_subtitle">One last thing, and it matters.</string>
+    <string name="label_signup_consent_statement">I have read the Privacy Notice and agree to it, I\'m 18 or older (or have a guardian\'s permission), and the person wearing the band knows and agrees to be tracked.</string>
+    <string name="btn_signup_consent_privacy">Read the Privacy Notice</string>
+    <string name="btn_signup_create_account">Create account</string>
 
     <!-- Sign Up – Name -->
     <string name="label_signup_name_title">What\'s your name?</string>
@@ -17,8 +56,6 @@
     <string name="btn_next">Next</string>
 
     <!-- Sign Up – Location -->
-    <string name="label_signup_location_title">Where are you based?</string>
-    <string name="hint_location">City or region</string>
 
     <!-- Sign Up – Contacts -->
     <string name="label_signup_contacts_title">Add emergency contacts</string>
@@ -31,34 +68,148 @@
     <!-- Forgot – Request -->
     <string name="label_forgot_request_title">Reset your password</string>
     <string name="label_forgot_request_subtitle">Enter the email linked to your account.</string>
+    <string name="label_forgot_sent_subtitle">If an account exists for that address, we\'ve sent it a link to reset your password. Open it on this phone.</string>
+    <string name="btn_request_reset_link">Request Password Reset Link</string>
+    <string name="btn_resend_link">Resend link</string>
+    <string name="btn_resend_link_in">Resend link in %1$ds</string>
+    <string name="cd_forgot_request_progress">Sending the reset link</string>
+
+    <!-- New Credentials (the in-app password reset) -->
+    <string name="label_reset_title">New credentials</string>
+    <string name="label_reset_for_email">Resetting password for %1$s</string>
+    <string name="label_password_criteria_title">Your password must:</string>
+    <string name="label_password_rule_length">be at least 8 characters</string>
+    <string name="label_password_rule_match">match the confirmation</string>
+    <string name="hint_new_password">New password</string>
+    <string name="btn_reset_request_new">Request a new link</string>
+    <string name="cd_reset_progress">Checking your reset link</string>
+    <string name="msg_password_reset_done">Password updated. Sign in with your new password.</string>
     <string name="btn_send_link">Send reset link</string>
 
-    <!-- Forgot – Verify -->
-    <string name="label_forgot_verify_title">Check your email</string>
-    <string name="label_forgot_verify_subtitle">Enter the 6-digit code we sent you.</string>
-    <string name="hint_code">Verification code</string>
-    <string name="btn_verify">Verify</string>
-    <string name="btn_resend">Resend code</string>
-
-    <!-- Forgot – New Password -->
-    <string name="label_forgot_newpass_title">Create a new password</string>
-    <string name="hint_new_password">New password</string>
-    <string name="hint_confirm_password">Confirm password</string>
-    <string name="btn_save_password">Save password</string>
-
-    <!-- Forgot – Success -->
-    <string name="label_forgot_success_title">Password updated!</string>
-    <string name="label_forgot_success_subtitle">Your password has been changed successfully.</string>
+    <!-- Forgot – Sent: the confirmation. The reset itself happens on
+         Firebase's own hosted page, so there is no verify-code or
+         new-password step, and the wording must not reveal whether the
+         account exists. -->
     <string name="btn_back_to_login">Back to Login</string>
 
     <!-- Loading -->
     <string name="label_loading">Please wait…</string>
 
-    <!-- Dashboard -->
+    <!-- Dashboard (dead screen: delete with ui/dashboard/ and activity_dashboard.xml) -->
     <string name="label_dashboard_welcome">Welcome back, %1$s</string>
     <string name="label_dashboard_status">You are protected.</string>
     <string name="label_your_contacts">Your Emergency Contacts</string>
+
+    <!-- Home host: bottom-nav tabs -->
+    <string name="tab_track">Track</string>
+    <string name="tab_contacts">Contacts</string>
+    <string name="tab_alert">Alert</string>
+    <string name="tab_profile">Profile</string>
+
+    <!-- Track -->
+    <string name="cd_open_settings">Settings</string>
+    <string name="cd_open_notifications">Notifications</string>
+    <string name="cd_user_avatar">Profile picture</string>
+    <string name="btn_check_in">Check in</string>
+    <string name="btn_track_navigate">Navigate</string>
+    <string name="cd_map_recenter">Center on band</string>
+    <string name="cd_map_layers">Map layers</string>
+    <string name="label_track_marker_title">Your band</string>
+
+    <!-- Band status panel. "Reporting" rather than "Online": FR-09 tracking is
+         post-alert and stops after 30 minutes, so an idle band legitimately
+         sends nothing. The badge says whether it is reporting right now, which
+         is all the timestamp can honestly support — "Online" would read as a
+         claim about the wearer. The last-seen line is the primary signal. -->
+    <string name="label_track_reporting">Reporting</string>
+    <string name="label_track_not_reporting">Not reporting</string>
+
+    <!-- Anything under a minute is "just now": second-level precision is noise
+         here, and "Last seen 0 seconds ago" reads badly. -->
+    <string name="label_track_last_seen_just_now">Last seen just now</string>
+    <plurals name="label_track_last_seen_minutes">
+        <item quantity="one">Last seen %d minute ago</item>
+        <item quantity="other">Last seen %d minutes ago</item>
+    </plurals>
+    <plurals name="label_track_last_seen_hours">
+        <item quantity="one">Last seen %d hour ago</item>
+        <item quantity="other">Last seen %d hours ago</item>
+    </plurals>
+    <plurals name="label_track_last_seen_days">
+        <item quantity="one">Last seen %d day ago</item>
+        <item quantity="other">Last seen %d days ago</item>
+    </plurals>
+
+    <string name="label_track_battery">Battery %1$d%%</string>
+    <string name="label_track_battery_charging">Battery %1$d%% · Charging</string>
+    <string name="label_track_battery_unknown">Battery unknown</string>
+
+    <!-- Two different silences: the band has never written anything, versus it
+         is reporting but has no GPS fix. -->
+    <string name="label_track_never_reported">Your band hasn\'t reported yet.</string>
+    <string name="label_track_no_fix">No location fix yet</string>
+
+    <!-- Contacts -->
+    <string name="label_contacts_title">Emergency Contacts</string>
+    <string name="label_contacts_empty">No emergency contacts added yet.</string>
+    <string name="cd_delete_contact">Delete contact</string>
+    <string name="dialog_delete_contact_title">Delete contact?</string>
+    <string name="dialog_delete_contact_message">%1$s will no longer receive your alerts.</string>
+    <string name="btn_delete">Delete</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_retry">Retry</string>
+    <string name="cd_edit_contact">Edit contact</string>
+    <!-- %1$d is how many contacts the user has, %2$d the minimum asked for. -->
+    <string name="label_contacts_min_notice">%1$d of %2$d minimum</string>
+    <string name="dialog_contact_add_title">Add contact</string>
+    <string name="dialog_contact_edit_title">Edit contact</string>
+
+    <!-- Alert -->
+    <string name="label_alert_title">Alerts</string>
+    <string name="label_alert_latest">Current status</string>
+    <string name="label_alert_history">History</string>
+    <string name="label_alert_none">No alerts from your band yet.</string>
+    <string name="label_alert_history_empty">No past alerts.</string>
+    <string name="btn_alert_retry">Try again</string>
+    <string name="label_alert_battery">Battery %1$d%%</string>
+    <string name="label_alert_battery_charging">Battery %1$d%% · charging</string>
+    <string name="label_alert_location">%1$.5f, %2$.5f</string>
+    <string name="label_alert_type_panic">Panic</string>
+    <string name="label_alert_type_checkin">Check-in</string>
+    <string name="label_alert_type_low_battery">Low battery</string>
+    <string name="label_alert_type_tracking">Location update</string>
+    <string name="label_alert_type_unknown">Unknown alert</string>
+
+    <!-- Profile -->
+    <string name="label_profile_welcome">Welcome back, %1$s</string>
+    <string name="label_profile_email">Email</string>
+
+    <!-- Settings -->
+    <string name="label_settings_title">Settings</string>
+    <string name="label_settings_account">Account information</string>
+    <string name="label_settings_change_password">Change password</string>
+    <string name="label_settings_notifications">Notifications</string>
+    <string name="label_settings_privacy">Privacy &amp; security</string>
+    <string name="label_settings_privacy_notice">Privacy Notice</string>
     <string name="btn_logout">Log Out</string>
+
+    <!-- Delete account. Apostrophes are escaped: an unescaped one fails
+         mergeDebugResources without naming the string. -->
+    <string name="label_settings_delete_account">Delete account</string>
+    <string name="dialog_delete_account_title">Delete your account?</string>
+    <string name="dialog_delete_account_message">This permanently deletes:\n\n\u2022  your profile\n\u2022  your emergency contacts\n\u2022  your consent record\n\u2022  your sign-in\n\nIt cannot be undone. Alerts already recorded by the band are kept, because the band is shared.</string>
+    <string name="btn_delete_account">Delete account</string>
+    <string name="dialog_reauth_password_title">Confirm it\'s you</string>
+    <string name="dialog_reauth_password_message">Enter your password to confirm you want to delete your account.</string>
+    <string name="dialog_reauth_google_title">Confirm it\'s you</string>
+    <string name="cd_delete_account_progress">Deleting your account</string>
+
+    <!-- Notifications -->
+    <string name="label_notifications_title">Notifications</string>
+    <string name="label_notifications_empty">No notifications yet.</string>
+
+    <string name="cd_back">Back</string>
 
     <!-- Generic -->
     <string name="error_field_required">This field is required.</string>

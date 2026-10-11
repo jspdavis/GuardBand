@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface_muted"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical"
+    tools:context=".ui.notifications.NotificationsFragment">
+
+    <!-- ── Top bar ───────────────────────────────────────────────────────── -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp">
+
+        <ImageButton
+            android:id="@+id/ib_notifications_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cd_back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/tv_notifications_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/label_notifications_title"
+            android:textAppearance="@style/TextAppearance.GuardBand.TitleLarge"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+
+    <!-- Empty inbox (placeholder) -->
+    <TextView
+        android:id="@+id/tv_notifications_empty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:drawablePadding="12dp"
+        android:gravity="center"
+        android:text="@string/label_notifications_empty"
+        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+        android:textColor="@color/text_secondary"
+        app:drawableTint="@color/text_hint"
+        app:drawableTopCompat="@drawable/ic_notifications" />
+
+</LinearLayout>

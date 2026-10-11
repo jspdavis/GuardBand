@@ -1,0 +1,160 @@
+package com.example.guardband.testing
+
+import com.example.guardband.data.model.GoogleSignInOutcome
+import com.example.guardband.data.model.SignInProvider
+import com.example.guardband.data.model.User
+import com.example.guardband.data.repository.AuthRepository
+
+/**
+ * [AuthRepository] whose every call returns whatever the test puts in it.
+ *
+ * Preferred over [com.example.guardband.data.repository.InMemoryAuthRepository]
+ * for ViewModel tests: that one has a 1.2 s delay and its own rules, while this
+ * one lets a test name the exact [com.example.guardband.data.repository.AuthError]
+ * it wants mapped.
+ */
+class FakeAuthRepository(
+    var loginResult: Result<User> = Result.success(DEFAULT_USER),
+    var createAccountResult: Result<User> = Result.success(DEFAULT_USER),
+    var sendPasswordResetResult: Result<Unit> = Result.success(Unit),
+    var signInWithGoogleResult: Result<GoogleSignInOutcome> = Result.success(RETURNING_GOOGLE_USER),
+    var reauthenticateWithPasswordResult: Result<Unit> = Result.success(Unit),
+    var reauthenticateWithGoogleResult: Result<Unit> = Result.success(Unit),
+    var deleteAccountResult: Result<Unit> = Result.success(Unit),
+    var verifyPasswordResetCodeResult: Result<String> = Result.success(RESET_EMAIL),
+    var confirmPasswordResetResult: Result<Unit> = Result.success(Unit),
+    /** What the account can sign in with. Empty means an unusable session. */
+    var providers: Set<SignInProvider> = setOf(SignInProvider.PASSWORD),
+    private var signedIn: Boolean = false
+) : AuthRepository {
+
+    var loginCalls = 0; private set
+    var createAccountCalls = 0; private set
+    var sendPasswordResetCalls = 0; private set
+    var signInWithGoogleCalls = 0; private set
+    var signOutCalls = 0; private set
+    var reauthenticateWithPasswordCalls = 0; private set
+    var reauthenticateWithGoogleCalls = 0; private set
+    var deleteAccountCalls = 0; private set
+    var verifyPasswordResetCodeCalls = 0; private set
+    var confirmPasswordResetCalls = 0; private set
+
+    /** The token of the last [signInWithGoogle] call, so a test can assert it was forwarded. */
+    var lastGoogleIdToken: String? = null; private set
+
+    /** The code of the last reset call, so a test can assert it was forwarded. */
+    var lastResetCode: String? = null; private set
+
+    /** The password handed to the last [confirmPasswordReset] call. */
+    var lastNewPassword: String? = null; private set
+
+    /** The password of the last [reauthenticateWithPassword] call. */
+    var lastReauthPassword: String? = null; private set
+
+    /** The token of the last [reauthenticateWithGoogle] call. */
+    var lastReauthGoogleIdToken: String? = null; private set
+
+
+    /** Arguments of the last [createAccount] call, so a test can assert what was forwarded. */
+    var lastCreateAccountArgs: List<String> = emptyList(); private set
+
+    override suspend fun login(email: String, password: String): Result<User> {
+        loginCalls++
+        return loginResult
+    }
+
+    /**
+     * Signs the new user in on success, like Firebase does, so the caller's
+     * follow-up write can read the uid off [currentUser].
+     */
+    override suspend fun createAccount(
+        name: String,
+        email: String,
+        password: String
+    ): Result<User> {
+        createAccountCalls++
+        lastCreateAccountArgs = listOf(name, email, password)
+        if (createAccountResult.isSuccess) signedIn = true
+        return createAccountResult
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): Result<GoogleSignInOutcome> {
+        signInWithGoogleCalls++
+        lastGoogleIdToken = idToken
+        return signInWithGoogleResult
+    }
+
+    override suspend fun sendPasswordReset(email: String): Result<Unit> {
+        sendPasswordResetCalls++
+        return sendPasswordResetResult
+    }
+
+    override suspend fun verifyPasswordResetCode(code: String): Result<String> {
+        verifyPasswordResetCodeCalls++
+        lastResetCode = code
+        return verifyPasswordResetCodeResult
+    }
+
+    override suspend fun confirmPasswordReset(
+        code: String,
+        newPassword: String
+    ): Result<Unit> {
+        confirmPasswordResetCalls++
+        lastResetCode = code
+        lastNewPassword = newPassword
+        return confirmPasswordResetResult
+    }
+
+    override fun currentUser(): User? = DEFAULT_USER.takeIf { signedIn }
+
+    override fun currentUserProviders(): Set<SignInProvider> =
+        if (signedIn) providers else emptySet()
+
+    override suspend fun reauthenticateWithPassword(password: String): Result<Unit> {
+        reauthenticateWithPasswordCalls++
+        lastReauthPassword = password
+        return reauthenticateWithPasswordResult
+    }
+
+    override suspend fun reauthenticateWithGoogle(idToken: String): Result<Unit> {
+        reauthenticateWithGoogleCalls++
+        lastReauthGoogleIdToken = idToken
+        return reauthenticateWithGoogleResult
+    }
+
+    /** Signs the user out on success, like Firebase's own `delete()` does. */
+    override suspend fun deleteAccount(): Result<Unit> {
+        deleteAccountCalls++
+        if (deleteAccountResult.isSuccess) signedIn = false
+        return deleteAccountResult
+    }
+
+    /** Lets a test kill the session between calls, which Firebase can do at any point. */
+    fun forceSignOut() {
+        signedIn = false
+    }
+
+    override fun isLoggedIn(): Boolean = signedIn
+
+    override fun signOut() {
+        signOutCalls++
+        signedIn = false
+    }
+
+    companion object {
+        /** What a successful code check reports back. */
+        const val RESET_EMAIL = "reset@guardband.com"
+
+        val DEFAULT_USER = User(
+            id = "uid-1",
+            name = "Test User",
+            email = "test@guardband.com"
+        )
+
+        /** A Google sign-in that found an existing account: routes to Home. */
+        val RETURNING_GOOGLE_USER = GoogleSignInOutcome(user = DEFAULT_USER, isNewUser = false)
+
+        /** A Google sign-in that just created the account: routes to complete-profile. */
+        val NEW_GOOGLE_USER = GoogleSignInOutcome(user = DEFAULT_USER, isNewUser = true)
+    }
+}

@@ -2,69 +2,72 @@ package com.example.guardband.ui.loading
 
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import androidx.activity.addCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
-import com.example.guardband.ui.dashboard.DashboardActivity
+import com.example.guardband.ui.home.HomeActivity
+import kotlinx.coroutines.launch
 
 /**
- * Transient loading screen shown between auth actions and the Dashboard.
+ * Transient loading screen shown between auth actions and Home.
  *
  * Callers pass [EXTRA_DESTINATION] to tell LoadingActivity where to go next.
- * Currently only [DEST_DASHBOARD] is defined; add more destinations as needed.
+ * Currently only [DEST_HOME] is defined; add more destinations as needed.
  *
- * Automatically advances after [LOADING_DELAY_MS] to simulate a network call.
+ * Automatically advances after [LoadingViewModel]'s delay to simulate a network call.
  */
 class LoadingActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_DESTINATION = "extra_destination"
-        const val DEST_DASHBOARD    = "dest_dashboard"
-        private const val LOADING_DELAY_MS = 1800L
+        const val DEST_HOME    = LoadingViewModel.DEST_HOME
     }
 
-    private val handler = Handler(Looper.getMainLooper())
-
-    private val navigateForward = Runnable {
-        val destination = intent.getStringExtra(EXTRA_DESTINATION)
-        when (destination) {
-            DEST_DASHBOARD -> {
-                startActivity(
-                    Intent(this, DashboardActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    }
-                )
-            }
-            else -> {
-                startActivity(
-                    Intent(this, DashboardActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    }
-                )
-            }
-        }
-        finish()
-    }
+    private val viewModel: LoadingViewModel by viewModels()
+    private var destination: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_loading)
+
+        destination = intent.getStringExtra(EXTRA_DESTINATION)
+
+        // Prevent the user from pressing Back to escape the loading screen.
+        onBackPressedDispatcher.addCallback(this) {
+            // Intentionally blocked during loading transition.
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.events.collect(::handleEvent)
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        handler.postDelayed(navigateForward, LOADING_DELAY_MS)
+        viewModel.startCountdown(destination)
     }
 
     override fun onPause() {
         super.onPause()
-        handler.removeCallbacks(navigateForward)
+        viewModel.cancelCountdown()
     }
 
-    /** Prevent the user from pressing Back to escape the loading screen. */
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        // Intentionally blocked during loading transition.
+    private fun handleEvent(event: LoadingEvent) {
+        when (event) {
+            LoadingEvent.NavigateToHome -> {
+                startActivity(
+                    Intent(this, HomeActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                )
+                finish()
+            }
+        }
     }
 }

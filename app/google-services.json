@@ -1,8 +1,8 @@
 {
   "project_info": {
     "project_number": "841038193764",
+    "firebase_url": "https://guardband-aae65-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "guardband-aae65",
-    "firebase_url": "https://guardband-aae65-default-rtdb.asia-southeast1.firebasedatabase.app/",
     "storage_bucket": "guardband-aae65.firebasestorage.app"
   },
   "client": [
@@ -13,7 +13,20 @@
           "package_name": "com.example.guardband"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "841038193764-4frbams9lkdbq7vvhifebql2blc03b8t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.guardband",
+            "certificate_hash": "8de7df91ba9ba9a7d3263cb96b7e7edea4f1bb20"
+          }
+        },
+        {
+          "client_id": "841038193764-cffg7t3sgup731usubmemausk5h9f1s4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCchZiNXCwjYOady-zrmuauEMkmuQJYuM8"
@@ -21,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "841038193764-cffg7t3sgup731usubmemausk5h9f1s4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

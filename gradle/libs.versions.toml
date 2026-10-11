@@ -9,6 +9,16 @@ appcompat = "1.7.0"
 material = "1.12.0"
 activity = "1.9.3"
 constraintlayout = "2.1.4"
+lifecycle = "2.8.7"
+okhttp = "4.12.0"
+coroutines = "1.9.0"
+fragment = "1.8.2"
+recyclerview = "1.3.2"
+firebaseBom = "32.8.1"
+credentials = "1.3.0"
+googleid = "1.1.1"
+robolectric = "4.12.2"
+osmdroid = "6.1.20"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -19,6 +29,43 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activity" }
+androidx-lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragment" }
+androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+
+# osmdroid - OpenStreetMap map views for the Track tab. No API key and no
+# billing, unlike the Maps SDK. Safe on compileSdk 34: its POM declares zero
+# dependencies and it publishes no Gradle module metadata, so there is no
+# minCompileSdk constraint of the kind that pins androidx-credentials below.
+# Its own manifest declares no uses-permission at all - in particular no
+# location and no storage - so nothing is merged into the app's.
+osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroid" }
+
+# Firebase — the BoM pins every firebase-* version, so they carry no version of their own
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
+firebase-database = { group = "com.google.firebase", name = "firebase-database" }
+
+# Google sign-in - Credential Manager with Google ID tokens, never the legacy
+# GoogleSignIn API. These are the newest versions that still build against
+# compileSdk 34: credentials 1.5.0+ and googleid 1.2.0+ both declare
+# minCompileSdk 35. credentials-play-services-auth has a strict constraint on
+# credentials [1.3.0], so the two share one version ref and must move together.
+androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
+androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
+googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
+
+# await() for Firebase's Task<T>, so repositories can stay suspend functions
+kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
+
+# Unit tests: runTest/TestDispatcher, and Robolectric for the android.util.Patterns
+# that InputValidator needs
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

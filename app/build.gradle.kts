@@ -1,8 +1,44 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
+    // EmergencyContact travels between the sign-up steps as an Intent extra.
+    id("kotlin-parcelize")
     id("com.google.gms.google-services")
 }
+
+// The password-reset App Link, in ONE place.
+//
+// This is Firebase's OWN default action handler, not a page of ours. The
+// project cannot change the Console's action URL (Firebase refuses it with
+// EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED), so instead of moving the link the app
+// claims the one Firebase already sends:
+//   https://guardband-aae65.firebaseapp.com/__/auth/action?mode=resetPassword&oobCode=...
+// firebaseapp.com serves the same Hosting site as web.app, so the
+// assetlinks.json deployed from hosting/ verifies this host too. Without the
+// app, the link opens Firebase's own reset page, which completes the reset in
+// the browser.
+//
+// Three files have to agree on these: the manifest's App Link intent filter,
+// the parser that checks the incoming URL, and
+// hosting/public/.well-known/assetlinks.json. They are pushed out as manifest
+// placeholders and BuildConfig fields rather than written three times. See
+// docs/forgot-password.md.
+//
+// Never host a page of our own under /__/ : Firebase serves that prefix itself,
+// so a deployed file there is never reached. Claiming Firebase's handler is the
+// one exception, and only at this exact path. The manifest uses android:path,
+// never pathPrefix, because /__/auth/handler (OAuth redirects) is on the same
+// host.
+val resetLinkHost = "guardband-aae65.firebaseapp.com"
+val resetLinkPath = "/__/auth/action"
+
+// The Hosting domain for the static pages the app opens. Linked from the
+// consent screen and from Settings, and both are reachable without the app,
+// which is the point: someone who has deleted the app still needs to be able
+// to read the notice and find out how to get their data removed.
+val hostingHost = "guardband-aae65.web.app"
+val privacyPath = "/privacy"
+val deleteAccountPath = "/delete-account"
 
 android {
     namespace = "com.example.guardband"
@@ -16,6 +52,25 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Read by AndroidManifest.xml's App Link intent filter.
+        manifestPlaceholders["resetLinkHost"] = resetLinkHost
+        manifestPlaceholders["resetLinkPath"] = resetLinkPath
+
+        // RESET_LINK_HOST + RESET_LINK_PATH are read by ResetPasswordActivity,
+        // which hands them to ResetLinkParser. The other three are read by
+        // HostedPages, which builds the URLs the consent screen and Settings
+        // open.
+        buildConfigField("String", "RESET_LINK_HOST", "\"$resetLinkHost\"")
+        buildConfigField("String", "RESET_LINK_PATH", "\"$resetLinkPath\"")
+        buildConfigField("String", "HOSTING_HOST", "\"$hostingHost\"")
+        buildConfigField("String", "PRIVACY_PATH", "\"$privacyPath\"")
+        buildConfigField("String", "DELETE_ACCOUNT_PATH", "\"$deleteAccountPath\"")
+    }
+
+    // buildConfigField needs this explicitly from AGP 8 onwards.
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -34,6 +89,10 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+    testOptions {
+        // Robolectric needs the merged resources and the real android.jar
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -43,15 +102,48 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
 
+    // MVVM — ViewModel, lifecycle-aware coroutines, by viewModels()
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.kotlinx.coroutines.android)
+
+    // Home host — tab Fragments (by viewModels/activityViewModels) and lists
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.recyclerview)
+
+    // Track tab map — OpenStreetMap tiles, no API key. Configured in one place
+    // by ui/track/OsmdroidConfig (user agent + app-specific tile cache).
+    implementation(libs.osmdroid.android)
+
+    // OkHttp — only the debug-only MockSender harness (src/debug) uses it
+    debugImplementation(libs.okhttp)
+
     // CardView — used in activity_dashboard.xml status card
+    // TODO: remove once the dead ui/dashboard files and activity_dashboard.xml are deleted
     implementation("androidx.cardview:cardview:1.0.0")
 
-    // Firebase BoM — manages all Firebase library versions
-    implementation(platform("com.google.firebase:firebase-bom:32.8.1"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-database")
+    // Firebase — the BoM pins every version below it, so none declares its own
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.database)
+
+    // Google sign-in - Credential Manager with Google ID tokens. The legacy
+    // GoogleSignIn API is deliberately not used. credentials-play-services-auth
+    // pulls in play-services-auth transitively as its backend provider; no code
+    // imports it.
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+
+    // await() on Firebase's Task<T>, so the repositories stay suspend functions
+    implementation(libs.kotlinx.coroutines.play.services)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    // Robolectric — InputValidator uses android.util.Patterns, which is stubbed
+    // out in plain JVM unit tests
+    testImplementation(libs.robolectric)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
