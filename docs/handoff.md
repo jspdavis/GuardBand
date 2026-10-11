@@ -26,7 +26,7 @@ REST API (§10). `assembleDebug` + `testDebugUnitTest` green, 253 tests.
 | The in-app password reset | [`forgot-password.md`](forgot-password.md) — **its §1 is a human checklist; nothing works until that is done** |
 | The Privacy Notice, consent versions and the rules draft | [`privacy-and-consent.md`](privacy-and-consent.md) — **§1 is a human checklist; the notice is DRAFT and unreviewed** |
 | The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md) — **authoritative** |
-| Draft Security Rules (**not deployed**) | [`../RTDBS-RULES.md`](../RTDBS-RULES.md) — committed in `3ccf153` |
+| Security Rules (**deployed 2026-10-11**; the file is the source of truth) | [`../RTDBS-RULES.md`](../RTDBS-RULES.md) |
 
 The sign-up flow has no deep-dive of its own; §3 below is it.
 
@@ -182,9 +182,9 @@ the error/empty/stale split, what is and is not tested — in
 
 | | Where | Notes |
 |---|---|---|
-| **Privacy Notice: written, not reviewed or deployed** | [`privacy-and-consent.md`](privacy-and-consent.md) §1 | The notice exists at `hosting/public/privacy/index.html`, the consent step links to it, and `CONSENT_VERSION` is `1.1`. Every placeholder and `DECISION: Jul` was resolved on 2026-10-11 (§4 of that doc), and Firebase Analytics was dropped. **But it is still a DRAFT, and Hosting is not deployed**, so the link does not resolve yet. It needs a human review before the banner comes off — it describes how real people's data is handled. |
+| **Privacy Notice: written, not reviewed or deployed** | [`privacy-and-consent.md`](privacy-and-consent.md) §1 | The notice exists at `hosting/public/privacy/index.html`, the consent step links to it, and `CONSENT_VERSION` is `1.1`. Every placeholder and `DECISION: Jul` was resolved on 2026-10-11 (§4 of that doc), and Firebase Analytics was dropped. Hosting is deployed, so the link resolves, **but the page is still a DRAFT**. It needs a human review before the banner comes off — it describes how real people's data is handled. |
 | **No re-consent flow** | — | Users who accepted `1.0` keep `1.0` and are never re-prompted. Building one means deciding what happens to an account that declines. |
-| **`users/{uid}` Security Rules not deployed** | `RTDBS-RULES.md` (committed draft) | Must be merged with the live rules in the Console **by hand** — the draft now carries the steps and eight Playground tests. The `consent` subtree and the `phone` `.validate` are written; the legacy nodes are gone from the draft but **their data is still in the database**. |
+| **Legacy node data still to delete** | `RTDBS-RULES.md`, Console Data tab | The rules are **deployed** (2026-10-11): `users/` validation, the legacy rules gone, and the missing `history` `.read` that was 401-ing the Alert tab and mock sender. The `password_resets`, `phone_index` and `email_index` **data** is still in the database until it is exported and deleted. |
 | **Password reset: deployed, not yet tested on a device** | [`forgot-password.md`](forgot-password.md) §1 | Hosting is live and `assetlinks.json` holds one debug SHA-256. The Console action URL **cannot be changed** (`EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED`), so the App Link now claims Firebase's own default handler on `firebaseapp.com` instead. Other developers' fingerprints are still missing, and the device check and manual pass have not run. |
 | **Legacy nodes: out of the draft, still in the database** | Console — `password_resets`, `phone_index`, `email_index` | All three were grepped against `app/src`: **0 references each**. Their rules are removed from the draft, but removing a rule does not remove stored data — it makes it unreachable. **Export, then delete the nodes** ([`privacy-and-consent.md`](privacy-and-consent.md) §1 step 4). `password_resets` was world-readable *and* world-writable. |
 | **`devices/` history is world-readable** in the draft | `RTDBS-RULES.md` | `".read": true` on wearer coordinates. Close before any public demo. Note the **write** side is also open, and the mock sender depends on it — tightening `".write"` to require auth means teaching `AlertSender` to send an `?auth=` token (§10). |

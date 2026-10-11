@@ -1,40 +1,38 @@
 {
   "//": [
-    "GuardBand Realtime Database Security Rules - DRAFT. NOT DEPLOYED.",
+    "GuardBand Realtime Database Security Rules - DEPLOYED 2026-10-11.",
     "",
-    "The live rules have never been read from the tooling side. Everything",
-    "here is written against the app's code, not against what is deployed, so",
-    "this file must be MERGED with the live rules by hand rather than pasted",
-    "over them. See 'Merging into the Console' below.",
+    "This file, with every '//' key stripped, IS the live ruleset. The",
+    "Console rejects the '//' keys, so strip them before pasting. Change the",
+    "rules HERE first, then paste the whole stripped file over the Console's",
+    "and publish, so this file and the Console never drift apart again.",
     "",
     "Project guardband-aae65, asia-southeast1, Spark plan.",
     "Related: CLAUDE.md, docs/privacy-and-consent.md, SCHEMA.md (the devices",
     "payload contract, which is authoritative for that shape)."
   ],
-  "// Merging into the Console": [
-    "1. Console -> Realtime Database -> Rules. COPY THE LIVE RULES OUT FIRST",
-    "   and keep them somewhere; nobody has a record of them.",
-    "2. Diff them against this file. Anything live that is not here is",
-    "   something this draft does not know about - keep it, do not drop it.",
-    "3. Take the users/ block from here wholesale. It is the part this draft",
-    "   is authoritative for.",
-    "4. Leave the devices/ block exactly as the live rules have it. The block",
-    "   in this file is unchanged from the previous draft and is reproduced",
-    "   only so the file stays a complete document.",
-    "5. Delete the legacy nodes' rules (they are already gone from this file):",
-    "   password_resets, phone_index, email_index. Grepped against app/src and",
-    "   referenced by nothing.",
-    "6. EXPORT THE DATA AT THOSE THREE NODES BEFORE DELETING THE DATA, then",
-    "   delete the nodes themselves in the Data tab. Rules and data are",
-    "   separate: removing a rule does not remove what is stored under it, and",
-    "   with the rule gone the data becomes unreachable rather than deleted.",
-    "7. Publish, then run every Playground test below.",
+  "// How the 2026-10-11 deploy was done": [
+    "The rules live before that date were read out of the Console and merged",
+    "with this file rather than pasted over:",
+    "- users/: taken from here wholesale. Live had owner-only access and no",
+    "  validation at all.",
+    "- devices/: live was identical to the block here, MINUS the '.read' on",
+    "  history itself, which is why the Alert tab and the mock sender were",
+    "  getting 401 on every history read. That one line was added.",
+    "- password_resets, phone_index, email_index: their rules were removed",
+    "  (password_resets was world-readable and world-writable). Removing a",
+    "  rule does not remove data, so the nodes are exported and then deleted",
+    "  in the Data tab as a separate step (docs/privacy-and-consent.md §1).",
     "",
-    "Rules cannot be unit-tested without the emulator suite, which this",
-    "project does not set up, so the Playground list IS the test suite."
+    "Before publishing, every test below was run against these rules in the",
+    "local Database Emulator under a demo- project id (never the real one), and",
+    "after publishing the history read was re-checked against the real",
+    "database: 401 before, 200 after. The project has no emulator suite of its",
+    "own, so the Playground list below is still the test suite to run after any",
+    "change."
   ],
   "// Rules Playground tests": [
-    "Console -> Realtime Database -> Rules -> Playground. Run all eight.",
+    "Console -> Realtime Database -> Rules -> Playground. Run all nine.",
     "Use a real uid for AUTH_UID and a different one for OTHER_UID.",
     "",
     "1. READ  /users/AUTH_UID            authenticated as AUTH_UID   -> ALLOW",
@@ -60,7 +58,11 @@
     "     a full valid payload per SCHEMA.md                        -> ALLOW",
     "     (7 and 8 must still pass. The mock sender writes",
     "      unauthenticated and the Track and Alert tabs read; if either",
-    "      flips, the demo breaks.)"
+    "      flips, the demo breaks.)",
+    "9. READ  /devices/guardband-001/history    unauthenticated      -> ALLOW",
+    "     (the LIST, not one entry. This is the Alert tab's query and the",
+    "      mock sender's sequence-id lookup. It was DENIED under the rules",
+    "      live before 2026-10-11, which broke both.)"
   ],
   "// Why consent is not required here": [
     "It is tempting to add",
@@ -228,6 +230,17 @@
           }
         },
         "history": {
+          "//": [
+            "The .read HERE, on history itself, is load-bearing. A .read on",
+            "$sequenceId alone grants each entry but never the list: RTDB",
+            "permission on a child does not grant a read of its parent. The",
+            "Alert tab queries history (orderByKey().limitToLast) and the mock",
+            "sender reads history.json?shallow=true for its next sequence id;",
+            "without this line both got 401 Permission denied. It exposes",
+            "nothing new, since every entry is already readable one by one.",
+            "Writes stay per entry, so each one is still validated."
+          ],
+          ".read": true,
           "$sequenceId": {
             ".read": true,
             ".write": true,

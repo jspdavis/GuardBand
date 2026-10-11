@@ -20,14 +20,14 @@ rules that keep them in step with the app.
 **The pages are drafted, linked and buildable. None of it is live, and the
 notice is not finished.**
 
-| # | Step | Who |
+| # | Step | Status |
 |---|---|---|
-| 1 | **Fill the placeholders.** `REPLACE_WITH_RESPONSIBLE_PARTY` and `REPLACE_WITH_CONTACT_EMAIL` appear in both pages. Then resolve every `DECISION: Jul` — the list is in §4. | Jul |
-| 2 | **Have the notice reviewed** by the project adviser or the university's data privacy contact, then remove the `DRAFT, pending review` banner from both pages. **This text describes how real people's data is handled, including third parties who never signed up. It was drafted by an AI from the code and must not be treated as final because of that.** | Jul + adviser |
-| 3 | **Deploy Hosting:** `firebase deploy --only hosting` from `hosting/`. Then open `/privacy` and `/delete-account`, and confirm `/.well-known/assetlinks.json` still returns JSON — §5 explains why that last one is the one to check. | Jul |
-| 4 | **Back up, then delete the legacy nodes** in the Console: `password_resets`, `phone_index`, `email_index`. **Export the JSON first.** Removing a rule does not remove stored data; it makes it unreachable instead. The grep that justifies this is in §3. | Jul |
-| 5 | **Merge the draft rules into the live rules by hand**, following "Merging into the Console" at the top of `RTDBS-RULES.md`, and run all eight Rules Playground tests. **Copy the live rules out before you touch them** — nobody has a record of them. | Jul |
-| 6 | **Manual app test** — §6. | anyone |
+| 1 | **Fill the placeholders.** `REPLACE_WITH_RESPONSIBLE_PARTY` and `REPLACE_WITH_CONTACT_EMAIL` appear in both pages. Then resolve every `DECISION: Jul` — the list is in §4. | **Done** 2026-10-11 |
+| 2 | **Have the notice reviewed** by the project adviser or the university's data privacy contact, then remove the `DRAFT, pending review` banner from both pages. **This text describes how real people's data is handled, including third parties who never signed up. It was drafted by an AI from the code and must not be treated as final because of that.** | Open — Jul + adviser |
+| 3 | **Deploy Hosting:** `firebase deploy --only hosting` from `hosting/`. Then open `/privacy` and `/delete-account`, and confirm `/.well-known/assetlinks.json` still returns JSON — §5 explains why that last one is the one to check. | **Done** 2026-10-11 |
+| 4 | **Back up, then delete the legacy nodes** in the Console: `password_resets`, `phone_index`, `email_index`. **Export the JSON first.** Removing a rule does not remove stored data; it makes it unreachable instead. The grep that justifies this is in §3. **Only after step 5 is published.** | Open |
+| 5 | **Deploy the Security Rules.** The live rules were merged with `RTDBS-RULES.md` (how is recorded at the top of that file), tested against the local emulator, and published. | **Done** 2026-10-11 |
+| 6 | **Manual app test** — §6. | Open |
 
 ---
 
@@ -138,8 +138,8 @@ Needs §1 steps 1–3 done.
    Console, and is **not** asked to agree again.
 
 **Not testable here:** the Security Rules. There is no emulator suite in this
-project, so the eight Rules Playground tests at the top of `RTDBS-RULES.md`
-are the test suite for them. Run all eight after merging.
+project, so the nine Rules Playground tests at the top of `RTDBS-RULES.md`
+are the test suite for them. Run all nine before publishing.
 
 ---
 
