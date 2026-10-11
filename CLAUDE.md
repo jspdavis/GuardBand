@@ -78,7 +78,8 @@ com/example/guardband/
 │   └── notifications/  pushed from Track's bell; placeholder inbox
 └── utils/
     ├── InputValidator.kt       shared input predicates (no messages)
-    └── PasswordCriteria.kt     which password rules the typed pair satisfies
+    ├── PasswordCriteria.kt     which password rules the typed pair satisfies
+    └── HostedPages.kt          URLs of the pages served from the Hosting domain
 ```
 
 **Auth, the user profile, contacts and alerts are all on Firebase** (see "Firebase", "Contacts and profile data" and "Alert data" below). Nothing in the app reads `InMemoryStore` any more; it is the unit tests' backing store.
@@ -108,7 +109,7 @@ Conventions (copy `ui/login/*` as the reference):
   - A pushed screen's back arrow calls `requireActivity().onBackPressedDispatcher.onBackPressed()`.
 - **Lists** use `ListAdapter` + `DiffUtil` with `findViewById` in the ViewHolder (`ContactAdapter`, `AlertHistoryAdapter`).
 
-Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with Analytics, **Auth** and Database. The Track map adds **osmdroid-android 6.1.20** (see "Track and map"). Tests add kotlinx-coroutines-test and Robolectric. OkHttp stays `debugImplementation`. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
+Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with **Auth** and Database (Analytics was dropped: no code called it, and it collected an advertising id on its own). The Track map adds **osmdroid-android 6.1.20** (see "Track and map"). Tests add kotlinx-coroutines-test and Robolectric. OkHttp stays `debugImplementation`. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
 
 ## Firebase
 
@@ -121,7 +122,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 - **Password reset happens in the app, not in a browser.** `sendPasswordResetEmail` still sends Firebase's own email, but the link in it is an Android App Link onto `ResetPasswordActivity`, so the new password is set inside GuardBand. Nothing like `otpPlain` or `pendingPassword` is ever written, and there is still **no typed verification code** — see "Forgot password" below.
 - **No PII in logs.** Never log a uid, an email, a token or Firebase error text.
 - **Never overwrite `app/google-services.json` from another branch,** and don't touch it, `.firebaserc` or any signing config as a side effect of other work.
-- **The `users/{uid}` Security Rules are not deployed.** The proposal in the Prompt 10 report still has to be merged with the existing `devices/` rules in the Console, by hand. `RTDBS-RULES.md` in the repo root is a working draft, not what is live.
+- **The Security Rules are deployed (2026-10-11), and `RTDBS-RULES.md` is the source of truth.** That file with every `"//"` key stripped *is* the live ruleset; the Console rejects the `"//"` keys. Change the file first, then paste the whole stripped file and publish, so the two cannot drift. It carries nine Rules Playground tests, the only test suite rules get (the project has no emulator suite). Its `devices/` block is deliberately world-readable and world-writable; closing it needs device pairing. **`history` needs its own `.read`**, not just `$sequenceId`'s: a child's read never grants the parent, and the Alert tab and the mock sender both read the list. Before the deploy that line was missing and both got 401.
 
 ## Google sign-in
 
@@ -173,12 +174,28 @@ is set in the app with `verifyPasswordResetCode` then `confirmPasswordReset`.
 Neither call needs a signed-in user, and if one happens to be signed in the
 flow neither reads nor disturbs that session.
 
+**The link is Firebase's own default handler**, `https://guardband-aae65.firebaseapp.com/__/auth/action`,
+because **the project cannot change the Console's action URL**: Firebase
+refuses it with `EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED`, from the Console and from
+the API alike. So the app claims the link Firebase already sends rather than
+moving it. `firebaseapp.com` serves the same Hosting site as `web.app`, so the
+one deployed `assetlinks.json` verifies both. Without the app, the link opens
+Firebase's own reset page, which completes the reset in the browser.
+
 **The host and path are declared once**, as `resetLinkHost` / `resetLinkPath`
 in `app/build.gradle.kts`, and pushed out as a `manifestPlaceholders` pair for
 the intent filter and a `buildConfigField` pair for the parser. Three files
 have to agree on them, the third being `hosting/public/.well-known/assetlinks.json`,
-which is served rather than built. Never put the path under `/__/auth/` -
-Firebase Hosting reserves that prefix.
+which is served rather than built.
+
+**Never host a page of your own under `/__/`.** Firebase serves that prefix
+itself, so a file deployed there is shadowed and never reached. Claiming
+Firebase's own `/__/auth/action` is the one exception, and it is **an exact
+`android:path`, never `pathPrefix`**: `/__/auth/handler`, the OAuth redirect
+handler, is on the same host. Every Firebase email action (`verifyEmail`,
+`recoverEmail`, ...) arrives at that one path, so the parser's
+`mode=resetPassword` check is what keeps the others out; adding email
+verification later means deciding what the app does with those links.
 
 **`ResetPasswordActivity` is the one `exported="true"` Activity in the app**,
 because an external click has to reach it. `ui/reset/ResetLinkParser` is
@@ -218,10 +235,10 @@ candidates for it; adding a rule means a predicate in `InputValidator`, a field
 on `PasswordCriteria` and a row in that layout, never a length comparison
 written out again.
 
-**Nothing is deployed.** `hosting/` is created but not pushed, `assetlinks.json`
-still holds `REPLACE_WITH_*` placeholders, and the Console action URL is still
-the default, so **the App Link cannot work yet** and the email link opens the
-fallback page. The doc's §1 is the checklist.
+**Hosting is deployed** (2026-10-11) with one debug SHA-256 in
+`assetlinks.json`; Google's Digital Asset Links checker reports both hosts as
+linked for it. Every other developer's debug SHA-256, and a release one, still
+has to be added. The doc's §1 is the checklist.
 
 ## Contacts and profile data
 
@@ -308,6 +325,77 @@ them on deletes regardless).
 **Not covered by tests:** `reauthenticate` and `delete` themselves, which need
 a real `FirebaseAuth`. The sequencing, the wording and both guards are covered
 — `DeleteAccountViewModelTest`, 28 tests.
+
+## Privacy, consent and the hosted pages
+
+> The notice, the delete-account page, the consent version log, the rules'
+> phone pattern and the human checklist:
+> [docs/privacy-and-consent.md](docs/privacy-and-consent.md).
+
+**Two static pages are served from the Firebase Hosting domain**:
+`/privacy` (the Privacy Notice) and `/delete-account`, plus a root page that
+links both and `/.well-known/assetlinks.json`. Both are **hosted rather than
+in-app screens** on purpose - somebody who has uninstalled GuardBand still
+needs to read what they agreed to and find out how to get their data removed.
+Nothing there runs a script.
+
+**One host constant, two paths, declared once** at the top of
+`app/build.gradle.kts`: `hostingHost` (`guardband-aae65.web.app`),
+`privacyPath`, `deleteAccountPath`. They reach the code as `buildConfigField`s.
+`utils/HostedPages` is the **only** place a URL on that domain is built;
+nothing else may spell one out. The reset link has its own
+`resetLinkHost` (`firebaseapp.com`) - see "Forgot password".
+
+**The notice's version and `CONSENT_VERSION` move together.** Bumping
+`UserProfileRepository.CONSENT_VERSION` means editing
+`hosting/public/privacy/index.html`'s displayed version and adding a row to
+the log in `docs/privacy-and-consent.md`, **in the same commit**. The point of
+storing a version with somebody's consent is being able to say which words
+they agreed to, and that fails the moment the number cannot be matched to a
+document. It is a **String** (`"1.1"`), not a number, so `"1.10"` can follow
+`"1.9"`.
+
+**The consent statement stays plain text and the link is a separate button.**
+The statement is the `MaterialCheckBox`'s own `android:text` so that tapping
+the words toggles the box and TalkBack reads the two as one control. A
+`ClickableSpan` inside that label fights the toggle and loses that reading, so
+the link is `btn_signup_consent_privacy` directly beneath it. Don't "improve"
+it into a span.
+
+**Opening either page is a plain `ACTION_VIEW`** - no custom-tabs dependency,
+no permission. A phone with nothing registered for `https` throws
+`ActivityNotFoundException`, which goes back through the ViewModel so the
+wording stays with every other `MSG_*`, the same shape as Track's Navigate
+button.
+
+**Settings has two privacy rows on purpose.** "Privacy & security" is a
+placeholder for a screen nobody has built; "Privacy Notice" opens the hosted
+document. Pointing the placeholder at the notice would make the row mean
+something other than its label.
+
+**The draft rules' `phone` `.validate` and `InputValidator` must stay in
+step.** The app normalises to E.164 **before** writing
+(`ContactFields.validated`), so the rule matches the *stored* form, never what
+was typed. Its three branches are a PH mobile plus the generic E.164 case split
+by first digit, because the app refuses anything starting `+63` that is not a
+PH mobile and RTDB's regex has no negative lookahead. Change one, change the
+other.
+
+**The notice states only what the code does.** Undecided facts carry a
+`DECISION: Jul` rather than a plausible default, it claims compliance with
+nothing, and both pages keep a **DRAFT** banner until a human has reviewed
+them. **Firebase Analytics was dropped** because no app code called it, yet it
+collected an advertising id on its own; the notice now says the app has no
+analytics, so **adding any analytics SDK back means changing the notice in the
+same commit.** And **OpenStreetMap's tile servers see the phone's IP and the
+area being viewed** on every tile, which the notice discloses.
+
+**Known gap, documented not fixed:** `ProfileProvisioning` writes only `name`
+and `email`, so `users/{uid}` can exist with no `consent` subtree - including
+after a failed account deletion, where the next sign-in repopulates a thin
+record. **Do not add `users/$uid/.validate: newData.hasChildren(['consent'])`**
+as a fix: it would fail that legitimate write and leave the user with no
+profile at all. The options are in the doc.
 
 ## Firebase data contract
 

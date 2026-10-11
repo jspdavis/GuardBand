@@ -24,8 +24,9 @@ REST API (§10). `assembleDebug` + `testDebugUnitTest` green, 253 tests.
 | **Running a demo with no hardware** | [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) — both launchers, end to end |
 | The map library and its configuration | [`osmdroid.md`](osmdroid.md) — **read before touching the map** |
 | The in-app password reset | [`forgot-password.md`](forgot-password.md) — **its §1 is a human checklist; nothing works until that is done** |
+| The Privacy Notice, consent versions and the rules draft | [`privacy-and-consent.md`](privacy-and-consent.md) — **§1 is a human checklist; the notice is DRAFT and unreviewed** |
 | The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md) — **authoritative** |
-| Draft Security Rules (**not deployed**) | [`../RTDBS-RULES.md`](../RTDBS-RULES.md) — committed in `3ccf153` |
+| Security Rules (**deployed 2026-10-11**; the file is the source of truth) | [`../RTDBS-RULES.md`](../RTDBS-RULES.md) |
 
 The sign-up flow has no deep-dive of its own; §3 below is it.
 
@@ -181,12 +182,10 @@ the error/empty/stale split, what is and is not tested — in
 
 | | Where | Notes |
 |---|---|---|
-| **Privacy Notice is not a link** | `activity_signup_consent.xml` | Marked `DESIGN: Jul`. Until it points at a real notice, the consent record references wording the user cannot read. **This is the one that matters most** — it undermines the consent record. |
-| **`users/{uid}` Security Rules not deployed** | `RTDBS-RULES.md` (committed draft) | Must be merged with the existing `devices/` rules in the Console **by hand**. Now also needs a `consent` subtree and a `phone` `.validate`. |
-| **Password reset is built but not deployed** | [`forgot-password.md`](forgot-password.md) §1 | Hosting is not initialized, `assetlinks.json` still holds `REPLACE_WITH_*`, and the Console action URL is still the default, so the App Link cannot verify and the email link opens the fallback page. |
-| **Dead `password_resets` node** in the draft | `RTDBS-RULES.md` | `".read": true, ".write": true`, world-readable *and* world-writable, left over from an abandoned typed-code reset. No code references it. Delete it from the draft. |
-| **`phone_index` / `email_index`** in the draft | `RTDBS-RULES.md` | Both `".read": true`, also unreferenced MVP leftovers, and a read of either would answer the enumeration question the auth screens refuse. Delete them too. |
-| **`devices/` history is world-readable** in the draft | `RTDBS-RULES.md` | `".read": true` on wearer coordinates. Close before any public demo. Note the **write** side is also open, and the mock sender depends on it — tightening `".write"` to require auth means teaching `AlertSender` to send an `?auth=` token (§10). |
+| **Privacy Notice: written, not reviewed or deployed** | [`privacy-and-consent.md`](privacy-and-consent.md) §1 | The notice exists at `hosting/public/privacy/index.html`, the consent step links to it, and `CONSENT_VERSION` is `1.1`. Every placeholder and `DECISION: Jul` was resolved on 2026-10-11 (§4 of that doc), and Firebase Analytics was dropped. Hosting is deployed, so the link resolves, **but the page is still a DRAFT**. It needs a human review before the banner comes off — it describes how real people's data is handled. |
+| **No re-consent flow** | — | Users who accepted `1.0` keep `1.0` and are never re-prompted. Building one means deciding what happens to an account that declines. |
+| **Password reset: other developers' fingerprints** | [`forgot-password.md`](forgot-password.md) §1 | Deployed and passed its manual test on 2026-10-11. The Console action URL **cannot be changed** (`EMAIL_TEMPLATE_UPDATE_NOT_ALLOWED`), so the App Link claims Firebase's own default handler on `firebaseapp.com`. `assetlinks.json` holds **one** developer's debug SHA-256; on any other machine's build the link opens in the browser until theirs is added. |
+| **`devices/` history is world-readable** | `RTDBS-RULES.md` | `".read": true` on wearer coordinates. Close before any public demo. Note the **write** side is also open, and the mock sender depends on it — tightening `".write"` to require auth means teaching `AlertSender` to send an `?auth=` token (§10). |
 | **`SignUpNameViewModel.onGoogleSignInClicked`** | `ui/signup/` | Unreachable — no Google button on the name screen since the redesign. Kept on purpose, flagged in its KDoc. |
 | **`bg_signup_continue.xml`** | `res/drawable/` | Committed but unused; `Widget.GuardBand.SignUpContinue` replaced it. Fold it into the style or delete it. |
 | **`item_contact.xml` edit icon** | `res/layout/` | Placeholder — there is no pencil drawable. |
@@ -195,9 +194,9 @@ the error/empty/stale split, what is and is not tested — in
 
 ## 6. Needs a human, not an agent
 
-- **Deploying Security Rules** — Console only, and the draft must be merged with
-  what is already live. Nobody has seen the deployed `devices/` rules from the
-  tooling side; everything written about them is inferred from the draft.
+- **Deploying Security Rules** — Console only. `RTDBS-RULES.md` is the source
+  of truth since 2026-10-11: edit it, strip the `//` keys, paste the whole
+  file, run the Playground tests, publish.
 - **Registering your own debug SHA-1** in the Firebase Console, then
   re-downloading `google-services.json`. **Google sign-in fails on an
   unregistered machine even though the app builds fine.** The release keystore's
@@ -207,11 +206,18 @@ the error/empty/stale split, what is and is not tested — in
   same problem one step over: without it the password-reset link opens a browser
   instead of the app, and the build says nothing. `./gradlew signingReport`
   prints it. The release keystore's SHA-256 is needed before any signed build.
-- **Deploying Firebase Hosting** from `hosting/`, and setting the password-reset
-  action URL in the Console. [`forgot-password.md`](forgot-password.md) §1 is
-  the checklist.
-- **Manual testing of the Alert tab** — the checklist in
-  [`alert-data.md` §12](alert-data.md) works from the Console.
+- **Redeploying Firebase Hosting** from `hosting/` after any change there.
+  There is no Console action URL to set; it cannot be changed on this project
+  ([`forgot-password.md`](forgot-password.md) §3).
+- **Reviewing the Privacy Notice** before its DRAFT banner comes off, and
+  every one of its decisions is now filled in. It describes how real people's
+  data is handled, including emergency contacts who never signed up, and it was
+  drafted by an agent from the code — which is a reason for a human to read it,
+  not a reason to trust it.
+- **Manual testing of the Alert tab, the Track tab and the mock sender** —
+  [`alert-data.md` §12](alert-data.md) and
+  [`mock-sender-and-receiver.md` §6](mock-sender-and-receiver.md). Handed to a
+  teammate on 2026-10-11; none of the three has had a full human pass yet.
 - **Figma** is the visual source of truth and is Jul's. Everything above uses
   theme tokens and placeholder spacing; `DESIGN: Jul` marks the spots.
 
@@ -275,10 +281,19 @@ still the template.
 
 ## 9. Suggested next steps
 
-1. **Give the Privacy Notice a URL and make it a link.** Everything else in the
-   consent flow is built; this is what makes it mean something.
-2. **Deploy the Security Rules**, including the new `consent` subtree and the
-   phone `.validate`, and close the world-readable `devices/` read.
+1. **Real GPS location — next, agreed 2026-10-11.** Today the mock sender
+   reports a random point within about 1 km of central Cebu City
+   (`AlertSender.kt`), and nothing in the app uses a real position, so the
+   Track tab shows somewhere plausible rather than where anyone is. The team
+   wants real GPS instead. **Decide the scope first**: most likely the mock
+   sender reporting Phone A's own fix, as the band's NEO-6M will. It collides
+   with a standing rule: CLAUDE.md says "no phone-location permission, ever"
+   and forbids `ACCESS_FINE_LOCATION`. That rule was written for the receiver
+   app. A permission declared only in `app/src/debug/AndroidManifest.xml`
+   would keep it out of release builds, but the rule has to be consciously
+   amended either way, not quietly broken.
+2. **Close the world-readable `devices/` read.** The rules are deployed
+   (2026-10-11); this part needs device pairing first (§5).
 3. **A real tile source** before anything public. The map is on OpenStreetMap's
    public servers, whose usage policy is written for light use (§11). Being
    correctly identified is not the same as being entitled to the traffic — the

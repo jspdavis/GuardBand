@@ -73,6 +73,10 @@ class ResetLinkParserTest {
 
     // ── Rejected ──────────────────────────────────────────────────────────────
 
+    /**
+     * Every Firebase email action lands on the same handler path, so these are
+     * the links most likely to reach the app by accident.
+     */
     @Test
     fun `the wrong mode is refused`() {
         assertNull(parse("https://$HOST$PATH?mode=verifyEmail&oobCode=$CODE"))
@@ -96,23 +100,34 @@ class ResetLinkParserTest {
     fun `another host is refused`() {
         assertNull(parse("https://evil.example.com$PATH?mode=resetPassword&oobCode=$CODE"))
         // A prefix of the real host is still a different host.
-        assertNull(parse("https://guardband-aae65.web.app.evil.com$PATH?mode=resetPassword&oobCode=$CODE"))
+        assertNull(parse("https://guardband-aae65.firebaseapp.com.evil.com$PATH?mode=resetPassword&oobCode=$CODE"))
+    }
+
+    /**
+     * web.app serves the same Hosting site, but Firebase's reset email links to
+     * firebaseapp.com, and the intent filter claims only that host.
+     */
+    @Test
+    fun `the static pages host is refused`() {
+        assertNull(parse("https://guardband-aae65.web.app$PATH?mode=resetPassword&oobCode=$CODE"))
     }
 
     @Test
     fun `another path is refused`() {
         assertNull(parse("https://$HOST/other?mode=resetPassword&oobCode=$CODE"))
         assertNull(parse("https://$HOST/?mode=resetPassword&oobCode=$CODE"))
-        assertNull(parse("https://$HOST/reset/extra?mode=resetPassword&oobCode=$CODE"))
+        assertNull(parse("https://$HOST$PATH/extra?mode=resetPassword&oobCode=$CODE"))
+        // The path the app used before it claimed Firebase's handler.
+        assertNull(parse("https://$HOST/reset?mode=resetPassword&oobCode=$CODE"))
     }
 
     /**
-     * Firebase Hosting reserves the `/__/auth/` prefix, which is why the app
-     * uses its own path. A link on the reserved one is not ours.
+     * Firebase's OAuth redirect handler shares the host and the `/__/auth/`
+     * prefix, which is why the manifest uses an exact path and never a prefix.
      */
     @Test
-    fun `the reserved firebase hosting path is refused`() {
-        assertNull(parse("https://$HOST/__/auth/action?mode=resetPassword&oobCode=$CODE"))
+    fun `the oauth handler on the same host is refused`() {
+        assertNull(parse("https://$HOST/__/auth/handler?mode=resetPassword&oobCode=$CODE"))
     }
 
     @Test
@@ -182,8 +197,8 @@ class ResetLinkParserTest {
 
     private companion object {
         /** The real values, so a copy-paste slip in the build file shows up here. */
-        const val HOST = "guardband-aae65.web.app"
-        const val PATH = "/reset"
+        const val HOST = "guardband-aae65.firebaseapp.com"
+        const val PATH = "/__/auth/action"
         const val CODE = "oob-code-1234"
     }
 }

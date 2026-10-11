@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<!--
+  GuardBand Privacy Notice, version 1.1.
+
+  DRAFT. The banner at the top of the page stays until a human has reviewed
+  this. See docs/privacy-and-consent.md.
+
+  Every statement below is taken from the code, not assumed. Where a fact has
+  not been decided it says DECISION: Jul rather than guessing, because a notice
+  that describes practices the project does not actually follow is worse than
+  one with a gap in it.
+
+  The version here must equal UserProfileRepository.CONSENT_VERSION. The whole
+  point of recording a version with somebody's consent is being able to say
+  which words they agreed to.
+
+  Static on purpose: no scripts, no external fonts, no analytics on this page.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>GuardBand Privacy Notice</title>
+  <style>
+    :root {
+      --brand: #4E8B38;
+      --text: #1A1A1A;
+      --muted: #555555;
+      --bg: #FFFFFF;
+      --card: #F4F4F6;
+      --rule: #E0E0E0;
+      --warn-bg: #FFF4E5;
+      --warn-text: #8A4B00;
+      --warn-rule: #F57C00;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --brand: #8BC34A;
+        --text: #ECECEC;
+        --muted: #B5B5B5;
+        --bg: #121212;
+        --card: #1E1E1E;
+        --rule: #333333;
+        --warn-bg: #2E2008;
+        --warn-text: #FFCC80;
+        --warn-rule: #F57C00;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      line-height: 1.6;
+      display: flex;
+      justify-content: center;
+      padding: 24px 16px 64px;
+    }
+
+    main { max-width: 44rem; width: 100%; }
+
+    .brand {
+      color: var(--brand);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin: 0 0 4px;
+    }
+
+    h1 { font-size: 1.6rem; margin: 0 0 4px; line-height: 1.25; }
+    h2 {
+      font-size: 1.15rem;
+      margin: 2.25rem 0 0.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--rule);
+    }
+    h2:first-of-type { border-top: none; padding-top: 0; }
+    h3 { font-size: 1rem; margin: 1.25rem 0 0.25rem; }
+
+    p, li { color: var(--muted); }
+    p { margin: 0 0 0.9rem; }
+    ul, ol { margin: 0 0 1rem; padding-left: 1.3rem; }
+    li { margin-bottom: 0.35rem; }
+
+    strong { color: var(--text); }
+
+    .meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: 0 0 1.5rem;
+    }
+
+    .draft {
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      border: 1px solid var(--warn-rule);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin: 0 0 1.75rem;
+      font-weight: 600;
+    }
+
+    .draft span { display: block; font-weight: 400; margin-top: 6px; }
+
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin: 0 0 1rem;
+    }
+
+    .todo {
+      color: var(--warn-text);
+      background: var(--warn-bg);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-weight: 600;
+      font-size: 0.85em;
+      white-space: nowrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 0 1.25rem;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--rule);
+      color: var(--muted);
+    }
+
+    th { color: var(--text); white-space: nowrap; }
+
+    .wrap { overflow-x: auto; }
+
+    footer {
+      margin-top: 2.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--rule);
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    a { color: var(--brand); }
+  </style>
+</head>
+<body>
+<main>
+
+  <p class="brand">GuardBand</p>
+  <h1>Privacy Notice</h1>
+  <p class="meta"><strong>Version 1.1</strong> &middot; 11 October 2026</p>
+
+  <div class="draft">
+    DRAFT, pending review by the project team.
+    <span>
+      This text has not yet been reviewed by the project adviser or a data
+      privacy contact. Do not rely on it as a final statement of how GuardBand
+      handles data, and do not remove this banner before that review.
+    </span>
+  </div>
+
+  <p>
+    GuardBand is a student project. It is a phone app that works with a
+    wrist-worn safety band: the band sends an alert when its wearer presses its
+    button, and the app lets a guardian see where that alert came from. This
+    page explains what personal data is involved, where it goes, and what you
+    can do about it.
+  </p>
+
+  <p>
+    It describes <strong>what the app actually does</strong>, taken from the
+    code. It is not a legal opinion and makes no claim that the project meets
+    the requirements of any particular law or standard.
+  </p>
+
+  <h2>Who is responsible</h2>
+
+  <p>
+    GuardBand is operated by USC Evictees, a student team in the BS Information
+    Technology programme at the University of Cebu&ndash;Banilad.
+  </p>
+
+  <p>
+    For anything on this page &mdash; a question, a correction, a request to
+    delete your data &mdash; write to
+    <a href="mailto:julianmiguelroldan@gmail.com">julianmiguelroldan@gmail.com</a>.
+  </p>
+
+  <h2>What is collected, and why</h2>
+
+  <h3>When you make an account</h3>
+
+  <div class="wrap">
+    <table>
+      <tr><th>Data</th><th>Why</th></tr>
+      <tr>
+        <td>Your name</td>
+        <td>So the app can address you, and so a guardian is identifiable.</td>
+      </tr>
+      <tr>
+        <td>Your email address</td>
+        <td>It is how you sign in, and how a password reset reaches you.</td>
+      </tr>
+      <tr>
+        <td>Your password</td>
+        <td>
+          To sign you in. It is handled by Google's Firebase Authentication and
+          <strong>never stored in the app's own database</strong>. Nobody on the
+          project can read it.
+        </td>
+      </tr>
+      <tr>
+        <td>Your consent record</td>
+        <td>
+          See <em>The consent record</em> below. It is how the project can show
+          what you agreed to and when.
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <p>
+    If you sign in with Google instead of a password, Google tells the app your
+    name, email address and account identifier. GuardBand never sees your
+    Google password.
+  </p>
+
+  <h3>Your emergency contacts</h3>
+
+  <p>
+    You add at least one emergency contact, and the app stores each one's
+    <strong>name, phone number and relationship to you</strong>. The band texts
+    these people when an alert is raised, which is the entire reason they are
+    collected.
+  </p>
+
+  <div class="card">
+    <p style="margin:0">
+      <strong>These are other people's details, not yours.</strong> Please only
+      add someone who knows they are your emergency contact and is willing to
+      be texted. They did not sign up for GuardBand, and the project has no way
+      to tell them their number is stored here &mdash; so that is your
+      responsibility, not the app's.
+    </p>
+  </div>
+
+  <h3>From the band</h3>
+
+  <p>Each alert or tracking update the band sends carries:</p>
+
+  <ul>
+    <li>its <strong>location</strong> &mdash; latitude, longitude, and how accurate the reading is;</li>
+    <li>its <strong>battery</strong> level and whether it is charging;</li>
+    <li>the <strong>time</strong> of the reading;</li>
+    <li>the <strong>band's identifier</strong> and a sequence number.</li>
+  </ul>
+
+  <p>
+    This is the wearer's location. If the wearer is not you, they should know
+    the band reports where they are &mdash; which is what the third part of the
+    sign-up consent is about.
+  </p>
+
+  <div class="card">
+    <p style="margin:0">
+      <strong>The phone's own location is never used.</strong> The app asks for
+      no location permission at all. Everything on the map comes from the band.
+    </p>
+  </div>
+
+  <h3>No analytics or advertising</h3>
+
+  <p>
+    The app contains <strong>no analytics or advertising software</strong>. It
+    does not collect an advertising identifier, and it does not track how you
+    use it.
+  </p>
+
+  <h2>Who it is shared with</h2>
+
+  <div class="wrap">
+    <table>
+      <tr><th>Who</th><th>What they get</th></tr>
+      <tr>
+        <td><strong>Google</strong> (Firebase Authentication, Realtime Database)</td>
+        <td>
+          Everything above. Google stores and processes it on the project's
+          behalf. The database is hosted in the
+          <strong>asia-southeast1</strong> region (Singapore).
+        </td>
+      </tr>
+      <tr>
+        <td><strong>OpenStreetMap</strong></td>
+        <td>
+          The map is drawn from OpenStreetMap's public tile servers. Each time
+          the map loads, their servers see <strong>your phone's IP address and
+          which part of the map you are looking at</strong>. They do not receive
+          your account details, your contacts or the band's reported position.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Google Maps</strong></td>
+        <td>
+          Only if you tap <em>Navigate</em>. That hands the band's coordinates
+          to whatever maps app your phone uses. Nothing is sent unless you tap
+          it.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Your emergency contacts</strong></td>
+        <td>
+          An alert text. <strong>The band sends these, not the app</strong>, over
+          its own mobile connection.
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <p>
+    Nothing is sold, and nothing is shared for advertising.
+  </p>
+
+  <h2>Where it is stored, and on your phone</h2>
+
+  <p>
+    Your account and contacts live in Google's Firebase Realtime Database, in
+    the <strong>asia-southeast1</strong> region. Sign-in is handled by Firebase
+    Authentication.
+  </p>
+
+  <p>On your phone itself, the app keeps very little:</p>
+
+  <ul>
+    <li>your <strong>sign-in session</strong>, so you stay signed in;</li>
+    <li>a <strong>cache of map images</strong>, in the app's own temporary storage.</li>
+  </ul>
+
+  <p>
+    Your contacts, your profile and the band's reports are <strong>not</strong>
+    stored on the phone for offline use. Uninstalling the app removes the
+    session and the map cache; it does <strong>not</strong> delete your account.
+  </p>
+
+  <div class="card">
+    <p style="margin:0">
+      <strong>One thing to be aware of while this is a student project.</strong>
+      The band's reported locations are currently stored under a
+      <strong>single shared band identifier</strong>, and the project's database
+      rules for that part are <strong>open</strong>: that data can be read, and
+      written, without signing in. There is no device pairing yet, so one
+      person's band data is not separated from another's. Do not use GuardBand
+      to protect anyone who would be put at risk by that. Your account details
+      and your emergency contacts are <em>not</em> in that open area &mdash; they
+      are readable only by you.
+    </p>
+  </div>
+
+  <h2>How long it is kept</h2>
+
+  <p>
+    Your account, profile, emergency contacts and consent record are kept
+    <strong>until you delete your account</strong>. Nothing is deleted
+    automatically, and there is no scheduled clean-up.
+  </p>
+
+  <p>
+    Alerts and tracking updates from the band are kept
+    <strong>indefinitely</strong> at present, and deleting your account does not
+    remove them &mdash; see the next section for why.
+  </p>
+
+  <p>
+    No retention period has been set for band reports yet. If one is, this
+    notice will change to say what it is.
+  </p>
+
+  <h2>Your rights, and how to use them</h2>
+
+  <h3>See or correct your data</h3>
+
+  <p>
+    Your name, email and emergency contacts are all visible in the app, on the
+    Profile and Contacts tabs, and the contacts can be edited there. For
+    anything you cannot see or change yourself, write to
+    <a href="mailto:julianmiguelroldan@gmail.com">julianmiguelroldan@gmail.com</a>.
+  </p>
+
+  <h3>Delete your account</h3>
+
+  <p>
+    In the app: <strong>Track tab &rarr; the gear icon &rarr; Settings &rarr;
+    Delete account</strong>. You will be asked to confirm who you are first.
+  </p>
+
+  <p>That deletes, permanently:</p>
+
+  <ul>
+    <li>your profile &mdash; name and email;</li>
+    <li>every emergency contact you saved, including their names and numbers;</li>
+    <li>your consent record;</li>
+    <li>your sign-in.</li>
+  </ul>
+
+  <p>
+    It does <strong>not</strong> delete the alerts and tracking updates the band
+    recorded. Those sit under a band identifier that is shared between
+    installations rather than tied to your account, so there is nothing there
+    that can be matched to you and removed. <a href="/delete-account">The
+    delete-account page</a> explains this, and what to do if you cannot open the
+    app.
+  </p>
+
+  <h3>Withdraw your consent</h3>
+
+  <p>
+    Deleting your account is how you withdraw consent. There is no way to keep
+    the account while taking the consent back, because the app needs the
+    contacts and the band data to do the one thing it is for.
+  </p>
+
+  <h2>The consent record</h2>
+
+  <p>
+    When you finish signing up, the app records that you agreed, in the same
+    write as your profile, so an account cannot exist without one. It stores:
+  </p>
+
+  <ul>
+    <li>that you <strong>accepted</strong>;</li>
+    <li><strong>when</strong>, from the server's clock rather than your phone's;</li>
+    <li>the <strong>version</strong> of this notice you agreed to &mdash; <strong>1.1</strong> for the current wording.</li>
+  </ul>
+
+  <p>
+    It does not store your password, a reset code, or anything else. If this
+    notice changes in a way that alters what is being agreed to, the version
+    number goes up, and
+    <a href="https://github.com/jspdavis/GuardBand/blob/mvvm-main/docs/privacy-and-consent.md">the
+      project's change log</a> records what changed.
+  </p>
+
+  <p>
+    If you accepted an earlier version, the app does <strong>not</strong>
+    currently ask you to agree again. Your stored record keeps the version you
+    actually accepted rather than being quietly updated.
+  </p>
+
+  <h2>Children</h2>
+
+  <p>
+    To make an account you must be <strong>18 or older, or have a guardian's
+    permission</strong>, and the sign-up asks you to confirm it. The app has no
+    way to verify that.
+  </p>
+
+  <p>
+    The <em>wearer</em> of the band may well be a minor &mdash; that is a normal
+    way to use a safety band &mdash; and the sign-up asks the person setting it up
+    to confirm the wearer knows about and agrees to the tracking.
+  </p>
+
+  <p>
+    If we learn that an account belongs to someone under 18 who does not have a
+    guardian's permission, we will delete it, in the same way as described on
+    the <a href="/delete-account">delete-account page</a>.
+  </p>
+
+  <h2>Changes to this notice</h2>
+
+  <p>
+    The version number and date at the top of this page change whenever the
+    notice does. A change that alters what you are agreeing to also moves the
+    version recorded with new consents, so the two can always be matched up.
+  </p>
+
+  <p>
+    Because this is a student project rather than a service with a mailing list,
+    there is no notification when the notice changes. The dated version at the
+    top of this page is the current one.
+  </p>
+
+  <h2>Questions</h2>
+
+  <p>
+    Write to
+    <a href="mailto:julianmiguelroldan@gmail.com">julianmiguelroldan@gmail.com</a>.
+  </p>
+
+  <footer>
+    GuardBand Privacy Notice, version 1.1 &middot; DRAFT, pending review &middot;
+    <a href="/delete-account">How to delete your account</a>
+  </footer>
+
+</main>
+</body>
+</html>

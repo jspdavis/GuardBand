@@ -1,6 +1,8 @@
 package com.example.guardband.ui.signup
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -26,7 +28,8 @@ import kotlinx.coroutines.launch
  * is the only screen that writes anything.
  *
  * View ids: btn_signup_back, tv_signup_consent_title,
- * tv_signup_consent_subtitle, cb_signup_consent, btn_signup_consent_create,
+ * tv_signup_consent_subtitle, cb_signup_consent,
+ * btn_signup_consent_privacy, btn_signup_consent_create,
  * btn_signup_consent_retry, progress_signup_consent.
  *
  * Retry calls the same handler with the same arguments as Create account — the
@@ -48,6 +51,7 @@ class SignUpConsentActivity : AppCompatActivity() {
     private lateinit var checkBox: MaterialCheckBox
     private lateinit var btnCreate: Button
     private lateinit var btnRetry: Button
+    private lateinit var btnPrivacy: Button
     private lateinit var progressBar: ProgressBar
 
     private val viewModel: SignUpConsentViewModel by viewModels { SignUpConsentViewModel.Factory }
@@ -71,6 +75,7 @@ class SignUpConsentActivity : AppCompatActivity() {
         checkBox    = findViewById(R.id.cb_signup_consent)
         btnCreate   = findViewById(R.id.btn_signup_consent_create)
         btnRetry    = findViewById(R.id.btn_signup_consent_retry)
+        btnPrivacy  = findViewById(R.id.btn_signup_consent_privacy)
         progressBar = findViewById(R.id.progress_signup_consent)
 
         findViewById<View>(R.id.btn_signup_back).setOnClickListener {
@@ -82,6 +87,7 @@ class SignUpConsentActivity : AppCompatActivity() {
         }
 
         btnCreate.setOnClickListener { submit() }
+        btnPrivacy.setOnClickListener { viewModel.onPrivacyNoticeClicked() }
         // Deliberately the same call: see the class KDoc.
         btnRetry.setOnClickListener { submit() }
 
@@ -125,8 +131,27 @@ class SignUpConsentActivity : AppCompatActivity() {
         btnCreate.visibility = if (state.canRetry) View.GONE else View.VISIBLE
     }
 
+    /**
+     * Opens the Privacy Notice in whatever browser the phone has.
+     *
+     * A plain `ACTION_VIEW`, so it needs no permission and no extra
+     * dependency. A phone with nothing registered for `https` throws
+     * [ActivityNotFoundException], which goes back through the ViewModel so
+     * the wording stays with every other user-facing message - the same shape
+     * as Track's Navigate button.
+     */
+    private fun openPrivacyNotice(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (e: ActivityNotFoundException) {
+            viewModel.onPrivacyNoticeUnavailable()
+        }
+    }
+
     private fun handleEvent(event: SignUpConsentEvent) {
         when (event) {
+            is SignUpConsentEvent.OpenPrivacyNotice -> openPrivacyNotice(event.url)
+
             is SignUpConsentEvent.ShowMessage ->
                 Toast.makeText(this, event.text, Toast.LENGTH_SHORT).show()
 

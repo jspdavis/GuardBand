@@ -36,8 +36,8 @@ import kotlinx.coroutines.launch
  * honestly.
  *
  * The host and path come from `BuildConfig.RESET_LINK_HOST` /
- * `RESET_LINK_PATH`, which the manifest's intent filter also reads as a
- * manifest placeholder. Both are declared once in `app/build.gradle.kts` —
+ * `RESET_LINK_PATH`, which the manifest's intent filter also reads as
+ * manifest placeholders. Both are declared once in `app/build.gradle.kts` —
  * see `docs/forgot-password.md`.
  *
  * **Nothing here logs**, and the `oobCode` never leaves the ViewModel: not

@@ -47,7 +47,6 @@ osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version.
 
 # Firebase — the BoM pins every firebase-* version, so they carry no version of their own
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
-firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth" }
 firebase-database = { group = "com.google.firebase", name = "firebase-database" }
 

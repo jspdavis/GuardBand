@@ -46,7 +46,8 @@
     <!-- Sign Up – Consent (outside the step indicator) -->
     <string name="label_signup_consent_title">Before you finish</string>
     <string name="label_signup_consent_subtitle">One last thing, and it matters.</string>
-    <string name="label_signup_consent_statement">I agree to the Privacy Notice, I\'m 18 or older (or have a guardian\'s permission), and the person wearing the band knows and agrees to be tracked.</string>
+    <string name="label_signup_consent_statement">I have read the Privacy Notice and agree to it, I\'m 18 or older (or have a guardian\'s permission), and the person wearing the band knows and agrees to be tracked.</string>
+    <string name="btn_signup_consent_privacy">Read the Privacy Notice</string>
     <string name="btn_signup_create_account">Create account</string>
 
     <!-- Sign Up – Name -->
@@ -190,6 +191,7 @@
     <string name="label_settings_change_password">Change password</string>
     <string name="label_settings_notifications">Notifications</string>
     <string name="label_settings_privacy">Privacy &amp; security</string>
+    <string name="label_settings_privacy_notice">Privacy Notice</string>
     <string name="btn_logout">Log Out</string>
 
     <!-- Delete account. Apostrophes are escaped: an unescaped one fails
