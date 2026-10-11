@@ -109,7 +109,7 @@ Conventions (copy `ui/login/*` as the reference):
   - A pushed screen's back arrow calls `requireActivity().onBackPressedDispatcher.onBackPressed()`.
 - **Lists** use `ListAdapter` + `DiffUtil` with `findViewById` in the ViewHolder (`ContactAdapter`, `AlertHistoryAdapter`).
 
-Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with Analytics, **Auth** and Database. The Track map adds **osmdroid-android 6.1.20** (see "Track and map"). Tests add kotlinx-coroutines-test and Robolectric. OkHttp stays `debugImplementation`. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
+Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with **Auth** and Database (Analytics was dropped: no code called it, and it collected an advertising id on its own). The Track map adds **osmdroid-android 6.1.20** (see "Track and map"). Tests add kotlinx-coroutines-test and Robolectric. OkHttp stays `debugImplementation`. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
 
 ## Firebase
 
@@ -367,11 +367,11 @@ other.
 **The notice states only what the code does.** Undecided facts carry a
 `DECISION: Jul` rather than a plausible default, it claims compliance with
 nothing, and both pages keep a **DRAFT** banner until a human has reviewed
-them. Two findings worth knowing: **Firebase Analytics is on the classpath and
-no app code calls it**, so the app collects an app-instance id, device model,
-OS version, region and an advertising id without a line of code saying so; and
-**OpenStreetMap's tile servers see the phone's IP and the area being viewed**
-on every tile. Both are disclosed in the notice.
+them. **Firebase Analytics was dropped** because no app code called it, yet it
+collected an advertising id on its own; the notice now says the app has no
+analytics, so **adding any analytics SDK back means changing the notice in the
+same commit.** And **OpenStreetMap's tile servers see the phone's IP and the
+area being viewed** on every tile, which the notice discloses.
 
 **Known gap, documented not fixed:** `ProfileProvisioning` writes only `name`
 and `email`, so `users/{uid}` can exist with no `consent` subtree - including

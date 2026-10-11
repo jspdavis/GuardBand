@@ -182,7 +182,7 @@ the error/empty/stale split, what is and is not tested — in
 
 | | Where | Notes |
 |---|---|---|
-| **Privacy Notice: written, not reviewed or deployed** | [`privacy-and-consent.md`](privacy-and-consent.md) §1 | The notice exists at `hosting/public/privacy/index.html`, the consent step links to it, and `CONSENT_VERSION` is `1.1`. **But it is a DRAFT with unfilled placeholders and seven `DECISION: Jul` items, and Hosting is not deployed**, so the link does not resolve yet. It needs a human review before the banner comes off — it describes how real people's data is handled. |
+| **Privacy Notice: written, not reviewed or deployed** | [`privacy-and-consent.md`](privacy-and-consent.md) §1 | The notice exists at `hosting/public/privacy/index.html`, the consent step links to it, and `CONSENT_VERSION` is `1.1`. Every placeholder and `DECISION: Jul` was resolved on 2026-10-11 (§4 of that doc), and Firebase Analytics was dropped. **But it is still a DRAFT, and Hosting is not deployed**, so the link does not resolve yet. It needs a human review before the banner comes off — it describes how real people's data is handled. |
 | **No re-consent flow** | — | Users who accepted `1.0` keep `1.0` and are never re-prompted. Building one means deciding what happens to an account that declines. |
 | **`users/{uid}` Security Rules not deployed** | `RTDBS-RULES.md` (committed draft) | Must be merged with the live rules in the Console **by hand** — the draft now carries the steps and eight Playground tests. The `consent` subtree and the `phone` `.validate` are written; the legacy nodes are gone from the draft but **their data is still in the database**. |
 | **Password reset is built but not deployed** | [`forgot-password.md`](forgot-password.md) §1 | Hosting is not initialized, `assetlinks.json` still holds `REPLACE_WITH_*`, and the Console action URL is still the default, so the App Link cannot verify and the email link opens the fallback page. |
@@ -212,7 +212,7 @@ the error/empty/stale split, what is and is not tested — in
   action URL in the Console. [`forgot-password.md`](forgot-password.md) §1 is
   the checklist. The same deploy publishes `/privacy` and `/delete-account`.
 - **Reviewing the Privacy Notice** before its DRAFT banner comes off, and
-  resolving its seven `DECISION: Jul` items. It describes how real people's
+  every one of its decisions is now filled in. It describes how real people's
   data is handled, including emergency contacts who never signed up, and it was
   drafted by an agent from the code — which is a reason for a human to read it,
   not a reason to trust it.

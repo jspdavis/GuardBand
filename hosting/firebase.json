@@ -1,7 +1,9 @@
 {
   "//": [
-    "Firebase Hosting for GuardBand's three public pages. NOT DEPLOYED YET.",
+    "Firebase Hosting for GuardBand's public pages. First deployed 2026-10-11.",
     "",
+    "  /                             - index linking the two pages below, so a",
+    "                                  trimmed link does not land on a 404",
     "  /.well-known/assetlinks.json  - proves this domain belongs to the app,",
     "                                  which is what makes android:autoVerify",
     "                                  work and opens the password-reset link",

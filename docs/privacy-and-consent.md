@@ -42,7 +42,7 @@ to, which fails if the number cannot be matched to a document.
 | Version | Date | What changed |
 |---|---|---|
 | `1.0` | before this pass | The original statement: agree to the Privacy Notice, confirm 18-or-older or guardian's permission, confirm the wearer knows and agrees to be tracked. **"Privacy Notice" was plain text — there was no notice to read**, which is what this pass fixes. |
-| `1.1` | `DECISION: Jul` — publication date | Wording changed from "I agree to the Privacy Notice" to **"I have read the Privacy Notice and agree to it"**, and the notice became a real, reachable document at `/privacy`. The claim being made is materially different: under 1.0 the user could not have read it. |
+| `1.1` | 2026-10-11 | Wording changed from "I agree to the Privacy Notice" to **"I have read the Privacy Notice and agree to it"**, and the notice became a real, reachable document at `/privacy`. The claim being made is materially different: under 1.0 the user could not have read it. |
 
 **Existing users are not re-prompted.** A record written at `1.0` keeps `1.0`;
 nothing rewrites it, and there is no re-consent flow. Building one means
@@ -70,15 +70,15 @@ export-then-delete for that reason.
 
 ## 4. Every `DECISION: Jul` left in the pages
 
-| Where | Decision needed |
-|---|---|
-| Both pages, header | `REPLACE_WITH_RESPONSIBLE_PARTY`, `REPLACE_WITH_CONTACT_EMAIL` |
-| Notice, version line | The notice's **publication date** |
-| Notice, "Automatically, by Google" | **Whether to keep Firebase Analytics at all.** It is on the classpath and **no app code calls it**, yet it collects an app-instance id, device model, OS version, region and an advertising id on its own. Dropping the dependency would stop that collection entirely. If it stays, the notice has to say what the project uses it for. |
-| Notice, "How long it is kept" | **A retention period for band reports.** There is none today and nothing deletes on a schedule. The notice says exactly that rather than inventing one. |
-| Notice, "Children" | Whether the project sets a minimum age for the **account holder** beyond the self-declaration, and what it does on learning an account belongs to a child. |
-| Notice, "Questions" | A university contact or data privacy office to escalate to, if there is one. |
-| Delete page, "If you cannot open the app" | **Whether a manual deletion process exists.** Today it does not: nobody owns these requests, there is no way to verify the asker owns the account, and no response time is set. The page says so rather than promising a route that is not there. |
+| Where | Decision | Status |
+|---|---|---|
+| Both pages, header | Operator and contact address | **Decided 2026-10-11:** USC Evictees, BS Information Technology, University of Cebu–Banilad; julianmiguelroldan@gmail.com |
+| Notice, version line | The notice's publication date | **Decided:** 11 October 2026 |
+| Notice, analytics | Whether to keep Firebase Analytics | **Dropped.** The dependency is gone and the notice says the app has no analytics. Adding any back means changing the notice in the same commit. |
+| Notice, "How long it is kept" | A retention period for band reports | **None yet**, and the notice says so. Revisit if a schedule is ever built. |
+| Notice, "Questions" | A contact to escalate to | **None**, so the line was removed. |
+| Notice, "Children" | A minimum age for the **account holder** | **18, or a guardian's permission** - the same as the consent checkbox, so no version bump. An account found to break that is deleted. |
+| Delete page, "If you cannot open the app" | Whether a manual deletion process exists | **Yes.** Requests to the contact address, acted on only when sent from the account's own email, within 30 days, with a confirming reply. The deletion is done by hand in the Console: `users/{uid}` first, then the Authentication user, the same order as the app. |
 
 ---
 

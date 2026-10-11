@@ -118,7 +118,6 @@ dependencies {
 
     // Firebase — the BoM pins every version below it, so none declares its own
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.analytics)
     implementation(libs.firebase.auth)
     implementation(libs.firebase.database)
 
