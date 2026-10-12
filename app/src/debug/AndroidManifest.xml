@@ -7,6 +7,20 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        Debug-only location permissions for the mock sender.
+        The sender stands in for the ESP32 + NEO-6M hardware and should report
+        Phone A's own GPS fix instead of a hardcoded Cebu City position.
+
+        These permissions are declared here, NOT in the main manifest, so:
+          - Release builds contain no location permission.
+          - The receiver app (HomeActivity and its tabs) never touches the
+            phone's location — the band is the only source of position.
+        See CLAUDE.md "Track and map" and "Mock sender" for the rationale.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <application>
 
         <activity

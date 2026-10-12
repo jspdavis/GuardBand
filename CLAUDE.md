@@ -486,13 +486,25 @@ normalization. Two consequences worth knowing:
   on clean rows rather than re-serving the blocked images already cached under
   `Mapnik`.
 
-**No phone-location permission, ever.** The band supplies the location, not the
-handset. The merged manifest adds only four *optional* `uses-feature` entries
-from osmdroid (`location.network`, `location.gps`, `telephony`, `wifi`, all
-`required="false"`) and **no** `uses-permission` at all; `ACCESS_NETWORK_STATE`
-was already there via Firebase. Never add `ACCESS_FINE_LOCATION` or
-`ACCESS_COARSE_LOCATION`, and never use osmdroid's `MyLocationNewOverlay` —
-that is the class that would drag them back in.
+**No phone-location permission in the main app, ever.** The band supplies the
+location, not the handset. The merged manifest adds only four *optional*
+`uses-feature` entries from osmdroid (`location.network`, `location.gps`,
+`telephony`, `wifi`, all `required="false"`) and **no** `uses-permission` at
+all; `ACCESS_NETWORK_STATE` was already there via Firebase. Never add
+`ACCESS_FINE_LOCATION` or `ACCESS_COARSE_LOCATION` to the main manifest, and
+never use osmdroid's `MyLocationNewOverlay` — that is the class that would drag
+them back in.
+
+**The one deliberate exception: `app/src/debug/AndroidManifest.xml`.** The mock
+sender stands in for the ESP32 + NEO-6M hardware, and it is correct for it to
+report Phone A's own GPS fix — that is what the real band will do. Both
+`ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION` are declared there and
+**only** there, so a release build contains neither permission. `MockSenderActivity`
+requests them at runtime via `ActivityCompat.requestPermissions` and falls back
+to the Cebu City random position if denied, so the permission refusal is always
+survivable. If this exception is ever removed, remove the runtime request, the
+`LocationListener` and the GPS badge from `MockSenderActivity` in the same
+commit.
 
 **"Reporting", not "Online".** `BandStatus.ONLINE_THRESHOLD_MS` is **180 s**,
 three of FR-09's 60 s tracking intervals, so one dropped update does not flip

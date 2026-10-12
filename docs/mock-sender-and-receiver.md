@@ -101,11 +101,11 @@ and unchanged.
 
 | Control | Writes | Position | Battery |
 |---|---|---|---|
-| **Simulate Panic** | one `PANIC` | random, within ±0.01° of Cebu City | random 20–100% |
+| **Simulate Panic** | one `PANIC` | Phone A's real GPS fix; falls back to random ±0.01° of Cebu City if no fix or permission denied | random 20–100% |
 | **Simulate Check-in** | one `CHECKIN` | same | same |
 | **Simulate Low Battery** | one `LOW_BATTERY` | same | same |
 | **Simulate Tracking Update** | one `TRACKING_UPDATE` | same | same |
-| **Start walk / Stop walk** | a `TRACKING_UPDATE` every **5 s** | a ~165 m circle around Cebu City, 24 steps | drains 95% → 20% |
+| **Start walk / Stop walk** | a `TRACKING_UPDATE` every **5 s** | a ~165 m synthetic circle anchored at Phone A's real fix (or Cebu City if no fix), 24 steps | drains 95% → 20% |
 
 Every send writes the full `SCHEMA.md` v1.0 payload: `schemaVersion` (the
 *string* `"1.0"`), `deviceId`, `type`, `timestamp` (ISO 8601 UTC with
@@ -118,12 +118,23 @@ and `sequenceId`.
 |---|---|
 | `Ready to send alerts` | Nothing sent yet this session. |
 | `Sending PANIC...` | In flight. |
-| `✓ Sent PANIC as #7` | Written. **`#7` is the history key**, so you can find it in the Console. |
-| `⚑ Walking: 12 sent, latest #19` | Walk running; count and the newest key. |
+| `✓ Sent PANIC as #7 (real GPS)` | Written using Phone A's real GPS fix. |
+| `✓ Sent PANIC as #7 (simulated)` | Written using the Cebu City fallback — no fix available or permission denied. |
+| `⚑ Walking: 12 sent, latest #19 (real origin)` | Walk running, loop anchored at the real fix. |
+| `⚑ Walking: 12 sent, latest #19 (simulated)` | Walk running, loop anchored at Cebu City. |
 | `Walk stopped` | You tapped Stop. |
 | `Walk stopped (harness left the foreground)` | You backgrounded the harness. See below. |
 | `✗ Failed: HTTP 401 on PUT /devices/…` | See §8. |
 | `✗ Walk stopped after 4: …` | A step failed, so the whole walk stopped. |
+
+The **GPS badge** below the status line shows the current fix state independently of sends:
+
+| Badge text | Meaning |
+|---|---|
+| `GPS fix: 10.3157, 123.8854 (±8 m)` | Real fix in hand; sends will use it. |
+| `Acquiring GPS fix…` | Permission granted, waiting for first fix. Sends fall back to Cebu City in the meantime. |
+| `No GPS fix — using simulated Cebu City location` | Permission granted but no fix yet and the provider never fired (e.g. indoors for a long time). |
+| `Location permission denied — using simulated Cebu City location` | Permission was denied; all sends use Cebu City. |
 
 ### Sequence ids
 
@@ -289,6 +300,9 @@ payloads, missing fields and unknown types — see §9.
 | `✗ Failed: HTTP 401 …` | Deployed rules are tighter than the draft. The sender writes unauthenticated; it would need an `?auth=` token. |
 | `✗ Failed: HTTP 400 …` | A `.validate` rejected the payload — check the enum name, `percent` 0–100, and all six required children. |
 | `✗ Failed:` a network error | No connectivity, or the database URL from `google-services.json` is wrong. |
+| **GPS badge stuck on "Acquiring…"** | Indoors or no satellite view. Sends fall back to Cebu City automatically — there is nothing to fix. |
+| **No location permission dialog on first launch** | Already denied once. Go to App Settings → Permissions → Location and grant it manually. |
+| **Sends show `(simulated)` even though permission is granted** | No fix has arrived yet — the badge will show "Acquiring…". Walk until outdoors or use the network provider fix. |
 | **Every tile reads "access blocked"** | The user agent. OSM blocks shared identifiers — `osmdroid` and the `com.example.*` prefix that is still this app's `applicationId`. The block is an **HTTP 200 PNG** with the text drawn in, so osmdroid caches and draws it and the log stays clean. `OsmdroidConfig.USER_AGENT` and `GuardBandTileSource` are the two halves of the fix; neither works alone — [`osmdroid.md`](osmdroid.md). |
 | **Map is blank/grey, everything else works** | `OsmdroidConfig` did not run before the `MapView` was built. It must be applied in `onCreate`, ahead of inflation. |
 | Marker never appears, panel does | Reporting without a fix (§G), or the payload has no `location`. |
