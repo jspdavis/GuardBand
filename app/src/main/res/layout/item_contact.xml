@@ -79,6 +79,6 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/cd_delete_contact"
             android:src="@drawable/ic_delete"
-            app:tint="@color/text_secondary" />
+            app:tint="@color/rule_unmet" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

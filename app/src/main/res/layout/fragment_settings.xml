@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -8,179 +8,355 @@
     android:background="@color/surface_muted"
     android:clickable="true"
     android:focusable="true"
-    android:orientation="vertical"
     tools:context=".ui.settings.SettingsFragment">
 
-    <!-- ── Top bar ───────────────────────────────────────────────────────── -->
+    <!-- ── Top Action Buttons (Settings & Notifications) ────────────────── -->
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="@color/white"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="4dp"
-        android:paddingEnd="16dp">
-
-        <ImageButton
-            android:id="@+id/ib_settings_back"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/cd_back"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="@color/text_primary" />
-
-        <TextView
-            android:id="@+id/tv_settings_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="@string/label_settings_title"
-            android:textAppearance="@style/TextAppearance.GuardBand.TitleLarge"
-            android:textColor="@color/text_primary" />
-    </LinearLayout>
-
-    <!-- ── Rows (placeholders) ───────────────────────────────────────────── -->
-
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/ib_profile_settings"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="0dp">
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:contentDescription="@string/cd_open_settings"
+        android:src="@drawable/ic_settings"
+        app:backgroundTint="@color/white"
+        app:elevation="4dp"
+        app:fabSize="mini"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+        app:tint="#478831" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/tv_settings_account"
-                style="@style/Widget.GuardBand.SettingsRow"
-                android:text="@string/label_settings_account" />
-
-            <View style="@style/Widget.GuardBand.SettingsDivider" />
-
-            <TextView
-                android:id="@+id/tv_settings_change_password"
-                style="@style/Widget.GuardBand.SettingsRow"
-                android:text="@string/label_settings_change_password" />
-
-            <View style="@style/Widget.GuardBand.SettingsDivider" />
-
-            <TextView
-                android:id="@+id/tv_settings_notifications"
-                style="@style/Widget.GuardBand.SettingsRow"
-                android:text="@string/label_settings_notifications" />
-
-            <View style="@style/Widget.GuardBand.SettingsDivider" />
-
-            <TextView
-                android:id="@+id/tv_settings_privacy"
-                style="@style/Widget.GuardBand.SettingsRow"
-                android:text="@string/label_settings_privacy" />
-
-            <View style="@style/Widget.GuardBand.SettingsDivider" />
-
-            <!-- Opens the hosted notice in the browser, unlike the four rows
-                 above it, which are placeholders for screens that do not exist.
-            -->
-            <TextView
-                android:id="@+id/tv_settings_privacy_notice"
-                style="@style/Widget.GuardBand.SettingsRow"
-                android:text="@string/label_settings_privacy_notice" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- ── Log Out (moved from the old Dashboard) ────────────────────────── -->
-
-    <Button
-        android:id="@+id/btn_settings_logout"
-        style="@style/Widget.GuardBand.Button.Outlined"
-        android:layout_width="match_parent"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/ib_alert_notifications"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="16dp"
-        android:text="@string/btn_logout" />
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        android:contentDescription="@string/cd_open_notifications"
+        android:src="@drawable/ic_notifications"
+        app:backgroundTint="@color/white"
+        app:elevation="4dp"
+        app:fabSize="mini"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+        app:tint="#478831" />
 
-    <!-- ── Delete account ────────────────────────────────────────────────────
-         Its own card, well below Log Out, so the irreversible action is not
-         one mis-tap away from the reversible one. The banner above it is
-         state, not a dialog: a failure that left the data deleted and the
-         sign-in alive must stay visible until it is finished, so it cannot be
-         dismissed into nothing.
-    -->
+    <!-- ── Scrollable Body Content ───────────────────────────────────────── -->
 
-    <!-- DESIGN: Jul -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/card_settings_delete_failure"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="32dp"
-        android:layout_marginEnd="16dp"
-        android:visibility="gone"
-        app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="0dp"
-        app:strokeColor="@color/error_red"
-        app:strokeWidth="1dp"
-        tools:visibility="visible">
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toTopOf="@id/include_nav_bar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ib_profile_settings">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingTop="16dp"
+            android:paddingBottom="24dp">
 
-            <TextView
-                android:id="@+id/tv_settings_delete_error"
+            <!-- ── Rows (Card with Figma Green Icon Badges) ───────────────────────── -->
+
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
-                android:textColor="@color/error_red"
-                tools:text="Your data is deleted, but your sign-in is still active. Tap Retry to finish." />
-
-            <Button
-                android:id="@+id/btn_settings_delete_retry"
-                style="@style/Widget.GuardBand.Button.Outlined"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
+                android:layout_marginStart="16dp"
                 android:layout_marginTop="8dp"
-                android:text="@string/btn_retry" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                android:layout_marginEnd="16dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="3dp"
+                app:cardMaxElevation="6dp"
+                app:strokeWidth="0dp">
 
-    <com.google.android.material.card.MaterialCardView
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
+
+                    <!-- Account Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/bg_settings_icon_badge"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_profile"
+                            app:tint="@color/white" />
+
+                        <TextView
+                            android:id="@+id/tv_settings_account"
+                            style="@style/Widget.GuardBand.SettingsRow"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/poppins_extralight"
+                            android:text="@string/label_settings_account" />
+                    </LinearLayout>
+
+                    <View style="@style/Widget.GuardBand.SettingsDivider" />
+
+                    <!-- Change Password Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/bg_settings_icon_badge"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_settings"
+                            app:tint="@color/white" />
+
+                        <TextView
+                            android:id="@+id/tv_settings_change_password"
+                            style="@style/Widget.GuardBand.SettingsRow"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/poppins_extralight"
+                            android:text="@string/label_settings_change_password" />
+                    </LinearLayout>
+
+                    <View style="@style/Widget.GuardBand.SettingsDivider" />
+
+                    <!-- Notifications Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/bg_settings_icon_badge"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_notifications"
+                            app:tint="@color/white" />
+
+                        <TextView
+                            android:id="@+id/tv_settings_notifications"
+                            style="@style/Widget.GuardBand.SettingsRow"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/poppins_extralight"
+                            android:text="@string/label_settings_notifications" />
+                    </LinearLayout>
+
+                    <View style="@style/Widget.GuardBand.SettingsDivider" />
+
+                    <!-- Privacy Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/bg_settings_icon_badge"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_warning"
+                            app:tint="@color/white" />
+
+                        <TextView
+                            android:id="@+id/tv_settings_privacy"
+                            style="@style/Widget.GuardBand.SettingsRow"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/poppins_extralight"
+                            android:text="@string/label_settings_privacy" />
+                    </LinearLayout>
+
+                    <View style="@style/Widget.GuardBand.SettingsDivider" />
+
+                    <!-- Privacy Notice Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/bg_settings_icon_badge"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_warning"
+                            app:tint="@color/white" />
+
+                        <TextView
+                            android:id="@+id/tv_settings_privacy_notice"
+                            style="@style/Widget.GuardBand.SettingsRow"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/poppins_extralight"
+                            android:text="@string/label_settings_privacy_notice" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── Log Out Button ────────────────────────────────────────────────── -->
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="5dp"
+                app:cardMaxElevation="10dp">
+
+                <Button
+                    android:id="@+id/btn_settings_logout"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_signup_continue"
+                    android:fontFamily="@font/poppins_extralight"
+                    android:text="@string/btn_logout"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    app:backgroundTint="@null"
+                    app:strokeWidth="0dp" />
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- ── Delete Account Banner (State Failure) ────────────────────────── -->
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_settings_delete_failure"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginEnd="16dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/error_red"
+                app:strokeWidth="1dp"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tv_settings_delete_error"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins_extralight"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                        android:textColor="@color/error_red"
+                        tools:text="Your data is deleted, but your sign-in is still active. Tap Retry to finish." />
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:layout_marginTop="8dp"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="28dp"
+                        app:cardElevation="3dp"
+                        app:cardMaxElevation="6dp">
+
+                        <Button
+                            android:id="@+id/btn_settings_delete_retry"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_retry_gradient"
+                            android:fontFamily="@font/poppins_extralight"
+                            android:text="@string/btn_retry"
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="14sp"
+                            app:backgroundTint="@null"
+                            app:strokeWidth="0dp" />
+
+                    </androidx.cardview.widget.CardView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── Delete Account Row ────────────────────────────────────────────── -->
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <TextView
+                    android:id="@+id/tv_settings_delete_account"
+                    style="@style/Widget.GuardBand.SettingsRow.Destructive"
+                    android:fontFamily="@font/poppins_extralight"
+                    android:text="@string/label_settings_delete_account" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── Delete Progress ───────────────────────────────────────────────── -->
+
+            <ProgressBar
+                android:id="@+id/progress_settings_delete"
+                style="@style/Widget.AppCompat.ProgressBar"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:contentDescription="@string/cd_delete_account_progress"
+                android:indeterminateDrawable="@drawable/bg_spinner_gradient"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- ── Nav Bar Included from activity_home ──────────────────────────── -->
+
+    <include
+        android:id="@+id/include_nav_bar"
+        layout="@layout/activity_home"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="16dp"
-        app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="0dp">
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
-        <TextView
-            android:id="@+id/tv_settings_delete_account"
-            style="@style/Widget.GuardBand.SettingsRow.Destructive"
-            android:text="@string/label_settings_delete_account" />
-    </com.google.android.material.card.MaterialCardView>
-
-    <ProgressBar
-        android:id="@+id/progress_settings_delete"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="16dp"
-        android:contentDescription="@string/cd_delete_account_progress"
-        android:visibility="gone"
-        tools:visibility="visible" />
-
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

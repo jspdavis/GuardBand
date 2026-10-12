@@ -11,8 +11,8 @@
     <!-- App logo (G mark): packed chain logo -> title, centered in parent -->
     <ImageView
         android:id="@+id/iv_splash_logo"
-        android:layout_width="140dp"
-        android:layout_height="wrap_content"
+        android:layout_width="169dp"
+        android:layout_height="153dp"
         android:adjustViewBounds="true"
         android:contentDescription="@string/app_name"
         android:scaleType="fitCenter"

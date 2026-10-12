@@ -8,17 +8,30 @@
     android:background="@color/surface_bg"
     tools:context=".ui.loading.LoadingActivity">
 
-    <!-- Spinner -->
-    <ProgressBar
-        android:id="@+id/progress_loading"
-        style="@style/Widget.AppCompat.ProgressBar"
+    <!-- CardView wrapper for Figma drop shadow (Y: 5, Blur: 10) -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cv_progress_loading"
         android:layout_width="56dp"
         android:layout_height="56dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="5dp"
+        app:cardMaxElevation="10dp"
         app:layout_constraintBottom_toTopOf="@id/tv_loading_label"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed" />
+        app:layout_constraintVertical_chainStyle="packed">
+
+        <!-- Spinner with custom gradient drawable -->
+        <ProgressBar
+            android:id="@+id/progress_loading"
+            style="@style/Widget.AppCompat.ProgressBar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:indeterminateDrawable="@drawable/bg_spinner_gradient" />
+
+    </androidx.cardview.widget.CardView>
 
     <!-- Label -->
     <TextView
@@ -26,12 +39,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:fontFamily="@font/poppins_extralight"
         android:text="@string/label_loading"
         android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
         android:textColor="@color/text_secondary"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/progress_loading" />
+        app:layout_constraintTop_toBottomOf="@id/cv_progress_loading" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

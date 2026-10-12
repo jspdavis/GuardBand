@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -23,23 +22,23 @@
         android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
         android:textColor="@color/brand_primary"
         android:textStyle="bold" />
-
     <TextView
         android:id="@+id/tv_login_subtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/poppins_extralight"
         android:text="@string/label_login_subtitle"
         android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
-        android:textColor="@color/text_primary"
-        android:textStyle="bold" />
+        android:textColor="@color/text_primary" />
 
     <!-- Email -->
     <TextView
         android:id="@+id/tv_login_email_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="24dp"
+        android:fontFamily="@font/poppins_extralight"
         android:text="@string/hint_email"
         android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
         android:textColor="@color/text_secondary" />
@@ -56,6 +55,7 @@
             android:id="@+id/et_login_email"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_extralight"
             android:hint="@string/hint_email"
             android:inputType="textEmailAddress"
             android:maxLines="1" />
@@ -75,6 +75,7 @@
             android:id="@+id/et_login_password"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_extralight"
             android:hint="@string/hint_password"
             android:inputType="textPassword"
             android:maxLines="1" />
@@ -87,39 +88,59 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:background="?attr/selectableItemBackground"
+        android:fontFamily="@font/poppins_extralight"
         android:gravity="center_vertical"
         android:minHeight="20dp"
         android:text="@string/btn_forgot"
-        android:textSize="12sp"
         android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
-        android:textColor="@color/text_link" />
+        android:textColor="@color/text_link"
+        android:textSize="12sp" />
 
-    <!-- Login -->
-    <Button
-        android:id="@+id/btn_login"
+    <!-- Login Button with CardView shadow and green linear gradient -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:layout_marginTop="24dp"
-        android:text="@string/btn_login" />
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="5dp"
+        app:cardMaxElevation="10dp">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_login"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_signup_continue"
+            android:fontFamily="@font/poppins_extralight"
+            android:gravity="center"
+            android:text="@string/btn_login"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+
+    </androidx.cardview.widget.CardView>
 
     <TextView
         android:id="@+id/tv_login_or"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/poppins_extralight"
         android:gravity="center"
         android:text="@string/label_login_or"
         android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
         android:textColor="@color/text_primary" />
 
-    <!-- Google -->
+    <!-- Google Button -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/login_google_button"
         style="@style/Widget.GuardBand.Button.Outlined"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_height="56dp"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/poppins_extralight"
         android:text="@string/btn_continue_google"
+        app:cornerRadius="28dp"
         app:icon="@drawable/ic_google"
         app:iconGravity="textStart"
         app:iconPadding="12dp"
@@ -130,7 +151,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="16dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -138,25 +159,26 @@
             android:id="@+id/tv_login_signup_prompt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_extralight"
             android:text="@string/label_login_signup_prompt"
             android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
             android:textColor="@color/text_primary"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:textSize="12sp" />
 
         <TextView
             android:id="@+id/tv_login_signup"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="?attr/selectableItemBackground"
+            android:fontFamily="@font/poppins_semibold"
             android:gravity="center_vertical"
             android:minHeight="48dp"
-            android:textSize="12sp"
             android:paddingStart="4dp"
             android:paddingEnd="0dp"
             android:text="@string/btn_signup"
             android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
-            android:textColor="@color/text_link" />
+            android:textColor="@color/text_link"
+            android:textSize="12sp" />
 
     </LinearLayout>
 
