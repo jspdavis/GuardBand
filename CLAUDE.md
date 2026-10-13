@@ -546,9 +546,11 @@ without it the Fragment's view leaks.
 **Coordinates are never logged.** Same rule as contact phone numbers and
 alerts — see "Alert data". Neither the Track tab nor anything in `data/` logs.
 
-**`BandStatus` duplicates `AlertFormatting`'s two ISO-8601 patterns** for now,
-because sharing them would mean editing the Alert tab. Folding them into one
-helper is a one-line change whenever that tab is next open.
+**The two ISO-8601 patterns live once, in `AlertFormatting.ISO_PATTERNS`.**
+`BandStatus` reads them through `AlertFormatting.newIsoUtcParser`, which hands
+out a **new** parser per call: `SimpleDateFormat` is not thread-safe, and
+`BandStatus` runs from a ViewModel. `AlertFormatting`'s own cached parsers are
+main-thread only, so never share those instances with the Track side.
 
 **Not for production as-is:** OpenStreetMap's public tile servers are a
 volunteer-funded service whose usage policy is written for light use. A real
