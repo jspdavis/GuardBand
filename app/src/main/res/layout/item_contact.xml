@@ -62,14 +62,14 @@
                 tools:text="+1-555-0101" />
         </LinearLayout>
 
-        <!-- DESIGN: Jul - placeholder icon, there is no pencil drawable yet -->
+        <!-- DESIGN: Jul - ic_edit is a stand-in pencil until the Figma icon is exported -->
         <ImageButton
             android:id="@+id/ib_item_contact_edit"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/cd_edit_contact"
-            android:src="@drawable/ic_chevron_right"
+            android:src="@drawable/ic_edit"
             app:tint="@color/text_secondary" />
 
         <ImageButton

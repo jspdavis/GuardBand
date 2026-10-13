@@ -546,9 +546,11 @@ without it the Fragment's view leaks.
 **Coordinates are never logged.** Same rule as contact phone numbers and
 alerts — see "Alert data". Neither the Track tab nor anything in `data/` logs.
 
-**`BandStatus` duplicates `AlertFormatting`'s two ISO-8601 patterns** for now,
-because sharing them would mean editing the Alert tab. Folding them into one
-helper is a one-line change whenever that tab is next open.
+**The two ISO-8601 patterns live once, in `AlertFormatting.ISO_PATTERNS`.**
+`BandStatus` reads them through `AlertFormatting.newIsoUtcParser`, which hands
+out a **new** parser per call: `SimpleDateFormat` is not thread-safe, and
+`BandStatus` runs from a ViewModel. `AlertFormatting`'s own cached parsers are
+main-thread only, so never share those instances with the Track side.
 
 **Not for production as-is:** OpenStreetMap's public tile servers are a
 volunteer-funded service whose usage policy is written for light use. A real
@@ -581,6 +583,26 @@ The payload itself follows `SCHEMA.md` and satisfies the `devices` validation: a
 - The agent builds: layout skeletons with stable snake_case view IDs, binding to state, buttons and click handlers, state/event plumbing, strings in strings.xml, and accessibility labels. It uses theme tokens only.
 - The agent does NOT: tune spacing, colors, typography, or icons beyond placeholders. Mark such spots with `<!-- DESIGN: Jul -->`.
 - Each screen's KDoc lists its view IDs so the layout XML can be restyled without touching logic.
+
+## Changing the launcher icon
+
+The 2026-10-13 icons were generated from `res/drawable-nodpi/logo_mark.png` by a
+PowerShell script that was never committed. **That script is gone; don't try to
+recreate it** — a guess at its sizing would silently change the icons. Use
+Android Studio's **Image Asset** tool instead (right-click `res` → New → Image
+Asset → Launcher Icons, name `ic_launcher`):
+
+- **Foreground:** `logo_mark.png`, resized so the logo stays inside the safe
+  zone and no launcher mask clips it.
+- **Background:** colour, white (`ic_launcher_background`, `#FFFFFF`).
+- **No monochrome layer.** Themed icons are drawn from a layer's transparency,
+  and the logo is an opaque picture on white, so it would theme as a plain
+  square. Without one, Android shows the colour icon.
+
+Image Asset rewrites `mipmap-anydpi-v26/ic_launcher.xml` and
+`ic_launcher_round.xml`, so check afterwards that neither gained a
+`<monochrome>` line, and put back their header comment. The mock sender has no
+icon of its own; it shows the same one under a different label.
 
 ## Gotchas
 
