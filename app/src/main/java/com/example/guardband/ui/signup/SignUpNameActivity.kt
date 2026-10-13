@@ -11,7 +11,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
-import com.example.guardband.ui.login.LoginActivity
 import kotlinx.coroutines.launch
 
 /**
@@ -29,9 +28,7 @@ import kotlinx.coroutines.launch
  *
  * The screen has no Google button: that path lives on Login, which offers
  * "Continue with Google" and routes a first-time user through the
- * complete-profile steps. [SignUpNameEvent.NavigateToGoogleSignIn] and
- * [SignUpNameViewModel.onGoogleSignInClicked] are therefore currently
- * unreachable, kept for the sign-up revamp rather than deleted.
+ * complete-profile steps.
  *
  * Flow: SignUpNameActivity → SignUpContactsActivity
  */
@@ -93,13 +90,6 @@ class SignUpNameActivity : AppCompatActivity() {
                         putExtra(SignUpContactsActivity.EXTRA_PASSWORD, event.password)
                     }
                 )
-
-            // finish() so Back from Login does not land back on a half-filled
-            // sign-up step the user has abandoned.
-            SignUpNameEvent.NavigateToGoogleSignIn -> {
-                startActivity(Intent(this, LoginActivity::class.java))
-                finish()
-            }
         }
     }
 }
