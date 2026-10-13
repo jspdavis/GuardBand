@@ -584,6 +584,26 @@ The payload itself follows `SCHEMA.md` and satisfies the `devices` validation: a
 - The agent does NOT: tune spacing, colors, typography, or icons beyond placeholders. Mark such spots with `<!-- DESIGN: Jul -->`.
 - Each screen's KDoc lists its view IDs so the layout XML can be restyled without touching logic.
 
+## Changing the launcher icon
+
+The 2026-10-13 icons were generated from `res/drawable-nodpi/logo_mark.png` by a
+PowerShell script that was never committed. **That script is gone; don't try to
+recreate it** — a guess at its sizing would silently change the icons. Use
+Android Studio's **Image Asset** tool instead (right-click `res` → New → Image
+Asset → Launcher Icons, name `ic_launcher`):
+
+- **Foreground:** `logo_mark.png`, resized so the logo stays inside the safe
+  zone and no launcher mask clips it.
+- **Background:** colour, white (`ic_launcher_background`, `#FFFFFF`).
+- **No monochrome layer.** Themed icons are drawn from a layer's transparency,
+  and the logo is an opaque picture on white, so it would theme as a plain
+  square. Without one, Android shows the colour icon.
+
+Image Asset rewrites `mipmap-anydpi-v26/ic_launcher.xml` and
+`ic_launcher_round.xml`, so check afterwards that neither gained a
+`<monochrome>` line, and put back their header comment. The mock sender has no
+icon of its own; it shows the same one under a different label.
+
 ## Gotchas
 
 - `README.md` is UTF-16 encoded. Plain `cat`/`grep` will show it with spaces between characters, so use `iconv -f UTF-16 -t UTF-8 README.md` to read it.
