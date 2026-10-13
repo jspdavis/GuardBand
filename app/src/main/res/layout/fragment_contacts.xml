@@ -24,7 +24,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="#478831" />
+        app:tint="@color/brand_green" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/ib_contacts_notifications"
@@ -40,7 +40,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="#478831" />
+        app:tint="@color/brand_green" />
 
     <!-- ── Scrollable Body Content (Header, Min Notice & RecyclerView) ─── -->
 

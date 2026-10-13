@@ -40,7 +40,7 @@
                     app:elevation="4dp"
                     app:fabSize="mini"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-                    app:tint="#478831" />
+                    app:tint="@color/brand_green" />
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/ib_profile_notifications"
@@ -53,7 +53,7 @@
                     app:elevation="4dp"
                     app:fabSize="mini"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-                    app:tint="#478831" />
+                    app:tint="@color/brand_green" />
             </RelativeLayout>
 
             <!-- Profile Avatar -->

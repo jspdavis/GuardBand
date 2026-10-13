@@ -31,7 +31,7 @@
             android:layout_height="wrap_content"
             android:text="@string/label_welcome_title"
             android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
-            android:textColor="#3D7D28"
+            android:textColor="@color/brand_green_dark"
             android:textSize="26sp"
             android:textStyle="bold" />
 

@@ -34,7 +34,7 @@
         android:fontFamily="@font/poppins_semibold"
         android:text="@string/label_signup_name_title"
         android:textAppearance="@style/TextAppearance.GuardBand.SignUpTitle"
-        android:textColor="#478831"
+        android:textColor="@color/brand_green"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

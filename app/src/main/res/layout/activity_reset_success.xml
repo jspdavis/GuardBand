@@ -36,7 +36,7 @@
         android:gravity="start"
         android:text="@string/label_reset_success_title"
         android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
-        android:textColor="#478831"
+        android:textColor="@color/brand_green"
         android:textStyle="bold"
         app:layout_constraintBottom_toTopOf="@id/tv_reset_success_subtitle"
         app:layout_constraintEnd_toEndOf="parent"

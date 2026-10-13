@@ -61,7 +61,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/label_signup_consent_title"
                     android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
-                    android:textColor="#3D7D28"
+                    android:textColor="@color/brand_green_dark"
                     android:textSize="26sp"
                     android:textStyle="bold" />
 
@@ -89,7 +89,7 @@
                         android:layout_marginTop="2dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_map_pin"
-                        app:tint="#3D7D28" />
+                        app:tint="@color/brand_green_dark" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -135,7 +135,7 @@
                         android:layout_marginTop="2dp"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_group"
-                        app:tint="#3D7D28" />
+                        app:tint="@color/brand_green_dark" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -214,7 +214,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
                 android:text="@string/btn_signup_consent_privacy"
-                android:textColor="#3D7D28"
+                android:textColor="@color/brand_green_dark"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent" />
 

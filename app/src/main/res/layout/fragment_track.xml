@@ -83,7 +83,7 @@
             android:src="@drawable/ic_profile"
             app:contentPadding="6dp"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-            app:tint="#478831" />
+            app:tint="@color/brand_green" />
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -99,7 +99,7 @@
         app:layout_constraintEnd_toStartOf="@id/ib_track_settings"
         app:layout_constraintTop_toTopOf="@id/ll_track_user_chip"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="#478831" />
+        app:tint="@color/brand_green" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/ib_track_settings"
@@ -114,7 +114,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/ll_track_user_chip"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="#478831" />
+        app:tint="@color/brand_green" />
 
     <!-- ── Band status panel ────────────────────────────────────────────── -->
     <!-- Hidden until the band has reported at all; there is nothing truthful
@@ -183,7 +183,7 @@
         app:layout_constraintBottom_toTopOf="@id/track_recenter_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="#478831" />
+        app:tint="@color/brand_green" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/track_recenter_button"
@@ -198,7 +198,7 @@
         app:layout_constraintBottom_toTopOf="@id/track_navigate_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="#478831" />
+        app:tint="@color/brand_green" />
 
     <!-- ── Bottom actions ───────────────────────────────────────────────── -->
 
@@ -214,7 +214,7 @@
         android:text="@string/btn_track_navigate"
         app:cornerRadius="24dp"
         app:icon="@drawable/ic_navigation"
-        app:iconTint="#478831"
+        app:iconTint="@color/brand_green"
         app:layout_constraintBottom_toTopOf="@id/track_checkin_pill"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
