@@ -31,6 +31,7 @@ Each branch holds a deliberately different architecture. Check which one you are
 
 | Branch | Purpose |
 |---|---|
+| `main` | The stable branch, kept behind `mvvm-main`. New work branches off `mvvm-main` and merges back into it with `--no-ff`. |
 | `mvvm-main` | The real product build (MVVM) |
 | `mvp-checkpoint` (+ `-local-backup`, `-phone`) | Instructor-assigned checkpoint that must stay **strict MVP** (Login, Register, Forgot Password, Change Password, Dashboard). Kept separate so it doesn't mix with product work. |
 | `mvvm-jedd`, `ishi` | Individual teammates' working branches |

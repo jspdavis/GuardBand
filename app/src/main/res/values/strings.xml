@@ -109,11 +109,6 @@
     <!-- Loading -->
     <string name="label_loading">Please wait…</string>
 
-    <!-- Dashboard (dead screen: delete with ui/dashboard/ and activity_dashboard.xml) -->
-    <string name="label_dashboard_welcome">Welcome back, %1$s</string>
-    <string name="label_dashboard_status">You are protected.</string>
-    <string name="label_your_contacts">Your Emergency Contacts</string>
-
     <!-- Home host: bottom-nav tabs -->
     <string name="tab_track">Track</string>
     <string name="tab_contacts">Contacts</string>
