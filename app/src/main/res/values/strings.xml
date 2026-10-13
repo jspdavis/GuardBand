@@ -77,7 +77,7 @@
     <string name="hint_contact_name">Contact name</string>
     <string name="hint_contact_phone">Phone number</string>
     <string name="hint_contact_relationship">Relationship (e.g. Friend)</string>
-    <string name="btn_add_contact">+ Add contact</string>
+    <string name="cd_add_contact">Add contact</string>
     <string name="btn_submit">Submit</string>
 
     <!-- Forgot – Request -->

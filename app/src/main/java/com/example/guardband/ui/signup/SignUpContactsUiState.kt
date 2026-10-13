@@ -25,13 +25,9 @@ data class SignUpContactsUiState(
     val canContinue: Boolean = false,
 
     /**
-     * True while the user is below the recommended
+     * True while the user is below
      * [MIN_CONTACTS][com.example.guardband.utils.InputValidator.MIN_CONTACTS],
-     * which shows the "n of 3 minimum" banner.
-     *
-     * A nudge, not a gate: sign-up only requires one. The band can be in use
-     * with fewer than three, and refusing to finish would be worse than
-     * starting with one.
+     * which shows the "n of 1 minimum" banner.
      */
     val showMinimumNotice: Boolean = true
 )

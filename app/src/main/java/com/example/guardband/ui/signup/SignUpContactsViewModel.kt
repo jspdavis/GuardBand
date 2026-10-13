@@ -19,12 +19,9 @@ import kotlinx.coroutines.flow.update
  * one atomic write. That is what keeps an abandoned sign-up from leaving
  * anything behind, and it is why this ViewModel takes no repositories at all.
  *
- * **One contact is required; three are recommended.** The band texts these
+ * **Sign-up asks for the same minimum as the Contacts tab**
+ * ([MIN_CONTACTS][InputValidator.MIN_CONTACTS], one). The band texts these
  * people, so finishing with none would be a safety app with nobody to call.
- * Three is the figure the Contacts tab asks for
- * ([MIN_CONTACTS][InputValidator.MIN_CONTACTS]), and the banner keeps asking
- * until it is reached — but it stays a nudge, because a band in use with one
- * contact is better than a sign-up the user abandoned at the third.
  *
  * Staged contacts carry a local `draft-n` id so the list can diff and the
  * editor can tell add from edit. The repository assigns the real keys at the
@@ -147,8 +144,8 @@ class SignUpContactsViewModel : ViewModel() {
     }
 
     companion object {
-        /** What sign-up actually requires. The banner asks for three. */
-        const val MIN_AT_SIGNUP = 1
+        /** What sign-up requires: the same minimum the Contacts tab enforces. */
+        const val MIN_AT_SIGNUP = InputValidator.MIN_CONTACTS
 
         const val MSG_ONE_CONTACT_REQUIRED =
             "Add at least one emergency contact so your band has someone to text."

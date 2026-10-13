@@ -45,10 +45,10 @@ internal object InMemoryStore {
     )
 
     /**
-     * Seeded contacts, in the stored E.164 form the repository guarantees, and
-     * three of them so the seed satisfies
-     * [MIN_CONTACTS][com.example.guardband.utils.InputValidator.MIN_CONTACTS] -
-     * a double seeded below the minimum could not be deleted from at all.
+     * Seeded contacts, in the stored E.164 form the repository guarantees.
+     * Three of them, which is
+     * [MAX_CONTACTS][com.example.guardband.utils.InputValidator.MAX_CONTACTS]:
+     * a test that adds to this seed has to make room first.
      *
      * Observable so a repository can follow changes live, like [alerts].
      */

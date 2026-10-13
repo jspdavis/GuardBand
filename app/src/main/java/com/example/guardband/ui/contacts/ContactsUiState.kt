@@ -25,7 +25,7 @@ data class ContactsUiState(
      */
     val loadFailed: Boolean = false
 ) {
-    /** Drives the "n of 3 minimum" notice; hidden once the user is at or above it. */
+    /** Drives the "n of MIN minimum" notice; hidden once the user is at or above it. */
     val showMinimumNotice: Boolean
         get() = !isLoading && contacts.size < InputValidator.MIN_CONTACTS
 

@@ -72,7 +72,7 @@ class ContactsViewModelTest {
 
     @Test
     fun `the minimum notice shows below the minimum and hides at it`() = runTest {
-        val below = viewModel(FakeContactRepository(listOf(valid.copy(id = "a"))))
+        val below = viewModel(FakeContactRepository(FakeContactRepository.atMinimum().drop(1)))
         assertTrue(below.uiState.first { !it.isLoading }.showMinimumNotice)
 
         val atMinimum = viewModel(FakeContactRepository(FakeContactRepository.atMinimum()))

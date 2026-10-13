@@ -151,23 +151,17 @@ class SignUpContactsViewModelTest {
     }
 
     @Test
-    fun `the banner keeps asking until three, though one is enough`() {
+    fun `the banner shows until the minimum, where continue opens`() {
         assertTrue(viewModel.uiState.value.showMinimumNotice)
+        assertFalse(viewModel.uiState.value.canContinue)
 
-        add(name = "One")
-        assertTrue(viewModel.uiState.value.showMinimumNotice)
-        assertTrue(viewModel.uiState.value.canContinue)
-
-        add(name = "Two")
-        assertTrue(viewModel.uiState.value.showMinimumNotice)
-
-        add(name = "Three")
-        assertEquals(InputValidator.MIN_CONTACTS, viewModel.uiState.value.contacts.size)
+        repeat(InputValidator.MIN_CONTACTS) { add(name = "Contact $it") }
         assertFalse(viewModel.uiState.value.showMinimumNotice)
+        assertTrue(viewModel.uiState.value.canContinue)
     }
 
     @Test
-    fun `the banner comes back if the user deletes down below three`() {
+    fun `the banner comes back if the user deletes down below the minimum`() {
         repeat(InputValidator.MIN_CONTACTS) { add(name = "Contact $it") }
         assertFalse(viewModel.uiState.value.showMinimumNotice)
 
