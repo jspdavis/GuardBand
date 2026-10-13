@@ -21,7 +21,6 @@ import com.example.guardband.BuildConfig
 import com.example.guardband.R
 import com.example.guardband.ui.auth.PasswordCriteriaList
 import com.example.guardband.ui.forgot.ForgotRequestActivity
-import com.example.guardband.ui.login.LoginActivity
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.launch
@@ -57,7 +56,8 @@ import kotlinx.coroutines.launch
  * btn_reset_cancel, group_reset_dead, tv_reset_message,
  * btn_reset_request_new, btn_reset_retry_verify, progress_reset.
  *
- * Flow: (email link) → ResetPasswordActivity → LoginActivity (back stack cleared)
+ * Flow: (email link) → ResetPasswordActivity → ResetSuccessActivity → LoginActivity
+ * (back stack cleared at each step)
  */
 class ResetPasswordActivity : AppCompatActivity() {
 
@@ -210,10 +210,9 @@ class ResetPasswordActivity : AppCompatActivity() {
             is ResetPasswordEvent.ShowMessage ->
                 Toast.makeText(this, event.text, Toast.LENGTH_LONG).show()
 
-            ResetPasswordEvent.NavigateToLoginWithSuccess -> {
-                Toast.makeText(this, R.string.msg_password_reset_done, Toast.LENGTH_LONG).show()
+            ResetPasswordEvent.NavigateToSuccess -> {
                 startActivity(
-                    Intent(this, LoginActivity::class.java).apply {
+                    Intent(this, ResetSuccessActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
                 )

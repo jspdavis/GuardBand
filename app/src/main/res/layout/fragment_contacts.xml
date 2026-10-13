@@ -11,7 +11,7 @@
     <!-- ── Top Action Buttons (Settings & Notifications) ────────────────── -->
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/ib_profile_settings"
+        android:id="@+id/ib_contacts_settings"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
@@ -27,7 +27,7 @@
         app:tint="#478831" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/ib_alert_notifications"
+        android:id="@+id/ib_contacts_notifications"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
@@ -51,7 +51,7 @@
         app:layout_constraintBottom_toTopOf="@id/cv_add_contact_container"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ib_profile_settings">
+        app:layout_constraintTop_toBottomOf="@id/ib_contacts_settings">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -127,7 +127,7 @@
         app:cardCornerRadius="28dp"
         app:cardElevation="5dp"
         app:cardMaxElevation="10dp"
-        app:layout_constraintBottom_toTopOf="@id/include_nav_bar"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -145,16 +145,5 @@
             app:strokeWidth="0dp" />
 
     </androidx.cardview.widget.CardView>
-
-    <!-- ── Nav Bar Included from activity_home ──────────────────────────── -->
-
-    <include
-        android:id="@+id/include_nav_bar"
-        layout="@layout/activity_home"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

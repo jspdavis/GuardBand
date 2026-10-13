@@ -216,7 +216,7 @@ class TrackViewModel(
         else -> MSG_LOAD_FAILED
     }
 
-    /** The chip's name, straight from the session. */
+    /** The avatar's spoken name, straight from the session. */
     private fun sessionName(): String =
         authRepository.currentUser()?.name?.takeUnless { it.isBlank() } ?: DEFAULT_USER_NAME
 

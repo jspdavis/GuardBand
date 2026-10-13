@@ -63,13 +63,14 @@ com/example/guardband/
 │   ├── splash/         Splash → Home if signed in, else Login (2 s countdown)
 │   ├── auth/           GoogleIdTokenProvider + GoogleIdTokenResult (the only androidx.credentials users)
 │   ├── login/          email + password, and "Continue with Google"
-│   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode
+│   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode;
+│   │                 then Welcome, once per account (its only route is Consent's success)
 │   ├── forgot/         one screen: email → "check your email" + Resend (60 s cooldown)
 │   ├── reset/          New Credentials, opened by the App Link in the reset email
 │   │                 ResetLinkParser (pure; the trust boundary) + ViewModel
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
-│   ├── track/          Track tab (default): user chip, bell, gear, osmdroid map, band status panel, Navigate + Check-in
+│   ├── track/          Track tab (default): avatar, bell, gear, osmdroid map, band status panel, Navigate + Check-in
 │   │                 BandStatus + NavigationUrl + OsmdroidConfig (pure helpers; see "Track and map")
 │   ├── contacts/       Contacts tab: list + delete
 │   ├── alert/          Alert tab: latest status + incident history
@@ -94,12 +95,12 @@ Conventions (copy `ui/login/*` as the reference):
 - **ViewModels** take repositories through the constructor and hold no `Context` or View. They expose `companion object { val Factory = viewModelFactory { initializer { XViewModel(RepositoryProvider.…) } } }`, and Activities use `by viewModels { XViewModel.Factory }`; plain `by viewModels()` is fine when there are no dependencies. User-facing messages are `MSG_*` constants in the ViewModel — including the wording for every `AuthError`, which each screen maps itself in a private `messageFor(error)`. Those messages stay in Kotlin rather than `strings.xml` precisely because a ViewModel holds no `Context`.
 - **Activities** bind views with `findViewById`, forward raw input and clicks, render state, and execute events (Toast, `startActivity`, `finish`). They collect each flow in its own `lifecycleScope.launch { repeatOnLifecycle(STARTED) { … } }`. Building `Intent`s stays in the Activity.
 - **Wizard data** moves between screens as Intent extras. The Activity passes the extras into the ViewModel's click handler, and the navigation event carries the data back.
-- **Exception:** `NotificationsFragment` has no ViewModel. It is a static screen whose only action is navigation, and the last one of its kind - `ForgotSuccessActivity` was the other, and it is gone (see "Forgot password").
+- **Exception:** `NotificationsFragment`, `ui/reset/ResetSuccessActivity` and `ui/signup/WelcomeActivity` have no ViewModel. Each is a static screen whose only action is navigation. (`ForgotSuccessActivity` was another, and it is gone - see "Forgot password".)
 
 ### Home host (Fragments)
 
 - **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph.
-- **Tabs:** Track (default), Contacts, Alert, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), both opened from Track's top bar. While one is showing, the bar stays visible with no tab checked, and Back (or the screen's back arrow) returns to the last tab. Back on a tab exits.
+- **Tabs:** Track (default), Contacts, Alert, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), opened from any tab's top bar. While one is showing, the bottom bar is hidden, and Back (or the screen's back arrow) returns to the last tab and brings the bar back. Back on a tab exits.
 - **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings and Notifications are inside the host, so they're covered too.
 - **Fragments follow the Activity conventions,** with these differences:
   - Use `Fragment(R.layout.x)`, and bind views in `onViewCreated` with `view.findViewById`.
@@ -259,7 +260,7 @@ The signed-in user's own record, separate from the band's `devices/` tree:
 - **Consent is recorded, not just collected.** `finalizeSignUp` writes `accepted`, a server `acceptedAt` and `UserProfileRepository.CONSENT_VERSION` in the same atomic commit as the profile and contacts, so a profile can never exist without one. Bump the version whenever `label_signup_consent_statement` changes what is being agreed to.
 - **Sign-up finalization is one atomic write.** `UserProfileRepository.finalizeSignUp` puts the profile and every contact into a single multi-path `updateChildren`, so sign-up cannot half-succeed. That is what makes the Retry safe: there is no partial state to reconcile. Registration is deliberately **two** calls — `AuthRepository.createAccount` then `finalizeSignUp` — and the `accountCreated` guard in `SignUpContactsViewModel` means a retry resumes at the write. When they were one call, a failed write left the account created and the only retry went back through account creation, which then failed as "email already in use", so that address could never finish registering.
 - **`saveProfile` merges, never replaces.** It `updateChildren`s its three fields. A `setValue` on `users/{uid}` would delete every emergency contact under it.
-- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all — its chip is the session's name. RTDB disk persistence is **not** enabled.
+- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all — its avatar's spoken name is the session's name. RTDB disk persistence is **not** enabled.
 - **Failures are typed and mapped by code.** `ContactError` + `FirebaseDatabaseErrorMapper`, on `DatabaseError.getCode()`, never on a message. That code is only reachable through the SDK's completion-listener and `ValueEventListener` callbacks — an awaited `Task` fails with a bare `DatabaseException` carrying localised prose — which is why these repositories wrap the listener forms in `suspendCancellableCoroutine` instead of using `.await()`.
 - **Contact phone numbers are never logged**, and neither are contact names. They are a third party's personal data, not the user's own. Nothing in `data/` logs at all.
 

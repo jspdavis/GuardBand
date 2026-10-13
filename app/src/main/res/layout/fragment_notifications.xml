@@ -10,39 +10,40 @@
     android:focusable="true"
     tools:context=".ui.notifications.NotificationsFragment">
 
-    <!-- ── Top Action Buttons (Settings & Notifications) ────────────────── -->
+    <!-- ── Top bar: back arrow + title (a pushed screen, not a tab) ────────── -->
+    <!-- DESIGN: Jul -->
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/ib_notifications_settings"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
-        android:contentDescription="@string/cd_open_settings"
-        android:src="@drawable/ic_settings"
-        app:backgroundTint="@color/white"
-        app:elevation="4dp"
-        app:fabSize="mini"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="#478831" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/ib_notifications_bell"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="24dp"
-        android:contentDescription="@string/cd_open_notifications"
-        android:src="@drawable/ic_notifications"
-        app:backgroundTint="@color/white"
-        app:elevation="4dp"
-        app:fabSize="mini"
+    <LinearLayout
+        android:id="@+id/ll_notifications_top_bar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:background="@color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="#478831" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/ib_notifications_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cd_back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/tv_notifications_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/label_notifications_title"
+            android:textAppearance="@style/TextAppearance.GuardBand.TitleLarge"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
 
     <!-- ── Empty inbox (placeholder) ────────────────────────────────────── -->
 
@@ -59,20 +60,9 @@
         android:textColor="@color/text_secondary"
         app:drawableTint="@color/text_hint"
         app:drawableTopCompat="@drawable/ic_notifications"
-        app:layout_constraintBottom_toTopOf="@id/include_nav_bar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ib_notifications_settings" />
-
-    <!-- ── Nav Bar Included from activity_home ──────────────────────────── -->
-
-    <include
-        android:id="@+id/include_nav_bar"
-        layout="@layout/activity_home"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ll_notifications_top_bar" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

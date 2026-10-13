@@ -29,9 +29,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * Settings, pushed inside the Home host (the bottom bar stays visible with no
- * tab selected). The back arrow goes through the Activity's Back handling,
- * which returns to the last tab.
+ * Settings, pushed inside the Home host (the host hides the bottom bar while
+ * it shows). The back arrow goes through the Activity's Back handling, which
+ * returns to the last tab.
  *
  * Two ViewModels, deliberately. [SettingsViewModel] is the static screen —
  * four placeholder rows and Log Out, no state at all. [DeleteAccountViewModel]

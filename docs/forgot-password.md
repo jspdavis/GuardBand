@@ -63,6 +63,10 @@ Login  →  "Forgot Password?"  →  ForgotRequestActivity
                     │  verifyPasswordResetCode(oobCode)  → the account's email
                     │  confirmPasswordReset(oobCode, newPassword)
                     ▼
+          ResetSuccessActivity ("Password changed"), back stack cleared
+                    │
+                    │  Go to Login, or Back
+                    ▼
                  LoginActivity, back stack cleared
 ```
 
@@ -263,8 +267,8 @@ Needs §1 complete. Nothing below can be checked by a unit test.
    Credentials, and the line under the title names the right address.
 4. Watch the criteria list respond as you type. Submit stays dead until both
    rules are green.
-5. Submit. It lands on Login with a confirmation. Sign in with the **new**
-   password; the old one must fail.
+5. Submit. It shows "Password changed"; Go to Login (or Back) lands on Login.
+   Sign in with the **new** password; the old one must fail.
 6. **Tap the same link again.** It must say the link has already been used and
    offer a new one.
 7. **An expired link:** request one, wait out Firebase's expiry, then open it.
@@ -277,7 +281,7 @@ Needs §1 complete. Nothing below can be checked by a unit test.
 10. **A desktop browser** on a fresh link shows Firebase's reset page, and
     setting a password there works too.
 11. **Already signed in:** open the link while signed in. The reset still runs,
-    and the session is not disturbed until success sends you to Login.
+    and the session is not disturbed until success sends you on to Login.
 
 **Not covered by tests:** the App Link verification itself, the two Firebase
 calls, the fallback page, and `PasswordCriteriaList`'s tinting. The first needs

@@ -2,9 +2,11 @@ package com.example.guardband.ui.home
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -26,14 +28,16 @@ import kotlinx.coroutines.launch
  * opened from Track's top bar. No Navigation Component.
  *
  * Fragments are added once and then shown/hidden, so every tab keeps its
- * state. A pushed screen keeps the bar visible with no tab selected; Back (or
- * its back arrow) returns to the last tab. Back on a tab leaves the app.
+ * state. A pushed screen hides the bar (it is not a place the tabs lead
+ * from); Back (or its back arrow) returns to the last tab and brings the bar
+ * back. Back on a tab leaves the app.
  *
  * Flow: Splash / Loading → HomeActivity → (Log Out in Settings, or no session) → LoginActivity
  */
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var bottomNav: BottomNavigationView
+    private lateinit var navDivider: View
 
     private val viewModel: HomeViewModel by viewModels { HomeViewModel.Factory }
 
@@ -53,6 +57,7 @@ class HomeActivity : AppCompatActivity() {
         setContentView(R.layout.activity_home)
 
         bottomNav = findViewById(R.id.bottom_nav_home)
+        navDivider = findViewById(R.id.view_home_nav_divider)
 
         onBackPressedDispatcher.addCallback(this, backToTab)
 
@@ -68,8 +73,6 @@ class HomeActivity : AppCompatActivity() {
             show(tagFor(item.itemId))
             true
         }
-        // Tapping the already-checked tab while a pushed screen is open must still go back to it.
-        bottomNav.setOnItemReselectedListener { item -> show(tagFor(item.itemId)) }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -121,8 +124,10 @@ class HomeActivity : AppCompatActivity() {
         val isTab = tag in TAB_TAGS
         if (isTab) lastTabTag = tag
         backToTab.isEnabled = !isTab
-        // A non-checkable group renders with no tab selected; re-enabling restores the checked tab.
-        bottomNav.menu.setGroupCheckable(0, isTab, true)
+        // Settings and Notifications are reached from a tab, not from the bar,
+        // so the bar is not offered while they are showing.
+        bottomNav.isVisible = isTab
+        navDivider.isVisible = isTab
     }
 
     private fun createFragment(tag: String): Fragment =

@@ -8,6 +8,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -34,7 +35,7 @@ import org.osmdroid.views.overlay.Marker
  * `track_map_view`, `track_online_badge`, `track_last_seen`, `track_battery`,
  * `track_empty_view`, `track_recenter_button`, `track_navigate_button`,
  * `track_layers_button`, `track_checkin_pill`, plus the top bar's
- * `tv_track_user_name`, `ib_track_notifications` and `ib_track_settings` and
+ * `iv_track_avatar`, `ib_track_notifications` and `ib_track_settings` and
  * the `ll_track_status` panel.
  *
  * Gear and bell forward to the shared [HomeViewModel], which asks the host to
@@ -50,7 +51,7 @@ import org.osmdroid.views.overlay.Marker
 class TrackFragment : Fragment(R.layout.fragment_track) {
 
     private lateinit var mapView: MapView
-    private lateinit var tvUserName: TextView
+    private lateinit var ivAvatar: ImageView
     private lateinit var statusPanel: View
     private lateinit var tvOnlineBadge: TextView
     private lateinit var tvLastSeen: TextView
@@ -86,7 +87,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         super.onViewCreated(view, savedInstanceState)
 
         mapView        = view.findViewById(R.id.track_map_view)
-        tvUserName     = view.findViewById(R.id.tv_track_user_name)
+        ivAvatar       = view.findViewById(R.id.iv_track_avatar)
         statusPanel    = view.findViewById(R.id.ll_track_status)
         tvOnlineBadge  = view.findViewById(R.id.track_online_badge)
         tvLastSeen     = view.findViewById(R.id.track_last_seen)
@@ -206,7 +207,8 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     // ── Rendering ─────────────────────────────────────────────────────────────
 
     private fun render(state: TrackUiState) {
-        tvUserName.text = state.userName
+        // No visible name: TalkBack still says whose app this is.
+        ivAvatar.contentDescription = getString(R.string.cd_track_avatar, state.userName)
 
         renderStatusPanel(state)
         renderEmptyView(state)

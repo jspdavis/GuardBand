@@ -13,7 +13,7 @@ import com.example.guardband.data.model.Alert
  * an error.
  */
 data class TrackUiState(
-    /** User-chip name (already falls back to "User"). */
+    /** The avatar's spoken name; not shown as text (already falls back to "User"). */
     val userName: String = "",
 
     /** True until the first read of `devices/{id}/latest` completes. */

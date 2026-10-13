@@ -7,19 +7,9 @@
 
     <!-- Welcome -->
     <string name="label_welcome_title">Welcome to GuardBand</string>
-    <string name="label_welcome_subtitle">Your Personal safety companion</string>
-    <string name="label_welcome_description">Guardband helps you stay connected with trusted contacts and access help when you need it most.</string>
+    <string name="label_welcome_subtitle">Your personal safety companion</string>
+    <string name="label_welcome_description">GuardBand helps you stay connected with trusted contacts and access help when you need it most.</string>
     <string name="cd_welcome_illustration">Welcome illustration</string>
-
-    <!-- Consent & Permissions (Welcome 2) -->
-    <string name="label_consent_title">Permissions We Need</string>
-    <string name="label_consent_subtitle">To keep you safe, we need access to:</string>
-    <string name="label_perm_location_title">Location Services</string>
-    <string name="label_perm_location_desc">Share your real-time location with trusted contacts during emergencies</string>
-    <string name="label_perm_contacts_title">Contacts</string>
-    <string name="label_perm_contacts_desc">Access your contacts to set up emergency alerts</string>
-    <string name="label_consent_checkbox">By ticking, you are confirming that you have read, understood and agree to Guardband\'s &lt;a href="https://guardband.app/terms"&gt;Terms &amp; Conditions&lt;/a&gt;</string>
-    <string name="btn_get_started">GET STARTED</string>
 
 
     <!-- Login -->
@@ -64,9 +54,18 @@
     <!-- Sign Up – Consent (outside the step indicator) -->
     <string name="label_signup_consent_title">Before you finish</string>
     <string name="label_signup_consent_subtitle">One last thing, and it matters.</string>
+    <!-- What the two info rows say must match the Privacy Notice: the band, not
+         the phone, reports the location, and contacts are typed in, never read
+         from the phone. They explain; the statement below is what is agreed to. -->
+    <string name="label_signup_consent_location_title">The band\'s location</string>
+    <string name="label_signup_consent_location_desc">Every alert the band sends carries its GPS position, which shows on the map. GuardBand never uses this phone\'s location.</string>
+    <string name="label_signup_consent_contacts_title">Your emergency contacts</string>
+    <string name="label_signup_consent_contacts_desc">The names and numbers you added are stored with your account so the band can text them. GuardBand never reads your phone\'s contacts.</string>
     <string name="label_signup_consent_statement">I have read the Privacy Notice and agree to it, I\'m 18 or older (or have a guardian\'s permission), and the person wearing the band knows and agrees to be tracked.</string>
     <string name="btn_signup_consent_privacy">Read the Privacy Notice</string>
-    <string name="btn_signup_create_account">Create account</string>
+    <!-- Not "Create account": in complete-profile mode (a new Google sign-in)
+         the account already exists, and this finishes the profile instead. -->
+    <string name="btn_get_started">Get started</string>
 
     <!-- Sign Up – Name -->
     <string name="label_signup_name_title">What\'s your name?</string>
@@ -99,13 +98,13 @@
     <string name="hint_new_password">New password</string>
     <string name="btn_reset_request_new">Request a new link</string>
     <string name="cd_reset_progress">Checking your reset link</string>
-    <string name="msg_password_reset_done">Password updated. Sign in with your new password.</string>
     <string name="btn_send_link">Send reset link</string>
 
     <!-- Forgot – Sent confirmation -->
-    <string name="label_forgot_success_title">Check your email</string>
-    <string name="label_forgot_success_subtitle">If an account exists for that address, we\'ve sent a link to reset your password. Open it on this phone to continue.</string>
-    <string name="btn_back_to_login">Back to Login</string>
+    <!-- Reset success: shown after the new password is set -->
+    <string name="label_reset_success_title">Password changed</string>
+    <string name="label_reset_success_subtitle">Your new password is set. Log in with it to get back to your GuardBand.</string>
+    <string name="btn_reset_success_login">Go to Login</string>
 
     <!-- Loading -->
     <string name="label_loading">Please wait…</string>
@@ -125,6 +124,7 @@
     <string name="cd_open_settings">Settings</string>
     <string name="cd_open_notifications">Notifications</string>
     <string name="cd_user_avatar">Profile picture</string>
+    <string name="cd_track_avatar">Profile picture: %1$s</string>
     <string name="btn_check_in">Check in</string>
     <string name="btn_track_navigate">Navigate</string>
     <string name="cd_map_recenter">Center on band</string>

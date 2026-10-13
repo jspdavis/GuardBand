@@ -56,8 +56,8 @@ SplashActivity ──(signed in)────────────────
                               │              │                              │
                               │              │  [Track] [Contacts] [Alert] [Profile]   ◄─ bottom nav
                               │              │     │                        │
-                              │              │     ├─ gear ─► Settings      │  pushed: bar stays,
-                              │              │     └─ bell ─► Notifications │  no tab checked
+                              │              │     ├─ gear ─► Settings      │  pushed: bar
+                              │              │     └─ bell ─► Notifications │  hidden
                               │              └──────────────────────────────┘
                               │                     │
                               └──── Log Out (Settings), or no session (HomeViewModel)
@@ -116,12 +116,12 @@ All navigation goes through one function, `show(tag)`, which runs a single trans
 It then updates three pieces of host state:
 - `currentTag`, and `lastTabTag` if the target is a tab.
 - The `OnBackPressedCallback`, which is enabled only while a pushed screen is showing.
-- The bar's checked state, through `menu.setGroupCheckable(0, isTab, true)`. When the menu group isn't checkable, the bar draws no tab as selected. Making it checkable again restores the previous tab's highlight. This is why the nav style disables the Material3 "active indicator" pill: the pill would stay drawn on the old tab.
+- The bar's visibility: the bar and its divider are shown on a tab and hidden on a pushed screen, so Settings and Notifications can only be left with Back. The bar's selection is never touched, so returning still shows the last tab highlighted. (Until 2026-10-13 the bar stayed visible with no tab checked, through `menu.setGroupCheckable`.)
 
 ### Listeners
 
 - `setOnItemSelectedListener` → `show(tag for item)`.
-- `setOnItemReselectedListener` → the same. The bar treats tapping the *already-checked* tab as a reselect, which is exactly the case "in Settings, tap the tab I came from".
+- No reselect listener: it only existed for "in Settings, tap the tab I came from", and the bar is now hidden there.
 
 ### State restore
 
@@ -146,7 +146,7 @@ Fragments reach `HomeViewModel` with `by activityViewModels { HomeViewModel.Fact
 Legend: ✅ works with (in-memory) data · 🟡 placeholder UI
 
 ### Track (default tab), `ui/track/`
-- ✅ **User chip:** avatar circle and name of the signed-in user (falls back to "User"). *The location line was removed with the `location` field — see below.*
+- ✅ **Avatar:** the default profile icon only; the signed-in user's name (falls back to "User") is its TalkBack description, not visible text. Google's profile photo is a later change. *The location line was removed with the `location` field — see below.*
 - ✅ **Bell** → Notifications, **gear** → Settings (through `HomeViewModel`).
 - 🟡 **Map:** grey `surface_muted` area with a "Live map coming soon" label.
 - 🟡 **Status pill:** static "You are protected." with a green dot. It isn't driven by alert data yet.
@@ -192,7 +192,7 @@ Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC 
 
 ### Notifications (pushed), `ui/notifications/`
 - 🟡 Static empty inbox: "No notifications yet."
-- It has **no ViewModel**, and is now the only screen without one (`ForgotSuccessActivity` was the other; the forgot-password rework removed it). Add one when the inbox gets data.
+- It has **no ViewModel**, like `ResetSuccessActivity`, the other static navigation-only screen. Add one when the inbox gets data.
 
 ---
 
@@ -299,7 +299,7 @@ class ExampleFragment : Fragment(R.layout.fragment_example) {
 - **Hiding doesn't pause.** Show/hide doesn't change a Fragment's lifecycle, so hidden tabs keep collecting. That's what keeps the Alert tab live in the background.
 - **Toasts and `startActivity`** run in the Fragment (`requireContext()`). Fragment transactions run only in `HomeActivity`.
 - **Pushed screens' back arrow** calls `requireActivity().onBackPressedDispatcher.onBackPressed()`, so the host decides where Back goes.
-- **Ids are snake_case, prefixed by screen:** `tv_track_user_name`, `rv_contacts`. List-row ids use `item_`: `tv_item_contact_name`.
+- **Ids are snake_case, prefixed by screen:** `iv_track_avatar`, `rv_contacts`. List-row ids use `item_`: `tv_item_contact_name`.
 - **Lists:** `ListAdapter` + `DiffUtil` with a stable key, `findViewById` in the ViewHolder, and `app:layoutManager` set in XML.
 
 ---

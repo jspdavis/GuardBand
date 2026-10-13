@@ -53,7 +53,9 @@
         tools:text="@string/label_track_no_fix"
         tools:visibility="visible" />
 
-    <!-- ── Top bar: user chip · bell · gear ─────────────────────────────── -->
+    <!-- ── Top bar: avatar · bell · gear ──────────────────────────────────
+         The avatar is the default icon until Google's profile photo is wired
+         in. The user's name is its content description, not visible text. -->
 
     <LinearLayout
         android:id="@+id/ll_track_user_chip"
@@ -65,10 +67,7 @@
         android:background="@drawable/bg_pill"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="6dp"
-        android:paddingTop="6dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="6dp"
+        android:padding="6dp"
         app:layout_constrainedWidth="true"
         app:layout_constraintEnd_toStartOf="@id/ib_track_notifications"
         app:layout_constraintHorizontal_bias="0"
@@ -85,24 +84,6 @@
             app:contentPadding="6dp"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
             app:tint="#478831" />
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/tv_track_user_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textAppearance="@style/TextAppearance.GuardBand.TitleSmall"
-                android:textColor="@color/text_primary"
-                tools:text="Alex Rivera" />
-
-        </LinearLayout>
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -249,17 +230,6 @@
         app:cornerRadius="24dp"
         app:icon="@drawable/ic_check_circle"
         app:iconTint="@color/white"
-        app:layout_constraintBottom_toTopOf="@id/include_nav_bar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <!-- ── Nav Bar Included from activity_home ──────────────────────────── -->
-
-    <include
-        android:id="@+id/include_nav_bar"
-        layout="@layout/activity_home"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

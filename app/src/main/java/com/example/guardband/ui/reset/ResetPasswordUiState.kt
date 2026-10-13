@@ -26,7 +26,7 @@ enum class ResetPasswordStage {
      */
     LINK_DEAD,
 
-    /** The password is changed. On the way to Login. */
+    /** The password is changed. On the way to [ResetSuccessActivity]. */
     DONE
 }
 

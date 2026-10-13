@@ -135,10 +135,10 @@ class SignUpConsentViewModelTest {
     }
 
     @Test
-    fun `success navigates to Loading`() = runTest {
+    fun `success navigates to Welcome`() = runTest {
         submit()
 
-        assertEquals(SignUpConsentEvent.NavigateToLoadingHome, viewModel.events.first())
+        assertEquals(SignUpConsentEvent.NavigateToWelcome, viewModel.events.first())
     }
 
     // ── Account-creation failures ─────────────────────────────────────────────
@@ -208,7 +208,7 @@ class SignUpConsentViewModelTest {
         profiles.finalizeSignUpResult = Result.success(Unit)
         submit()
 
-        assertEquals(SignUpConsentEvent.NavigateToLoadingHome, viewModel.events.first())
+        assertEquals(SignUpConsentEvent.NavigateToWelcome, viewModel.events.first())
         // The whole point of the split: one account, two writes.
         assertEquals(1, auth.createAccountCalls)
         assertEquals(2, profiles.finalizeSignUpCalls)

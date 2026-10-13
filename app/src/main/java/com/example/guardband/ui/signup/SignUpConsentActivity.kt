@@ -16,27 +16,28 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.data.model.EmergencyContact
-import com.example.guardband.ui.loading.LoadingActivity
 import com.google.android.material.checkbox.MaterialCheckBox
 import kotlinx.coroutines.launch
 
 /**
  * Sign-Up final screen — consent, and the commit.
  *
- * Outside the step indicator by design, so it carries a bare back arrow
- * instead of the shared header. Receives everything the wizard collected and
- * is the only screen that writes anything.
+ * Outside the step indicator by design, so Back is a BACK button at the
+ * bottom instead of the shared header. Receives everything the wizard
+ * collected and is the only screen that writes anything.
  *
  * View ids: btn_signup_back, tv_signup_consent_title,
- * tv_signup_consent_subtitle, cb_signup_consent,
+ * tv_signup_consent_subtitle, tv_signup_consent_location_title,
+ * tv_signup_consent_location_desc, tv_signup_consent_contacts_title,
+ * tv_signup_consent_contacts_desc, cb_signup_consent,
  * btn_signup_consent_privacy, btn_signup_consent_create,
  * btn_signup_consent_retry, progress_signup_consent.
  *
- * Retry calls the same handler with the same arguments as Create account — the
+ * Retry calls the same handler with the same arguments as Get started — the
  * ViewModel's `accountCreated` guard is what makes the second call resume at
  * the write instead of creating a second account.
  *
- * Flow: SignUpConsentActivity → LoadingActivity → HomeActivity
+ * Flow: SignUpConsentActivity → WelcomeActivity → LoadingActivity → HomeActivity
  */
 class SignUpConsentActivity : AppCompatActivity() {
 
@@ -46,6 +47,8 @@ class SignUpConsentActivity : AppCompatActivity() {
         const val EXTRA_PASSWORD = "extra_password"
         const val EXTRA_CONTACTS = "extra_contacts"
         const val EXTRA_COMPLETE_PROFILE = "extra_complete_profile"
+
+        private const val DISABLED_ALPHA = 0.5f
     }
 
     private lateinit var checkBox: MaterialCheckBox
@@ -124,6 +127,10 @@ class SignUpConsentActivity : AppCompatActivity() {
 
         btnCreate.isEnabled = state.consentGiven && !state.isLoading
         btnRetry.isEnabled = !state.isLoading
+        // The gradient background has no disabled state of its own, so a
+        // disabled button would otherwise look ready to tap.
+        btnCreate.alpha = if (btnCreate.isEnabled) 1f else DISABLED_ALPHA
+        btnRetry.alpha = if (btnRetry.isEnabled) 1f else DISABLED_ALPHA
 
         btnRetry.visibility = if (state.canRetry) View.VISIBLE else View.GONE
         // Create account would only try to make it a second time, which is the
@@ -155,10 +162,9 @@ class SignUpConsentActivity : AppCompatActivity() {
             is SignUpConsentEvent.ShowMessage ->
                 Toast.makeText(this, event.text, Toast.LENGTH_SHORT).show()
 
-            SignUpConsentEvent.NavigateToLoadingHome ->
+            SignUpConsentEvent.NavigateToWelcome ->
                 startActivity(
-                    Intent(this, LoadingActivity::class.java).apply {
-                        putExtra(LoadingActivity.EXTRA_DESTINATION, LoadingActivity.DEST_HOME)
+                    Intent(this, WelcomeActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
                 )
