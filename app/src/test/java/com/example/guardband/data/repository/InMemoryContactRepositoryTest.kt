@@ -58,13 +58,13 @@ class InMemoryContactRepositoryTest {
 
     @Test
     fun `adding stores the contact with the phone normalized to E164`() = runTest {
-        resetStore(seed(3))
+        resetStore(seed(InputValidator.MIN_CONTACTS))
 
         val saved = repository.addContact(valid).getOrThrow()
 
         assertEquals("+639171234567", saved.phone)
         assertTrue(saved.id.isNotBlank())
-        assertEquals(4, InMemoryStore.getContacts().size)
+        assertEquals(InputValidator.MIN_CONTACTS + 1, InMemoryStore.getContacts().size)
     }
 
     @Test
@@ -203,16 +203,6 @@ class InMemoryContactRepositoryTest {
 
         assertEquals(ContactError.MinimumContacts, result.exceptionOrNull())
         assertEquals(InputValidator.MIN_CONTACTS, InMemoryStore.getContacts().size)
-    }
-
-    @Test
-    fun `deleting below the minimum stays blocked`() = runTest {
-        resetStore(seed(1))
-
-        assertEquals(
-            ContactError.MinimumContacts,
-            repository.deleteContact("seed-0").exceptionOrNull()
-        )
     }
 
     @Test

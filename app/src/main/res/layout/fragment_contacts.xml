@@ -48,7 +48,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        app:layout_constraintBottom_toTopOf="@id/cv_add_contact_container"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/ib_contacts_settings">
@@ -60,7 +60,7 @@
             android:paddingStart="24dp"
             android:paddingTop="16dp"
             android:paddingEnd="24dp"
-            android:paddingBottom="16dp">
+            android:paddingBottom="88dp">
 
             <TextView
                 android:id="@+id/tv_contacts_title"
@@ -114,36 +114,22 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ── Fixed Add Contact Button ─────────────────────────────────────── -->
+    <!-- ── Add Contact FAB ───────────────────────────────────────────────
+         Floats over the list, which pads its bottom by 88dp so the last row
+         can scroll clear of it. -->
 
-    <androidx.cardview.widget.CardView
-        android:id="@+id/cv_add_contact_container"
-        android:layout_width="0dp"
-        android:layout_height="56dp"
-        android:layout_marginStart="24dp"
+    <!-- DESIGN: Jul -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/contacts_add_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="16dp"
-        app:cardBackgroundColor="@android:color/transparent"
-        app:cardCornerRadius="28dp"
-        app:cardElevation="5dp"
-        app:cardMaxElevation="10dp"
+        android:contentDescription="@string/cd_add_contact"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="@color/brand_green"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/contacts_add_button"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@drawable/bg_signup_continue"
-            android:fontFamily="@font/poppins_extralight"
-            android:text="@string/btn_add_contact"
-            android:textAllCaps="false"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            app:backgroundTint="@null"
-            app:strokeWidth="0dp" />
-
-    </androidx.cardview.widget.CardView>
+        app:tint="@color/white" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

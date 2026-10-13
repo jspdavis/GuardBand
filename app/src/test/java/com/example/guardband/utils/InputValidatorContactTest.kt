@@ -63,9 +63,9 @@ class InputValidatorContactTest {
     // ── Counts ────────────────────────────────────────────────────────────────
 
     @Test
-    fun `the bounds are three and ten`() {
-        assertEquals(3, InputValidator.MIN_CONTACTS)
-        assertEquals(10, InputValidator.MAX_CONTACTS)
+    fun `the bounds are one and three`() {
+        assertEquals(1, InputValidator.MIN_CONTACTS)
+        assertEquals(3, InputValidator.MAX_CONTACTS)
     }
 
     @Test
@@ -84,8 +84,6 @@ class InputValidatorContactTest {
     @Test
     fun `deleting is refused while it would leave fewer than the minimum`() {
         assertFalse(InputValidator.canDeleteContact(0))
-        assertFalse(InputValidator.canDeleteContact(1))
-        assertFalse(InputValidator.canDeleteContact(2))
         assertFalse(InputValidator.canDeleteContact(InputValidator.MIN_CONTACTS))
     }
 

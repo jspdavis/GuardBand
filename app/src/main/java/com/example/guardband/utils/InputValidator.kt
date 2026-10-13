@@ -105,11 +105,14 @@ object InputValidator {
     fun canDeleteContact(currentCount: Int): Boolean =
         currentCount - 1 >= MIN_CONTACTS
 
-    /** Count the Contacts tab asks every user to reach (spec objective). */
-    const val MIN_CONTACTS = 3
+    /** The band needs someone to text, so the list can never go below one. */
+    const val MIN_CONTACTS = 1
 
-    /** Upper bound, so one account cannot fan an alert out indefinitely. */
-    const val MAX_CONTACTS = 10
+    /**
+     * Upper bound. These are the people the band texts first, so the list is
+     * kept short: every alert's SMS goes to all of them.
+     */
+    const val MAX_CONTACTS = 3
 
     const val MAX_CONTACT_NAME_LENGTH = 100
     const val MAX_RELATIONSHIP_LENGTH = 50
