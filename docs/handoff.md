@@ -1,7 +1,8 @@
 # Handoff
 
-**As of 2026-10-11 · `main` @ `f4e4ce8`, `mvvm-main` @ `491db96` (same tree) ·
-393 unit tests, 0 failures · everything pushed.**
+**As of 2026-10-13 · `mvvm-main` @ `b05d769` (ahead of `main`) ·
+393 unit tests, 0 failures · everything pushed. Development paused for the
+progress video; pick up from §4, starting with the phone pass.**
 
 The product build is feature-complete for now, and its backend is live:
 Hosting, the Security Rules and the password-reset App Link were all deployed
@@ -22,8 +23,9 @@ already built is documented in the files under §2, not here.
 | **Legacy nodes** | `password_resets`, `phone_index`, `email_index`: rules removed, data exported and deleted. |
 | **Firebase Analytics** | Removed. The notice says the app has no analytics; adding any back means changing the notice in the same commit. |
 | **Manual pass, 2026-10-11** | Consent, forgot password, Delete account: **passed**. Alert, Track, mock sender: **with a teammate** (§4). |
+| **Teammate UI pass, 2026-10-13** | `f34487b` (Jehan's redesign) did not compile; fixed and built on in `b05d769`, with real GPS in the mock sender from `c045738`. Everything that changed, and what is still open, is in [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md). **None of it has had a phone pass yet** (§4). |
 
-**Branches.** `main` and `mvvm-main` hold the same tree. Branch new work off
+**Branches.** `mvvm-main` is ahead of `main` by the 2026-10-13 work. Branch new work off
 `mvvm-main` and merge back with `--no-ff`, as `feature/trust-gaps` was.
 CLAUDE.md's branch table does not mention `main` yet.
 
@@ -40,58 +42,24 @@ CLAUDE.md's branch table does not mention `main` yet.
 | The sign-up wizard | [`signup-flow.md`](signup-flow.md) |
 | The post-login host and its tabs | [`home-host-and-bottom-nav.md`](home-host-and-bottom-nav.md) |
 | The in-app password reset | [`forgot-password.md`](forgot-password.md) |
+| The 2026-10-13 teammate UI pass: what was fixed, what to check | [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md) |
 | Privacy Notice, consent versions, hosted pages | [`privacy-and-consent.md`](privacy-and-consent.md) |
 | The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md): **authoritative** |
 | Security Rules | [`../RTDBS-RULES.md`](../RTDBS-RULES.md): the source of truth |
 
 ---
 
-## 3. Next: real GPS location
+## 3. Done: real GPS in the mock sender
 
-**Agreed 2026-10-11 as the next piece of work.**
+Shipped by jspdavis in `c045738` (2026-10-13). The mock sender reports **Phone
+A's own fix** through `LocationManager`, asks for location at runtime and falls
+back to the random Cebu City point if refused. The permission is declared only
+in `app/src/debug/AndroidManifest.xml`, so release builds have none, and
+CLAUDE.md's rule now reads "no phone-location permission in the **main** app"
+with that file as the one named exception. The Privacy Notice stays true.
 
-**Why.** The mock sender reports a random point within about 1 km of central
-Cebu City for every alert ([`AlertSender.kt`](../app/src/debug/java/com/example/guardband/ui/mocksender/AlertSender.kt),
-`CEBU_LAT + Random.nextDouble(-0.01, 0.01)`), and Walk mode traces a fixed
-~165 m loop there. Nothing in the app uses a real position, so the Track tab
-shows somewhere plausible rather than where anyone is. That is what looked
-"inaccurate" in the 2026-10-11 test, and it is not what the project wants.
-
-**Settle these with the team before writing code:**
-
-1. **Whose GPS?** Most likely the mock sender reporting **Phone A's own fix**,
-   the way the band's NEO-6M will. The receiver showing the *guardian's* own
-   position is a different feature with much bigger consequences (below).
-2. **What happens to Walk mode?** Keep it as a synthetic option for indoor
-   demos, or replace it with real movement at a real cadence (FR-09 is 60 s;
-   the walk is 5 s on purpose so a demo moves visibly).
-3. **No fix yet.** Indoors, a fix can take a long time or never arrive. Send
-   with no `location` (the reader already salvages that, and walkthrough G in
-   `mock-sender-and-receiver.md` covers "reporting, no fix"), wait, or fall back
-   to the random point? Pick one deliberately.
-4. **Which API.** `android.location.LocationManager` needs no new dependency.
-   `FusedLocationProviderClient` is better indoors but adds
-   `play-services-location`, which could be `debugImplementation` like OkHttp.
-
-**Constraints that are already written down:**
-
-- **CLAUDE.md says "No phone-location permission, ever"** ("Track and map"),
-  and forbids `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION` and osmdroid's
-  `MyLocationNewOverlay`. That rule was written for the receiver app. A
-  permission declared only in `app/src/debug/AndroidManifest.xml` keeps it out
-  of release builds, but **amend the rule deliberately**, in the same change.
-  Don't quietly break it.
-- **The Privacy Notice says "The phone's own location is never used. The app
-  asks for no location permission at all."** That stays true of the released
-  app if the change is debug-only. If the receiver ever reads its own
-  location, the notice changes, `CONSENT_VERSION` bumps, and Hosting is
-  redeployed, all in one commit (see `privacy-and-consent.md`).
-- **Runtime permission.** minSdk 24, so the harness must request it at runtime
-  and cope with a refusal. Foreground only: the walk already stops in
-  `onPause`, so no background-location permission is needed. Keep it that way.
-- **Coordinates are never logged**, here as everywhere else.
-- **Docs to update with it:** CLAUDE.md's "Mock sender" and "Track and map",
-  `mock-sender-and-receiver.md`, and `osmdroid.md` if the overlay rule moves.
+Still open: testing both permission answers on Phone A (§4, "Waiting on a
+person"). Details: [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md).
 
 ---
 
@@ -101,6 +69,9 @@ shows somewhere plausible rather than where anyone is. That is what looked
 
 | | Who | Notes |
 |---|---|---|
+| **Phone pass of the 2026-10-13 changes** | anyone with the phone | Section A of [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md): tab layouts, back arrows, gear/bell on every tab, the shorter icon-only bar, the Track avatar, the consent step, Welcome (once only), the reset success screen and the launcher icon. Everything built and unit-tested; nothing has been seen on a device. |
+| **Mock sender GPS on Phone A** | anyone with two phones | Allow location: alerts carry the phone's real position. Refuse: they fall back to the Cebu City point. |
+| **Two app-wide theme changes** | Jehan + Jul | Confirm they are intended: outlined buttons went from 8 dp to 28 dp corners, and every sign-up screen's top padding from 96 dp to 24 dp (`themes.xml`, `f34487b`). |
 | **Test the Alert tab, Track tab and mock sender** | teammate | Never had a full human pass. Checklists: [`mock-sender-and-receiver.md` §6](mock-sender-and-receiver.md) and [`alert-data.md` §12](alert-data.md). The staleness badge (stop the walk, wait 3 min) and pan-and-follow matter most. Before 2026-10-11 every history read was denied by the rules, so this has effectively never worked end to end until now. |
 | **Adviser review of the hosted pages** | Jul + adviser | Parked on 2026-10-11. Send `/privacy` and `/delete-account`; when approved, remove the DRAFT banner from both and redeploy. A wording change that alters what users agree to bumps `CONSENT_VERSION` with the notice's own version. |
 | **Each teammate's fingerprints** | each developer | Debug **SHA-1** in Firebase Console → Project settings (else Google sign-in fails on their build). Debug **SHA-256** added to `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else the reset link opens the browser). `assetlinks.json` holds **one** developer's today. Release keystore's SHA-1 and SHA-256 before any signed build. |
@@ -117,15 +88,26 @@ shows somewhere plausible rather than where anyone is. That is what looked
 | **No re-consent flow** | Users who accepted `1.0` keep `1.0`. Building one means deciding what happens to an account that declines. |
 | **Email verification, if ever added** | Every Firebase email action lands on the same `/__/auth/action` path the app claims, so those links will open the app. Decide what it does with them (`forgot-password.md` §3). |
 | **The layers button and Check-in pill are stubs** | D7. Check-in is FR-10's band double-press; the app must never send one. |
+| **Google profile photo on the Track avatar** | The avatar is the default icon. `FirebaseUser.photoUrl` has the photo for Google accounts; showing it needs an image-loading library (Coil or Glide), which the project does not have. Email accounts keep the default. |
+| **A Terms page, only if the course needs one** | The Privacy Notice already covers what users agree to. Adding Terms means a hosted `/terms` page, a `termsPath` + `HostedPages.terms`, and a `CONSENT_VERSION` bump because what is agreed to changes. |
 
 ### Small cleanups
 
-- `androidx.cardview` and the `label_dashboard_*` / `label_your_contacts`
-  strings are unused since `ui/dashboard/` went.
+- The `label_dashboard_*` / `label_your_contacts` strings are unused since
+  `ui/dashboard/` went. (`androidx.cardview` is **in use** again: the
+  2026-10-13 redesign wraps its pill buttons in CardViews.)
 - `BandStatus` duplicates `AlertFormatting`'s two ISO-8601 patterns; fold
   them into one helper.
-- `res/drawable/bg_signup_continue.xml` is unused; `Widget.GuardBand.SignUpContinue`
-  replaced it.
+- **Button text in capitals inside `strings.xml`**: `btn_login`, `btn_continue`,
+  `btn_next`, `btn_submit`, `cd_back`. Put normal case back and let
+  `textAllCaps` do it; `cd_back` is a TalkBack label.
+- **Hard-coded greens**: `#478831` in about 11 layouts plus drawables, and
+  `#3D7D28` on Consent and Welcome. Make them colour tokens.
+- **Two oversized images**: `drawable-nodpi/reset_success.png` (3.4 MB) and
+  `welcome.png` (2.3 MB), both about 2000 px square. Convert to WebP at screen
+  size.
+- **Optional**: give the mock sender its own launcher icon; today it inherits
+  the app's, so the two differ only by label.
 - `SignUpNameViewModel.onGoogleSignInClicked` is unreachable since the
   redesign (flagged in its KDoc).
 - `item_contact.xml`'s edit icon is a placeholder; there is no pencil drawable.
