@@ -47,7 +47,7 @@
             android:fontFamily="@font/poppins_semibold"
             android:text="@string/label_forgot_request_title"
             android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
-            android:textColor="#478831"
+            android:textColor="@color/brand_green"
             android:textStyle="bold" />
 
         <!-- Subtitle -->

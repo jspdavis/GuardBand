@@ -17,7 +17,7 @@
     <string name="label_login_subtitle">Let\'s get you signed up!</string>
     <string name="hint_email">Email address</string>
     <string name="hint_password">Password</string>
-    <string name="btn_login">LOG IN</string>
+    <string name="btn_login">Log in</string>
     <string name="btn_forgot">Forgot Password?</string>
     <string name="label_login_or">or</string>
     <string name="label_login_signup_prompt">Don\'t have an account?</string>
@@ -28,7 +28,7 @@
 
     <!-- Sign-up wizard: shared -->
     <string name="label_signup_step">Step %1$d/%2$d</string>
-    <string name="btn_continue">CONTINUE</string>
+    <string name="btn_continue">Continue</string>
 
     <!-- Sign Up – Step 1, Account -->
     <string name="label_signup_account_title">Create your account</string>
@@ -70,7 +70,7 @@
     <!-- Sign Up – Name -->
     <string name="label_signup_name_title">What\'s your name?</string>
     <string name="hint_full_name">Full name</string>
-    <string name="btn_next">NEXT</string>
+    <string name="btn_next">Next</string>
 
     <!-- Sign Up – Contacts -->
     <string name="label_signup_contacts_title">Add emergency contacts</string>
@@ -78,7 +78,7 @@
     <string name="hint_contact_phone">Phone number</string>
     <string name="hint_contact_relationship">Relationship (e.g. Friend)</string>
     <string name="btn_add_contact">+ Add contact</string>
-    <string name="btn_submit">SUBMIT</string>
+    <string name="btn_submit">Submit</string>
 
     <!-- Forgot – Request -->
     <string name="label_forgot_request_title">Reset your password</string>
@@ -108,11 +108,6 @@
 
     <!-- Loading -->
     <string name="label_loading">Please wait…</string>
-
-    <!-- Dashboard (dead screen: delete with ui/dashboard/ and activity_dashboard.xml) -->
-    <string name="label_dashboard_welcome">Welcome back, %1$s</string>
-    <string name="label_dashboard_status">You are protected.</string>
-    <string name="label_your_contacts">Your Emergency Contacts</string>
 
     <!-- Home host: bottom-nav tabs -->
     <string name="tab_track">Track</string>
@@ -214,7 +209,7 @@
     <string name="label_notifications_title">Notifications</string>
     <string name="label_notifications_empty">No notifications yet.</string>
 
-    <string name="cd_back">BACK</string>
+    <string name="cd_back">Back</string>
 
     <!-- Generic -->
     <string name="error_field_required">This field is required.</string>
