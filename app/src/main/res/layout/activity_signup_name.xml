@@ -131,7 +131,7 @@
             android:fontFamily="@font/poppins_extralight"
             android:gravity="center"
             android:text="@string/btn_continue"
-            android:textAllCaps="false"
+            android:textAllCaps="true"
             android:textColor="@android:color/white"
             android:textSize="16sp" />
 
