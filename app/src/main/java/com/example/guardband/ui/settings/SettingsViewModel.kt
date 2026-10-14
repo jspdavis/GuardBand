@@ -45,6 +45,11 @@ class SettingsViewModel(
         _events.trySend(SettingsEvent.OpenUrl(HostedPages.privacyNotice))
     }
 
+    /** The Changelog row: the app's progress, as an in-app page. */
+    fun onChangelogClicked() {
+        _events.trySend(SettingsEvent.OpenChangelog)
+    }
+
     /** No app on the phone can open a web page. */
     fun onBrowserUnavailable() {
         _events.trySend(SettingsEvent.ShowMessage(MSG_NO_BROWSER))

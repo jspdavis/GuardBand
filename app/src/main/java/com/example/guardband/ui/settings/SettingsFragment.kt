@@ -21,6 +21,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.ui.auth.GoogleIdTokenProvider
 import com.example.guardband.ui.auth.GoogleIdTokenResult
+import com.example.guardband.ui.changelog.ChangelogActivity
 import com.example.guardband.ui.login.LoginActivity
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -44,7 +45,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  *
  * View ids: ib_settings_back, tv_settings_title, tv_settings_account,
  * tv_settings_change_password, tv_settings_notifications, tv_settings_privacy,
- * tv_settings_privacy_notice, btn_settings_logout,
+ * tv_settings_privacy_notice, tv_settings_changelog, btn_settings_logout,
  * card_settings_delete_failure, tv_settings_delete_error,
  * btn_settings_delete_retry, tv_settings_delete_account,
  * progress_settings_delete.
@@ -60,6 +61,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private lateinit var placeholderRows: List<TextView>
     private lateinit var btnLogout: Button
     private lateinit var tvPrivacyNotice: TextView
+    private lateinit var tvChangelog: TextView
     private lateinit var tvDeleteAccount: TextView
     private lateinit var cardDeleteFailure: MaterialCardView
     private lateinit var tvDeleteError: TextView
@@ -99,6 +101,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         tvPrivacyNotice = view.findViewById(R.id.tv_settings_privacy_notice)
         tvPrivacyNotice.setOnClickListener { viewModel.onPrivacyNoticeClicked() }
+
+        tvChangelog = view.findViewById(R.id.tv_settings_changelog)
+        tvChangelog.setOnClickListener { viewModel.onChangelogClicked() }
 
         btnLogout = view.findViewById(R.id.btn_settings_logout)
         btnLogout.setOnClickListener { viewModel.onLogoutClicked() }
@@ -143,6 +148,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         placeholderRows.forEach { it.isEnabled = enabled }
         btnLogout.isEnabled = enabled
         tvPrivacyNotice.isEnabled = enabled
+        tvChangelog.isEnabled = enabled
         tvDeleteAccount.isEnabled = enabled
         btnDeleteRetry.isEnabled = enabled
 
@@ -165,6 +171,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             SettingsEvent.NavigateToLogin -> clearCredentialsThenGoToLogin()
 
             is SettingsEvent.OpenUrl -> openUrl(event.url)
+
+            SettingsEvent.OpenChangelog ->
+                startActivity(Intent(requireContext(), ChangelogActivity::class.java))
         }
     }
 

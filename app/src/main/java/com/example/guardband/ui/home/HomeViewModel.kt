@@ -11,8 +11,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 
 /**
- * Host-level logic for [HomeActivity]: the second auth gate and requests to
- * open the pushed screens (Settings, Notifications). No UiState — which
+ * Host-level logic for [HomeActivity]: the second auth gate, requests to
+ * open the pushed screens (Settings, Notifications), and the Track avatar's
+ * shortcut to the Profile tab. No UiState — which
  * fragment is on screen is navigation, owned by the Activity.
  *
  * Scoped to the Activity, so tab Fragments share this instance through
@@ -47,6 +48,10 @@ class HomeViewModel(
 
     fun onNotificationsClicked() {
         _events.trySend(HomeEvent.ShowNotifications)
+    }
+
+    fun onProfileClicked() {
+        _events.trySend(HomeEvent.ShowProfile)
     }
 
     companion object {

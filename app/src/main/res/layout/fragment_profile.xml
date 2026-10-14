@@ -38,7 +38,7 @@
                     android:src="@drawable/ic_settings"
                     app:backgroundTint="@color/white"
                     app:elevation="4dp"
-                    app:fabSize="mini"
+                    app:fabCustomSize="40dp"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
                     app:tint="@color/brand_green" />
 
@@ -51,7 +51,7 @@
                     android:src="@drawable/ic_notifications"
                     app:backgroundTint="@color/white"
                     app:elevation="4dp"
-                    app:fabSize="mini"
+                    app:fabCustomSize="40dp"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
                     app:tint="@color/brand_green" />
             </RelativeLayout>

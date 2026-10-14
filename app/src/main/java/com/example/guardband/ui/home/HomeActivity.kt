@@ -98,6 +98,9 @@ class HomeActivity : AppCompatActivity() {
 
             HomeEvent.ShowSettings -> show(TAG_SETTINGS)
             HomeEvent.ShowNotifications -> show(TAG_NOTIFICATIONS)
+            // Through the bar rather than show(TAG_PROFILE), so the Profile item
+            // is highlighted too: selecting it runs the same listener a tap does.
+            HomeEvent.ShowProfile -> bottomNav.selectedItemId = R.id.nav_profile
         }
     }
 

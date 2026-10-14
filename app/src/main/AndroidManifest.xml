@@ -121,6 +121,13 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <!-- ── Changelog (opened from Settings) ─────────────────────────────── -->
+
+        <activity
+            android:name=".ui.changelog.ChangelogActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!-- ── Loading ────────────────────────────────────────────────────── -->
 
         <activity
