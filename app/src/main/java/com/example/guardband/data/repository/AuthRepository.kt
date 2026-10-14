@@ -103,8 +103,8 @@ interface AuthRepository {
      * The signed-in user, or null. Synchronous, so it is safe in a ViewModel's
      * constructor.
      *
-     * Fills `id`, `name` (the Firebase display name) and `email`, which is
-     * the whole of [User]. A screen wanting the stored record reads it with
+     * Fills `id`, `name` (the Firebase display name), `email` and
+     * `photoUrl`, which is the whole of [User]. A screen wanting the stored record reads it with
      * [UserProfileRepository.fetchProfile] and uses this as the fallback for
      * when no record exists yet.
      */
