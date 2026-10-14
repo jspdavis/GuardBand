@@ -14,6 +14,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.ui.account.AccountActivity
 import com.example.guardband.ui.alert.AlertFragment
+import com.example.guardband.ui.consent.ConsentRequiredActivity
 import com.example.guardband.ui.contacts.ContactsFragment
 import com.example.guardband.ui.login.LoginActivity
 import com.example.guardband.ui.notifications.NotificationsFragment
@@ -162,9 +163,9 @@ class HomeActivity : AppCompatActivity() {
             // on tabs the account is not allowed to use yet.
             HomeEvent.RequireEmailVerification -> leaveFor(VerifyRequiredActivity::class.java)
 
-            // The consent screen arrives in the next commit. Until then the
-            // cover simply stays up: no consent, no tabs.
-            HomeEvent.RequireConsent -> Unit
+            // Cleared too: Back from the consent screen must not reach tabs
+            // the account has not agreed to use.
+            HomeEvent.RequireConsent -> leaveFor(ConsentRequiredActivity::class.java)
         }
     }
 

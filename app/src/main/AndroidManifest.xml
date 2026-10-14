@@ -130,6 +130,13 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <!-- Consent gate: opened only by the Home host, for an account with
+             no consent record. -->
+        <activity
+            android:name=".ui.consent.ConsentRequiredActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!-- Reset success: reached only from ResetPasswordActivity, so not exported. -->
         <activity
             android:name=".ui.reset.ResetSuccessActivity"
