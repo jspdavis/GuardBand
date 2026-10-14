@@ -421,6 +421,8 @@ The band (or the mock sender) PUTs to the RTDB REST API, and Security Rules vali
 
 `data/model/Alert.kt` mirrors it and `data/repository/AlertParser.kt` reads it — see "Alert data" below for how. Check the field names against the deployed Security Rules before relying on them.
 
+**A check-in (FR-10) is a `CHECKIN` alert, and the main app never writes one.** It is the wearer's double-press on the band, sent with the payload above to `history` and `latest`; there is no separate check-in node. Nothing under `app/src/main` may write a check-in, or anything else, to `devices/` — only the band does, and the debug mock sender stands in for it. See "Check-in status" below.
+
 ## Alert data
 
 The Alert tab reads `devices/{deviceId}` live. `SCHEMA.md` is the authority for the payload — if code, this file and `SCHEMA.md` disagree, `SCHEMA.md` wins and the disagreement gets reported rather than silently resolved.
