@@ -66,6 +66,8 @@ com/example/guardband/
 │   ├── login/          email + password, and "Continue with Google"
 │   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode;
 │   │                 then Welcome, once per account (its only route is Consent's success)
+│   ├── consent/        ConsentRequiredActivity: the consent step the Home gate sends an account with
+│   │                 no consent record to (sign-up's layout, relabelled); ConsentGate (pure) decides
 │   ├── forgot/         one screen: email → "check your email" + Resend (60 s cooldown)
 │   ├── reset/          New Credentials, opened by the App Link in the reset email;
 │   │                 EmailActionLink routes the other email links (verifyEmail) away first
@@ -73,7 +75,7 @@ com/example/guardband/
 │   │                 VerifyRequiredActivity: the gate an unverified password account meets instead of Home
 │   │                 ResetLinkParser (pure; the trust boundary) + ViewModel
 │   ├── loading/        1.8 s transition → Home (Back blocked)
-│   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
+│   ├── home/           HomeActivity: bottom-nav host + second auth gate and the account gate (HomeViewModel)
 │   ├── track/          Track tab (default): avatar, bell, gear, osmdroid map, band status panel, Navigate + Check-in
 │   │                 BandStatus + NavigationUrl + OsmdroidConfig (pure helpers; see "Track and map")
 │   ├── contacts/       Contacts tab: list + delete
@@ -108,7 +110,7 @@ Conventions (copy `ui/login/*` as the reference):
 
 - **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph.
 - **Tabs:** Track (default), Contacts, Alert, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), opened from any tab's top bar. While one is showing, the bottom bar is hidden, and Back (or the screen's back arrow) returns to the last tab and brings the bar back. Back on a tab exits.
-- **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings and Notifications are inside the host, so they're covered too.
+- **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings and Notifications are inside the host, so they're covered too. Since 2026-10-14 the host also keeps the tabs covered until the account's record has been read (see "Consent gate").
 - **Fragments follow the Activity conventions,** with these differences:
   - Use `Fragment(R.layout.x)`, and bind views in `onViewCreated` with `view.findViewById`.
   - Collect flows with `viewLifecycleOwner.lifecycleScope.launch { viewLifecycleOwner.repeatOnLifecycle(STARTED) { … } }`.
@@ -378,7 +380,8 @@ with it — and the modal says so, rather than implying everything is gone.
   Splash, an email login, a Google sign-in — lands on Home, which sends a
   pending account to Account information with the task cleared
   (`HomeEvent.ResumeDeletion`) instead of into tabs that would write a contact
-  under a deleted account. A failed read lets them in, as before.
+  under a deleted account. A failed read used to let them in; since the
+  consent gate it is a Retry cover instead (see "Consent gate").
 - **`DeleteAccountViewModel` reads it on start** and opens in the same state a
   failure after step 2 leaves: `FAILED`, `profileDeleted`, no fresh
   credential, wording `MSG_RESUME_PENDING`. Retry asks for the password or
@@ -410,8 +413,80 @@ step 2 — safely, with nothing deleted, but it fails.
 themselves, which need a real Firebase. The sequencing, the wording, both
 guards and every marker path (written before the Auth delete, resume on a later
 visit, offline, recent-login, Log Out, another account, a failed read) are
-covered — `DeleteAccountViewModelTest` (39), `HomeViewModelTest` (7) and
+covered — `DeleteAccountViewModelTest` (39), `HomeViewModelTest` (28, with
+the consent gate's) and
 `ProfileProvisioningTest`.
+
+## Consent gate
+
+> The routes, the decisions and the manual pass:
+> [docs/privacy-and-consent.md](docs/privacy-and-consent.md) §8 and §6.
+
+**An account with no `users/{uid}/consent` never reaches the tabs
+(2026-10-14).** `ProfileProvisioning` gives a Console-made account, and a
+Google account whose record went missing, only a `name` and an `email`.
+`HomeViewModel` now reads the record before anything is shown and sends such
+an account to `ui/consent/ConsentRequiredActivity` (`HomeEvent.RequireConsent`,
+task cleared).
+
+- **Order:** no session → Login; unverified password account → the
+  verification gate; `deletion_pending` → Account information; **then**
+  consent. A pending deletion always wins. Provisioning has already finished
+  on every sign-in path by then: it runs inside `login` and
+  `signInWithGoogle`, before they return.
+- **Only a missing record triggers it.** `ConsentGate.needsConsent(record)` is
+  `record == null`, so `1.0` stays `1.0` and is let in. A re-consent flow
+  would add its version rule there, not in the gate. A node without
+  `accepted: true` reads as no record; the rules refuse to store one anyway.
+- **Three outcomes, never two.** `UserProfileRepository.consentRecord` returns
+  a record, null, or a failure. A failure, or no answer within
+  `HomeViewModel.GATE_READ_TIMEOUT_MS` (10 s), is `HomeGateState.FAILED`: a
+  Retry cover, **never** the consent screen and never the tabs. The timeout is
+  load-bearing: with no disk persistence an RTDB read made offline does not
+  fail, it waits forever. This ends the deletion check's old "a failed read
+  lets them in".
+- **No flash.** `HomeActivity` adds no tab Fragment until the gate is `OPEN`;
+  the cover `fl_home_gate` (spinner, or Retry) sits over everything until
+  then, including Fragments a restore re-added.
+- **The same agreement as sign-up.** The screen inflates
+  `activity_signup_consent.xml` itself and relabels only the title and the two
+  bottom buttons (Decline, Agree), so the statement, the checkbox and the
+  notice button are sign-up's own views and strings. Agree calls
+  `recordConsent`, which writes the same three paths as `finalizeSignUp` from
+  one shared builder, at `CONSENT_VERSION`, for the **live session's** uid.
+  Rewording the statement still means bumping `CONSENT_VERSION`, and now it
+  changes both routes at once.
+- **Agree continues only after the write lands,** to `HomeActivity`, whose gate
+  reads the record again. A failed write, or one that does not land within
+  `ConsentRequiredViewModel.WRITE_TIMEOUT_MS` (an offline write queues rather
+  than failing), stays on the screen with Try again.
+- **Decline signs out and changes nothing else.** Nothing is written to
+  `consent` and the profile and contacts are left alone. It leaves through
+  `LoginNavigation.clearCredentialsThenGoToLogin`, with a toast saying why,
+  and the next sign-in meets the screen again. There is no in-app delete from
+  here, because Settings is behind the gate; the hosted `/delete-account`
+  page's manual route covers it.
+- **Sign-up is not prompted twice,** and no flag says so: its own atomic write
+  stored consent before Home reads it, so a stale flag cannot wave anyone
+  through.
+- **No rules change.** Checked on 2026-10-14 in the local Database Emulator
+  against the stripped `RTDBS-RULES.md`: the owner's late write is allowed on
+  an existing profile and on an absent one; a stranger's, an unauthenticated
+  one, a partial one and `accepted: false` are denied; Playground test 2 still
+  passes. **Still do not add `users/$uid/.validate: newData.hasChildren(['consent'])`.**
+- **A product gate, not a security boundary,** like the verification gate:
+  nothing server-side requires consent.
+- **Known limits.** An account that reaches the gate with no record at all
+  (`ABSENT`: its provisioning write failed) gets only `consent` written, and
+  the Profile tab falls back to the session's name and email. A first-time
+  Google user who abandons the contacts step now meets this screen on their
+  next launch and can agree with **no emergency contacts**: the gate checks
+  consent, not contacts.
+
+**Not covered by tests:** the RTDB read and write themselves and the two
+Activities. The decision, every outcome, the timeouts, Agree, Retry and
+Decline are covered: `HomeViewModelTest` (28), `ConsentGateTest`,
+`ConsentRequiredViewModelTest`.
 
 ## Privacy, consent and the hosted pages
 
@@ -477,13 +552,15 @@ analytics, so **adding any analytics SDK back means changing the notice in the
 same commit.** And **OpenStreetMap's tile servers see the phone's IP and the
 area being viewed** on every tile, which the notice discloses.
 
-**Known gap, documented not fixed:** `ProfileProvisioning` writes only `name`
-and `email`, so `users/{uid}` can exist with no `consent` subtree (an account
-made in the Console, a Google account whose record went missing). The failed
-account deletion route is **closed** by the deletion marker - see "Account
-deletion". **Do not add `users/$uid/.validate: newData.hasChildren(['consent'])`**
-as a fix: it would fail that legitimate write and leave the user with no
-profile at all. The options are in the doc.
+**The "profile with no consent" gap is closed in the app (2026-10-14).**
+`ProfileProvisioning` still writes only `name` and `email`, so `users/{uid}`
+can still exist with no `consent` subtree (an account made in the Console, a
+Google account whose record went missing), but such an account now meets the
+consent step before the tabs - see "Consent gate". The failed account deletion
+route is closed by the deletion marker - see "Account deletion". **Do not add
+`users/$uid/.validate: newData.hasChildren(['consent'])`** anyway: it would
+fail that legitimate provisioning write and leave the user with no profile at
+all. The original options are in the doc.
 
 ## Firebase data contract
 
