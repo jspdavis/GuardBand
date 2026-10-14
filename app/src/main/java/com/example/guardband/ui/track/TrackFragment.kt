@@ -11,6 +11,8 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -45,7 +47,8 @@ import org.osmdroid.views.overlay.Marker
  * the `ll_track_status` panel.
  *
  * Gear and bell forward to the shared [HomeViewModel], which asks the host to
- * show Settings or Notifications.
+ * show Settings or Notifications. The avatar does the same for the Profile
+ * tab.
  *
  * **Recentring lives here, not in the ViewModel.** Where the camera is pointing
  * is view state, like a scroll offset: it survives nothing, means nothing to
@@ -119,6 +122,12 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
         setUpMap()
 
+        ivAvatar.setOnClickListener { homeViewModel.onProfileClicked() }
+        // TalkBack: "double-tap to open profile" rather than "to activate".
+        ViewCompat.replaceAccessibilityAction(
+            ivAvatar, AccessibilityActionCompat.ACTION_CLICK,
+            getString(R.string.action_open_profile), null
+        )
         view.findViewById<ImageButton>(R.id.ib_track_notifications)
             .setOnClickListener { homeViewModel.onNotificationsClicked() }
         view.findViewById<ImageButton>(R.id.ib_track_settings)
