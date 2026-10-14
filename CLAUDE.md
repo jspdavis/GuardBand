@@ -77,6 +77,7 @@ com/example/guardband/
 │   ├── alert/          Alert tab: latest status + incident history
 │   ├── profile/        Profile tab: welcome header + user info
 │   ├── settings/       pushed from Track's gear; holds Log Out
+│   ├── changelog/      ChangelogActivity, opened from Settings; Changelog.entries is the progress log
 │   └── notifications/  pushed from Track's bell; placeholder inbox
 └── utils/
     ├── InputValidator.kt       shared input predicates (no messages)
@@ -96,7 +97,7 @@ Conventions (copy `ui/login/*` as the reference):
 - **ViewModels** take repositories through the constructor and hold no `Context` or View. They expose `companion object { val Factory = viewModelFactory { initializer { XViewModel(RepositoryProvider.…) } } }`, and Activities use `by viewModels { XViewModel.Factory }`; plain `by viewModels()` is fine when there are no dependencies. User-facing messages are `MSG_*` constants in the ViewModel — including the wording for every `AuthError`, which each screen maps itself in a private `messageFor(error)`. Those messages stay in Kotlin rather than `strings.xml` precisely because a ViewModel holds no `Context`.
 - **Activities** bind views with `findViewById`, forward raw input and clicks, render state, and execute events (Toast, `startActivity`, `finish`). They collect each flow in its own `lifecycleScope.launch { repeatOnLifecycle(STARTED) { … } }`. Building `Intent`s stays in the Activity.
 - **Wizard data** moves between screens as Intent extras. The Activity passes the extras into the ViewModel's click handler, and the navigation event carries the data back.
-- **Exception:** `NotificationsFragment`, `ui/reset/ResetSuccessActivity` and `ui/signup/WelcomeActivity` have no ViewModel. Each is a static screen whose only action is navigation. (`ForgotSuccessActivity` was another, and it is gone - see "Forgot password".)
+- **Exception:** `NotificationsFragment`, `ui/reset/ResetSuccessActivity`, `ui/signup/WelcomeActivity` and `ui/changelog/ChangelogActivity` have no ViewModel. Each is a static screen whose only action is navigation. (`ForgotSuccessActivity` was another, and it is gone - see "Forgot password".)
 
 ### Home host (Fragments)
 
@@ -604,6 +605,20 @@ Image Asset rewrites `mipmap-anydpi-v26/ic_launcher.xml` and
 `ic_launcher_round.xml`, so check afterwards that neither gained a
 `<monochrome>` line, and put back their header comment. The mock sender has no
 icon of its own; it shows the same one under a different label.
+
+## Changelog
+
+Settings → Changelog opens `ui/changelog/ChangelogActivity`, a progress log
+for the team and the instructor, built from the `mvvm-main` history. The
+content is `Changelog.entries`: one entry per day that work landed, newest
+first, each with the short hash of that day's last commit. **When work merges
+into `mvvm-main`, add (or extend) the entry for that day at the top, in the
+same merge.** `ChangelogTest` checks the order, the dates and the hashes.
+
+It is an Activity rather than a Fragment pushed over the Home host because the
+host's Back always returns to a tab, and Back from here must return to
+Settings. It is outside the host's auth gate, which is fine: it shows nothing
+about the user.
 
 ## Gotchas
 

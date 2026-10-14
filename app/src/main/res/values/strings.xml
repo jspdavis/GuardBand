@@ -119,6 +119,9 @@
     <string name="cd_open_settings">Settings</string>
     <string name="cd_open_notifications">Notifications</string>
     <string name="action_open_profile">open profile</string>
+    <string name="label_settings_changelog">Changelog</string>
+    <string name="label_changelog_title">Changelog</string>
+    <string name="label_changelog_commit">Commit %1$s</string>
     <string name="cd_user_avatar">Profile picture</string>
     <string name="cd_track_avatar">Profile picture: %1$s</string>
     <string name="btn_check_in">Check in</string>

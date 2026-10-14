@@ -222,6 +222,35 @@
                             android:text="@string/label_settings_privacy_notice" />
                     </LinearLayout>
 
+                    <View style="@style/Widget.GuardBand.SettingsDivider" />
+
+                    <!-- Changelog Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/bg_settings_icon_badge"
+                            android:importantForAccessibility="no"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_history"
+                            app:tint="@color/white" />
+
+                        <TextView
+                            android:id="@+id/tv_settings_changelog"
+                            style="@style/Widget.GuardBand.SettingsRow"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="@font/poppins_extralight"
+                            android:text="@string/label_settings_changelog" />
+                    </LinearLayout>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
