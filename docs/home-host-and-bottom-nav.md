@@ -183,12 +183,20 @@ Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC 
 
 ### Profile, `ui/profile/`
 - ✅ Avatar, "Welcome back, *name*" and email. Read-only.
-- The rest of the tab's content is **not yet defined**.
+- The rest of the tab's content is **not yet defined**. (An inert "Account information" card sat at the bottom until 2026-10-14; it was removed, so that screen has one entry point, in Settings.)
 
 ### Settings (pushed), `ui/settings/`
 - Grey background (`surface_muted`) with a white top bar: back arrow + "Settings".
-- 🟡 **Rows:** Account information, Change password, Notifications, Privacy & security. Each shows "Coming soon."
+- ✅ **Account information** opens `ui/account/AccountActivity` (below).
+- 🟡 **Rows:** Change password, Notifications, Privacy & security. Each shows "Coming soon."
+- ✅ **Privacy Notice** opens the hosted page; **Changelog** opens `ChangelogActivity`.
 - ✅ **Log Out** (outlined button) signs out and goes to Login with the task cleared.
+
+### Account information, `ui/account/` (an Activity, opened from Settings)
+- **Path:** Track (or any tab) → gear → Settings → **Account information**. Back returns to Settings.
+- An **Activity**, not a pushed Fragment, for the Changelog's reason: the host's Back always returns to a tab, and from here it has to return to Settings. Being outside the host also puts it outside `HomeViewModel`'s gate, so `AccountViewModel` sends a session-less restore to Login itself.
+- ✅ **Details card:** name and email, from the session.
+- ✅ **Danger zone** at the very bottom: a red heading, a red-outlined card saying what deleting removes, and the **Delete account** row. Below it, the failure card with Retry and the progress spinner. Everything the flow had in Settings came with it unchanged: the confirmation modal (focus on Cancel), re-authentication, the retry guards and the Back block while it runs. See CLAUDE.md, "Account deletion".
 
 ### Notifications (pushed), `ui/notifications/`
 - 🟡 Static empty inbox: "No notifications yet."

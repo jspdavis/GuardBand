@@ -1,6 +1,7 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.model.User
 
 /**
@@ -38,12 +39,15 @@ interface UserProfileRepository {
     suspend fun fetchProfile(uid: String): Result<User?>
 
     /**
-     * True when a profile record exists at `users/{uid}`.
+     * Whether `users/{uid}` holds a profile, nothing, or only the marker a
+     * half-finished deletion leaves behind ([markDeletionPending]).
      *
-     * Kept alongside [fetchProfile] because [ProfileProvisioning] needs the
-     * existence question answered without caring what is in the record.
+     * Kept alongside [fetchProfile] because [ProfileProvisioning] and the
+     * Home gate need that question answered without caring what is in the
+     * record. Three answers, not "exists or not": the marker must never be
+     * read as a profile, and never as an empty slot a sign-in may fill.
      */
-    suspend fun profileExists(uid: String): Result<Boolean>
+    suspend fun profileState(uid: String): Result<ProfileState>
 
     /**
      * Writes the profile, [contacts] and the consent record for a brand-new
@@ -72,22 +76,35 @@ interface UserProfileRepository {
     ): Result<Unit>
 
     /**
-     * Removes the whole `users/{uid}` subtree — profile fields, every
-     * emergency contact and the consent record — in **one** write.
+     * Deletes everything at `users/{uid}` — profile fields, every emergency
+     * contact and the consent record — and leaves only the deletion marker,
+     * `{ "deletion_pending": true }`, in **one** write.
      *
-     * One removal rather than a child-by-child delete, so there is no order in
-     * which it can half-succeed and no partial record left to reconcile. That
-     * is the same reasoning as [finalizeSignUp], in reverse.
+     * **One write is the point.** The data goes and the marker lands in the
+     * same commit, so there is no moment at which the data is gone without a
+     * marker to say why. If the Auth delete that follows fails and the user
+     * gives up, the next sign-in reads [ProfileState.DELETION_PENDING] and
+     * resumes the deletion instead of provisioning a fresh, thin profile.
      *
-     * Must run **while the user is still signed in**: the `users/{uid}` rules
-     * authorise it with `auth.uid == $uid`, so it is unauthorised the moment
-     * [AuthRepository.deleteAccount] succeeds.
+     * A replace, not a child-by-child delete, so a field nobody listed here
+     * goes too, and there is no order in which it can half-succeed.
      *
-     * A node that is already absent is a success, not a failure. RTDB treats
-     * removing nothing as a no-op, and a retry after a half-finished delete
-     * depends on that.
+     * **The marker outlives a finished deletion.** Once the Auth user is gone
+     * no session can write `users/{uid}` again, so `deletion_pending: true`
+     * stays under a uid that no longer belongs to anyone. It holds no personal
+     * data; a human can sweep it from the Console. Clearing it any earlier
+     * would reopen the gap it exists to close.
+     *
+     * Needs no rules change: `users/$uid/.write` is owner-only and nothing
+     * forbids an unlisted child, and RTDB skips `.validate` on the children
+     * this nulls. Must run **while the user is still signed in**, for the same
+     * reason: once [AuthRepository.deleteAccount] succeeds there is no
+     * `auth.uid` left to authorise it.
+     *
+     * Idempotent: writing the marker over the marker is a success, which is
+     * what a retry after a half-finished delete relies on.
      */
-    suspend fun deleteProfile(uid: String): Result<Unit>
+    suspend fun markDeletionPending(uid: String): Result<Unit>
 
     companion object {
         /**

@@ -67,7 +67,9 @@ com/example/guardband/
 │   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode;
 │   │                 then Welcome, once per account (its only route is Consent's success)
 │   ├── forgot/         one screen: email → "check your email" + Resend (60 s cooldown)
-│   ├── reset/          New Credentials, opened by the App Link in the reset email
+│   ├── reset/          New Credentials, opened by the App Link in the reset email;
+│   │                 EmailActionLink routes the other email links (verifyEmail) away first
+│   ├── verify/         VerifyEmailActivity: applies the code from the verification email
 │   │                 ResetLinkParser (pure; the trust boundary) + ViewModel
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
@@ -76,7 +78,9 @@ com/example/guardband/
 │   ├── contacts/       Contacts tab: list + delete
 │   ├── alert/          Alert tab: latest status + incident history
 │   ├── profile/        Profile tab: welcome header + user info
-│   ├── settings/       pushed from Track's gear; holds Log Out
+│   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row
+│   ├── account/        AccountActivity (Account information), opened from Settings;
+│   │                 Delete account sits in its danger zone (DeleteAccountViewModel)
 │   ├── changelog/      ChangelogActivity, opened from Settings; Changelog.entries is the progress log
 │   └── notifications/  pushed from Track's bell; placeholder inbox
 └── utils/
@@ -149,7 +153,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 
 **Error wording stays neutral.** `ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL` maps to its own `AuthError.AccountExistsWithDifferentCredential`, shown as "This email uses a different sign-in method." It must not name the other provider: saying "that address uses a password" confirms the account exists, which is the whole thing the shared invalid-credentials message exists to prevent.
 
-**Log out clears the credential state.** `SettingsFragment` calls `GoogleIdTokenProvider.clearCredentialState()` before navigating, so the chooser reappears instead of silently reusing the last account. It is bounded by a 2 s timeout and its failures are ignored — the user is already signed out of Firebase, so nothing may keep them on that screen. `HomeViewModel`'s failed auth gate does **not** clear it: that is a dead session, not a user logging out.
+**Log out clears the credential state.** `ui/auth/LoginNavigation.clearCredentialsThenGoToLogin` calls `GoogleIdTokenProvider.clearCredentialState()` before navigating (Log Out in Settings and a finished Delete account in Account information both go through it), so the chooser reappears instead of silently reusing the last account. It is bounded by a 2 s timeout and its failures are ignored — the user is already signed out of Firebase, so nothing may keep them on that screen. `HomeViewModel`'s failed auth gate does **not** clear it: that is a dead session, not a user logging out.
 
 **Never log a token**, an account name or an email, here or anywhere else.
 
@@ -197,8 +201,11 @@ Firebase's own `/__/auth/action` is the one exception, and it is **an exact
 `android:path`, never `pathPrefix`**: `/__/auth/handler`, the OAuth redirect
 handler, is on the same host. Every Firebase email action (`verifyEmail`,
 `recoverEmail`, ...) arrives at that one path, so the parser's
-`mode=resetPassword` check is what keeps the others out; adding email
-verification later means deciding what the app does with those links.
+`mode=resetPassword` check is what keeps the others out. Since 2026-10-14
+`ui/reset/EmailActionLink.routeOf` runs first in `ResetPasswordActivity` and
+hands `verifyEmail` (and any mode the app does not handle) to
+`VerifyEmailActivity`; every reset link, and every malformed one, still takes
+exactly the old path. See "Email verification".
 
 **`ResetPasswordActivity` is the one `exported="true"` Activity in the app**,
 because an external click has to reach it. `ui/reset/ResetLinkParser` is
@@ -243,6 +250,32 @@ written out again.
 linked for it. Every other developer's debug SHA-256, and a release one, still
 has to be added. The doc's §1 is the checklist.
 
+## Email verification
+
+> The flow, the link routing, the traps and the manual pass:
+> [docs/email-verification.md](docs/email-verification.md).
+
+- **Sent once, best effort,** by `SignUpConsentViewModel` right after
+  `createAccount` succeeds, in its own coroutine so it can neither delay nor
+  fail sign-up. Not on a Retry, never for a Google account. Plain
+  `sendEmailVerification()` with **no `ActionCodeSettings`**, like the reset.
+- **The link reuses the reset App Link.** No manifest change: `ResetPasswordActivity`
+  routes `mode=verifyEmail` to the non-exported `ui/verify/VerifyEmailActivity`,
+  which re-checks the link and calls `AuthRepository.applyEmailVerification`.
+  That checks the code's kind first (`checkActionCode` must say
+  `VERIFY_EMAIL`), so it never applies another action. Other modes get "isn't
+  supported", never "invalid reset link", and never a crash.
+- **Status lives in Account information**: Verified / Not verified, from
+  `EmailVerification.of(providers, isEmailVerified)`. Google accounts are
+  always Verified and never see Resend. The user is **reloaded every time the
+  screen comes to the front**, so a link opened elsewhere shows up without a
+  sign-out.
+- **Resend has a 60 s cooldown** on the forgot-password pattern (injected
+  `Clock` + ticker). `AuthError.TooManyRequests` is worded kindly and starts
+  the cooldown; offline does not.
+- **Nothing is gated on it.** Blocking unverified users is a product decision
+  nobody has made.
+
 ## Contacts and profile data
 
 The signed-in user's own record, separate from the band's `devices/` tree:
@@ -269,24 +302,32 @@ The signed-in user's own record, separate from the band's `devices/` tree:
 
 ## Account deletion
 
-A destructive row at the bottom of Settings, driven by
-`ui/settings/DeleteAccountViewModel` — its own ViewModel, because
-`SettingsViewModel` is deliberately events-only for a static screen and this
-flow has six steps, two guards and a credential prompt.
+A destructive row in a red-outlined **danger zone** at the bottom of
+**Account information** (`ui/account/AccountActivity`, opened from the
+Settings row of that name), driven by `ui/account/DeleteAccountViewModel` —
+its own ViewModel, because `AccountViewModel` only shows the account and this
+flow has six steps, two guards and a credential prompt. It was a row at the
+foot of Settings until 2026-10-14; one level deeper it is much harder to hit
+by accident. The path users are told is **Track → gear → Settings → Account
+information → Delete account**, and the hosted `/delete-account` page and the
+Privacy Notice must say the same.
 
 **The order of operations is the design, and reversing it loses data for good:**
 
 1. **Re-authenticate.** Firebase refuses `delete()` on a session that has been
    sitting around (`AuthError.RequiresRecentLogin`). A password account types
    its password; a Google account goes back through the chooser.
-2. **Remove `users/{uid}`** in **one** `removeValue` — profile fields, every
-   emergency contact and the consent record — **while still signed in.** The
-   rules authorise it with `auth.uid == $uid`, so once step 3 succeeds there is
-   no session left that could make this write and the subtree is orphaned
-   permanently.
+2. **Replace `users/{uid}` with the deletion marker** in **one** `setValue`
+   (`UserProfileRepository.markDeletionPending`): profile fields, every
+   emergency contact and the consent record go, and `{ "deletion_pending":
+   true }` is all that is left — **while still signed in.** The rules
+   authorise it with `auth.uid == $uid`, so once step 3 succeeds there is no
+   session left that could make this write and the subtree is orphaned
+   permanently. Data out and marker in are one commit, so there is never a
+   moment when the data is gone and nothing says why.
 3. **Delete the Auth user.**
 4. **Go to Login** with the back stack cleared, through the same
-   `clearCredentialsThenGoToLogin` that Log Out uses.
+   `LoginNavigation.clearCredentialsThenGoToLogin` that Log Out uses.
 
 **Which credential it asks for comes from `AuthRepository.currentUserProviders()`,
 and `PASSWORD` wins a mixed account.** Providers are read off
@@ -314,21 +355,50 @@ through the prompt rather than into a call Firebase will refuse again.
 until pairing exists, so one user's deletion must not take the band's history
 with it — and the modal says so, rather than implying everything is gone.
 
-**Known gap:** if step 2 succeeds, step 3 fails and the user gives up, the
-account survives with no record behind it, and the next sign-in has
-`ProfileProvisioning` write a fresh minimal `users/{uid}` from the session's
-name and email. Nothing leaks, but the account comes back thinner rather than
-staying deleted. Closing it properly needs a "deletion pending" marker that
-`ProfileProvisioning` honours.
+**The deletion marker closes the "comes back thin" gap (2026-10-14).** If step
+2 succeeds, step 3 fails and the user gives up, the marker is what survives:
+- **`ProfileState`** is three-valued — `ABSENT`, `PRESENT`, `DELETION_PENDING`
+  (`UserProfileRepository.profileState`) — and `ProfileProvisioning` writes
+  only on `ABSENT`. A marker is never re-provisioned; that used to bring the
+  account back with a name and email but no contacts and no consent.
+- **`HomeViewModel`'s gate reads it.** Every way in — a restored session from
+  Splash, an email login, a Google sign-in — lands on Home, which sends a
+  pending account to Account information with the task cleared
+  (`HomeEvent.ResumeDeletion`) instead of into tabs that would write a contact
+  under a deleted account. A failed read lets them in, as before.
+- **`DeleteAccountViewModel` reads it on start** and opens in the same state a
+  failure after step 2 leaves: `FAILED`, `profileDeleted`, no fresh
+  credential, wording `MSG_RESUME_PENDING`. Retry asks for the password or
+  the Google account again before anything is called. **Log Out** is offered
+  beside Retry once the data is gone, because the marker keeps the deletion
+  waiting for the next sign-in, on any phone.
+- **It is per uid**, so another account on the same phone is untouched, and a
+  later sign-up with the same email gets a new uid and no marker.
 
-**No rules change was needed.** `users/$uid` already has
-`".write": "auth != null && auth.uid == $uid"`, a removal is a write of null
-at that path, and there are no `.validate` rules under `users` (RTDB skips
-them on deletes regardless).
+**The marker outlives a finished deletion, by necessity.** Once the Auth user
+is gone no session can write `users/{uid}`, so `deletion_pending: true` stays
+under a uid that no longer belongs to anyone — no name, no email, no contacts.
+Any marker cleared before the Auth delete would reopen the gap. A human can
+sweep them from the Console. The hosted pages do not mention it yet (a human
+decision).
 
-**Not covered by tests:** `reauthenticate` and `delete` themselves, which need
-a real `FirebaseAuth`. The sequencing, the wording and both guards are covered
-— `DeleteAccountViewModelTest`, 28 tests.
+**No rules change was needed, and that was checked.** `users/$uid` has
+`".write": "auth != null && auth.uid == $uid"`, nothing at that level refuses
+an unlisted child, and RTDB skips `.validate` on the children a replace nulls.
+On 2026-10-14 the stripped `RTDBS-RULES.md` was loaded into the local Database
+Emulator (a `demo-` project id): the owner's replace was allowed and left only
+the marker, a stranger's and an unauthenticated one were denied, the retry and
+the gate's read were allowed, and Playground test 2 still passed. **If a
+`$other: { ".validate": false }` is ever added at `users/$uid`, give
+`deletion_pending` a rule of its own first**, or every Delete account fails at
+step 2 — safely, with nothing deleted, but it fails.
+
+**Not covered by tests:** `reauthenticate`, `delete` and the RTDB write
+themselves, which need a real Firebase. The sequencing, the wording, both
+guards and every marker path (written before the Auth delete, resume on a later
+visit, offline, recent-login, Log Out, another account, a failed read) are
+covered — `DeleteAccountViewModelTest` (39), `HomeViewModelTest` (7) and
+`ProfileProvisioningTest`.
 
 ## Privacy, consent and the hosted pages
 
@@ -395,9 +465,10 @@ same commit.** And **OpenStreetMap's tile servers see the phone's IP and the
 area being viewed** on every tile, which the notice discloses.
 
 **Known gap, documented not fixed:** `ProfileProvisioning` writes only `name`
-and `email`, so `users/{uid}` can exist with no `consent` subtree - including
-after a failed account deletion, where the next sign-in repopulates a thin
-record. **Do not add `users/$uid/.validate: newData.hasChildren(['consent'])`**
+and `email`, so `users/{uid}` can exist with no `consent` subtree (an account
+made in the Console, a Google account whose record went missing). The failed
+account deletion route is **closed** by the deletion marker - see "Account
+deletion". **Do not add `users/$uid/.validate: newData.hasChildren(['consent'])`**
 as a fix: it would fail that legitimate write and leave the user with no
 profile at all. The options are in the doc.
 

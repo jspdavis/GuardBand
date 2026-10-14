@@ -110,48 +110,6 @@
                     tools:text="+921-848-6041" />
             </LinearLayout>
 
-            <!-- Profile Settings-Style Navigation Card Container -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_profile_settings_entry"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="3dp"
-                app:cardMaxElevation="6dp"
-                app:strokeWidth="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="12dp"
-                    android:paddingTop="8dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="8dp">
-
-                    <ImageView
-                        android:layout_width="36dp"
-                        android:layout_height="36dp"
-                        android:layout_marginEnd="12dp"
-                        android:background="@drawable/bg_settings_icon_badge"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_profile"
-                        app:tint="@color/white" />
-
-                    <TextView
-                        android:id="@+id/tv_profile_row_title"
-                        style="@style/Widget.GuardBand.SettingsRow"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="@font/poppins_semibold"
-                        android:text="@string/label_settings_account" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
         </LinearLayout>
 
     </ScrollView>

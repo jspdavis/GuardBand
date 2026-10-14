@@ -23,6 +23,16 @@ class FakeAuthRepository(
     var deleteAccountResult: Result<Unit> = Result.success(Unit),
     var verifyPasswordResetCodeResult: Result<String> = Result.success(RESET_EMAIL),
     var confirmPasswordResetResult: Result<Unit> = Result.success(Unit),
+    var sendEmailVerificationResult: Result<Unit> = Result.success(Unit),
+    var reloadUserResult: Result<Unit> = Result.success(Unit),
+    var applyEmailVerificationResult: Result<Unit> = Result.success(Unit),
+    /** What [isEmailVerified] reports while signed in. */
+    var emailVerified: Boolean = false,
+    /**
+     * What a successful [reloadUser] changes [emailVerified] to - the link
+     * having been opened elsewhere in the meantime. Null leaves it alone.
+     */
+    var emailVerifiedAfterReload: Boolean? = null,
     /** What the account can sign in with. Empty means an unusable session. */
     var providers: Set<SignInProvider> = setOf(SignInProvider.PASSWORD),
     private var signedIn: Boolean = false,
@@ -40,6 +50,12 @@ class FakeAuthRepository(
     var deleteAccountCalls = 0; private set
     var verifyPasswordResetCodeCalls = 0; private set
     var confirmPasswordResetCalls = 0; private set
+    var sendEmailVerificationCalls = 0; private set
+    var reloadUserCalls = 0; private set
+    var applyEmailVerificationCalls = 0; private set
+
+    /** The code of the last [applyEmailVerification] call. */
+    var lastVerificationCode: String? = null; private set
 
     /** The token of the last [signInWithGoogle] call, so a test can assert it was forwarded. */
     var lastGoogleIdToken: String? = null; private set
@@ -134,6 +150,27 @@ class FakeAuthRepository(
     /** Lets a test kill the session between calls, which Firebase can do at any point. */
     fun forceSignOut() {
         signedIn = false
+    }
+
+    override fun isEmailVerified(): Boolean = signedIn && emailVerified
+
+    override suspend fun sendEmailVerification(): Result<Unit> {
+        sendEmailVerificationCalls++
+        return sendEmailVerificationResult
+    }
+
+    override suspend fun reloadUser(): Result<Unit> {
+        reloadUserCalls++
+        if (reloadUserResult.isSuccess) {
+            emailVerifiedAfterReload?.let { emailVerified = it }
+        }
+        return reloadUserResult
+    }
+
+    override suspend fun applyEmailVerification(code: String): Result<Unit> {
+        applyEmailVerificationCalls++
+        lastVerificationCode = code
+        return applyEmailVerificationResult
     }
 
     override fun isLoggedIn(): Boolean = signedIn

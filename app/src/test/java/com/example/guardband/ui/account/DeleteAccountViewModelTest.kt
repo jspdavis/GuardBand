@@ -1,4 +1,4 @@
-package com.example.guardband.ui.settings
+package com.example.guardband.ui.account
 
 import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.repository.AuthError
@@ -45,7 +45,9 @@ class DeleteAccountViewModelTest {
 
     private val auth = FakeAuthRepository(signedIn = true)
     private val profiles = FakeUserProfileRepository()
-    private val viewModel = DeleteAccountViewModel(auth, profiles)
+    // Lazy, so it is built after MainDispatcherRule has swapped in Main: the
+    // ViewModel reads the deletion marker from init.
+    private val viewModel by lazy { DeleteAccountViewModel(auth, profiles) }
 
     private val uid = FakeAuthRepository.DEFAULT_USER.id
 
@@ -146,7 +148,7 @@ class DeleteAccountViewModelTest {
         )
         assertEquals(DeleteAccountStep.IDLE, state.step)
         assertNull(state.method)
-        assertEquals(0, profiles.deleteProfileCalls)
+        assertEquals(0, profiles.markDeletionPendingCalls)
         assertEquals(0, auth.deleteAccountCalls)
     }
 
@@ -169,7 +171,7 @@ class DeleteAccountViewModelTest {
             ),
             seen
         )
-        assertEquals(0, profiles.deleteProfileCalls)
+        assertEquals(0, profiles.markDeletionPendingCalls)
         assertEquals(0, signedOut.deleteAccountCalls)
     }
 
@@ -185,7 +187,7 @@ class DeleteAccountViewModelTest {
 
         assertEquals(DeleteAccountStep.IDLE, state.step)
         assertNull(state.method)
-        assertEquals(0, profiles.deleteProfileCalls)
+        assertEquals(0, profiles.markDeletionPendingCalls)
     }
 
     @Test
@@ -195,7 +197,7 @@ class DeleteAccountViewModelTest {
         confirmDelete()
 
         assertEquals(0, auth.reauthenticateWithPasswordCalls)
-        assertEquals(0, profiles.deleteProfileCalls)
+        assertEquals(0, profiles.markDeletionPendingCalls)
         assertEquals(0, auth.deleteAccountCalls)
     }
 
@@ -234,7 +236,7 @@ class DeleteAccountViewModelTest {
         assertEquals(DeleteAccountStep.FAILED, state.step)
         assertEquals(DeleteAccountViewModel.MSG_WRONG_PASSWORD, state.errorMessage)
         assertFalse(state.reauthenticated)
-        assertEquals(0, profiles.deleteProfileCalls)
+        assertEquals(0, profiles.markDeletionPendingCalls)
         assertEquals(0, auth.deleteAccountCalls)
     }
 
@@ -246,7 +248,7 @@ class DeleteAccountViewModelTest {
         submitPassword()
 
         assertEquals(DeleteAccountViewModel.MSG_REAUTH_FAILED, state.errorMessage)
-        assertEquals(0, profiles.deleteProfileCalls)
+        assertEquals(0, profiles.markDeletionPendingCalls)
     }
 
     @Test
@@ -258,7 +260,7 @@ class DeleteAccountViewModelTest {
 
         assertEquals(DeleteAccountStep.IDLE, state.step)
         assertTrue(DeleteAccountEvent.NavigateToLogin in events)
-        assertEquals(0, profiles.deleteProfileCalls)
+        assertEquals(0, profiles.markDeletionPendingCalls)
     }
 
     @Test
@@ -273,7 +275,7 @@ class DeleteAccountViewModelTest {
 
         assertEquals("token-1", auth.lastReauthGoogleIdToken)
         assertEquals(DeleteAccountViewModel.MSG_WRONG_GOOGLE_ACCOUNT, state.errorMessage)
-        assertEquals(0, profiles.deleteProfileCalls)
+        assertEquals(0, profiles.markDeletionPendingCalls)
     }
 
     /** Dismissing the chooser is a deliberate back-out, so it says nothing. */
@@ -314,9 +316,11 @@ class DeleteAccountViewModelTest {
 
         submitPassword()
 
-        assertEquals(listOf(uid), profiles.deletedUids)
+        assertEquals(listOf(uid), profiles.markedUids)
         assertEquals(1, auth.deleteAccountCalls)
         assertFalse(profiles.saved.containsKey(uid))
+        // The marker stays: no session is left that could clear it.
+        assertTrue(uid in profiles.pendingDeletion)
         assertEquals(DeleteAccountStep.DONE, state.step)
         assertTrue(state.profileDeleted)
         assertNull(state.errorMessage)
@@ -342,11 +346,11 @@ class DeleteAccountViewModelTest {
     @Test
     fun `a failed data delete leaves the account alone`() = runTest {
         collectEvents()
-        profiles.deleteProfileResult = Result.failure(AuthError.Unknown(null))
+        profiles.markDeletionPendingResult = Result.failure(AuthError.Unknown(null))
 
         submitPassword()
 
-        assertEquals(1, profiles.deleteProfileCalls)
+        assertEquals(1, profiles.markDeletionPendingCalls)
         assertEquals(0, auth.deleteAccountCalls)
         assertEquals(DeleteAccountStep.FAILED, state.step)
         assertEquals(DeleteAccountViewModel.MSG_DATA_DELETE_FAILED, state.errorMessage)
@@ -357,7 +361,7 @@ class DeleteAccountViewModelTest {
     @Test
     fun `a refused data delete says so`() = runTest {
         collectEvents()
-        profiles.deleteProfileResult = Result.failure(AuthError.PermissionDenied)
+        profiles.markDeletionPendingResult = Result.failure(AuthError.PermissionDenied)
 
         submitPassword()
 
@@ -371,7 +375,7 @@ class DeleteAccountViewModelTest {
 
         submitPassword()
 
-        assertEquals(1, profiles.deleteProfileCalls)
+        assertEquals(1, profiles.markDeletionPendingCalls)
         assertEquals(1, auth.deleteAccountCalls)
         assertEquals(DeleteAccountStep.FAILED, state.step)
         assertEquals(DeleteAccountViewModel.MSG_ACCOUNT_DELETE_FAILED, state.errorMessage)
@@ -392,7 +396,7 @@ class DeleteAccountViewModelTest {
         viewModel.onRetryClicked()
         advanceUntilIdle()
 
-        assertEquals(1, profiles.deleteProfileCalls)
+        assertEquals(1, profiles.markDeletionPendingCalls)
         assertEquals(2, auth.deleteAccountCalls)
         assertEquals(1, auth.reauthenticateWithPasswordCalls)
         assertEquals(DeleteAccountStep.DONE, state.step)
@@ -401,14 +405,14 @@ class DeleteAccountViewModelTest {
     @Test
     fun `retry after a failed data delete re-runs both steps`() = runTest {
         collectEvents()
-        profiles.deleteProfileResult = Result.failure(AuthError.Unknown(null))
+        profiles.markDeletionPendingResult = Result.failure(AuthError.Unknown(null))
         submitPassword()
 
-        profiles.deleteProfileResult = Result.success(Unit)
+        profiles.markDeletionPendingResult = Result.success(Unit)
         viewModel.onRetryClicked()
         advanceUntilIdle()
 
-        assertEquals(2, profiles.deleteProfileCalls)
+        assertEquals(2, profiles.markDeletionPendingCalls)
         assertEquals(1, auth.deleteAccountCalls)
         assertEquals(1, auth.reauthenticateWithPasswordCalls)
         assertEquals(DeleteAccountStep.DONE, state.step)
@@ -453,7 +457,7 @@ class DeleteAccountViewModelTest {
         advanceUntilIdle()
 
         // Still one data delete: the second credential does not undo the guard.
-        assertEquals(1, profiles.deleteProfileCalls)
+        assertEquals(1, profiles.markDeletionPendingCalls)
         assertEquals(2, auth.deleteAccountCalls)
         assertEquals(2, auth.reauthenticateWithPasswordCalls)
         assertEquals(DeleteAccountStep.DONE, state.step)
@@ -492,7 +496,7 @@ class DeleteAccountViewModelTest {
         advanceUntilIdle()
 
         assertFalse(DeleteAccountEvent.ShowConfirmation in events)
-        assertEquals(1, profiles.deleteProfileCalls)
+        assertEquals(1, profiles.markDeletionPendingCalls)
         assertEquals(2, auth.deleteAccountCalls)
         assertEquals(DeleteAccountStep.DONE, state.step)
     }
@@ -528,6 +532,195 @@ class DeleteAccountViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, auth.deleteAccountCalls)
-        assertEquals(1, profiles.deleteProfileCalls)
+        assertEquals(1, profiles.markDeletionPendingCalls)
+    }
+
+    // ── The deletion marker: resuming on a later visit ────────────────────────
+
+    /** A fresh ViewModel, as a later visit or a new sign-in would build. */
+    private fun TestScope.revisit(
+        providers: Set<SignInProvider> = setOf(SignInProvider.PASSWORD)
+    ): Pair<DeleteAccountViewModel, MutableList<DeleteAccountEvent>> {
+        auth.providers = providers
+        val vm = DeleteAccountViewModel(auth, profiles)
+        val seen = mutableListOf<DeleteAccountEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            vm.events.collect { seen += it }
+        }
+        advanceUntilIdle()
+        return vm to seen
+    }
+
+    @Test
+    fun `the data is replaced by the marker before the account is deleted`() = runTest {
+        collectEvents()
+        auth.deleteAccountResult = Result.failure(AuthError.Unknown(null))
+
+        submitPassword()
+
+        assertTrue(uid in profiles.pendingDeletion)
+        assertEquals(1, auth.deleteAccountCalls)
+        assertTrue(state.isUnfinished)
+    }
+
+    @Test
+    fun `a pending marker opens straight into finish deleting`() = runTest {
+        profiles.pendingDeletion += uid
+
+        val (vm, seen) = revisit()
+
+        assertEquals(DeleteAccountStep.FAILED, vm.uiState.value.step)
+        assertTrue(vm.uiState.value.profileDeleted)
+        assertTrue(vm.uiState.value.isUnfinished)
+        assertFalse(vm.uiState.value.reauthenticated)
+        assertEquals(SignInProvider.PASSWORD, vm.uiState.value.method)
+        assertEquals(DeleteAccountViewModel.MSG_RESUME_PENDING, vm.uiState.value.errorMessage)
+        // Opening the screen asks for nothing and calls nothing destructive.
+        assertTrue(seen.isEmpty())
+        assertEquals(0, profiles.markDeletionPendingCalls)
+        assertEquals(0, auth.deleteAccountCalls)
+    }
+
+    /** Profile removed, Auth delete failed, user gave up; now they finish it. */
+    @Test
+    fun `resuming asks who they are, then deletes only the sign-in`() = runTest {
+        profiles.pendingDeletion += uid
+        val (vm, seen) = revisit()
+
+        vm.onRetryClicked()
+        advanceUntilIdle()
+        assertEquals(listOf<DeleteAccountEvent>(DeleteAccountEvent.AskForPassword), seen)
+
+        vm.onPasswordSubmitted("password123")
+        advanceUntilIdle()
+
+        assertEquals(1, auth.reauthenticateWithPasswordCalls)
+        assertEquals(0, profiles.markDeletionPendingCalls)
+        assertEquals(1, auth.deleteAccountCalls)
+        assertEquals(DeleteAccountStep.DONE, vm.uiState.value.step)
+        assertEquals(DeleteAccountEvent.NavigateToLogin, seen.last())
+    }
+
+    @Test
+    fun `the row resumes a pending deletion instead of re-confirming`() = runTest {
+        profiles.pendingDeletion += uid
+        val (vm, seen) = revisit()
+
+        vm.onDeleteAccountClicked()
+        advanceUntilIdle()
+
+        assertFalse(DeleteAccountEvent.ShowConfirmation in seen)
+        assertEquals(listOf<DeleteAccountEvent>(DeleteAccountEvent.AskForPassword), seen)
+    }
+
+    @Test
+    fun `a google account resuming goes back through the chooser`() = runTest {
+        profiles.pendingDeletion += uid
+        val (vm, seen) = revisit(providers = setOf(SignInProvider.GOOGLE))
+
+        vm.onRetryClicked()
+        advanceUntilIdle()
+        vm.onGoogleIdToken("token-2")
+        advanceUntilIdle()
+
+        assertEquals(DeleteAccountEvent.RequestGoogleIdToken, seen.first())
+        assertEquals("token-2", auth.lastReauthGoogleIdToken)
+        assertEquals(DeleteAccountStep.DONE, vm.uiState.value.step)
+    }
+
+    /** Offline on the second attempt: still unfinished, still resumable, nothing undone. */
+    @Test
+    fun `resuming offline leaves the deletion waiting`() = runTest {
+        profiles.pendingDeletion += uid
+        auth.deleteAccountResult = Result.failure(AuthError.Network)
+        val (vm, _) = revisit()
+
+        vm.onRetryClicked()
+        vm.onPasswordSubmitted("password123")
+        advanceUntilIdle()
+
+        assertEquals(DeleteAccountStep.FAILED, vm.uiState.value.step)
+        assertEquals(
+            DeleteAccountViewModel.MSG_NO_CONNECTION_UNFINISHED,
+            vm.uiState.value.errorMessage
+        )
+        assertTrue(vm.uiState.value.isUnfinished)
+        assertTrue(uid in profiles.pendingDeletion)
+    }
+
+    /** Firebase wants a fresher login: the prompt again, then it finishes. */
+    @Test
+    fun `resuming that needs a fresher login asks again and then finishes`() = runTest {
+        profiles.pendingDeletion += uid
+        auth.deleteAccountResult = Result.failure(AuthError.RequiresRecentLogin)
+        val (vm, seen) = revisit()
+
+        vm.onRetryClicked()
+        vm.onPasswordSubmitted("password123")
+        advanceUntilIdle()
+        assertEquals(DeleteAccountViewModel.MSG_NEEDS_RECENT_LOGIN, vm.uiState.value.errorMessage)
+
+        seen.clear()
+        auth.deleteAccountResult = Result.success(Unit)
+        vm.onRetryClicked()
+        advanceUntilIdle()
+        assertEquals(listOf<DeleteAccountEvent>(DeleteAccountEvent.AskForPassword), seen)
+
+        vm.onPasswordSubmitted("password123")
+        advanceUntilIdle()
+
+        assertEquals(2, auth.reauthenticateWithPasswordCalls)
+        assertEquals(2, auth.deleteAccountCalls)
+        assertEquals(DeleteAccountStep.DONE, vm.uiState.value.step)
+    }
+
+    @Test
+    fun `a failed marker read leaves the screen as it was`() = runTest {
+        profiles.profileStateResult = Result.failure(AuthError.Network)
+
+        val (vm, seen) = revisit()
+
+        assertEquals(DeleteAccountStep.IDLE, vm.uiState.value.step)
+        assertNull(vm.uiState.value.errorMessage)
+        assertTrue(seen.isEmpty())
+    }
+
+    @Test
+    fun `another account's marker does not touch this one`() = runTest {
+        profiles.pendingDeletion += "uid-somebody-else"
+
+        val (vm, _) = revisit()
+
+        assertEquals(DeleteAccountStep.IDLE, vm.uiState.value.step)
+        assertFalse(vm.uiState.value.profileDeleted)
+    }
+
+    @Test
+    fun `log out from an unfinished deletion keeps the marker for next time`() = runTest {
+        profiles.pendingDeletion += uid
+        val (vm, seen) = revisit()
+
+        vm.onLogOutClicked()
+        advanceUntilIdle()
+
+        assertEquals(1, auth.signOutCalls)
+        assertEquals(listOf<DeleteAccountEvent>(DeleteAccountEvent.NavigateToLogin), seen)
+        assertTrue(uid in profiles.pendingDeletion)
+        assertEquals(0, auth.deleteAccountCalls)
+    }
+
+    /** Before the data is gone there is nothing half-done to walk away from. */
+    @Test
+    fun `log out is ignored while nothing has been deleted`() = runTest {
+        collectEvents()
+        auth.reauthenticateWithPasswordResult = Result.failure(AuthError.InvalidCredentials)
+        submitPassword()
+        events.clear()
+
+        viewModel.onLogOutClicked()
+        advanceUntilIdle()
+
+        assertEquals(0, auth.signOutCalls)
+        assertTrue(events.isEmpty())
     }
 }

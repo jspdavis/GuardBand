@@ -132,8 +132,10 @@ Needs §1 steps 1–3 done.
 5. **Settings → Privacy Notice** opens the same page.
 6. The notice's displayed version reads **1.1**, matching step 4.
 7. Open `/delete-account` and follow its in-app steps exactly as written —
-   Track → gear → Settings → Delete account. The wording should match what the
-   app actually does.
+   Track → gear → Settings → Account information → Delete account (moved
+   one level down on 2026-10-14; the hosted page still names the old path
+   until a human updates it). The wording should match what the app actually
+   does.
 8. An **existing** account that accepted `1.0` still shows `1.0` in the
    Console, and is **not** asked to agree again.
 
@@ -191,18 +193,25 @@ other, and re-run that check.**
 
 `ProfileProvisioning.ensureProfile` writes **only `name` and `email`** when a
 sign-in finds `users/{uid}` absent. So a profile **can** exist with no
-`consent` subtree, by at least three routes:
+`consent` subtree, by two routes still open:
 
 - an account created in the Console, on its first sign-in;
-- a Google account whose record went missing;
-- **an account whose data was deleted but whose Auth user survived a failed
-  delete** — the next sign-in repopulates a thin record.
+- a Google account whose record went missing.
 
-The last one matters most: a user who asked to be deleted ends up with an
-account again, minus their contacts and consent.
+**The third route is closed (2026-10-14, `feature/account-safety`).** An
+account whose data was deleted but whose Auth user survived a failed delete
+used to have a thin record repopulated on the next sign-in. Delete account now
+replaces `users/{uid}` with `{ "deletion_pending": true }` in the same write
+that removes the data; `ProfileProvisioning` never re-provisions over it, and
+the next sign-in is sent to finish the deletion instead. It needed **no rules
+change** (checked in the local emulator). It differs from Option B below in
+one respect worth knowing: the marker lives **inside** `users/{uid}`, and after
+a finished deletion it stays there, a uid and one boolean with no personal data,
+because no session is left that could clear it. CLAUDE.md, "Account
+deletion", has the details. The table below is the original analysis.
 
-**Two options, neither taken here** (this pass was scoped to the notice and the
-rules):
+**Two options, neither taken at the time** (that pass was scoped to the notice
+and the rules):
 
 | | Option A — leave it documented | Option B — a deletion-pending marker |
 |---|---|---|

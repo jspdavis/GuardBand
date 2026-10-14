@@ -115,9 +115,24 @@
             </intent-filter>
         </activity>
 
+        <!-- Verify email: every Firebase email link arrives at the exported
+             ResetPasswordActivity above, which routes mode=verifyEmail (and
+             any mode the app does not handle) here. Not exported. -->
+        <activity
+            android:name=".ui.verify.VerifyEmailActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!-- Reset success: reached only from ResetPasswordActivity, so not exported. -->
         <activity
             android:name=".ui.reset.ResetSuccessActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- ── Account information (opened from Settings; holds Delete account) -->
+
+        <activity
+            android:name=".ui.account.AccountActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 

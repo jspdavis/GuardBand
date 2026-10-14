@@ -1,6 +1,7 @@
 package com.example.guardband.testing
 
 import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.model.User
 import com.example.guardband.data.repository.UserProfileRepository
 
@@ -8,17 +9,18 @@ import com.example.guardband.data.repository.UserProfileRepository
  * [UserProfileRepository] that records what was written, so a test can assert
  * whether a profile was created, left alone, or overwritten.
  *
- * Profiles are keyed by uid in [saved]. [profileExistsResult] is separate from
- * that map on purpose: a test needs to simulate a read failure without also
- * claiming the record is absent, and [fetchProfileResult] exists for the same
- * reason.
+ * Profiles are keyed by uid in [saved], and deletion markers by uid in
+ * [pendingDeletion], so a marker on one account says nothing about another.
+ * [profileStateResult] is separate from both on purpose: a test needs to
+ * simulate a read failure without also claiming the record is absent, and
+ * [fetchProfileResult] exists for the same reason.
  */
 class FakeUserProfileRepository(
     var saveProfileResult: Result<Unit> = Result.success(Unit),
-    var profileExistsResult: Result<Boolean>? = null,
+    var profileStateResult: Result<ProfileState>? = null,
     var fetchProfileResult: Result<User?>? = null,
     var finalizeSignUpResult: Result<Unit> = Result.success(Unit),
-    var deleteProfileResult: Result<Unit> = Result.success(Unit)
+    var markDeletionPendingResult: Result<Unit> = Result.success(Unit)
 ) : UserProfileRepository {
 
     /** uid → (name, email), in call order. */
@@ -31,13 +33,16 @@ class FakeUserProfileRepository(
     val recordedConsent = mutableMapOf<String, String>()
 
     var saveProfileCalls = 0; private set
-    var profileExistsCalls = 0; private set
+    var profileStateCalls = 0; private set
     var fetchProfileCalls = 0; private set
     var finalizeSignUpCalls = 0; private set
-    var deleteProfileCalls = 0; private set
+    var markDeletionPendingCalls = 0; private set
 
-    /** The uids passed to [deleteProfile], in call order. */
-    val deletedUids = mutableListOf<String>()
+    /** The uids passed to [markDeletionPending], in call order. */
+    val markedUids = mutableListOf<String>()
+
+    /** Uids whose record is only the deletion marker. A test may seed it. */
+    val pendingDeletion = mutableSetOf<String>()
 
     override suspend fun saveProfile(
         uid: String,
@@ -62,28 +67,36 @@ class FakeUserProfileRepository(
         )
     }
 
-    /** Falls back to whether [saved] holds [uid] unless a test pins the answer. */
-    override suspend fun profileExists(uid: String): Result<Boolean> {
-        profileExistsCalls++
-        return profileExistsResult ?: Result.success(saved.containsKey(uid))
+    /** Derived from [pendingDeletion] and [saved] unless a test pins the answer. */
+    override suspend fun profileState(uid: String): Result<ProfileState> {
+        profileStateCalls++
+        profileStateResult?.let { return it }
+        return Result.success(
+            when (uid) {
+                in pendingDeletion -> ProfileState.DELETION_PENDING
+                in saved -> ProfileState.PRESENT
+                else -> ProfileState.ABSENT
+            }
+        )
     }
 
     /**
-     * Removes everything recorded for [uid] on success, so a later
-     * [fetchProfile] agrees that the record is gone.
+     * On success, removes everything recorded for [uid] and leaves only the
+     * marker - one step, as the real write is one commit - so a later
+     * [profileState] reads [ProfileState.DELETION_PENDING].
      *
-     * A uid that was never saved still succeeds: RTDB treats removing nothing
-     * as a no-op, and the retry path after a half-finished delete relies on it.
+     * Marking twice still succeeds, which the retry path relies on.
      */
-    override suspend fun deleteProfile(uid: String): Result<Unit> {
-        deleteProfileCalls++
-        deletedUids += uid
-        if (deleteProfileResult.isSuccess) {
+    override suspend fun markDeletionPending(uid: String): Result<Unit> {
+        markDeletionPendingCalls++
+        markedUids += uid
+        if (markDeletionPendingResult.isSuccess) {
             saved.remove(uid)
             finalizedContacts.remove(uid)
             recordedConsent.remove(uid)
+            pendingDeletion += uid
         }
-        return deleteProfileResult
+        return markDeletionPendingResult
     }
 
     /**
