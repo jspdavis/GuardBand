@@ -1,4 +1,4 @@
-package com.example.guardband.ui.track
+package com.example.guardband.ui.avatar
 
 import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.model.User

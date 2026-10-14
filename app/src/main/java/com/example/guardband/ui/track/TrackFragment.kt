@@ -2,7 +2,6 @@ package com.example.guardband.ui.track
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
 import android.view.MotionEvent
@@ -19,11 +18,9 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import coil.dispose
-import coil.load
-import coil.transform.CircleCropTransformation
 import com.example.guardband.R
 import com.example.guardband.data.model.Alert
+import com.example.guardband.ui.avatar.AvatarImage
 import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.imageview.ShapeableImageView
@@ -37,15 +34,15 @@ import org.osmdroid.views.overlay.Marker
 
 /**
  * Track tab (the default tab): the band's last known position on an
- * OpenStreetMap map, its status panel, and the bottom actions.
+ * OpenStreetMap map and the bottom actions. The check-in pill is the
+ * screen's one status line; the band status panel (reporting badge, last
+ * seen, battery) was removed on 2026-10-14.
  *
  * View IDs, so the layout can be restyled without touching this file:
- * `track_map_view`, `track_online_badge`, `track_last_seen`, `track_battery`,
- * `track_empty_view`, `track_recenter_button`, `track_navigate_button`,
- * `track_layers_button`, `track_checkin_pill` (a read-only status, not a
- * button), plus the top bar's
- * `iv_track_avatar`, `ib_track_notifications` and `ib_track_settings` and
- * the `ll_track_status` panel.
+ * `track_map_view`, `track_empty_view`, `track_recenter_button`,
+ * `track_navigate_button`, `track_layers_button`, `track_checkin_pill` (a
+ * read-only status, not a button), plus the top bar's `iv_track_avatar`,
+ * `ib_track_notifications` and `ib_track_settings`.
  *
  * Gear and bell forward to the shared [HomeViewModel], which asks the host to
  * show Settings or Notifications. The avatar does the same for the Profile
@@ -57,7 +54,8 @@ import org.osmdroid.views.overlay.Marker
  * it straight back.
  *
  * **The avatar** is the Google profile photo when [TrackUiState.avatarUrl] has
- * one, loaded by Coil, and the default icon otherwise. See [renderAvatar].
+ * one, and the default icon otherwise; [AvatarImage] does the loading, the
+ * same way as on the Profile tab.
  *
  * Nothing here logs. The state carries the wearer's coordinates.
  */
@@ -65,10 +63,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
     private lateinit var mapView: MapView
     private lateinit var ivAvatar: ShapeableImageView
-    private lateinit var statusPanel: View
-    private lateinit var tvOnlineBadge: TextView
-    private lateinit var tvLastSeen: TextView
-    private lateinit var tvBattery: TextView
+    private lateinit var avatarImage: AvatarImage
     private lateinit var tvEmpty: TextView
     private lateinit var btnNavigate: Button
     private lateinit var tvCheckIn: TextView
@@ -89,13 +84,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     /** So a later fix does not keep yanking the zoom back. */
     private var hasZoomedToFix = false
 
-    /**
-     * The default icon's tint and inset, read from the layout so a photo can
-     * drop them and the icon can get them back without repeating the XML.
-     */
-    private var defaultAvatarTint: ColorStateList? = null
-    private var defaultAvatarPadding = IntArray(4)
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Before the layout inflates: the MapView is built in onCreateView, and
@@ -109,19 +97,11 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
         mapView        = view.findViewById(R.id.track_map_view)
         ivAvatar       = view.findViewById(R.id.iv_track_avatar)
-        statusPanel    = view.findViewById(R.id.ll_track_status)
-        tvOnlineBadge  = view.findViewById(R.id.track_online_badge)
-        tvLastSeen     = view.findViewById(R.id.track_last_seen)
-        tvBattery      = view.findViewById(R.id.track_battery)
         tvEmpty        = view.findViewById(R.id.track_empty_view)
         btnNavigate    = view.findViewById(R.id.track_navigate_button)
         tvCheckIn      = view.findViewById(R.id.track_checkin_pill)
 
-        defaultAvatarTint = ivAvatar.imageTintList
-        defaultAvatarPadding = intArrayOf(
-            ivAvatar.contentPaddingLeft, ivAvatar.contentPaddingTop,
-            ivAvatar.contentPaddingRight, ivAvatar.contentPaddingBottom
-        )
+        avatarImage    = AvatarImage(ivAvatar)
 
         setUpMap()
 
@@ -152,11 +132,11 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             }
         }
         // Its own collector, so the 30 s staleness tick does not re-request
-        // the photo: only a different URL reaches renderAvatar.
+        // the photo: only a different URL reaches the avatar.
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.map { it.avatarUrl }.distinctUntilChanged()
-                    .collect(::renderAvatar)
+                    .collect(avatarImage::show)
             }
         }
     }
@@ -176,7 +156,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
      * MapView has to be detached by hand or the Fragment's view leaks with it.
      */
     override fun onDestroyView() {
-        ivAvatar.dispose()
+        avatarImage.dispose()
         mapView.onDetach()
         marker = null
         super.onDestroyView()
@@ -251,7 +231,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         // No visible name: TalkBack still says whose app this is.
         ivAvatar.contentDescription = getString(R.string.cd_track_avatar, state.userName)
 
-        renderStatusPanel(state)
         renderEmptyView(state)
         tvCheckIn.text = checkInText(state.checkIn)
 
@@ -262,75 +241,10 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     }
 
     /**
-     * The default icon goes back **first**, before any request, so a view that
-     * was re-created or reused can never keep showing an earlier session's
-     * photo while the new one loads. It is also the placeholder and the error
-     * drawable, so the avatar is never blank: loading, offline, or a link that
-     * has expired all show the icon.
-     *
-     * A null [url] makes no request at all. Coil cancels the previous request
-     * itself when `load` is called again on the same view and when the view
-     * detaches; [dispose] makes that explicit for the no-photo case and for
-     * [onDestroyView].
-     *
-     * The icon is tinted and inset by the layout; a photo is neither, so those
-     * are dropped only once the photo has actually arrived.
+     * The pill's text; a status, so there is no click to wire. [Elapsed] is
+     * turned into text here rather than in the ViewModel, which holds no
+     * Context and so cannot reach a `plurals`.
      */
-    private fun renderAvatar(url: String?) {
-        val avatar = ivAvatar
-        avatar.dispose()
-        showDefaultAvatarStyle(avatar)
-        avatar.setImageResource(R.drawable.ic_profile)
-        if (url == null) return
-
-        avatar.load(url) {
-            placeholder(R.drawable.ic_profile)
-            error(R.drawable.ic_profile)
-            transformations(CircleCropTransformation())
-            listener(onSuccess = { _, _ -> showPhotoStyle(avatar) })
-        }
-    }
-
-    private fun showDefaultAvatarStyle(avatar: ShapeableImageView) {
-        avatar.imageTintList = defaultAvatarTint
-        val (left, top, right, bottom) = defaultAvatarPadding
-        avatar.setContentPadding(left, top, right, bottom)
-    }
-
-    private fun showPhotoStyle(avatar: ShapeableImageView) {
-        avatar.imageTintList = null
-        avatar.setContentPadding(0, 0, 0, 0)
-    }
-
-    private fun renderStatusPanel(state: TrackUiState) {
-        statusPanel.visibility = if (state.hasReported) View.VISIBLE else View.GONE
-        if (!state.hasReported) return
-
-        tvOnlineBadge.setText(
-            if (state.isOnline) R.string.label_track_reporting
-            else R.string.label_track_not_reporting
-        )
-        // DESIGN: Jul — the dot should take the reporting/not-reporting colour.
-
-        val elapsed = state.elapsed
-        tvLastSeen.visibility = if (elapsed == null) View.GONE else View.VISIBLE
-        if (elapsed != null) tvLastSeen.text = lastSeenText(elapsed)
-
-        tvBattery.text = batteryText(state.battery)
-    }
-
-    /**
-     * [Elapsed] turned into text here rather than in the ViewModel, which holds
-     * no Context and so cannot reach a `plurals`.
-     */
-    private fun lastSeenText(elapsed: Elapsed): String = when (elapsed) {
-        is Elapsed.Seconds -> getString(R.string.label_track_last_seen_just_now)
-        is Elapsed.Minutes -> quantity(R.plurals.label_track_last_seen_minutes, elapsed.value)
-        is Elapsed.Hours -> quantity(R.plurals.label_track_last_seen_hours, elapsed.value)
-        is Elapsed.Days -> quantity(R.plurals.label_track_last_seen_days, elapsed.value)
-    }
-
-    /** The pill's text; a status, so there is no click to wire. */
     private fun checkInText(status: CheckInStatus): String = when (status) {
         CheckInStatus.Loading -> getString(R.string.label_track_checkin_loading)
         CheckInStatus.None -> getString(R.string.label_track_checkin_none)
@@ -346,13 +260,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
     private fun quantity(resId: Int, value: Long): String =
         resources.getQuantityString(resId, value.toInt(), value.toInt())
-
-    private fun batteryText(battery: Alert.Battery?): String = when {
-        battery == null -> getString(R.string.label_track_battery_unknown)
-        battery.isCharging ->
-            getString(R.string.label_track_battery_charging, battery.percent)
-        else -> getString(R.string.label_track_battery, battery.percent)
-    }
 
     /**
      * Three different reasons there is no marker, which all look like an empty

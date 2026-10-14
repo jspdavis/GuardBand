@@ -10,7 +10,7 @@ package com.example.guardband.data.model
  * @param email    Email address used for login/forgot-password.
  * @param photoUrl The session's profile photo link as Firebase Auth reports
  *   it, or null. Display only: it is never written to the database, and
- *   whether it is shown at all is the Track tab's `AvatarPhoto` decision.
+ *   whether it is shown at all is `ui/avatar/AvatarPhoto`'s decision.
  */
 data class User(
     val id: String = "",

@@ -11,6 +11,7 @@ import com.example.guardband.data.model.CheckIn
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.data.repository.AlertRepository
 import com.example.guardband.data.repository.AuthRepository
+import com.example.guardband.ui.avatar.AvatarPhoto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay

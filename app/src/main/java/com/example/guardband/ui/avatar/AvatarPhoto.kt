@@ -1,4 +1,4 @@
-package com.example.guardband.ui.track
+package com.example.guardband.ui.avatar
 
 import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.model.User
@@ -6,7 +6,8 @@ import java.net.URI
 import java.net.URISyntaxException
 
 /**
- * Which photo, if any, the Track avatar loads. Pure, so it is unit-testable.
+ * Which photo, if any, the Track and Profile avatars load. Pure, so it is
+ * unit-testable. [AvatarImage] puts the result on screen.
  *
  * Null means "keep the default icon", and the screen then makes no request at
  * all. Three rules, each a reason to return null:
@@ -26,10 +27,12 @@ import java.net.URISyntaxException
 internal object AvatarPhoto {
 
     /**
-     * The pixel size requested from Google: 3x the avatar's 36dp, so it is
-     * sharp on an xxhdpi screen without downloading a full-size photo.
+     * The pixel size requested from Google: 3x the larger avatar, Profile's
+     * 96dp, so it is sharp on an xxhdpi screen without downloading a
+     * full-size photo. Both screens ask for the same link, so the photo is
+     * downloaded once and Track's 36dp avatar decodes it smaller.
      */
-    const val SIZE_PX = 108
+    const val SIZE_PX = 288
 
     /**
      * Google's size-and-crop suffix, `=s96-c`, at the very end of the link.

@@ -13,5 +13,13 @@ data class ProfileUiState(
 
     /** Welcome-header name (already falls back to "User"). */
     val userName: String = "",
-    val email: String = ""
+    val email: String = "",
+
+    /**
+     * The Google profile photo to load into the avatar, already vetted by
+     * [AvatarPhoto][com.example.guardband.ui.avatar.AvatarPhoto]. Null keeps
+     * the default icon and makes no request. From the session only: the
+     * `users/{uid}` record holds no photo.
+     */
+    val avatarUrl: String? = null
 )

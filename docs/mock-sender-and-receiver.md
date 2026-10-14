@@ -168,12 +168,13 @@ and its four tabs. Two of them read the band.
 
 The newest ping, whatever kind it was.
 
+The band status panel (Reporting / Not reporting, Last seen, Battery) was
+removed from the screen on 2026-10-14; the Check-in pill is now the tab's one
+status line. Battery is still on each Alert-tab row.
+
 | Element | Shows |
 |---|---|
 | Map + one marker | Last known position. OpenStreetMap tiles via osmdroid. |
-| **Reporting / Not reporting** | Whether the last report is under **180 s** old. |
-| **Last seen …** | `just now` under a minute, then minutes / hours / days. |
-| **Battery n%** | `· Charging` when the payload says so; `Battery unknown` if absent. |
 | Empty overlay | *"Your band hasn't reported yet."* / *"No location fix yet"* / a read error. |
 | **Navigate** | Opens a maps app on the position. Disabled with no fix. |
 | Recenter (◎) | Re-centres and resumes following. |
@@ -205,11 +206,11 @@ whatever it was" is exactly what a map wants.
 
 | Type sent | Track tab | Alert tab |
 |---|---|---|
-| `PANIC` | marker + panel update | shown, and becomes **Current status** |
-| `CHECKIN` | marker + panel update, and the **Check-in pill** updates | shown |
-| `LOW_BATTERY` | marker + panel update | shown |
-| `TRACKING_UPDATE` | marker + panel update | **hidden**, and never becomes Current status |
-| an unrecognised type | panel updates | shown as **"Unknown alert"** |
+| `PANIC` | marker moves | shown, and becomes **Current status** |
+| `CHECKIN` | marker moves, and the **Check-in pill** updates | shown |
+| `LOW_BATTERY` | marker moves | shown |
+| `TRACKING_UPDATE` | marker moves | **hidden**, and never becomes Current status |
+| an unrecognised type | marker moves if it has a location | shown as **"Unknown alert"** |
 
 A tracking update being invisible on the Alert tab is correct, not a bug. An
 *unknown* type is still shown, so a type a future firmware adds will appear
@@ -225,24 +226,22 @@ Phone A = Mock Sender. Phone B = GuardBand, signed in, Track tab open.
 
 Clear `devices/guardband-001` in the Console first.
 
-- **Track:** Cebu City at zoom 13, *"Your band hasn't reported yet."*, no status
-  panel, Navigate disabled.
+- **Track:** Cebu City at zoom 13, *"Your band hasn't reported yet."*, Navigate
+  disabled.
 - **Alert:** *"No alerts from your band yet."*
 
 ### B · First panic
 
 Phone A → **Simulate Panic**. Expect `✓ Sent PANIC as #1`.
 
-- **Track:** marker appears, camera moves to it at street zoom, panel reads
-  *Reporting · Last seen just now · Battery n%*.
+- **Track:** marker appears and the camera moves to it at street zoom.
 - **Alert:** Current status becomes **Panic** with its coordinates and battery.
 
 ### C · Walk mode — the marker moves
 
 Phone A → **Start walk**.
 
-- **Track:** the marker steps around a circle every 5 s; battery ticks down;
-  *Last seen* stays *just now*.
+- **Track:** the marker steps around a circle every 5 s.
 - **Alert:** nothing changes. Current status stays **Panic** — tracking updates
   are hidden. This is the single best demonstration of §5's split.
 
@@ -250,11 +249,11 @@ Phone A → **Start walk**.
 
 Stop the walk. Leave Track open and **wait 3 minutes**.
 
-The badge must flip to **Not reporting** on its own, with no interaction, and
-*Last seen* must start counting up. Nothing arrives from the database to cause
-this — a silent band sends nothing — so it is driven by a 30 s timer in the
-ViewModel. **If it never flips, that timer is broken**, and that is the whole
-bug the timer exists to prevent.
+**Nothing on screen shows this any more**: the badge and *Last seen* went with
+the status panel on 2026-10-14. The 30 s timer still runs in the ViewModel and
+`TrackViewModelTest` still covers the flip, and the Check-in pill keeps ageing on
+the same timer, so a check-in's "N minutes ago" counting up is the visible sign
+the timer is alive.
 
 ### E · Follow, and not fighting the user
 
@@ -275,7 +274,7 @@ no fix the button is disabled.
 delete `latest/location` in the Console.
 
 - **Track:** the marker **stays where it was** and the overlay reads *"No
-  location fix yet"*, while *Last seen* still updates. The band is talking but
+  location fix yet"*. The band is talking but
   cannot see the sky, and throwing away the last known position in that moment
   would discard the most useful thing on screen.
 

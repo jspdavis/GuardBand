@@ -18,7 +18,8 @@ data class TrackUiState(
 
     /**
      * The Google profile photo to load into the avatar, already vetted by
-     * [AvatarPhoto]. Null keeps the default icon and makes no request.
+     * [AvatarPhoto][com.example.guardband.ui.avatar.AvatarPhoto]. Null keeps
+     * the default icon and makes no request.
      */
     val avatarUrl: String? = null,
 

@@ -7,6 +7,7 @@ import com.example.guardband.data.repository.AlertError
 import com.example.guardband.testing.FakeAlertRepository
 import com.example.guardband.testing.FakeAuthRepository
 import com.example.guardband.testing.MainDispatcherRule
+import com.example.guardband.ui.avatar.AvatarPhoto
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

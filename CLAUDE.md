@@ -63,6 +63,8 @@ com/example/guardband/
 ├── ui/
 │   ├── splash/         Splash → Home if signed in, else Login (2 s countdown)
 │   ├── auth/           GoogleIdTokenProvider + GoogleIdTokenResult (the only androidx.credentials users)
+│   ├── avatar/         AvatarPhoto (pure: which Google photo, if any) + AvatarImage (the Coil binder);
+│   │                 shared by the Track and Profile avatars
 │   ├── login/          email + password, and "Continue with Google"
 │   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode;
 │   │                 then Welcome, once per account (its only route is Consent's success)
@@ -76,7 +78,7 @@ com/example/guardband/
 │   │                 ResetLinkParser (pure; the trust boundary) + ViewModel
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate and the account gate (HomeViewModel)
-│   ├── track/          Track tab (default): avatar, bell, gear, osmdroid map, band status panel, Navigate + Check-in
+│   ├── track/          Track tab (default): avatar, bell, gear, osmdroid map, Navigate + Check-in (the status panel is gone)
 │   │                 BandStatus + NavigationUrl + OsmdroidConfig (pure helpers; see "Track and map")
 │   ├── contacts/       Contacts tab: list + delete
 │   ├── alert/          Alert tab: latest status + incident history
@@ -672,6 +674,12 @@ to the Cebu City random position if denied, so the permission refusal is always
 survivable. If this exception is ever removed, remove the runtime request, the
 `LocationListener` and the GPS badge from `MockSenderActivity` in the same
 commit.
+
+**The band status panel was removed from the screen (2026-10-14).** The
+Check-in pill is now Track's one status line, so the Reporting badge, "Last
+seen" and battery are no longer shown. `TrackViewModel` still computes
+`isOnline`, `elapsed` and `battery` and the tests still cover them; the rules
+below are what they mean if a screen shows them again.
 
 **"Reporting", not "Online".** `BandStatus.ONLINE_THRESHOLD_MS` is **180 s**,
 three of FR-09's 60 s tracking intervals, so one dropped update does not flip
