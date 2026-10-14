@@ -32,7 +32,10 @@ import kotlinx.coroutines.launch
  * information shows "Verified" without signing anyone out; that reload is best
  * effort, because Account information reloads again whenever it is shown.
  *
- * **Nothing is gated on the result.** Verification is shown, not enforced.
+ * **What the result unlocks.** An unverified password account is held at
+ * [VerifyRequiredActivity] by the Home gate; Continue goes through Splash to
+ * Home, which lets a now-verified account in. If the reload here failed, the
+ * gate screen reloads again as soon as it shows.
  */
 class VerifyEmailViewModel(
     private val authRepository: AuthRepository

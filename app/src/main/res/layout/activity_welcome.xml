@@ -95,7 +95,7 @@
             android:layout_height="match_parent"
             android:background="@drawable/bg_signup_continue"
             android:fontFamily="@font/poppins_extralight"
-            android:text="@string/btn_next"
+            android:text="@string/btn_okay"
             android:textAllCaps="true"
             android:textColor="@android:color/white"
             android:textSize="16sp"

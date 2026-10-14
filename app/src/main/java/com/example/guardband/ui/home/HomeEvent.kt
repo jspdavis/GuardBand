@@ -14,4 +14,10 @@ sealed interface HomeEvent {
      * is not. Leave the tabs for Account information, which offers to finish.
      */
     object ResumeDeletion : HomeEvent
+
+    /**
+     * A password account whose email is not verified yet. Leave the tabs for
+     * the verification gate; nothing in the app is usable until it clears.
+     */
+    object RequireEmailVerification : HomeEvent
 }

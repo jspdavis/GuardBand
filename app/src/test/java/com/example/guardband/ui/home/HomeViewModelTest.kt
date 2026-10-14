@@ -1,6 +1,7 @@
 package com.example.guardband.ui.home
 
 import com.example.guardband.data.model.ProfileState
+import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.repository.AuthError
 import com.example.guardband.testing.FakeAuthRepository
 import com.example.guardband.testing.FakeUserProfileRepository
@@ -33,9 +34,18 @@ class HomeViewModelTest {
     private val profiles = FakeUserProfileRepository()
     private val uid = FakeAuthRepository.DEFAULT_USER.id
 
-    /** Builds the gate and returns every event it sends on the way in. */
-    private fun TestScope.open(signedIn: Boolean = true): List<HomeEvent> {
-        val vm = HomeViewModel(FakeAuthRepository(signedIn = signedIn), profiles)
+    /**
+     * Builds the gate and returns every event it sends on the way in. A
+     * verified password account unless a test says otherwise, so the
+     * deletion tests are not stopped at the verification gate first.
+     */
+    private fun TestScope.open(
+        signedIn: Boolean = true,
+        verified: Boolean = true,
+        providers: Set<SignInProvider> = setOf(SignInProvider.PASSWORD)
+    ): List<HomeEvent> {
+        val auth = FakeAuthRepository(signedIn = signedIn, emailVerified = verified, providers = providers)
+        val vm = HomeViewModel(auth, profiles)
         val seen = mutableListOf<HomeEvent>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             vm.events.collect { seen += it }
@@ -90,5 +100,50 @@ class HomeViewModelTest {
         profiles.profileStateResult = Result.success(ProfileState.DELETION_PENDING)
 
         assertEquals(listOf<HomeEvent>(HomeEvent.ResumeDeletion), open())
+    }
+
+    // ── The verification gate ─────────────────────────────────────────────────
+
+    @Test
+    fun `an unverified password account is sent to verify, not into the tabs`() = runTest {
+        assertEquals(
+            listOf<HomeEvent>(HomeEvent.RequireEmailVerification),
+            open(verified = false)
+        )
+    }
+
+    /** Google proved the address; there is no inbox step to wait for. */
+    @Test
+    fun `a google account is never gated`() = runTest {
+        assertTrue(open(verified = false, providers = setOf(SignInProvider.GOOGLE)).isEmpty())
+    }
+
+    /** No flow could verify it, so locking it out would strand it. */
+    @Test
+    fun `an account with no known provider is not gated`() = runTest {
+        assertTrue(open(verified = false, providers = emptySet()).isEmpty())
+    }
+
+    /**
+     * The gate is synchronous and comes first. The deletion read is skipped;
+     * the gate screen's "Delete this account" reaches Account information,
+     * which resumes a pending deletion itself.
+     */
+    @Test
+    fun `the verification gate comes before the deletion check`() = runTest {
+        profiles.pendingDeletion += uid
+
+        assertEquals(
+            listOf<HomeEvent>(HomeEvent.RequireEmailVerification),
+            open(verified = false)
+        )
+        assertEquals(0, profiles.profileStateCalls)
+    }
+
+    @Test
+    fun `a verified account with a pending deletion still resumes it`() = runTest {
+        profiles.pendingDeletion += uid
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.ResumeDeletion), open(verified = true))
     }
 }

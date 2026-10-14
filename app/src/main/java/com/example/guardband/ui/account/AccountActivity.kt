@@ -47,7 +47,9 @@ import kotlinx.coroutines.launch
  * **Email verification** sits in the details card: "Verified" or "Not
  * verified", and for a password account that is not verified yet, Resend on a
  * cooldown. The session is reloaded every time the screen comes to the front,
- * so a link opened in the inbox shows up on return. Nothing is gated on it.
+ * so a link opened in the inbox shows up on return. (An unverified password
+ * account is stopped before the tabs by the Home gate, and reaches this
+ * screen only from the gate's "Wrong email? Delete this account".)
  *
  * View ids: ib_account_back, tv_account_title, card_account_details,
  * tv_account_name, tv_account_email, tv_account_verification,

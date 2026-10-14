@@ -51,7 +51,8 @@ object Changelog {
                 "A half-finished account deletion now resumes on the next sign-in instead of bringing the account back empty.",
                 "Email verification: new email/password accounts get a verification email; Account information shows Verified or Not verified, with Resend.",
                 "The app handles the verification link itself; password-reset links work exactly as before.",
-                "513 unit tests, up from 396."
+                "Email/password accounts must verify their email before using the app: a Verify your email screen replaces the tabs until they do. Google accounts are not affected.",
+                "535 unit tests, up from 396."
             ),
             commit = "692c51c"
         ),

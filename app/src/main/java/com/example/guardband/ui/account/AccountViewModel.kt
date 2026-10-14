@@ -33,7 +33,10 @@ import kotlinx.coroutines.launch
  * ([onScreenShown]): the user taps the link in their inbox, Firebase marks
  * the address verified, and the session only learns of it on a reload. The
  * reload never signs anyone out, and a failed one leaves the status as it was.
- * [EmailVerification] decides what is said; nothing in the app is gated on it.
+ * [EmailVerification] decides what is said. An unverified password account
+ * normally never gets this far - the Home gate stops it at
+ * [VerifyRequiredActivity][com.example.guardband.ui.verify.VerifyRequiredActivity] -
+ * but it can arrive from that screen's "Wrong email? Delete this account".
  *
  * **Resend has a cooldown**, [RESEND_COOLDOWN_SECONDS], recomputed from an
  * injected [Clock] on each tick of an injected [Flow] - the same pattern as

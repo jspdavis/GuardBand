@@ -13,7 +13,7 @@ the App Link itself.
 | **Link host / path** | The reset link's: `guardband-aae65.firebaseapp.com` + `/__/auth/action`, Firebase's own default handler. Nothing new is declared. |
 | **Screens** | [`ui/verify/`](../app/src/main/java/com/example/guardband/ui/verify/) (the link), [`ui/account/`](../app/src/main/java/com/example/guardband/ui/account/) (status + Resend) |
 | **Routing** | [`ui/reset/EmailActionLink.kt`](../app/src/main/java/com/example/guardband/ui/reset/EmailActionLink.kt) |
-| **Gating** | **None.** Unverified accounts can use everything. Gating is a separate product decision. |
+| **Gating** | **The whole app**, for password accounts (decided 2026-10-14). An unverified one meets `VerifyRequiredActivity` instead of Home (§8). Google accounts are never gated. |
 
 ---
 
@@ -181,3 +181,60 @@ Uses Gmail addresses as the inbox. Nothing here checks the domain.
 8. **The reset link still works** end to end (`forgot-password.md` §8).
 9. Airplane mode, then tap a fresh link: "No connection" with Retry; turn it
    off, Retry verifies.
+10. **The gate.** Sign up a new email/password account and go through Welcome:
+    you land on **Verify your email**, not the tabs. Back leaves the app.
+    "I've verified my email" before opening the link says it isn't verified
+    yet. Open the link, come back: straight into Home, no tap needed. Log Out
+    and "Wrong email? Delete this account" both work from the gate. A Google
+    account never sees it.
+
+---
+
+## 8. The gate (2026-10-14)
+
+**An unverified password account cannot use the app.** `HomeViewModel` runs
+three checks in order: no session → Login; **`EmailVerification.requiredBeforeUse`
+→ `VerifyRequiredActivity`**; a deletion marker → Account information. Every
+route into the app (Splash, login, Google, sign-up via Welcome and Loading)
+ends at `HomeActivity`, so that one place covers them all. The gate opens with
+the task cleared, so Back leaves the app instead of reaching the tabs.
+
+| Account | Gated? | Why |
+|---|---|---|
+| Password, not verified | **Yes** | It can verify, so it must. |
+| Password, verified | No | |
+| Google (or Google + password) | No | Google already proved the address. |
+| No known provider | No | No flow could verify it; gating would strand it. |
+
+**The gate screen** (`ui/verify/VerifyRequiredActivity` + ViewModel):
+
+- **Reloads on every `onStart`** and goes on to Home the moment Firebase says
+  verified, so the usual path is: tap the link, come back, carry on.
+- **I've verified my email**: the same check on demand, which says "isn't
+  verified yet" when it is not.
+- **Resend email**: the 60 s cooldown, `TooManyRequests` and offline exactly as
+  in Account information (§3).
+- **Log Out**, and **Wrong email? Delete this account**, which opens Account
+  information - the one place Delete account lives, with every safeguard. A
+  mistyped address can never receive the link, so without this the account
+  would be stuck.
+- An account disabled or deleted elsewhere is sent to Login, even on the quiet
+  check.
+
+**Order with the deletion marker.** The verification check is synchronous and
+comes first, so an unverified account skips the marker read; if it has a
+pending deletion, "Delete this account" opens Account information, which
+resumes it on its own.
+
+**A product gate, not a security boundary.** Everything behind it is enforced
+by the client. The Security Rules do not check `auth.token.email_verified`, and
+**must not on `users/$uid`**: `finalizeSignUp` writes the profile at the end of
+sign-up, before the user can possibly have opened the email, so such a rule
+would fail every sign-up. `devices/` is world-readable until device pairing
+regardless. Enforcing it server-side would mean a rule on whatever new data
+needs protecting, written so the sign-up write still passes.
+
+**Stale flag, handled.** `isEmailVerified` is only as fresh as the session's
+last reload. A link opened in a browser can leave Home still reading
+"unverified"; the gate screen then reloads immediately and lets them through.
+

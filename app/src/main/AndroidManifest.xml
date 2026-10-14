@@ -123,6 +123,13 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <!-- Verify your email: the Home gate sends an unverified password
+             account here instead of the tabs. Not exported. -->
+        <activity
+            android:name=".ui.verify.VerifyRequiredActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!-- Reset success: reached only from ResetPasswordActivity, so not exported. -->
         <activity
             android:name=".ui.reset.ResetSuccessActivity"
