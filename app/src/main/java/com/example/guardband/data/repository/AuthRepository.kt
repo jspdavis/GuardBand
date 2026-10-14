@@ -163,9 +163,10 @@ interface AuthRepository {
      * Deletes the Firebase Auth user, ending the account.
      *
      * **Deletes nothing from the database.** The `users/{uid}` subtree is
-     * removed separately by [UserProfileRepository.deleteProfile], and it has
-     * to go **first**: the rules authorise that write with `auth.uid`, so once
-     * this call succeeds there is no longer a session that can make it.
+     * replaced by a deletion marker beforehand, by
+     * [UserProfileRepository.markDeletionPending], and that has to happen
+     * **first**: the rules authorise the write with `auth.uid`, so once this
+     * call succeeds there is no longer a session that can make it.
      *
      * Fails with [AuthError.RequiresRecentLogin] unless a re-authentication
      * happened recently enough, which is why both `reauthenticate` calls

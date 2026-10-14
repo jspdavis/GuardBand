@@ -164,7 +164,7 @@ class FirebaseAuthRepository(
 
     /**
      * Deletes the Auth user only. The database subtree is
-     * [UserProfileRepository.deleteProfile]'s job and must already be gone -
+     * [UserProfileRepository.markDeletionPending]'s job and must already be done -
      * see [AuthRepository.deleteAccount].
      *
      * Firebase clears `currentUser` itself on success, so no `signOut` is

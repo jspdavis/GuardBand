@@ -1,6 +1,7 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.model.User
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -18,8 +19,9 @@ import kotlin.coroutines.resumeWithException
  *
  * Writes use [DatabaseReference.updateChildren], never `setValue` on
  * `users/{uid}`: the node now also holds `emergency_contacts`, and replacing it
- * would delete every contact the user has. The uid is the key, so it is not
- * duplicated inside the record.
+ * would delete every contact the user has. The one exception is
+ * [markDeletionPending], where deleting everything is the point. The uid is
+ * the key, so it is not duplicated inside the record.
  *
  * Failures are mapped by [DatabaseError.getCode] through
  * [FirebaseDatabaseErrorMapper] - see its KDoc for why the listener forms are
@@ -61,8 +63,13 @@ class FirebaseUserProfileRepository(
         }
     }
 
-    override suspend fun profileExists(uid: String): Result<Boolean> = profileResult {
-        userRef(uid).readOnce().exists()
+    override suspend fun profileState(uid: String): Result<ProfileState> = profileResult {
+        val snapshot = userRef(uid).readOnce()
+        when {
+            !snapshot.exists() -> ProfileState.ABSENT
+            snapshot.child(FIELD_DELETION_PENDING).value == true -> ProfileState.DELETION_PENDING
+            else -> ProfileState.PRESENT
+        }
     }
 
     override suspend fun finalizeSignUp(
@@ -101,8 +108,12 @@ class FirebaseUserProfileRepository(
         database.reference.update(updates)
     }
 
-    override suspend fun deleteProfile(uid: String): Result<Unit> = profileResult {
-        userRef(uid).remove()
+    /**
+     * A `setValue` on `users/{uid}`, deliberately: the one place a replace of
+     * the whole record is wanted. Everywhere else writes merge.
+     */
+    override suspend fun markDeletionPending(uid: String): Result<Unit> = profileResult {
+        userRef(uid).replace(mapOf(FIELD_DELETION_PENDING to true))
     }
 
     // ── Plumbing ──────────────────────────────────────────────────────────────
@@ -125,16 +136,11 @@ class FirebaseUserProfileRepository(
             }
         }
 
-    /**
-     * [DatabaseReference.removeValue], suspending, with the error code kept.
-     *
-     * Removing an absent node succeeds, which is what a retry after a
-     * half-finished delete relies on.
-     */
-    private suspend fun DatabaseReference.remove(): Unit =
+    /** [DatabaseReference.setValue], suspending, with the error code kept. */
+    private suspend fun DatabaseReference.replace(value: Map<String, Any?>): Unit =
         suspendCancellableCoroutine { continuation ->
-            removeValue { error, _ ->
-                if (!continuation.isActive) return@removeValue
+            setValue(value) { error, _ ->
+                if (!continuation.isActive) return@setValue
                 if (error == null) {
                     continuation.resume(Unit)
                 } else {
@@ -190,5 +196,8 @@ class FirebaseUserProfileRepository(
         const val FIELD_CONSENT_ACCEPTED = "accepted"
         const val FIELD_CONSENT_VERSION = "version"
         const val FIELD_CONSENT_AT = "acceptedAt"
+
+        /** The marker a half-finished deletion leaves - see [markDeletionPending]. */
+        const val FIELD_DELETION_PENDING = "deletion_pending"
     }
 }

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
+import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.repository.AuthError
 import com.example.guardband.data.repository.AuthRepository
@@ -37,16 +38,24 @@ import kotlinx.coroutines.launch
  *    been sitting around ([AuthError.RequiresRecentLogin]), and a destructive
  *    action should ask anyway. A password account types its password; a Google
  *    account goes back through the chooser.
- * 2. **Remove `users/{uid}`** - profile, every emergency contact and the
- *    consent record - in one write, **while still signed in**. The rules
- *    authorise it with `auth.uid`, so after step 3 there is no session left
- *    that could do it and the data would be orphaned for good.
+ * 2. **Replace `users/{uid}` with the deletion marker** - profile, every
+ *    emergency contact and the consent record go, and `deletion_pending: true`
+ *    lands, in one write - **while still signed in**. The rules authorise it
+ *    with `auth.uid`, so after step 3 there is no session left that could do
+ *    it and the data would be orphaned for good.
  * 3. **Delete the Auth user.**
  * 4. **Go to Login** with the back stack cleared. The Fragment also forgets the
  *    Google account, exactly as Log Out does.
  *
- * **A half-finished delete must not strand anyone.**
- * [DeleteAccountUiState.profileDeleted] and
+ * **A half-finished delete resumes, here or on the next sign-in.** The marker
+ * from step 2 is what survives a user giving up after step 3 failed: the Home
+ * gate reads it and sends them here, and this ViewModel reads it on start and
+ * opens straight into "finish deleting" ([MSG_RESUME_PENDING]). Without it, the
+ * next sign-in used to provision a fresh, thin profile and the account came
+ * back. Once the data is gone, **Log Out** is offered beside Retry: the marker
+ * keeps the deletion waiting, so walking away no longer strands anyone.
+ *
+ * Within one visit, [DeleteAccountUiState.profileDeleted] and
  * [DeleteAccountUiState.reauthenticated] are the guards, in the same spirit as
  * `accountCreated` in
  * [SignUpConsentViewModel][com.example.guardband.ui.signup.SignUpConsentViewModel]:
@@ -71,6 +80,49 @@ class DeleteAccountViewModel(
 
     private val _events = Channel<DeleteAccountEvent>(Channel.BUFFERED)
     val events: Flow<DeleteAccountEvent> = _events.receiveAsFlow()
+
+    init {
+        resumeIfDeletionPending()
+    }
+
+    // ── An unfinished deletion from before ────────────────────────────────────
+
+    /**
+     * Opens straight into "finish deleting" when this account's data was
+     * already deleted on an earlier visit and only the sign-in survived.
+     *
+     * The state is exactly what a failure after step 2 leaves in-session -
+     * [DeleteAccountStep.FAILED], [DeleteAccountUiState.profileDeleted], no
+     * fresh credential - so Retry, the row and Log Out all behave the way they
+     * would have then. Retry asks for the password or the Google account again
+     * before anything is called: a destructive step never runs on an old
+     * credential.
+     *
+     * A failed read changes nothing: the screen stays as it was, and the
+     * ordinary flow still writes the marker over the marker if the user
+     * deletes. A flow the user has already started is never overwritten.
+     */
+    private fun resumeIfDeletionPending() {
+        val user = authRepository.currentUser() ?: return
+        viewModelScope.launch {
+            val state = userProfileRepository.profileState(user.id).getOrNull()
+            if (state != ProfileState.DELETION_PENDING) return@launch
+            val method = reauthMethodFor(authRepository.currentUserProviders())
+            _uiState.update {
+                if (it.step != DeleteAccountStep.IDLE) {
+                    it
+                } else {
+                    it.copy(
+                        step = DeleteAccountStep.FAILED,
+                        method = method,
+                        profileDeleted = true,
+                        reauthenticated = false,
+                        errorMessage = MSG_RESUME_PENDING
+                    )
+                }
+            }
+        }
+    }
 
     // ── Starting ──────────────────────────────────────────────────────────────
 
@@ -105,12 +157,7 @@ class DeleteAccountViewModel(
             return
         }
 
-        val providers = authRepository.currentUserProviders()
-        val method = when {
-            SignInProvider.PASSWORD in providers -> SignInProvider.PASSWORD
-            SignInProvider.GOOGLE in providers -> SignInProvider.GOOGLE
-            else -> null
-        }
+        val method = reauthMethodFor(authRepository.currentUserProviders())
         if (method == null) {
             _events.trySend(DeleteAccountEvent.ShowMessage(MSG_CANNOT_REAUTHENTICATE))
             return
@@ -120,6 +167,21 @@ class DeleteAccountViewModel(
             it.copy(step = DeleteAccountStep.CONFIRMING, method = method, errorMessage = null)
         }
         _events.trySend(DeleteAccountEvent.ShowConfirmation)
+    }
+
+    /**
+     * Log Out, offered only once the data is gone and the sign-in is not.
+     *
+     * Safe to walk away at that point because the deletion marker is already
+     * stored: the next sign-in, on this phone or another, lands back here to
+     * finish. Before the data is gone there is nothing half-done to leave, and
+     * Settings has the ordinary Log Out.
+     */
+    fun onLogOutClicked() {
+        val state = _uiState.value
+        if (state.isBusy || !state.isUnfinished) return
+        authRepository.signOut()
+        _events.trySend(DeleteAccountEvent.NavigateToLogin)
     }
 
     /** Cancel, from the modal or the password prompt. Only legal before anything is written. */
@@ -254,7 +316,7 @@ class DeleteAccountViewModel(
         _uiState.update { it.copy(step = DeleteAccountStep.DELETING, errorMessage = null) }
         viewModelScope.launch {
             if (!_uiState.value.profileDeleted) {
-                val error = userProfileRepository.deleteProfile(user.id).exceptionOrNull()
+                val error = userProfileRepository.markDeletionPending(user.id).exceptionOrNull()
                 if (error != null) {
                     // Nothing is gone yet, and the account is untouched too, so
                     // Retry is the honest offer rather than starting over.
@@ -289,6 +351,17 @@ class DeleteAccountViewModel(
     }
 
     // ── Failure plumbing ──────────────────────────────────────────────────────
+
+    /**
+     * How this account proves who it is. [SignInProvider.PASSWORD] wins a
+     * mixed account - see [onDeleteAccountClicked]. Null means none this app
+     * can ask for.
+     */
+    private fun reauthMethodFor(providers: Set<SignInProvider>): SignInProvider? = when {
+        SignInProvider.PASSWORD in providers -> SignInProvider.PASSWORD
+        SignInProvider.GOOGLE in providers -> SignInProvider.GOOGLE
+        else -> null
+    }
 
     private fun askForCredential(method: SignInProvider?) {
         when (method) {
@@ -389,7 +462,12 @@ class DeleteAccountViewModel(
             "Your data is deleted. Confirm it's you once more to remove your sign-in."
         const val MSG_SESSION_LOST_MID_DELETE =
             "Your data is deleted, but you were signed out before your sign-in could be " +
-                "removed. Sign in again and delete your account to finish."
+                "removed. Sign in again to finish."
+
+        /** Opening the screen on an account whose earlier deletion did not finish. */
+        const val MSG_RESUME_PENDING =
+            "Your account deletion didn't finish. Your data is already deleted; " +
+                "tap Retry and confirm it's you to remove your sign-in."
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

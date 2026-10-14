@@ -47,10 +47,18 @@ import kotlinx.coroutines.launch
  * tv_account_name, tv_account_email, tv_account_danger_title,
  * card_account_danger, tv_account_danger_explainer, tv_account_delete,
  * card_account_delete_failure, tv_account_delete_error,
- * btn_account_delete_retry, progress_account_delete.
+ * btn_account_delete_log_out, btn_account_delete_retry,
+ * progress_account_delete.
+ *
+ * **It is also where an unfinished deletion is finished.** When an account's
+ * data was deleted but its sign-in survived, the Home gate opens this screen
+ * with the task cleared, and [DeleteAccountViewModel] starts in "finish
+ * deleting": the failure card says what happened, Retry asks who they are and
+ * removes the sign-in, and Log Out leaves it waiting for the next sign-in.
  *
  * Flow: Settings → AccountActivity → (Back) Settings
  *       AccountActivity → (Delete account, done) → LoginActivity (task cleared)
+ *       Home gate, deletion pending → AccountActivity (task cleared)
  */
 class AccountActivity : AppCompatActivity() {
 
@@ -67,6 +75,7 @@ class AccountActivity : AppCompatActivity() {
     private lateinit var cardDeleteFailure: MaterialCardView
     private lateinit var tvDeleteError: TextView
     private lateinit var btnDeleteRetry: Button
+    private lateinit var btnDeleteLogOut: Button
     private lateinit var progressDelete: ProgressBar
 
     /**
@@ -95,6 +104,8 @@ class AccountActivity : AppCompatActivity() {
         tvDeleteError = findViewById(R.id.tv_account_delete_error)
         btnDeleteRetry = findViewById(R.id.btn_account_delete_retry)
         btnDeleteRetry.setOnClickListener { deleteViewModel.onRetryClicked() }
+        btnDeleteLogOut = findViewById(R.id.btn_account_delete_log_out)
+        btnDeleteLogOut.setOnClickListener { deleteViewModel.onLogOutClicked() }
         progressDelete = findViewById(R.id.progress_account_delete)
 
         onBackPressedDispatcher.addCallback(this, blockBackWhileDeleting)
@@ -135,6 +146,8 @@ class AccountActivity : AppCompatActivity() {
         ibBack.isEnabled = enabled
         tvDeleteAccount.isEnabled = enabled
         btnDeleteRetry.isEnabled = enabled
+        btnDeleteLogOut.isEnabled = enabled
+        btnDeleteLogOut.visibility = if (state.isUnfinished) View.VISIBLE else View.GONE
 
         val failure = state.errorMessage
         if (state.step == DeleteAccountStep.FAILED && failure != null) {

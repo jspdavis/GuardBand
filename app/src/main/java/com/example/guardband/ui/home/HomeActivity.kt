@@ -12,6 +12,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
+import com.example.guardband.ui.account.AccountActivity
 import com.example.guardband.ui.alert.AlertFragment
 import com.example.guardband.ui.contacts.ContactsFragment
 import com.example.guardband.ui.login.LoginActivity
@@ -101,6 +102,19 @@ class HomeActivity : AppCompatActivity() {
             // Through the bar rather than show(TAG_PROFILE), so the Profile item
             // is highlighted too: selecting it runs the same listener a tap does.
             HomeEvent.ShowProfile -> bottomNav.selectedItemId = R.id.nav_profile
+
+            // The task is cleared so the tabs cannot be reached with Back:
+            // there is no account behind them any more, only a sign-in to
+            // finish deleting. Back from Account information leaves the app,
+            // and the next launch comes straight back here.
+            HomeEvent.ResumeDeletion -> {
+                startActivity(
+                    Intent(this, AccountActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                )
+                finish()
+            }
         }
     }
 

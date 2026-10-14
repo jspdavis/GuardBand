@@ -58,7 +58,9 @@ data class DeleteAccountUiState(
     val reauthenticated: Boolean = false,
 
     /**
-     * True once `users/{uid}` is gone.
+     * True once `users/{uid}` has been replaced by the deletion marker: the
+     * data is gone. Also true from the start when the screen opens on an
+     * earlier deletion that did not finish.
      *
      * The guard that makes Retry resume instead of start over, in the same
      * spirit as

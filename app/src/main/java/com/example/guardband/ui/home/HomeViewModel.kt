@@ -2,13 +2,17 @@ package com.example.guardband.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
+import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.repository.AuthRepository
+import com.example.guardband.data.repository.UserProfileRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 
 /**
  * Host-level logic for [HomeActivity]: the second auth gate, requests to
@@ -28,17 +32,41 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * user sitting on the Home screen. It is kept because it still catches a
  * restore after the account was signed out or disabled elsewhere, and because
  * the pushed Settings and Notifications screens inherit it.
+ *
+ * **Second check: an unfinished deletion.** A user whose data was deleted but
+ * whose sign-in survived has a deletion marker at `users/{uid}`
+ * ([ProfileState.DELETION_PENDING]). Every way into the app lands here - a
+ * restored session from Splash, an email login, a Google sign-in - so this is
+ * the one place that catches it, and it sends them to finish the deletion
+ * ([HomeEvent.ResumeDeletion]) rather than into tabs that would write a
+ * contact under a deleted account. The read is asynchronous and the tabs show
+ * meanwhile; a read that fails lets them in, exactly as before the marker
+ * existed, because a gate that locked people out on a flaky network would be
+ * worse than the gap it closes.
  */
 class HomeViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val userProfileRepository: UserProfileRepository
 ) : ViewModel() {
 
     private val _events = Channel<HomeEvent>(Channel.BUFFERED)
     val events: Flow<HomeEvent> = _events.receiveAsFlow()
 
     init {
-        if (!authRepository.isLoggedIn()) {
+        val uid = authRepository.currentUser()?.id
+        if (uid == null) {
             _events.trySend(HomeEvent.NavigateToLogin)
+        } else {
+            checkForUnfinishedDeletion(uid)
+        }
+    }
+
+    private fun checkForUnfinishedDeletion(uid: String) {
+        viewModelScope.launch {
+            val state = userProfileRepository.profileState(uid).getOrNull()
+            if (state == ProfileState.DELETION_PENDING) {
+                _events.send(HomeEvent.ResumeDeletion)
+            }
         }
     }
 
@@ -56,7 +84,12 @@ class HomeViewModel(
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer { HomeViewModel(RepositoryProvider.authRepository) }
+            initializer {
+                HomeViewModel(
+                    RepositoryProvider.authRepository,
+                    RepositoryProvider.userProfileRepository
+                )
+            }
         }
     }
 }

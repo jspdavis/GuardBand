@@ -286,11 +286,14 @@ Privacy Notice must say the same.
 1. **Re-authenticate.** Firebase refuses `delete()` on a session that has been
    sitting around (`AuthError.RequiresRecentLogin`). A password account types
    its password; a Google account goes back through the chooser.
-2. **Remove `users/{uid}`** in **one** `removeValue` — profile fields, every
-   emergency contact and the consent record — **while still signed in.** The
-   rules authorise it with `auth.uid == $uid`, so once step 3 succeeds there is
-   no session left that could make this write and the subtree is orphaned
-   permanently.
+2. **Replace `users/{uid}` with the deletion marker** in **one** `setValue`
+   (`UserProfileRepository.markDeletionPending`): profile fields, every
+   emergency contact and the consent record go, and `{ "deletion_pending":
+   true }` is all that is left — **while still signed in.** The rules
+   authorise it with `auth.uid == $uid`, so once step 3 succeeds there is no
+   session left that could make this write and the subtree is orphaned
+   permanently. Data out and marker in are one commit, so there is never a
+   moment when the data is gone and nothing says why.
 3. **Delete the Auth user.**
 4. **Go to Login** with the back stack cleared, through the same
    `LoginNavigation.clearCredentialsThenGoToLogin` that Log Out uses.
@@ -321,21 +324,50 @@ through the prompt rather than into a call Firebase will refuse again.
 until pairing exists, so one user's deletion must not take the band's history
 with it — and the modal says so, rather than implying everything is gone.
 
-**Known gap:** if step 2 succeeds, step 3 fails and the user gives up, the
-account survives with no record behind it, and the next sign-in has
-`ProfileProvisioning` write a fresh minimal `users/{uid}` from the session's
-name and email. Nothing leaks, but the account comes back thinner rather than
-staying deleted. Closing it properly needs a "deletion pending" marker that
-`ProfileProvisioning` honours.
+**The deletion marker closes the "comes back thin" gap (2026-10-14).** If step
+2 succeeds, step 3 fails and the user gives up, the marker is what survives:
+- **`ProfileState`** is three-valued — `ABSENT`, `PRESENT`, `DELETION_PENDING`
+  (`UserProfileRepository.profileState`) — and `ProfileProvisioning` writes
+  only on `ABSENT`. A marker is never re-provisioned; that used to bring the
+  account back with a name and email but no contacts and no consent.
+- **`HomeViewModel`'s gate reads it.** Every way in — a restored session from
+  Splash, an email login, a Google sign-in — lands on Home, which sends a
+  pending account to Account information with the task cleared
+  (`HomeEvent.ResumeDeletion`) instead of into tabs that would write a contact
+  under a deleted account. A failed read lets them in, as before.
+- **`DeleteAccountViewModel` reads it on start** and opens in the same state a
+  failure after step 2 leaves: `FAILED`, `profileDeleted`, no fresh
+  credential, wording `MSG_RESUME_PENDING`. Retry asks for the password or
+  the Google account again before anything is called. **Log Out** is offered
+  beside Retry once the data is gone, because the marker keeps the deletion
+  waiting for the next sign-in, on any phone.
+- **It is per uid**, so another account on the same phone is untouched, and a
+  later sign-up with the same email gets a new uid and no marker.
 
-**No rules change was needed.** `users/$uid` already has
-`".write": "auth != null && auth.uid == $uid"`, a removal is a write of null
-at that path, and there are no `.validate` rules under `users` (RTDB skips
-them on deletes regardless).
+**The marker outlives a finished deletion, by necessity.** Once the Auth user
+is gone no session can write `users/{uid}`, so `deletion_pending: true` stays
+under a uid that no longer belongs to anyone — no name, no email, no contacts.
+Any marker cleared before the Auth delete would reopen the gap. A human can
+sweep them from the Console. The hosted pages do not mention it yet (a human
+decision).
 
-**Not covered by tests:** `reauthenticate` and `delete` themselves, which need
-a real `FirebaseAuth`. The sequencing, the wording and both guards are covered
-— `DeleteAccountViewModelTest`, 28 tests.
+**No rules change was needed, and that was checked.** `users/$uid` has
+`".write": "auth != null && auth.uid == $uid"`, nothing at that level refuses
+an unlisted child, and RTDB skips `.validate` on the children a replace nulls.
+On 2026-10-14 the stripped `RTDBS-RULES.md` was loaded into the local Database
+Emulator (a `demo-` project id): the owner's replace was allowed and left only
+the marker, a stranger's and an unauthenticated one were denied, the retry and
+the gate's read were allowed, and Playground test 2 still passed. **If a
+`$other: { ".validate": false }` is ever added at `users/$uid`, give
+`deletion_pending` a rule of its own first**, or every Delete account fails at
+step 2 — safely, with nothing deleted, but it fails.
+
+**Not covered by tests:** `reauthenticate`, `delete` and the RTDB write
+themselves, which need a real Firebase. The sequencing, the wording, both
+guards and every marker path (written before the Auth delete, resume on a later
+visit, offline, recent-login, Log Out, another account, a failed read) are
+covered — `DeleteAccountViewModelTest` (39), `HomeViewModelTest` (7) and
+`ProfileProvisioningTest`.
 
 ## Privacy, consent and the hosted pages
 
@@ -402,9 +434,10 @@ same commit.** And **OpenStreetMap's tile servers see the phone's IP and the
 area being viewed** on every tile, which the notice discloses.
 
 **Known gap, documented not fixed:** `ProfileProvisioning` writes only `name`
-and `email`, so `users/{uid}` can exist with no `consent` subtree - including
-after a failed account deletion, where the next sign-in repopulates a thin
-record. **Do not add `users/$uid/.validate: newData.hasChildren(['consent'])`**
+and `email`, so `users/{uid}` can exist with no `consent` subtree (an account
+made in the Console, a Google account whose record went missing). The failed
+account deletion route is **closed** by the deletion marker - see "Account
+deletion". **Do not add `users/$uid/.validate: newData.hasChildren(['consent'])`**
 as a fix: it would fail that legitimate write and leave the user with no
 profile at all. The options are in the doc.
 
