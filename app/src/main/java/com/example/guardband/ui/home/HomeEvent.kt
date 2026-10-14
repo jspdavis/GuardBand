@@ -20,4 +20,11 @@ sealed interface HomeEvent {
      * the verification gate; nothing in the app is usable until it clears.
      */
     object RequireEmailVerification : HomeEvent
+
+    /**
+     * The account has no consent record (a Console-made account, or a Google
+     * account whose record went missing). Leave for the consent screen; the
+     * tabs are never shown to it.
+     */
+    object RequireConsent : HomeEvent
 }

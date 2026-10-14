@@ -1,5 +1,6 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.model.ConsentRecord
 import com.example.guardband.data.model.EmergencyContact
 import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.model.User
@@ -48,6 +49,28 @@ interface UserProfileRepository {
      * read as a profile, and never as an empty slot a sign-in may fill.
      */
     suspend fun profileState(uid: String): Result<ProfileState>
+
+    /**
+     * The consent record stored for [uid], or `Result.success(null)` when there
+     * is none.
+     *
+     * **Three outcomes, and the caller must keep them apart:** a record, no
+     * record, and a read that failed. A failure is never reported as null -
+     * the consent gate would otherwise send everybody on a bad network to the
+     * consent screen. Same contract as [fetchProfile].
+     */
+    suspend fun consentRecord(uid: String): Result<ConsentRecord?>
+
+    /**
+     * Records that the signed-in user has agreed, for an account that already
+     * exists but has no consent record - the consent gate's write.
+     *
+     * Writes exactly what [finalizeSignUp] writes for consent, through the same
+     * code: `accepted = true`, [consentVersion] and a **server** `acceptedAt`,
+     * in one commit, so a record means the same thing whichever route made it.
+     * Touches nothing else under `users/{uid}`.
+     */
+    suspend fun recordConsent(uid: String, consentVersion: String): Result<Unit>
 
     /**
      * Writes the profile, [contacts] and the consent record for a brand-new

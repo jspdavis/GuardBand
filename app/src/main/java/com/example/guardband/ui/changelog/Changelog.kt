@@ -38,7 +38,7 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-14",
-            title = "Google photo, check-in status, account safety",
+            title = "Google photo, check-in status, account safety, consent gate",
             changes = listOf(
                 "The Track avatar shows the Google profile photo, cropped to a circle; email accounts keep the default icon.",
                 "Coil 2.7.0 added as the image loader, pinned to an exact version. No new permission in the release manifest.",
@@ -52,9 +52,11 @@ object Changelog {
                 "Email verification: new email/password accounts get a verification email; Account information shows Verified or Not verified, with Resend.",
                 "The app handles the verification link itself; password-reset links work exactly as before.",
                 "Email/password accounts must verify their email before using the app: a Verify your email screen replaces the tabs until they do. Google accounts are not affected.",
-                "535 unit tests, up from 396."
+                "Consent gate: an account with no consent record (made in the Firebase Console, or a Google account whose record went missing) is shown the consent step before the app. Decline signs out and changes nothing.",
+                "The app now checks the account's record before showing the tabs; if it cannot (offline), it offers Try again instead of letting the account in.",
+                "572 unit tests, up from 396."
             ),
-            commit = "692c51c"
+            commit = "372ce46"
         ),
         ChangelogEntry(
             date = "2026-10-13",

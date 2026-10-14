@@ -14,6 +14,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.ui.account.AccountActivity
 import com.example.guardband.ui.alert.AlertFragment
+import com.example.guardband.ui.consent.ConsentRequiredActivity
 import com.example.guardband.ui.contacts.ContactsFragment
 import com.example.guardband.ui.login.LoginActivity
 import com.example.guardband.ui.notifications.NotificationsFragment
@@ -34,12 +35,29 @@ import kotlinx.coroutines.launch
  * from); Back (or its back arrow) returns to the last tab and brings the bar
  * back. Back on a tab leaves the app.
  *
+ * **Nothing is shown until the account gate opens.** [HomeViewModel.gate]
+ * reads the account's record first; until it is [HomeGateState.OPEN] the
+ * cover `fl_home_gate` sits over everything, with a spinner while checking
+ * and Retry if the read failed, and no tab Fragment is added. On a restore
+ * the FragmentManager re-adds the old ones by itself; the cover hides them
+ * until the gate opens again.
+ *
+ * View ids: fragment_container_home, view_home_nav_divider, bottom_nav_home,
+ * fl_home_gate, progress_home_gate, ll_home_gate_failed, tv_home_gate_failed,
+ * btn_home_gate_retry.
+ *
  * Flow: Splash / Loading → HomeActivity → (Log Out in Settings, or no session) → LoginActivity
  */
 class HomeActivity : AppCompatActivity() {
 
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var navDivider: View
+    private lateinit var gateCover: View
+    private lateinit var gateProgress: View
+    private lateinit var gateFailed: View
+
+    /** True once the gate has opened and the first tab has been shown. */
+    private var tabsShown = false
 
     private val viewModel: HomeViewModel by viewModels { HomeViewModel.Factory }
 
@@ -60,6 +78,13 @@ class HomeActivity : AppCompatActivity() {
 
         bottomNav = findViewById(R.id.bottom_nav_home)
         navDivider = findViewById(R.id.view_home_nav_divider)
+        gateCover = findViewById(R.id.fl_home_gate)
+        gateProgress = findViewById(R.id.progress_home_gate)
+        gateFailed = findViewById(R.id.ll_home_gate_failed)
+
+        findViewById<View>(R.id.btn_home_gate_retry).setOnClickListener {
+            viewModel.onRetryClicked()
+        }
 
         onBackPressedDispatcher.addCallback(this, backToTab)
 
@@ -67,9 +92,6 @@ class HomeActivity : AppCompatActivity() {
             currentTag = savedInstanceState.getString(STATE_CURRENT_TAG, TAG_TRACK)
             lastTabTag = savedInstanceState.getString(STATE_LAST_TAB_TAG, TAG_TRACK)
         }
-        // On restore the FragmentManager has already re-added the Fragments;
-        // show() re-applies visibility, the bar's checked state and Back.
-        show(currentTag)
 
         bottomNav.setOnItemSelectedListener { item ->
             show(tagFor(item.itemId))
@@ -78,8 +100,35 @@ class HomeActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.gate.collect(::renderGate)
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.events.collect(::handleEvent)
             }
+        }
+    }
+
+    /**
+     * Covers everything until the gate opens, then shows the tab it was on.
+     *
+     * The first [show] waits for [HomeGateState.OPEN]: on a restore the
+     * FragmentManager has already re-added the Fragments, and show() then
+     * re-applies visibility, the bar's checked state and Back.
+     */
+    private fun renderGate(state: HomeGateState) {
+        val open = state == HomeGateState.OPEN
+        gateCover.isVisible = !open
+        gateProgress.isVisible = state == HomeGateState.CHECKING
+        gateFailed.isVisible = state == HomeGateState.FAILED
+
+        if (open && !tabsShown) {
+            tabsShown = true
+            show(currentTag)
+        } else if (!open) {
+            bottomNav.isVisible = false
+            navDivider.isVisible = false
         }
     }
 
@@ -113,6 +162,10 @@ class HomeActivity : AppCompatActivity() {
             // Cleared for the same reason: Back from the gate must not land
             // on tabs the account is not allowed to use yet.
             HomeEvent.RequireEmailVerification -> leaveFor(VerifyRequiredActivity::class.java)
+
+            // Cleared too: Back from the consent screen must not reach tabs
+            // the account has not agreed to use.
+            HomeEvent.RequireConsent -> leaveFor(ConsentRequiredActivity::class.java)
         }
     }
 

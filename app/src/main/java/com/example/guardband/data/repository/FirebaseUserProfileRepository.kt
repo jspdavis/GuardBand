@@ -1,5 +1,6 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.model.ConsentRecord
 import com.example.guardband.data.model.EmergencyContact
 import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.model.User
@@ -87,14 +88,9 @@ class FirebaseUserProfileRepository(
         // is harmless on a new account but a trap if this is ever reused.
         val updates = mutableMapOf<String, Any?>(
             "$NODE_USERS/$uid/$FIELD_NAME" to name,
-            "$NODE_USERS/$uid/$FIELD_EMAIL" to email,
-            "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_ACCEPTED" to true,
-            "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_VERSION" to consentVersion,
-            // Server time, not the handset's: a device clock can be wrong or
-            // deliberately set, and this is the field that says when the user
-            // actually agreed.
-            "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_AT" to ServerValue.TIMESTAMP
+            "$NODE_USERS/$uid/$FIELD_EMAIL" to email
         )
+        updates += consentUpdates(uid, consentVersion)
 
         contacts.forEach { contact ->
             // Validated before anything is sent, so one bad phone number fails
@@ -107,6 +103,40 @@ class FirebaseUserProfileRepository(
 
         database.reference.update(updates)
     }
+
+    /** An accepted record, or null for no node at all or one that is not `accepted: true`. */
+    override suspend fun consentRecord(uid: String): Result<ConsentRecord?> = profileResult {
+        val snapshot = userRef(uid).child(NODE_CONSENT).readOnce()
+        if (snapshot.child(FIELD_CONSENT_ACCEPTED).value == true) {
+            ConsentRecord(version = snapshot.child(FIELD_CONSENT_VERSION).value?.toString().orEmpty())
+        } else {
+            null
+        }
+    }
+
+    /**
+     * The consent paths of [finalizeSignUp] on their own, against the root
+     * like that write, so the late record and the sign-up one cannot differ.
+     */
+    override suspend fun recordConsent(uid: String, consentVersion: String): Result<Unit> =
+        profileResult {
+            database.reference.update(consentUpdates(uid, consentVersion))
+        }
+
+    /**
+     * The three consent paths, absolute from the root: `accepted`, the
+     * version and a server timestamp. The one place a consent record is
+     * spelled out, shared by [finalizeSignUp] and [recordConsent]. All three
+     * go together, because the rules refuse a consent node missing any.
+     */
+    private fun consentUpdates(uid: String, consentVersion: String): Map<String, Any?> = mapOf(
+        "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_ACCEPTED" to true,
+        "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_VERSION" to consentVersion,
+        // Server time, not the handset's: a device clock can be wrong or
+        // deliberately set, and this is the field that says when the user
+        // actually agreed.
+        "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_AT" to ServerValue.TIMESTAMP
+    )
 
     /**
      * A `setValue` on `users/{uid}`, deliberately: the one place a replace of
