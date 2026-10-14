@@ -136,6 +136,7 @@ class SignUpConsentViewModel(
             authRepository.createAccount(name, email, password)
                 .onSuccess { user ->
                     _uiState.update { it.copy(accountCreated = true) }
+                    sendVerificationEmail()
                     finalizeNow(
                         uid = user.id,
                         // Same expression as retryFinalize, so the first
@@ -150,6 +151,19 @@ class SignUpConsentViewModel(
                     _events.send(SignUpConsentEvent.ShowMessage(messageFor(error)))
                 }
         }
+    }
+
+    /**
+     * Asks Firebase to email a verification link, **best effort**.
+     *
+     * Its own coroutine, so it neither delays nor can fail the sign-up: the
+     * account exists already, and Account information offers Resend for
+     * exactly the case where this one never arrives. Only on the password
+     * path, and only once - a Retry resumes at the write, past this. A Google
+     * account's address is verified by Google and is never sent one.
+     */
+    private fun sendVerificationEmail() {
+        viewModelScope.launch { authRepository.sendEmailVerification() }
     }
 
     // ── Finalize ──────────────────────────────────────────────────────────────

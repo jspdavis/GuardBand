@@ -67,7 +67,9 @@ com/example/guardband/
 │   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode;
 │   │                 then Welcome, once per account (its only route is Consent's success)
 │   ├── forgot/         one screen: email → "check your email" + Resend (60 s cooldown)
-│   ├── reset/          New Credentials, opened by the App Link in the reset email
+│   ├── reset/          New Credentials, opened by the App Link in the reset email;
+│   │                 EmailActionLink routes the other email links (verifyEmail) away first
+│   ├── verify/         VerifyEmailActivity: applies the code from the verification email
 │   │                 ResetLinkParser (pure; the trust boundary) + ViewModel
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
@@ -199,8 +201,11 @@ Firebase's own `/__/auth/action` is the one exception, and it is **an exact
 `android:path`, never `pathPrefix`**: `/__/auth/handler`, the OAuth redirect
 handler, is on the same host. Every Firebase email action (`verifyEmail`,
 `recoverEmail`, ...) arrives at that one path, so the parser's
-`mode=resetPassword` check is what keeps the others out; adding email
-verification later means deciding what the app does with those links.
+`mode=resetPassword` check is what keeps the others out. Since 2026-10-14
+`ui/reset/EmailActionLink.routeOf` runs first in `ResetPasswordActivity` and
+hands `verifyEmail` (and any mode the app does not handle) to
+`VerifyEmailActivity`; every reset link, and every malformed one, still takes
+exactly the old path. See "Email verification".
 
 **`ResetPasswordActivity` is the one `exported="true"` Activity in the app**,
 because an external click has to reach it. `ui/reset/ResetLinkParser` is
@@ -244,6 +249,32 @@ written out again.
 `assetlinks.json`; Google's Digital Asset Links checker reports both hosts as
 linked for it. Every other developer's debug SHA-256, and a release one, still
 has to be added. The doc's §1 is the checklist.
+
+## Email verification
+
+> The flow, the link routing, the traps and the manual pass:
+> [docs/email-verification.md](docs/email-verification.md).
+
+- **Sent once, best effort,** by `SignUpConsentViewModel` right after
+  `createAccount` succeeds, in its own coroutine so it can neither delay nor
+  fail sign-up. Not on a Retry, never for a Google account. Plain
+  `sendEmailVerification()` with **no `ActionCodeSettings`**, like the reset.
+- **The link reuses the reset App Link.** No manifest change: `ResetPasswordActivity`
+  routes `mode=verifyEmail` to the non-exported `ui/verify/VerifyEmailActivity`,
+  which re-checks the link and calls `AuthRepository.applyEmailVerification`.
+  That checks the code's kind first (`checkActionCode` must say
+  `VERIFY_EMAIL`), so it never applies another action. Other modes get "isn't
+  supported", never "invalid reset link", and never a crash.
+- **Status lives in Account information**: Verified / Not verified, from
+  `EmailVerification.of(providers, isEmailVerified)`. Google accounts are
+  always Verified and never see Resend. The user is **reloaded every time the
+  screen comes to the front**, so a link opened elsewhere shows up without a
+  sign-out.
+- **Resend has a 60 s cooldown** on the forgot-password pattern (injected
+  `Clock` + ticker). `AuthError.TooManyRequests` is worded kindly and starts
+  the cooldown; offline does not.
+- **Nothing is gated on it.** Blocking unverified users is a product decision
+  nobody has made.
 
 ## Contacts and profile data
 

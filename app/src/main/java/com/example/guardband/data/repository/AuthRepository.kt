@@ -175,6 +175,51 @@ interface AuthRepository {
      */
     suspend fun deleteAccount(): Result<Unit>
 
+    // ── Email verification ───────────────────────────────────────────────────
+
+    /**
+     * True when Firebase has the signed-in account's email as verified.
+     * False with no session.
+     *
+     * Synchronous, like [currentUser], and only as fresh as the session's last
+     * refresh: a link opened in a browser does not reach this until
+     * [reloadUser] runs. Google accounts come back verified from Google.
+     */
+    fun isEmailVerified(): Boolean
+
+    /**
+     * Asks Firebase to email the signed-in account a verification link.
+     *
+     * The plain call with **no `ActionCodeSettings`**, exactly like
+     * [sendPasswordReset], so the link is Firebase's own default handler on
+     * `firebaseapp.com` - the one the App Link claims - and no Dynamic Links
+     * machinery is involved (`docs/forgot-password.md` §11).
+     *
+     * Fails with [AuthError.TooManyRequests] when Firebase's own rate limit is
+     * hit, and [AuthError.NotSignedIn] with no session.
+     */
+    suspend fun sendEmailVerification(): Result<Unit>
+
+    /**
+     * Refreshes the signed-in account from Firebase, so [isEmailVerified]
+     * reflects a link the user has just opened, without signing anyone out.
+     */
+    suspend fun reloadUser(): Result<Unit>
+
+    /**
+     * Applies the code from an email-verification link.
+     *
+     * **Needs no signed-in user**, like the reset calls: the code is the
+     * authorisation. It is checked first and must be a **verify-email** code;
+     * anything else (a recover-email code under a crafted `mode=verifyEmail`,
+     * say) fails with [AuthError.InvalidActionCode] and is not applied, so this
+     * screen can never carry out an action it does not describe.
+     *
+     * Fails with [AuthError.ExpiredActionCode] or [AuthError.InvalidActionCode]
+     * for a stale, spent or wrong code. The code is never logged.
+     */
+    suspend fun applyEmailVerification(code: String): Result<Unit>
+
     fun isLoggedIn(): Boolean
     fun signOut()
 }

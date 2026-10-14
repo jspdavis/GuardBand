@@ -13,6 +13,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -43,8 +44,15 @@ import kotlinx.coroutines.launch
  * here Back has to return to Settings. Being outside the host also puts it
  * outside the host's auth gate, so [AccountViewModel] has one of its own.
  *
+ * **Email verification** sits in the details card: "Verified" or "Not
+ * verified", and for a password account that is not verified yet, Resend on a
+ * cooldown. The session is reloaded every time the screen comes to the front,
+ * so a link opened in the inbox shows up on return. Nothing is gated on it.
+ *
  * View ids: ib_account_back, tv_account_title, card_account_details,
- * tv_account_name, tv_account_email, tv_account_danger_title,
+ * tv_account_name, tv_account_email, tv_account_verification,
+ * btn_account_resend_verification, tv_account_verification_hint,
+ * tv_account_danger_title,
  * card_account_danger, tv_account_danger_explainer, tv_account_delete,
  * card_account_delete_failure, tv_account_delete_error,
  * btn_account_delete_log_out, btn_account_delete_retry,
@@ -71,6 +79,9 @@ class AccountActivity : AppCompatActivity() {
     private lateinit var ibBack: ImageButton
     private lateinit var tvName: TextView
     private lateinit var tvEmail: TextView
+    private lateinit var tvVerification: TextView
+    private lateinit var tvVerificationHint: TextView
+    private lateinit var btnResend: Button
     private lateinit var tvDeleteAccount: TextView
     private lateinit var cardDeleteFailure: MaterialCardView
     private lateinit var tvDeleteError: TextView
@@ -96,6 +107,10 @@ class AccountActivity : AppCompatActivity() {
 
         tvName = findViewById(R.id.tv_account_name)
         tvEmail = findViewById(R.id.tv_account_email)
+        tvVerification = findViewById(R.id.tv_account_verification)
+        tvVerificationHint = findViewById(R.id.tv_account_verification_hint)
+        btnResend = findViewById(R.id.btn_account_resend_verification)
+        btnResend.setOnClickListener { viewModel.onResendClicked() }
 
         tvDeleteAccount = findViewById(R.id.tv_account_delete)
         tvDeleteAccount.setOnClickListener { deleteViewModel.onDeleteAccountClicked() }
@@ -132,9 +147,35 @@ class AccountActivity : AppCompatActivity() {
         }
     }
 
+    /** Every return to the screen, including back from the email app. */
+    override fun onStart() {
+        super.onStart()
+        viewModel.onScreenShown()
+    }
+
     private fun render(state: AccountUiState) {
         tvName.text = state.name
         tvEmail.text = state.email
+
+        tvVerification.setText(
+            if (state.emailVerified) R.string.label_account_verified
+            else R.string.label_account_not_verified
+        )
+        tvVerification.setTextColor(
+            ContextCompat.getColor(
+                this,
+                if (state.emailVerified) R.color.success_green else R.color.text_primary
+            )
+        )
+        tvVerificationHint.visibility = if (state.showResend) View.VISIBLE else View.GONE
+
+        btnResend.visibility = if (state.showResend) View.VISIBLE else View.GONE
+        btnResend.isEnabled = state.resendEnabled
+        btnResend.text = if (state.resendSecondsRemaining > 0) {
+            getString(R.string.btn_account_resend_in, state.resendSecondsRemaining)
+        } else {
+            getString(R.string.btn_account_resend)
+        }
     }
 
     private fun renderDelete(state: DeleteAccountUiState) {
@@ -162,6 +203,9 @@ class AccountActivity : AppCompatActivity() {
 
     private fun handleEvent(event: AccountEvent) {
         when (event) {
+            is AccountEvent.ShowMessage ->
+                Toast.makeText(this, event.text, Toast.LENGTH_LONG).show()
+
             AccountEvent.NavigateToLogin -> {
                 startActivity(
                     Intent(this, LoginActivity::class.java).apply {

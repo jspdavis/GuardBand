@@ -3,6 +3,7 @@ package com.example.guardband.data.repository
 import com.example.guardband.data.model.GoogleSignInOutcome
 import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.model.User
+import com.google.firebase.auth.ActionCodeResult
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -174,6 +175,31 @@ class FirebaseAuthRepository(
     override suspend fun deleteAccount(): Result<Unit> = authResult {
         val user = auth.currentUser ?: throw AuthError.NotSignedIn
         user.delete().await()
+    }
+
+    // -- Email verification ------------------------------------------------------
+
+    override fun isEmailVerified(): Boolean = auth.currentUser?.isEmailVerified == true
+
+    override suspend fun sendEmailVerification(): Result<Unit> = authResult {
+        val user = auth.currentUser ?: throw AuthError.NotSignedIn
+        user.sendEmailVerification().await()
+    }
+
+    override suspend fun reloadUser(): Result<Unit> = authResult {
+        val user = auth.currentUser ?: throw AuthError.NotSignedIn
+        user.reload().await()
+    }
+
+    /**
+     * `checkActionCode` first, so only a verify-email code is ever applied -
+     * see [AuthRepository.applyEmailVerification]. Project-level, like the
+     * reset calls: `auth.currentUser` is neither read nor changed.
+     */
+    override suspend fun applyEmailVerification(code: String): Result<Unit> = authResult {
+        val info = auth.checkActionCode(code).await()
+        if (info.operation != ActionCodeResult.VERIFY_EMAIL) throw AuthError.InvalidActionCode
+        auth.applyActionCode(code).await()
     }
 
     override fun isLoggedIn(): Boolean = auth.currentUser != null

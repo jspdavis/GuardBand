@@ -128,6 +128,61 @@
                         android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
                         android:textColor="@color/text_primary"
                         tools:text="alexrivera@gmail.com" />
+
+                    <View style="@style/Widget.GuardBand.SettingsDivider"
+                        android:layout_marginStart="0dp" />
+
+                    <!-- Email verification: status, and Resend for a password
+                         account that is not verified yet. -->
+                    <!-- DESIGN: Jul -->
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/label_account_verification"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                        android:textColor="@color/text_secondary" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="48dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tv_account_verification"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:accessibilityLiveRegion="polite"
+                            android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
+                            android:textColor="@color/text_primary"
+                            tools:text="@string/label_account_not_verified" />
+
+                        <Button
+                            android:id="@+id/btn_account_resend_verification"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/btn_account_resend"
+                            android:textAllCaps="false"
+                            android:textColor="@color/brand_green"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_account_verification_hint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:text="@string/label_account_verification_hint"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                        android:textColor="@color/text_secondary"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

@@ -220,8 +220,22 @@
     <!-- Account information (opened from Settings) -->
     <string name="label_account_name">Name</string>
     <string name="label_account_email">Email</string>
+    <string name="label_account_verification">Email verification</string>
+    <string name="label_account_verified">Verified</string>
+    <string name="label_account_not_verified">Not verified</string>
+    <string name="label_account_verification_hint">We sent a link to this address. Open it on this phone, then come back here.</string>
+    <string name="btn_account_resend">Resend email</string>
+    <string name="btn_account_resend_in">Resend in %1$ds</string>
     <string name="label_account_danger_zone">Danger zone</string>
     <string name="label_account_danger_explainer">Deleting your account removes your profile, your emergency contacts, your consent record and your sign-in. It cannot be undone.</string>
+
+    <!-- Verify email (opened by the link in the verification email) -->
+    <string name="label_verify_title_verifying">Verifying your email…</string>
+    <string name="label_verify_title_verified">Email verified</string>
+    <string name="label_verify_title_failed">Couldn\'t verify your email</string>
+    <string name="label_verify_title_unsupported">Link not supported</string>
+    <string name="btn_verify_continue">Continue to GuardBand</string>
+    <string name="cd_verify_progress">Verifying your email</string>
 
     <!-- Delete account -->
     <string name="label_account_delete">Delete account</string>
