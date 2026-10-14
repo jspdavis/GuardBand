@@ -1,4 +1,4 @@
-package com.example.guardband.ui.settings
+package com.example.guardband.ui.account
 
 /**
  * One-shot events emitted by [DeleteAccountViewModel].

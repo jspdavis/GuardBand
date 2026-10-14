@@ -1,4 +1,4 @@
-package com.example.guardband.ui.settings
+package com.example.guardband.ui.account
 
 import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.repository.AuthError

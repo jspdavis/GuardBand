@@ -1,4 +1,4 @@
-package com.example.guardband.ui.settings
+package com.example.guardband.ui.account
 
 import com.example.guardband.data.model.SignInProvider
 
@@ -32,7 +32,7 @@ enum class DeleteAccountStep {
 
 /**
  * Render state for the Delete account flow, owned by [DeleteAccountViewModel]
- * and rendered by [SettingsFragment].
+ * and rendered by [AccountActivity].
  */
 data class DeleteAccountUiState(
     val step: DeleteAccountStep = DeleteAccountStep.IDLE,

@@ -121,6 +121,13 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <!-- ── Account information (opened from Settings; holds Delete account) -->
+
+        <activity
+            android:name=".ui.account.AccountActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!-- ── Changelog (opened from Settings) ─────────────────────────────── -->
 
         <activity

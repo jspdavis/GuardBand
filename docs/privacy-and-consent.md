@@ -132,8 +132,10 @@ Needs §1 steps 1–3 done.
 5. **Settings → Privacy Notice** opens the same page.
 6. The notice's displayed version reads **1.1**, matching step 4.
 7. Open `/delete-account` and follow its in-app steps exactly as written —
-   Track → gear → Settings → Delete account. The wording should match what the
-   app actually does.
+   Track → gear → Settings → Account information → Delete account (moved
+   one level down on 2026-10-14; the hosted page still names the old path
+   until a human updates it). The wording should match what the app actually
+   does.
 8. An **existing** account that accepted `1.0` still shows `1.0` in the
    Console, and is **not** asked to agree again.
 

@@ -76,7 +76,9 @@ com/example/guardband/
 │   ├── contacts/       Contacts tab: list + delete
 │   ├── alert/          Alert tab: latest status + incident history
 │   ├── profile/        Profile tab: welcome header + user info
-│   ├── settings/       pushed from Track's gear; holds Log Out
+│   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row
+│   ├── account/        AccountActivity (Account information), opened from Settings;
+│   │                 Delete account sits in its danger zone (DeleteAccountViewModel)
 │   ├── changelog/      ChangelogActivity, opened from Settings; Changelog.entries is the progress log
 │   └── notifications/  pushed from Track's bell; placeholder inbox
 └── utils/
@@ -149,7 +151,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 
 **Error wording stays neutral.** `ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL` maps to its own `AuthError.AccountExistsWithDifferentCredential`, shown as "This email uses a different sign-in method." It must not name the other provider: saying "that address uses a password" confirms the account exists, which is the whole thing the shared invalid-credentials message exists to prevent.
 
-**Log out clears the credential state.** `SettingsFragment` calls `GoogleIdTokenProvider.clearCredentialState()` before navigating, so the chooser reappears instead of silently reusing the last account. It is bounded by a 2 s timeout and its failures are ignored — the user is already signed out of Firebase, so nothing may keep them on that screen. `HomeViewModel`'s failed auth gate does **not** clear it: that is a dead session, not a user logging out.
+**Log out clears the credential state.** `ui/auth/LoginNavigation.clearCredentialsThenGoToLogin` calls `GoogleIdTokenProvider.clearCredentialState()` before navigating (Log Out in Settings and a finished Delete account in Account information both go through it), so the chooser reappears instead of silently reusing the last account. It is bounded by a 2 s timeout and its failures are ignored — the user is already signed out of Firebase, so nothing may keep them on that screen. `HomeViewModel`'s failed auth gate does **not** clear it: that is a dead session, not a user logging out.
 
 **Never log a token**, an account name or an email, here or anywhere else.
 
@@ -269,10 +271,15 @@ The signed-in user's own record, separate from the band's `devices/` tree:
 
 ## Account deletion
 
-A destructive row at the bottom of Settings, driven by
-`ui/settings/DeleteAccountViewModel` — its own ViewModel, because
-`SettingsViewModel` is deliberately events-only for a static screen and this
-flow has six steps, two guards and a credential prompt.
+A destructive row in a red-outlined **danger zone** at the bottom of
+**Account information** (`ui/account/AccountActivity`, opened from the
+Settings row of that name), driven by `ui/account/DeleteAccountViewModel` —
+its own ViewModel, because `AccountViewModel` only shows the account and this
+flow has six steps, two guards and a credential prompt. It was a row at the
+foot of Settings until 2026-10-14; one level deeper it is much harder to hit
+by accident. The path users are told is **Track → gear → Settings → Account
+information → Delete account**, and the hosted `/delete-account` page and the
+Privacy Notice must say the same.
 
 **The order of operations is the design, and reversing it loses data for good:**
 
@@ -286,7 +293,7 @@ flow has six steps, two guards and a credential prompt.
    permanently.
 3. **Delete the Auth user.**
 4. **Go to Login** with the back stack cleared, through the same
-   `clearCredentialsThenGoToLogin` that Log Out uses.
+   `LoginNavigation.clearCredentialsThenGoToLogin` that Log Out uses.
 
 **Which credential it asks for comes from `AuthRepository.currentUserProviders()`,
 and `PASSWORD` wins a mixed account.** Providers are read off

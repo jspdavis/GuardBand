@@ -1,4 +1,4 @@
-package com.example.guardband.ui.settings
+package com.example.guardband.ui.account
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -22,13 +22,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Delete account, driven from the row at the bottom of Settings.
+ * Delete account, driven from the danger zone at the bottom of Account
+ * information ([AccountActivity]), one level below Settings so a destructive
+ * action is not a stray tap away.
  *
- * Its own ViewModel rather than part of [SettingsViewModel], which is
- * deliberately events-only because that screen is static. This flow has six
- * steps, two retry guards and a credential prompt, so folding it in would give
- * Settings a UiState for the sake of one row and mix a destructive multi-step
- * operation in with four placeholders.
+ * Its own ViewModel rather than part of [AccountViewModel], which only shows
+ * the account. This flow has six steps, two retry guards and a credential
+ * prompt, and keeping it apart keeps a destructive multi-step operation out
+ * of a read-only screen's state.
  *
  * **The order of operations is the whole design:**
  *
