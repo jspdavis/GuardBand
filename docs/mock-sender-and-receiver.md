@@ -102,7 +102,7 @@ and unchanged.
 | Control | Writes | Position | Battery |
 |---|---|---|---|
 | **Simulate Panic** | one `PANIC` | Phone A's real GPS fix; falls back to random ±0.01° of Cebu City if no fix or permission denied | random 20–100% |
-| **Simulate Check-in** | one `CHECKIN` | same | same |
+| **Simulate Check-in** | one `CHECKIN` (the band's FR-10 double-press) | same | same |
 | **Simulate Low Battery** | one `LOW_BATTERY` | same | same |
 | **Simulate Tracking Update** | one `TRACKING_UPDATE` | same | same |
 | **Start walk / Stop walk** | a `TRACKING_UPDATE` every **5 s** | a ~165 m synthetic circle anchored at Phone A's real fix (or Cebu City if no fix), 24 steps | drains 95% → 20% |
@@ -177,7 +177,8 @@ The newest ping, whatever kind it was.
 | Empty overlay | *"Your band hasn't reported yet."* / *"No location fix yet"* / a read error. |
 | **Navigate** | Opens a maps app on the position. Disabled with no fix. |
 | Recenter (◎) | Re-centres and resumes following. |
-| Layers, **Check in** | UI-only stubs. Check-in writes nothing: FR-10 check-in is a double-press on the band. |
+| **Check-in pill** | Read-only status of the latest check-in: *"Last check-in: 5 minutes ago"*, or *"No recent check-ins"*. Read from **history**, not `latest` (see below). Not tappable; the app never sends a check-in. |
+| Layers | UI-only stub. |
 
 ### Alert tab — reads `history`
 
@@ -205,7 +206,7 @@ whatever it was" is exactly what a map wants.
 | Type sent | Track tab | Alert tab |
 |---|---|---|
 | `PANIC` | marker + panel update | shown, and becomes **Current status** |
-| `CHECKIN` | marker + panel update | shown |
+| `CHECKIN` | marker + panel update, and the **Check-in pill** updates | shown |
 | `LOW_BATTERY` | marker + panel update | shown |
 | `TRACKING_UPDATE` | marker + panel update | **hidden**, and never becomes Current status |
 | an unrecognised type | panel updates | shown as **"Unknown alert"** |
@@ -278,6 +279,28 @@ delete `latest/location` in the Console.
   cannot see the sky, and throwing away the last known position in that moment
   would discard the most useful thing on screen.
 
+### H · A check-in (FR-10)
+
+The band's double-press, standing in. The Check-in pill is the one part of
+the Track tab that reads **history** rather than `latest`, so it survives the
+tracking pings that follow.
+
+1. Fresh state: the pill reads *"No recent check-ins"* (or *"Loading
+   check-ins…"* for a moment). If an older check-in is already in the newest
+   100 history rows, it shows that one instead.
+2. Phone A: **Simulate Check-in**. Within a second or two the pill on Phone B
+   reads *"Last check-in: just now"*, and the Alert tab gains a green
+   *Check-in* row.
+3. Wait a minute or two without sending: the pill ages to *"Last check-in: 1
+   minute ago"*, *"2 minutes ago"*, ... on the 30 s ticker, with no new data.
+4. Phone A: **Start walk**. Tracking updates overwrite `latest` every 5 s; the
+   marker moves, but the pill keeps the check-in's time. (Reading `latest`
+   would have lost it on the first ping.)
+5. Tap the pill: nothing happens, by design. With TalkBack on it is read as
+   text, not as a button.
+6. Phone A: **Simulate Panic**. The Alert tab's Current status becomes the
+   panic exactly as before; the pill still shows the check-in.
+
 ---
 
 ## 7. One phone is enough
@@ -321,7 +344,7 @@ payloads, missing fields and unknown types — see §9.
 |---|---|
 | **Real hardware** | No firmware. Everything above is the stand-in. |
 | **SMS to contacts (FR-05)** | The band sends it, not the app. Nothing here exercises it. |
-| **A real check-in (FR-10)** | A band double-press. The pill is a UI stub; the harness can send a `CHECKIN` payload, which is what the receiver would see. |
+| **A real check-in (FR-10)** | A band double-press. **Simulate Check-in** sends the same `CHECKIN` payload, which is what the receiver would see (walkthrough H). |
 | **Pairing** | One hardcoded device id, so every account watches the same band. |
 | **Malformed payloads, unknown types, missing fields** | Console only. The harness always writes a valid payload. |
 | **Map layers** | UI stub. |
