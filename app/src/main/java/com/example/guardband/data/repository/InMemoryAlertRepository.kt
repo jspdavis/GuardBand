@@ -1,6 +1,7 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.CheckIn
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
@@ -28,6 +29,10 @@ class InMemoryAlertRepository(
         observeDeviceAlerts().map { alerts ->
             Result.success(alerts.maxByOrNull { it.sequenceId })
         }
+
+    override fun observeLatestCheckIn(): Flow<Result<CheckIn?>> =
+        observeAlertHistory(AlertRepository.DEFAULT_HISTORY_WINDOW)
+            .map { result -> result.map(CheckInSelector::latestFrom) }
 
     override fun observeAlertHistory(limit: Int): Flow<Result<AlertHistory>> =
         observeDeviceAlerts().map { alerts ->

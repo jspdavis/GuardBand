@@ -1,6 +1,7 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.CheckIn
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -55,6 +56,18 @@ interface AlertRepository {
      *   displayable alerts than [limit] suggests.
      */
     fun observeAlertHistory(limit: Int = DEFAULT_HISTORY_WINDOW): Flow<Result<AlertHistory>>
+
+    /**
+     * The wearer's latest check-in (FR-10): the newest `CHECKIN` in the
+     * [DEFAULT_HISTORY_WINDOW] history window, or null when the window holds
+     * none. Read-only, like everything here: check-ins come from the band.
+     *
+     * Not `latest`, because every later payload overwrites that node, and not
+     * a separate node, because SCHEMA.md has none. The cost is the window: a
+     * check-in older than the last [DEFAULT_HISTORY_WINDOW] raw entries reads
+     * as null, so "none" means "none recently", not "never".
+     */
+    fun observeLatestCheckIn(): Flow<Result<CheckIn?>>
 
     companion object {
         /** D3's raw read window. */

@@ -1,6 +1,7 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.DeviceConstants
+import com.example.guardband.data.model.CheckIn
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -50,6 +51,13 @@ class InMemoryAlertRepositoryTest {
         val history = repository.observeAlertHistory().first().getOrThrow()
 
         assertTrue(history.alerts.any { it.type == "TRACKING_UPDATE" })
+    }
+
+    @Test
+    fun `the latest check-in is the seeded CHECKIN, not the newer alerts`() = runTest {
+        val checkIn = repository.observeLatestCheckIn().first().getOrThrow()
+
+        assertEquals(CheckIn(3L, "2026-10-04T02:30:00Z"), checkIn)
     }
 
     @Test
