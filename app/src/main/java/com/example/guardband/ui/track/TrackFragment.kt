@@ -42,7 +42,8 @@ import org.osmdroid.views.overlay.Marker
  * View IDs, so the layout can be restyled without touching this file:
  * `track_map_view`, `track_online_badge`, `track_last_seen`, `track_battery`,
  * `track_empty_view`, `track_recenter_button`, `track_navigate_button`,
- * `track_layers_button`, `track_checkin_pill`, plus the top bar's
+ * `track_layers_button`, `track_checkin_pill` (a read-only status, not a
+ * button), plus the top bar's
  * `iv_track_avatar`, `ib_track_notifications` and `ib_track_settings` and
  * the `ll_track_status` panel.
  *
@@ -70,6 +71,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     private lateinit var tvBattery: TextView
     private lateinit var tvEmpty: TextView
     private lateinit var btnNavigate: Button
+    private lateinit var tvCheckIn: TextView
 
     private val viewModel: TrackViewModel by viewModels { TrackViewModel.Factory }
     private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
@@ -113,6 +115,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         tvBattery      = view.findViewById(R.id.track_battery)
         tvEmpty        = view.findViewById(R.id.track_empty_view)
         btnNavigate    = view.findViewById(R.id.track_navigate_button)
+        tvCheckIn      = view.findViewById(R.id.track_checkin_pill)
 
         defaultAvatarTint = ivAvatar.imageTintList
         defaultAvatarPadding = intArrayOf(
@@ -132,8 +135,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             .setOnClickListener { homeViewModel.onNotificationsClicked() }
         view.findViewById<ImageButton>(R.id.ib_track_settings)
             .setOnClickListener { homeViewModel.onSettingsClicked() }
-        view.findViewById<Button>(R.id.track_checkin_pill)
-            .setOnClickListener { viewModel.onCheckInClicked() }
         view.findViewById<FloatingActionButton>(R.id.track_layers_button)
             .setOnClickListener { viewModel.onLayersClicked() }
         view.findViewById<FloatingActionButton>(R.id.track_recenter_button)
@@ -252,6 +253,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
         renderStatusPanel(state)
         renderEmptyView(state)
+        tvCheckIn.text = checkInText(state.checkIn)
 
         btnNavigate.isEnabled = state.navigateEnabled
 
@@ -326,6 +328,20 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         is Elapsed.Minutes -> quantity(R.plurals.label_track_last_seen_minutes, elapsed.value)
         is Elapsed.Hours -> quantity(R.plurals.label_track_last_seen_hours, elapsed.value)
         is Elapsed.Days -> quantity(R.plurals.label_track_last_seen_days, elapsed.value)
+    }
+
+    /** The pill's text; a status, so there is no click to wire. */
+    private fun checkInText(status: CheckInStatus): String = when (status) {
+        CheckInStatus.Loading -> getString(R.string.label_track_checkin_loading)
+        CheckInStatus.None -> getString(R.string.label_track_checkin_none)
+        CheckInStatus.Unavailable -> getString(R.string.label_track_checkin_unavailable)
+        is CheckInStatus.Received -> when (val elapsed = status.elapsed) {
+            null -> getString(R.string.label_track_checkin_time_unknown)
+            is Elapsed.Seconds -> getString(R.string.label_track_checkin_just_now)
+            is Elapsed.Minutes -> quantity(R.plurals.label_track_checkin_minutes, elapsed.value)
+            is Elapsed.Hours -> quantity(R.plurals.label_track_checkin_hours, elapsed.value)
+            is Elapsed.Days -> quantity(R.plurals.label_track_checkin_days, elapsed.value)
+        }
     }
 
     private fun quantity(resId: Int, value: Long): String =

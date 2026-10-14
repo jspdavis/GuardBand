@@ -421,6 +421,8 @@ The band (or the mock sender) PUTs to the RTDB REST API, and Security Rules vali
 
 `data/model/Alert.kt` mirrors it and `data/repository/AlertParser.kt` reads it — see "Alert data" below for how. Check the field names against the deployed Security Rules before relying on them.
 
+**A check-in (FR-10) is a `CHECKIN` alert, and the main app never writes one.** It is the wearer's double-press on the band, sent with the payload above to `history` and `latest`; there is no separate check-in node. Nothing under `app/src/main` may write a check-in, or anything else, to `devices/` — only the band does, and the debug mock sender stands in for it. See "Check-in status" below.
+
 ## Alert data
 
 The Alert tab reads `devices/{deviceId}` live. `SCHEMA.md` is the authority for the payload — if code, this file and `SCHEMA.md` disagree, `SCHEMA.md` wins and the disagreement gets reported rather than silently resolved.
@@ -562,6 +564,29 @@ deployment needs its own tile source or a commercial provider.
 and the D4 follow logic. All of it needs a real `Context`, a running map or an
 instrumented test, and the project declares no mocking library. The testable
 logic was lifted out instead — `BandStatus`, `NavigationUrl` and the ViewModel.
+
+## Check-in status
+
+The Track tab's Check-in pill (`track_checkin_pill`) shows the wearer's latest
+check-in (FR-10): "Last check-in: 5 minutes ago", or "No recent check-ins".
+**It is a status, never an action.** It is a `TextView`, not a `Button`, so it
+has no click, no ripple and TalkBack reads it as text. The app never sends a
+check-in; only the band does (see "Firebase data contract").
+
+- **Read from history, not `latest`.** `AlertRepository.observeLatestCheckIn()`
+  is the newest `CHECKIN` in the same 100-entry history window the Alert tab
+  reads, picked by `CheckInSelector` from what `AlertParser` already parsed.
+  `AlertParser` stays the one reader of the payload; there is no second
+  check-in parser, because there is no second payload.
+- **"None" means none recently.** A check-in older than the window drops out,
+  which is why the wording is "No recent check-ins" and not "never".
+- **It ages on the existing ticker.** `TrackViewModel.recomputeStaleness`
+  recomputes the check-in's `Elapsed` on the same injected `staleTicks` as the
+  band status, and the Fragment words it with the same plurals pattern.
+- **Independent of the map.** A failed check-in read never touches the map,
+  and a failed `latest` read never touches the pill. A failure keeps whatever
+  the pill already says; only a pill with nothing yet becomes "Check-ins
+  unavailable".
 
 ## Mock sender
 

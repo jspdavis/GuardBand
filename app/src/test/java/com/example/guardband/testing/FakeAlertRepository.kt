@@ -1,6 +1,7 @@
 package com.example.guardband.testing
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.CheckIn
 import com.example.guardband.data.repository.AlertHistory
 import com.example.guardband.data.repository.AlertRepository
 import kotlinx.coroutines.channels.BufferOverflow
@@ -22,15 +23,18 @@ import kotlinx.coroutines.flow.MutableSharedFlow
  */
 class FakeAlertRepository(
     history: AlertHistory = AlertHistory(),
-    latest: Alert? = null
+    latest: Alert? = null,
+    latestCheckIn: CheckIn? = null
 ) : AlertRepository {
 
     private val historyFlow = replayingFlow<Result<AlertHistory>>()
     private val latestFlow = replayingFlow<Result<Alert?>>()
+    private val checkInFlow = replayingFlow<Result<CheckIn?>>()
 
     init {
         historyFlow.tryEmit(Result.success(history))
         latestFlow.tryEmit(Result.success(latest))
+        checkInFlow.tryEmit(Result.success(latestCheckIn))
     }
 
     /** Every `limit` ever passed to [observeAlertHistory], in call order. */
@@ -48,6 +52,21 @@ class FakeAlertRepository(
      */
     var latestSubscriptions = 0
         private set
+
+    /** How many times a collector subscribed to the check-in flow. */
+    var checkInSubscriptions = 0
+        private set
+
+    /**
+     * Its own flow rather than one derived from [emitHistory], so a test can
+     * drive the check-in status without building a history around it. The
+     * derivation itself is [CheckInSelector][com.example.guardband.data.repository.CheckInSelector]'s,
+     * and is tested there.
+     */
+    override fun observeLatestCheckIn(): Flow<Result<CheckIn?>> {
+        checkInSubscriptions++
+        return checkInFlow
+    }
 
     override fun observeLatestAlert(): Flow<Result<Alert?>> {
         latestSubscriptions++
@@ -68,6 +87,16 @@ class FakeAlertRepository(
     /** Pushes a new latest alert at any live collector. */
     fun emitLatest(alert: Alert?) {
         latestFlow.tryEmit(Result.success(alert))
+    }
+
+    /** Pushes a new latest check-in (or none) at any live collector. */
+    fun emitCheckIn(checkIn: CheckIn?) {
+        checkInFlow.tryEmit(Result.success(checkIn))
+    }
+
+    /** Makes the check-in read fail, now and for the next subscriber. */
+    fun failCheckIn(error: Throwable) {
+        checkInFlow.tryEmit(Result.failure(error))
     }
 
     /** Makes the history read fail, now and for the next subscriber. */

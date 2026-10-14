@@ -124,7 +124,6 @@
     <string name="label_changelog_commit">Commit %1$s</string>
     <string name="cd_user_avatar">Profile picture</string>
     <string name="cd_track_avatar">Profile picture: %1$s</string>
-    <string name="btn_check_in">Check in</string>
     <string name="btn_track_navigate">Navigate</string>
     <string name="cd_map_recenter">Center on band</string>
     <string name="cd_map_layers">Map layers</string>
@@ -154,6 +153,25 @@
 
     <string name="label_track_never_reported">Your band hasn\'t reported yet.</string>
     <string name="label_track_no_fix">No location fix yet</string>
+
+    <!-- Check-in pill (FR-10): a status, never an action. -->
+    <string name="label_track_checkin_loading">Loading check-ins…</string>
+    <string name="label_track_checkin_none">No recent check-ins</string>
+    <string name="label_track_checkin_unavailable">Check-ins unavailable</string>
+    <string name="label_track_checkin_time_unknown">Checked in, time unknown</string>
+    <string name="label_track_checkin_just_now">Last check-in: just now</string>
+    <plurals name="label_track_checkin_minutes">
+        <item quantity="one">Last check-in: %d minute ago</item>
+        <item quantity="other">Last check-in: %d minutes ago</item>
+    </plurals>
+    <plurals name="label_track_checkin_hours">
+        <item quantity="one">Last check-in: %d hour ago</item>
+        <item quantity="other">Last check-in: %d hours ago</item>
+    </plurals>
+    <plurals name="label_track_checkin_days">
+        <item quantity="one">Last check-in: %d day ago</item>
+        <item quantity="other">Last check-in: %d days ago</item>
+    </plurals>
 
     <!-- Contacts -->
     <string name="label_contacts_title">Emergency Contacts</string>

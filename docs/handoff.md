@@ -87,7 +87,7 @@ person"). Details: [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md).
 | **Account deletion can come back thin** | If the profile is removed but the Auth delete fails and the user gives up, the next sign-in recreates a minimal record. Needs a "deletion pending" marker that `ProfileProvisioning` honours. CLAUDE.md, "Account deletion". |
 | **No re-consent flow** | Users who accepted `1.0` keep `1.0`. Building one means deciding what happens to an account that declines. |
 | **Email verification, if ever added** | Every Firebase email action lands on the same `/__/auth/action` path the app claims, so those links will open the app. Decide what it does with them (`forgot-password.md` §3). |
-| **The layers button and Check-in pill are stubs** | D7. Check-in is FR-10's band double-press; the app must never send one. |
+| **The layers button is a stub** | D7. The Check-in pill is now a read-only status of the latest check-in (CLAUDE.md, "Check-in status"); check-in is FR-10's band double-press and the app must never send one. |
 | **Google profile photo on the Track avatar** | The avatar is the default icon. `FirebaseUser.photoUrl` has the photo for Google accounts; showing it needs an image-loading library (Coil or Glide), which the project does not have. Email accounts keep the default. |
 | **A Terms page, only if the course needs one** | The Privacy Notice already covers what users agree to. Adding Terms means a hosted `/terms` page, a `termsPath` + `HostedPages.terms`, and a `CONSENT_VERSION` bump because what is agreed to changes. |
 

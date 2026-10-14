@@ -1,6 +1,7 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.CheckIn
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -9,6 +10,7 @@ import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.map
 
 /**
  * [AlertRepository] on the Realtime Database at `devices/{deviceId}`, matching
@@ -60,6 +62,16 @@ class FirebaseAlertRepository(
             .orderByKey()
             .limitToLast(limit)
             .asFlow { snapshot -> Result.success(snapshot.toHistory()) }
+
+    /**
+     * The same history query as [observeAlertHistory], so it shares its
+     * listener handling: [awaitClose] removes the listener when the collector
+     * cancels. The SDK also serves identical queries from one subscription,
+     * so the Track and Alert tabs together listen to the window once.
+     */
+    override fun observeLatestCheckIn(): Flow<Result<CheckIn?>> =
+        observeAlertHistory(AlertRepository.DEFAULT_HISTORY_WINDOW)
+            .map { result -> result.map(CheckInSelector::latestFrom) }
 
     /**
      * One malformed entry is skipped and counted, never fatal: a firmware bug
