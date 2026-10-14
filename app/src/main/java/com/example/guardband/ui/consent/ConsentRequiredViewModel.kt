@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * The consent step for an account that reached the app without one - a
@@ -90,7 +91,13 @@ class ConsentRequiredViewModel(
 
         _uiState.update { it.copy(isSaving = true) }
         viewModelScope.launch {
-            userProfileRepository.recordConsent(user.id, UserProfileRepository.CONSENT_VERSION)
+            // Null is the timeout. An RTDB write made offline does not fail, it
+            // queues, so without this the spinner would never end and Decline
+            // would stay disabled. If the queued write lands later, the user
+            // did agree; the gate will simply find the record next time.
+            (withTimeoutOrNull(WRITE_TIMEOUT_MS) {
+                userProfileRepository.recordConsent(user.id, UserProfileRepository.CONSENT_VERSION)
+            } ?: Result.failure(AuthError.Network))
                 .onSuccess {
                     _uiState.update { it.copy(isSaving = false, saveFailed = false) }
                     _events.send(ConsentRequiredEvent.ContinueToHome)
@@ -121,6 +128,9 @@ class ConsentRequiredViewModel(
     }
 
     companion object {
+        /** How long Agree waits for the write before offering Try again. */
+        const val WRITE_TIMEOUT_MS = 10_000L
+
         const val MSG_CONSENT_REQUIRED = "Please tick the box to agree first."
         const val MSG_NO_BROWSER = "No app on this phone can open the Privacy Notice."
         const val MSG_NO_CONNECTION = "No connection. Check your network and tap Try again."

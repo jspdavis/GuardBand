@@ -103,9 +103,13 @@ class FakeUserProfileRepository(
         return Result.success(recordedConsent[uid]?.let { ConsentRecord(version = it) })
     }
 
+    /** While set and not completed, [recordConsent] waits on it: a write with no connection. */
+    var recordConsentHeldUntil: CompletableDeferred<Unit>? = null
+
     /** On success, records [consentVersion] for [uid] and nothing else. */
     override suspend fun recordConsent(uid: String, consentVersion: String): Result<Unit> {
         recordConsentCalls++
+        recordConsentHeldUntil?.await()
         if (recordConsentResult.isSuccess) {
             recordedConsent[uid] = consentVersion
         }

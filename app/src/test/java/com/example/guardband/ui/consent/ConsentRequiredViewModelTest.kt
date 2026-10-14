@@ -6,11 +6,14 @@ import com.example.guardband.testing.FakeAuthRepository
 import com.example.guardband.testing.FakeUserProfileRepository
 import com.example.guardband.testing.MainDispatcherRule
 import com.example.guardband.utils.HostedPages
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -170,6 +173,33 @@ class ConsentRequiredViewModelTest {
         assertEquals(UserProfileRepository.CONSENT_VERSION, profiles.recordedConsent[uid])
         assertFalse(viewModel.uiState.value.saveFailed)
         assertEquals(ConsentRequiredEvent.ContinueToHome, seen.last())
+    }
+
+    /**
+     * Offline, an RTDB write queues instead of failing. Without a bound the
+     * spinner never ends and Decline stays disabled.
+     */
+    @Test
+    fun `a write that never answers becomes a retry after the timeout`() = runTest {
+        profiles.recordConsentHeldUntil = CompletableDeferred()
+        val seen = events()
+        viewModel.onConsentChanged(true)
+        viewModel.onAgreeClicked()
+
+        advanceTimeBy(ConsentRequiredViewModel.WRITE_TIMEOUT_MS - 1)
+        runCurrent()
+        assertTrue(viewModel.uiState.value.isSaving)
+
+        advanceTimeBy(2)
+        runCurrent()
+        assertFalse(viewModel.uiState.value.isSaving)
+        assertTrue(viewModel.uiState.value.saveFailed)
+        assertEquals(
+            listOf<ConsentRequiredEvent>(
+                ConsentRequiredEvent.ShowMessage(ConsentRequiredViewModel.MSG_NO_CONNECTION)
+            ),
+            seen
+        )
     }
 
     /** A second tap while the write is in flight must not write twice. */
