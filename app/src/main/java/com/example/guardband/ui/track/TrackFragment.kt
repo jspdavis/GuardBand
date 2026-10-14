@@ -2,13 +2,13 @@ package com.example.guardband.ui.track
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -17,10 +17,16 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import coil.dispose
+import coil.load
+import coil.transform.CircleCropTransformation
 import com.example.guardband.R
 import com.example.guardband.data.model.Alert
 import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.imageview.ShapeableImageView
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
@@ -46,12 +52,15 @@ import org.osmdroid.views.overlay.Marker
  * the rest of the app, and [TrackViewModel] would have to model it only to hand
  * it straight back.
  *
+ * **The avatar** is the Google profile photo when [TrackUiState.avatarUrl] has
+ * one, loaded by Coil, and the default icon otherwise. See [renderAvatar].
+ *
  * Nothing here logs. The state carries the wearer's coordinates.
  */
 class TrackFragment : Fragment(R.layout.fragment_track) {
 
     private lateinit var mapView: MapView
-    private lateinit var ivAvatar: ImageView
+    private lateinit var ivAvatar: ShapeableImageView
     private lateinit var statusPanel: View
     private lateinit var tvOnlineBadge: TextView
     private lateinit var tvLastSeen: TextView
@@ -75,6 +84,13 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     /** So a later fix does not keep yanking the zoom back. */
     private var hasZoomedToFix = false
 
+    /**
+     * The default icon's tint and inset, read from the layout so a photo can
+     * drop them and the icon can get them back without repeating the XML.
+     */
+    private var defaultAvatarTint: ColorStateList? = null
+    private var defaultAvatarPadding = IntArray(4)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Before the layout inflates: the MapView is built in onCreateView, and
@@ -94,6 +110,12 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         tvBattery      = view.findViewById(R.id.track_battery)
         tvEmpty        = view.findViewById(R.id.track_empty_view)
         btnNavigate    = view.findViewById(R.id.track_navigate_button)
+
+        defaultAvatarTint = ivAvatar.imageTintList
+        defaultAvatarPadding = intArrayOf(
+            ivAvatar.contentPaddingLeft, ivAvatar.contentPaddingTop,
+            ivAvatar.contentPaddingRight, ivAvatar.contentPaddingBottom
+        )
 
         setUpMap()
 
@@ -119,6 +141,14 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
                 viewModel.events.collect(::handleEvent)
             }
         }
+        // Its own collector, so the 30 s staleness tick does not re-request
+        // the photo: only a different URL reaches renderAvatar.
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.map { it.avatarUrl }.distinctUntilChanged()
+                    .collect(::renderAvatar)
+            }
+        }
     }
 
     override fun onResume() {
@@ -136,6 +166,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
      * MapView has to be detached by hand or the Fragment's view leaks with it.
      */
     override fun onDestroyView() {
+        ivAvatar.dispose()
         mapView.onDetach()
         marker = null
         super.onDestroyView()
@@ -217,6 +248,47 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
         val location = state.location
         if (location != null) showFix(location) else removeMarker()
+    }
+
+    /**
+     * The default icon goes back **first**, before any request, so a view that
+     * was re-created or reused can never keep showing an earlier session's
+     * photo while the new one loads. It is also the placeholder and the error
+     * drawable, so the avatar is never blank: loading, offline, or a link that
+     * has expired all show the icon.
+     *
+     * A null [url] makes no request at all. Coil cancels the previous request
+     * itself when `load` is called again on the same view and when the view
+     * detaches; [dispose] makes that explicit for the no-photo case and for
+     * [onDestroyView].
+     *
+     * The icon is tinted and inset by the layout; a photo is neither, so those
+     * are dropped only once the photo has actually arrived.
+     */
+    private fun renderAvatar(url: String?) {
+        val avatar = ivAvatar
+        avatar.dispose()
+        showDefaultAvatarStyle(avatar)
+        avatar.setImageResource(R.drawable.ic_profile)
+        if (url == null) return
+
+        avatar.load(url) {
+            placeholder(R.drawable.ic_profile)
+            error(R.drawable.ic_profile)
+            transformations(CircleCropTransformation())
+            listener(onSuccess = { _, _ -> showPhotoStyle(avatar) })
+        }
+    }
+
+    private fun showDefaultAvatarStyle(avatar: ShapeableImageView) {
+        avatar.imageTintList = defaultAvatarTint
+        val (left, top, right, bottom) = defaultAvatarPadding
+        avatar.setContentPadding(left, top, right, bottom)
+    }
+
+    private fun showPhotoStyle(avatar: ShapeableImageView) {
+        avatar.imageTintList = null
+        avatar.setContentPadding(0, 0, 0, 0)
     }
 
     private fun renderStatusPanel(state: TrackUiState) {

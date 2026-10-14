@@ -183,7 +183,8 @@ class FirebaseAuthRepository(
     private fun FirebaseUser.toUser(): User = User(
         id = uid,
         name = displayName.orEmpty(),
-        email = email.orEmpty()
+        email = email.orEmpty(),
+        photoUrl = photoUrl?.toString()
     )
 
     /**
