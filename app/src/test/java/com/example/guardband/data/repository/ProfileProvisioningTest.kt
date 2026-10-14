@@ -1,5 +1,6 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.model.ConsentRecord
 import com.example.guardband.data.model.EmergencyContact
 import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.model.User
@@ -146,6 +147,12 @@ class ProfileProvisioningTest {
             ): Result<Unit> = Result.success(Unit)
 
             override suspend fun markDeletionPending(uid: String): Result<Unit> =
+                Result.success(Unit)
+
+            override suspend fun consentRecord(uid: String): Result<ConsentRecord?> =
+                Result.success(null)
+
+            override suspend fun recordConsent(uid: String, consentVersion: String): Result<Unit> =
                 Result.success(Unit)
         }
 
