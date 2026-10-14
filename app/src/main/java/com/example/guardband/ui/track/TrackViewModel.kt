@@ -54,7 +54,9 @@ class TrackViewModel(
     private val staleTicks: Flow<Unit> = defaultStaleTicks()
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TrackUiState(userName = sessionName()))
+    private val _uiState = MutableStateFlow(
+        TrackUiState(userName = sessionName(), avatarUrl = sessionAvatarUrl())
+    )
     val uiState: StateFlow<TrackUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<TrackEvent>(Channel.BUFFERED)
@@ -219,6 +221,13 @@ class TrackViewModel(
     /** The avatar's spoken name, straight from the session. */
     private fun sessionName(): String =
         authRepository.currentUser()?.name?.takeUnless { it.isBlank() } ?: DEFAULT_USER_NAME
+
+    /**
+     * Read once, like the name: signing in as someone else goes back through
+     * Login, which builds a new host and so a new ViewModel.
+     */
+    private fun sessionAvatarUrl(): String? =
+        AvatarPhoto.urlFor(authRepository.currentUser(), authRepository.currentUserProviders())
 
     companion object {
         const val DEFAULT_USER_NAME = "User"

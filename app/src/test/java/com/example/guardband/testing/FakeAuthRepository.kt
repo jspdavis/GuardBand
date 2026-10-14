@@ -25,7 +25,9 @@ class FakeAuthRepository(
     var confirmPasswordResetResult: Result<Unit> = Result.success(Unit),
     /** What the account can sign in with. Empty means an unusable session. */
     var providers: Set<SignInProvider> = setOf(SignInProvider.PASSWORD),
-    private var signedIn: Boolean = false
+    private var signedIn: Boolean = false,
+    /** Who [currentUser] reports while signed in. */
+    private val user: User = DEFAULT_USER
 ) : AuthRepository {
 
     var loginCalls = 0; private set
@@ -105,7 +107,7 @@ class FakeAuthRepository(
         return confirmPasswordResetResult
     }
 
-    override fun currentUser(): User? = DEFAULT_USER.takeIf { signedIn }
+    override fun currentUser(): User? = user.takeIf { signedIn }
 
     override fun currentUserProviders(): Set<SignInProvider> =
         if (signedIn) providers else emptySet()

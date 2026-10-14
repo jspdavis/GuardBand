@@ -54,8 +54,10 @@
         tools:visibility="visible" />
 
     <!-- ── Top bar: avatar · bell · gear ──────────────────────────────────
-         The avatar is the default icon until Google's profile photo is wired
-         in. The user's name is its content description, not visible text. -->
+         The avatar shows the Google profile photo when there is one (loaded
+         by TrackFragment.renderAvatar) and ic_profile otherwise; the tint
+         and contentPadding below apply to the icon only. The user's name is
+         its content description, not visible text. -->
 
     <LinearLayout
         android:id="@+id/ll_track_user_chip"
