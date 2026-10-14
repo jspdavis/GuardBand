@@ -69,7 +69,8 @@ com/example/guardband/
 │   ├── forgot/         one screen: email → "check your email" + Resend (60 s cooldown)
 │   ├── reset/          New Credentials, opened by the App Link in the reset email;
 │   │                 EmailActionLink routes the other email links (verifyEmail) away first
-│   ├── verify/         VerifyEmailActivity: applies the code from the verification email
+│   ├── verify/         VerifyEmailActivity: applies the code from the verification email;
+│   │                 VerifyRequiredActivity: the gate an unverified password account meets instead of Home
 │   │                 ResetLinkParser (pure; the trust boundary) + ViewModel
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
@@ -273,8 +274,20 @@ has to be added. The doc's §1 is the checklist.
 - **Resend has a 60 s cooldown** on the forgot-password pattern (injected
   `Clock` + ticker). `AuthError.TooManyRequests` is worded kindly and starts
   the cooldown; offline does not.
-- **Nothing is gated on it.** Blocking unverified users is a product decision
-  nobody has made.
+- **The app is locked until it is verified (2026-10-14).** `HomeViewModel`'s
+  gate sends an unverified **password** account to `ui/verify/VerifyRequiredActivity`
+  (task cleared) instead of the tabs - `EmailVerification.requiredBeforeUse`.
+  Google accounts, and accounts with no known provider, are never gated. The
+  gate screen reloads on every `onStart` and lets them straight through once
+  verified; it also offers "I've verified my email", Resend (same cooldown),
+  Log Out, and "Wrong email? Delete this account" (Account information), so a
+  mistyped address is never a dead end. Every route in - Splash, login, Google,
+  sign-up via Welcome - ends at Home, which is why the gate lives there.
+- **It is a product gate, not a security boundary.** The Security Rules do not
+  check `email_verified`, and must not on `users/$uid`: sign-up's
+  `finalizeSignUp` writes the profile **before** the user can have verified,
+  so such a rule would fail every sign-up. `devices/` is open to everyone
+  anyway until pairing.
 
 ## Contacts and profile data
 

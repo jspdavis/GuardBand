@@ -193,7 +193,8 @@ Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC 
 - ✅ **Log Out** (outlined button) signs out and goes to Login with the task cleared.
 
 ### Account information, `ui/account/` (an Activity, opened from Settings)
-- **Path:** Track (or any tab) → gear → Settings → **Account information**. Back returns to Settings.
+- **Path:** Track (or any tab) → gear → Settings → **Account information**. Back returns to Settings. Also opened by the verification gate's "Wrong email? Delete this account".
+- **Before any tab:** `HomeViewModel` sends an unverified password account to `ui/verify/VerifyRequiredActivity` (task cleared) instead of the tabs. See [`email-verification.md`](email-verification.md) §8.
 - An **Activity**, not a pushed Fragment, for the Changelog's reason: the host's Back always returns to a tab, and from here it has to return to Settings. Being outside the host also puts it outside `HomeViewModel`'s gate, so `AccountViewModel` sends a session-less restore to Login itself.
 - ✅ **Details card:** name and email, from the session.
 - ✅ **Danger zone** at the very bottom: a red heading, a red-outlined card saying what deleting removes, and the **Delete account** row. Below it, the failure card with Retry and the progress spinner. Everything the flow had in Settings came with it unchanged: the confirmation modal (focus on Cancel), re-authentication, the retry guards and the Back block while it runs. See CLAUDE.md, "Account deletion".

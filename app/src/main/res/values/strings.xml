@@ -71,6 +71,7 @@
     <string name="label_signup_name_title">What\'s your name?</string>
     <string name="hint_full_name">Full name</string>
     <string name="btn_next">Next</string>
+    <string name="btn_okay">Okay</string>
 
     <!-- Sign Up – Contacts -->
     <string name="label_signup_contacts_title">Add emergency contacts</string>
@@ -236,6 +237,13 @@
     <string name="label_verify_title_unsupported">Link not supported</string>
     <string name="btn_verify_continue">Continue to GuardBand</string>
     <string name="cd_verify_progress">Verifying your email</string>
+
+    <!-- Verify your email: the gate before the tabs, for an unverified password account -->
+    <string name="label_verify_required_title">Verify your email</string>
+    <string name="label_verify_required_message">We sent a link to %1$s. Open it on this phone to start using GuardBand. Didn\'t get it? Check your Spam folder, or send it again.</string>
+    <string name="btn_verify_required_check">I\'ve verified my email</string>
+    <string name="btn_verify_required_delete">Wrong email? Delete this account</string>
+    <string name="cd_verify_required_progress">Checking your email</string>
 
     <!-- Delete account -->
     <string name="label_account_delete">Delete account</string>

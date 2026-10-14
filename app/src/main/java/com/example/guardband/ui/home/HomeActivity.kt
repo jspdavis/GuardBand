@@ -20,6 +20,7 @@ import com.example.guardband.ui.notifications.NotificationsFragment
 import com.example.guardband.ui.profile.ProfileFragment
 import com.example.guardband.ui.settings.SettingsFragment
 import com.example.guardband.ui.track.TrackFragment
+import com.example.guardband.ui.verify.VerifyRequiredActivity
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.launch
 
@@ -107,15 +108,22 @@ class HomeActivity : AppCompatActivity() {
             // there is no account behind them any more, only a sign-in to
             // finish deleting. Back from Account information leaves the app,
             // and the next launch comes straight back here.
-            HomeEvent.ResumeDeletion -> {
-                startActivity(
-                    Intent(this, AccountActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    }
-                )
-                finish()
-            }
+            HomeEvent.ResumeDeletion -> leaveFor(AccountActivity::class.java)
+
+            // Cleared for the same reason: Back from the gate must not land
+            // on tabs the account is not allowed to use yet.
+            HomeEvent.RequireEmailVerification -> leaveFor(VerifyRequiredActivity::class.java)
         }
+    }
+
+    /** Replaces the whole task with [target], so Back cannot return here. */
+    private fun leaveFor(target: Class<out AppCompatActivity>) {
+        startActivity(
+            Intent(this, target).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        )
+        finish()
     }
 
     // ── Fragment hosting ──────────────────────────────────────────────────────

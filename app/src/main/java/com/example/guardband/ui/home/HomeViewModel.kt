@@ -9,6 +9,7 @@ import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.repository.AuthRepository
 import com.example.guardband.data.repository.UserProfileRepository
+import com.example.guardband.ui.account.EmailVerification
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -43,6 +44,20 @@ import kotlinx.coroutines.launch
  * meanwhile; a read that fails lets them in, exactly as before the marker
  * existed, because a gate that locked people out on a flaky network would be
  * worse than the gap it closes.
+ *
+ * **Third check: an unverified email.** A password account whose address is
+ * not verified yet is sent to
+ * [VerifyRequiredActivity][com.example.guardband.ui.verify.VerifyRequiredActivity]
+ * ([HomeEvent.RequireEmailVerification]) and never reaches the tabs; Google
+ * accounts are never gated ([EmailVerification.requiredBeforeUse]). It is
+ * synchronous - the flag rides on the session - so it runs before the
+ * deletion read, and an unverified account skips that read entirely: the gate
+ * screen's "Delete this account" opens Account information, which resumes a
+ * pending deletion on its own. The flag is only as fresh as the session's last
+ * reload, so a link opened in a browser can still read as unverified here;
+ * the gate screen reloads as soon as it shows and lets them straight through.
+ * **This is a product gate, not a security boundary** - see
+ * `docs/email-verification.md`.
  */
 class HomeViewModel(
     private val authRepository: AuthRepository,
@@ -54,12 +69,18 @@ class HomeViewModel(
 
     init {
         val uid = authRepository.currentUser()?.id
-        if (uid == null) {
-            _events.trySend(HomeEvent.NavigateToLogin)
-        } else {
-            checkForUnfinishedDeletion(uid)
+        when {
+            uid == null -> _events.trySend(HomeEvent.NavigateToLogin)
+            mustVerifyEmail() -> _events.trySend(HomeEvent.RequireEmailVerification)
+            else -> checkForUnfinishedDeletion(uid)
         }
     }
+
+    private fun mustVerifyEmail(): Boolean =
+        EmailVerification.of(
+            providers = authRepository.currentUserProviders(),
+            isEmailVerified = authRepository.isEmailVerified()
+        ).requiredBeforeUse
 
     private fun checkForUnfinishedDeletion(uid: String) {
         viewModelScope.launch {

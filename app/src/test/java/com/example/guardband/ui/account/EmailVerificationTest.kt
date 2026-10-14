@@ -2,6 +2,8 @@ package com.example.guardband.ui.account
 
 import com.example.guardband.data.model.SignInProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** What Account information says about the email, and whether it offers Resend. */
@@ -49,5 +51,21 @@ class EmailVerificationTest {
             EmailVerification(verified = false, canResend = false),
             EmailVerification.of(emptySet(), isEmailVerified = false)
         )
+    }
+
+    // ── Which accounts are gated ──────────────────────────────────────────────
+
+    @Test
+    fun `only an unverified password account is gated`() {
+        assertTrue(EmailVerification.of(setOf(SignInProvider.PASSWORD), false).requiredBeforeUse)
+        assertFalse(EmailVerification.of(setOf(SignInProvider.PASSWORD), true).requiredBeforeUse)
+        assertFalse(EmailVerification.of(setOf(SignInProvider.GOOGLE), false).requiredBeforeUse)
+        assertFalse(
+            EmailVerification.of(
+                setOf(SignInProvider.PASSWORD, SignInProvider.GOOGLE),
+                false
+            ).requiredBeforeUse
+        )
+        assertFalse(EmailVerification.of(emptySet(), false).requiredBeforeUse)
     }
 }
