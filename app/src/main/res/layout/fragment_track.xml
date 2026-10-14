@@ -221,17 +221,28 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <Button
+    <!-- Check-in pill (FR-10): the wearer's latest check-in, read-only.
+         A TextView rather than a Button, so it is not clickable, has no
+         ripple and TalkBack reads it as text, not as a control. Check-ins
+         come from the band; the app never sends one.
+         DESIGN: Jul (white status pill like the user chip, as a placeholder) -->
+    <TextView
         android:id="@+id/track_checkin_pill"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:paddingStart="24dp"
-        android:paddingEnd="28dp"
-        android:text="@string/btn_check_in"
-        app:cornerRadius="24dp"
-        app:icon="@drawable/ic_check_circle"
-        app:iconTint="@color/white"
+        android:background="@drawable/bg_pill"
+        android:drawablePadding="8dp"
+        android:elevation="2dp"
+        android:gravity="center_vertical"
+        android:minHeight="48dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="20dp"
+        android:text="@string/label_track_checkin_loading"
+        android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
+        android:textColor="@color/text_primary"
+        app:drawableStartCompat="@drawable/ic_check_circle"
+        app:drawableTint="@color/alert_checkin"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

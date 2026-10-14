@@ -57,7 +57,15 @@ data class TrackUiState(
      * goes out as [TrackEvent.ShowMessage] instead, so the user is told it is
      * stale without losing it.
      */
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+
+    /**
+     * The Check-in pill: the wearer's latest check-in, from the history
+     * window rather than `latest`. Independent of everything above - a
+     * failed check-in read never touches the map, and a failed `latest`
+     * read never touches the pill.
+     */
+    val checkIn: CheckInStatus = CheckInStatus.Loading
 ) {
     /** Whether there is a position to put a marker on (D3, D4). */
     val hasFix: Boolean get() = location != null

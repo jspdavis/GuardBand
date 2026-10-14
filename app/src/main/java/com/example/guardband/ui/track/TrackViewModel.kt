@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.CheckIn
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.data.repository.AlertRepository
 import com.example.guardband.data.repository.AuthRepository
@@ -41,6 +42,11 @@ import kotlinx.coroutines.launch
  *    [staleTicks] the badge could never flip from online to offline - it would
  *    sit on whatever it said when the last report landed.
  *
+ * The Check-in pill reads the wearer's latest check-in (FR-10) through its own
+ * subscription, and its "X ago" is recomputed on the same ticker. It is a
+ * status, not an action: nothing here can send a check-in, because only the
+ * band does.
+ *
  * Nothing here logs. The state holds the wearer's coordinates.
  *
  * @param staleTicks fires the staleness recompute. Injected so a test can
@@ -73,8 +79,19 @@ class TrackViewModel(
     /** The live subscription, cancelled and replaced on retry. */
     private var observeJob: Job? = null
 
+    /**
+     * When the latest check-in happened, or null when there is none or its
+     * timestamp could not be read. An input to [TrackUiState.checkIn], kept
+     * out of the state for the same reason as [lastReportMillis].
+     */
+    private var lastCheckInMillis: Long? = null
+
+    /** The check-in subscription, cancelled and replaced on retry. */
+    private var checkInJob: Job? = null
+
     init {
         observeLatest()
+        observeCheckIns()
         viewModelScope.launch {
             staleTicks.collect { recomputeStaleness() }
         }
@@ -90,6 +107,7 @@ class TrackViewModel(
     fun onRetryClicked() {
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         observeLatest()
+        observeCheckIns()
     }
 
     /** D6. Does nothing without a fix; the button is disabled in that state. */
@@ -103,11 +121,6 @@ class TrackViewModel(
     /** D6's fallback: the device has nothing that can open a maps link. */
     fun onNavigationUnavailable() {
         _events.trySend(TrackEvent.ShowMessage(MSG_NAVIGATION_UNAVAILABLE))
-    }
-
-    /** D7: a UI-only endpoint. It must not write anything to the band. */
-    fun onCheckInClicked() {
-        _events.trySend(TrackEvent.ShowMessage(MSG_CHECK_IN_ON_BAND))
     }
 
     /** D7: a UI-only endpoint. */
@@ -125,6 +138,44 @@ class TrackViewModel(
             }
         }
     }
+
+    private fun observeCheckIns() {
+        checkInJob?.cancel()
+        checkInJob = viewModelScope.launch {
+            alertRepository.observeLatestCheckIn().collect { result ->
+                result
+                    .onSuccess { checkIn -> renderCheckIn(checkIn) }
+                    .onFailure { reportCheckInFailure() }
+            }
+        }
+    }
+
+    private fun renderCheckIn(checkIn: CheckIn?) {
+        lastCheckInMillis = checkIn?.let { BandStatus.parseIsoUtcMillis(it.timestamp) }
+        _uiState.update {
+            it.copy(
+                checkIn = if (checkIn == null) CheckInStatus.None
+                else CheckInStatus.Received(checkInElapsed())
+            )
+        }
+    }
+
+    /**
+     * A failed read keeps whatever the pill already says: a check-in shown a
+     * minute ago is still true, and aging it on the ticker stays honest. Only
+     * a pill with nothing to show yet becomes [CheckInStatus.Unavailable].
+     * No event either - the map's own failure already tells the user the
+     * connection is in trouble, and two notices for one outage is noise.
+     */
+    private fun reportCheckInFailure() {
+        _uiState.update {
+            if (it.checkIn == CheckInStatus.Loading) it.copy(checkIn = CheckInStatus.Unavailable)
+            else it
+        }
+    }
+
+    private fun checkInElapsed(): Elapsed? =
+        lastCheckInMillis?.let { BandStatus.elapsedSince(it, clock.nowMillis()) }
 
     /**
      * A null alert is the repository's explicit "the band has never reported",
@@ -164,7 +215,8 @@ class TrackViewModel(
     }
 
     /**
-     * Derives [TrackUiState.isOnline] and [TrackUiState.elapsed] from the clock.
+     * Derives [TrackUiState.isOnline], [TrackUiState.elapsed] and the age of a
+     * received [TrackUiState.checkIn] from the clock.
      *
      * A null [lastReportMillis] - never reported, or a timestamp that could not
      * be parsed - clears both rather than leaving the previous report's
@@ -178,7 +230,14 @@ class TrackViewModel(
         _uiState.update {
             it.copy(
                 isOnline = reportedAt != null && BandStatus.isOnline(reportedAt, now),
-                elapsed = reportedAt?.let { at -> BandStatus.elapsedSince(at, now) }
+                elapsed = reportedAt?.let { at -> BandStatus.elapsedSince(at, now) },
+                // The pill ages on the same tick. Only a received check-in has
+                // an age; the other states have nothing to recompute.
+                checkIn = if (it.checkIn is CheckInStatus.Received) {
+                    CheckInStatus.Received(checkInElapsed())
+                } else {
+                    it.checkIn
+                }
             )
         }
     }
@@ -240,8 +299,6 @@ class TrackViewModel(
          */
         const val TICK_INTERVAL_MS = 30_000L
 
-        const val MSG_CHECK_IN_ON_BAND =
-            "Check-ins come from the band: double-press its button."
         const val MSG_MAP_LAYERS_UNAVAILABLE = "Map layers aren't available yet."
         const val MSG_NAVIGATION_UNAVAILABLE = "No app on this phone can open maps."
 

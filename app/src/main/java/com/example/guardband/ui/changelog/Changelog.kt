@@ -38,7 +38,7 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-14",
-            title = "Google profile photo, Changelog screen",
+            title = "Google photo, check-in status, Changelog",
             changes = listOf(
                 "The Track avatar shows the Google profile photo, cropped to a circle; email accounts keep the default icon.",
                 "Coil 2.7.0 added as the image loader, pinned to an exact version. No new permission in the release manifest.",
@@ -46,7 +46,8 @@ object Changelog {
                 "Tapping the Track avatar opens the Profile tab.",
                 "Top-bar Settings and Notifications buttons set to an explicit 40dp on every tab.",
                 "This Changelog, under Settings.",
-                "418 unit tests, up from 396."
+                "The Check-in pill shows the wearer's latest check-in (\"Last check-in: 5 minutes ago\") instead of a toast. It is read-only: check-ins come from the band.",
+                "444 unit tests, up from 396."
             ),
             commit = "b75156b"
         ),

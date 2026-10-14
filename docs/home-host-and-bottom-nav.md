@@ -84,7 +84,7 @@ Tapping a tab while Settings or Notifications is open also returns to that tab, 
 | **Settings and Notifications are Fragments in the host**, not Activities | The Figma keeps the bottom bar visible on them. Being inside the host also means the host's auth check covers them. |
 | **Two-step auth gate** (Splash + HomeViewModel) | Splash routes signed-in users straight to Home. The in-memory session dies with the process, but Android can restore `HomeActivity` directly after process death, skipping Splash. A fresh `HomeViewModel` re-checks and sends the user to Login. |
 | **In-memory alert data first** | It keeps this pass focused on navigation. Firebase gets its own pass, and swapping it in is a one-line change in `RepositoryProvider`. |
-| **Check-in pill and map buttons are UI only** | FR-10 defines check-in as a double-press on the band; the app doesn't send one. The live map isn't built yet. Their taps show an explanatory toast. |
+| **Check-in pill and map buttons are UI only** | FR-10 defines check-in as a double-press on the band; the app doesn't send one. The live map isn't built yet. Their taps show an explanatory toast. *(Since 2026-10-14 the pill is a read-only status of the latest check-in, with no tap: see CLAUDE.md, "Check-in status".)* |
 | **Device id is a constant** (`guardband-001`) behind the repository | ViewModels never see it, so user↔band pairing can replace it later without UI changes. |
 
 ---
@@ -151,7 +151,7 @@ Legend: ✅ works with (in-memory) data · 🟡 placeholder UI
 - 🟡 **Map:** grey `surface_muted` area with a "Live map coming soon" label.
 - 🟡 **Status pill:** static "You are protected." with a green dot. It isn't driven by alert data yet.
 - 🟡 **Round map buttons** (layers, recenter): toast "The live map isn't available yet."
-- 🟡 **Check-in pill:** toast "Check-ins come from the band: double-press its button."
+- ✅ **Check-in pill:** read-only status of the latest check-in ("Last check-in: 5 minutes ago" / "No recent check-ins"); not tappable. Was a toast stub until 2026-10-14.
 
 `TrackViewModel` holds `TrackUiState(userName)` and `TrackEvent.ShowMessage`. It no longer takes a `UserProfileRepository`.
 

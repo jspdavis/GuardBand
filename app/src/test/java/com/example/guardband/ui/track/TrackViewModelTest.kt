@@ -1,6 +1,7 @@
 package com.example.guardband.ui.track
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.CheckIn
 import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.testing.FakeAlertRepository
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -328,21 +330,139 @@ class TrackViewModelTest {
         )
     }
 
-    // ── UI-only endpoints (D7) ────────────────────────────────────────────────
+    // ── Check-in status (FR-10) ───────────────────────────────────────────────
 
     @Test
-    fun `check-in explains that the band sends it, rather than sending one`() = runTest {
-        val repository = FakeAlertRepository(latest = reportAt(t0))
-        val vm = viewModel(repository)
+    fun `the pill starts loading`() {
+        assertEquals(CheckInStatus.Loading, viewModel().uiState.value.checkIn)
+    }
 
-        vm.onCheckInClicked()
+    @Test
+    fun `no check-in in the window reads as none`() = runTest {
+        val vm = viewModel(FakeAlertRepository(latestCheckIn = null))
+
+        assertEquals(CheckInStatus.None, vm.uiState.first { it.checkIn != CheckInStatus.Loading }.checkIn)
+    }
+
+    @Test
+    fun `a check-in arriving live moves the pill from none to received`() = runTest {
+        val repository = FakeAlertRepository(latestCheckIn = null)
+        val vm = viewModel(repository, FakeClock(t0))
+        vm.uiState.first { it.checkIn == CheckInStatus.None }
+
+        repository.emitCheckIn(CheckIn(7L, isoAt(t0 - 2 * 60_000L)))
 
         assertEquals(
-            TrackViewModel.MSG_CHECK_IN_ON_BAND,
-            (vm.events.first() as TrackEvent.ShowMessage).text
+            CheckInStatus.Received(Elapsed.Minutes(2)),
+            vm.uiState.first { it.checkIn is CheckInStatus.Received }.checkIn
         )
-        // D7: the stub must not write anything.
-        assertEquals(0, repository.requestedLimits.size)
+    }
+
+    @Test
+    fun `a check-in that just happened reads in seconds`() = runTest {
+        val vm = viewModel(FakeAlertRepository(latestCheckIn = CheckIn(1L, isoAt(t0))), FakeClock(t0))
+
+        assertEquals(
+            CheckInStatus.Received(Elapsed.Seconds(0)),
+            vm.uiState.first { it.checkIn is CheckInStatus.Received }.checkIn
+        )
+    }
+
+    @Test
+    fun `the check-in ages on the ticker, with no new data`() = runTest {
+        val clock = FakeClock(t0)
+        val ticks = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+        val vm = viewModel(FakeAlertRepository(latestCheckIn = CheckIn(1L, isoAt(t0))), clock, ticks)
+        vm.uiState.first { it.checkIn is CheckInStatus.Received }
+
+        clock.millis = t0 + 5 * 60_000L
+        ticks.emit(Unit)
+        assertEquals(
+            CheckInStatus.Received(Elapsed.Minutes(5)),
+            vm.uiState.first { it.checkIn == CheckInStatus.Received(Elapsed.Minutes(5)) }.checkIn
+        )
+
+        clock.millis = t0 + 2 * 60 * 60_000L
+        ticks.emit(Unit)
+        assertEquals(
+            CheckInStatus.Received(Elapsed.Hours(2)),
+            vm.uiState.first { it.checkIn == CheckInStatus.Received(Elapsed.Hours(2)) }.checkIn
+        )
+    }
+
+    @Test
+    fun `a newer check-in replaces the older one`() = runTest {
+        val repository = FakeAlertRepository(latestCheckIn = CheckIn(1L, isoAt(t0 - 60 * 60_000L)))
+        val vm = viewModel(repository, FakeClock(t0))
+        vm.uiState.first { it.checkIn == CheckInStatus.Received(Elapsed.Hours(1)) }
+
+        repository.emitCheckIn(CheckIn(2L, isoAt(t0)))
+
+        assertEquals(
+            CheckInStatus.Received(Elapsed.Seconds(0)),
+            vm.uiState.first { it.checkIn == CheckInStatus.Received(Elapsed.Seconds(0)) }.checkIn
+        )
+    }
+
+    @Test
+    fun `an unreadable check-in timestamp is received with no age`() = runTest {
+        val vm = viewModel(FakeAlertRepository(latestCheckIn = CheckIn(1L, "not a timestamp")))
+
+        assertEquals(
+            CheckInStatus.Received(null),
+            vm.uiState.first { it.checkIn is CheckInStatus.Received }.checkIn
+        )
+    }
+
+    @Test
+    fun `a failed first read makes the pill unavailable and leaves the map alone`() = runTest {
+        val repository = FakeAlertRepository(latest = reportAt(t0))
+        repository.failCheckIn(AlertError.Network)
+        val vm = viewModel(repository)
+
+        assertEquals(
+            CheckInStatus.Unavailable,
+            vm.uiState.first { it.checkIn != CheckInStatus.Loading }.checkIn
+        )
+        // The map is unaffected.
+        assertTrue(vm.uiState.value.hasFix)
+    }
+
+    @Test
+    fun `a failure after a check-in keeps the check-in`() = runTest {
+        val repository = FakeAlertRepository(latestCheckIn = CheckIn(1L, isoAt(t0)))
+        val vm = viewModel(repository, FakeClock(t0))
+        vm.uiState.first { it.checkIn is CheckInStatus.Received }
+
+        repository.failCheckIn(AlertError.Network)
+        advanceUntilIdle()
+
+        assertEquals(CheckInStatus.Received(Elapsed.Seconds(0)), vm.uiState.value.checkIn)
+    }
+
+    @Test
+    fun `a check-in does not touch the map or the band status`() = runTest {
+        val repository = FakeAlertRepository(latest = null, latestCheckIn = null)
+        val vm = viewModel(repository)
+        vm.uiState.first { !it.isLoading && it.checkIn == CheckInStatus.None }
+
+        repository.emitCheckIn(CheckIn(1L, isoAt(t0)))
+
+        val state = vm.uiState.first { it.checkIn is CheckInStatus.Received }
+        assertFalse(state.hasReported)
+        assertNull(state.location)
+    }
+
+    @Test
+    fun `retry re-subscribes the check-in status too`() = runTest {
+        val repository = FakeAlertRepository()
+        val vm = viewModel(repository)
+        vm.uiState.first { it.checkIn != CheckInStatus.Loading }
+
+        vm.onRetryClicked()
+        vm.uiState.first { !it.isLoading }
+
+        assertEquals(2, repository.checkInSubscriptions)
     }
 
     // Recentring is deliberately not here: D4 makes it the map's own business,
