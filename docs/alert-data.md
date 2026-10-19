@@ -331,6 +331,42 @@ recent  = displayable.take(RECENT_ALERTS_LIMIT)        // Track's panel, 3
 - **Retry** from either screen re-subscribes the one instance, so both
   screens leave the error state together.
 
+### Place names (2026-10-20)
+
+Every alert row, Track's panel and the latest card show **where** as a place
+name ("Osmeña Blvd, Kamputhaw, Cebu City") instead of coordinates. The
+coordinates show only while the name loads, and for good when none is found.
+
+- **`PlaceRepository` → `GeocoderPlaceRepository`**, on Android's own
+  `Geocoder`: free, no key, no dependency, **no permission** (it geocodes
+  the coordinates it is handed and never reads the phone's location). On
+  Play-services phones the answers are Google's. It answers `Found(Place)`,
+  `NotFound` (no name exists: never asked again) or `Unavailable` (offline,
+  timed out after 10 s: asked again later). A phone with no geocoder answers
+  `NotFound` for everything. API 33+ uses the non-blocking listener form;
+  older phones the blocking call on `Dispatchers.IO`.
+- **`AlertViewModel` asks, once per point.** After each render it looks up the
+  shown alerts' points not yet known, newest first, one at a time, and puts
+  the answers in `AlertUiState.placeNames`. A point is `AlertPlaces.keyOf`
+  the coordinates **rounded to 4 decimals (about 11 m)**, and the geocoder is
+  sent the rounded values, never more. An `Unavailable` point waits
+  `PLACE_RETRY_MS` (60 s) before it is asked again, so a walking band that
+  emits every few seconds does not cause a lookup per emission while offline.
+  Tracking updates are hidden, so they are never looked up.
+- **Memory only.** Names live as long as the host-scoped ViewModel. Nothing
+  about a location is written to the phone or the database.
+- **`AlertPlaces.label`** reads a `Place` as "Street, Area, City": the parts it
+  has, in that order, without repeats; the province only when there is no
+  city; Google's "Unnamed Road" dropped. Nothing usable → coordinates.
+- **The adapter binds `AlertRow`s** (alert + name), so a name arriving later
+  rebinds just that row. `AlertFormatting.locationText` is the one place
+  that picks name or coordinates.
+- **Privacy:** this is a new flow. The band's positions used to go only to
+  Firebase (and to a maps app on Navigate); now the geocoder's service
+  receives each shown alert's rounded position and the phone's IP address.
+  The notice has a DRAFT row ([`privacy-and-consent.md`](privacy-and-consent.md) §4).
+  Never log a place name: it is a location.
+
 ---
 
 ## 8. Alert history and Track's panel
@@ -503,6 +539,12 @@ all**.
       there too.
 - [ ] The card shows type, local time, coordinates and battery; the symbol is the red octagon.
       The panel's row reads the same.
+- [ ] **Place names (2026-10-20):** a moment after the row appears, its
+      coordinates turn into a place name (e.g. "…, Cebu City"); the card and
+      the panel show the same name. In airplane mode on a fresh launch the
+      rows keep their coordinates and don't crash; turn it off and, within a
+      minute of the next alert arriving, the names fill in. Rows at the same
+      spot get the same name.
 - [ ] Add `6` with `type: "CHECKIN"`. The card becomes the check-in; the panic
       stays in history and moves down a row in the panel.
 - [ ] With four or more alerts, the panel shows three and history shows them

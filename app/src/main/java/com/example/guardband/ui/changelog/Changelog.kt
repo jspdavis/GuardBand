@@ -38,11 +38,14 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-20",
-            title = "A sample notification in the inbox",
+            title = "A sample notification in the inbox; place names on alerts; matching top buttons",
             changes = listOf(
-                "For testing, the Notifications screen (the bell) shows one sample message, \"Welcome to GuardBand\", instead of \"No notifications yet.\" It is fixed text, not real data."
+                "For testing, the Notifications screen (the bell) shows one sample message, \"Welcome to GuardBand\", instead of \"No notifications yet.\" It is fixed text, not real data.",
+                "Alerts say where they happened as a place (street, barangay, city) instead of latitude and longitude, on Track's panel, Alert history and its latest card. The coordinates show only while the name loads or if none can be found.",
+                "Contacts and Profile have the same smaller settings and notifications buttons as Track, in the same place, so they no longer jump when you switch tabs.",
+                "691 unit tests, up from 668."
             ),
-            commit = "0de5ae6"
+            commit = "c28c3bb"
         ),
         ChangelogEntry(
             date = "2026-10-19",

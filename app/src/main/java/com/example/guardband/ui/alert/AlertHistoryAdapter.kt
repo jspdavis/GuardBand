@@ -10,17 +10,19 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
-import com.example.guardband.data.model.Alert
 
 /**
  * Incident-history rows (`item_alert.xml`), keyed by sequenceId: the Alert
  * history screen's list and Track's recent-alerts panel both use them. Adapted from the checkpoint's AlertHistoryAdapter.
  *
+ * Items are [AlertRow]s, so a place name arriving after the list changes the
+ * row's contents and DiffUtil rebinds just that row.
+ *
  * Rows only. The latest-alert card used to share this ViewHolder through an
  * `<include>`, which meant constructing one by hand outside any RecyclerView;
  * it is its own block in `fragment_alert_history.xml` now.
  */
-class AlertHistoryAdapter : ListAdapter<Alert, AlertHistoryAdapter.AlertViewHolder>(AlertDiff) {
+class AlertHistoryAdapter : ListAdapter<AlertRow, AlertHistoryAdapter.AlertViewHolder>(AlertDiff) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlertViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -40,7 +42,8 @@ class AlertHistoryAdapter : ListAdapter<Alert, AlertHistoryAdapter.AlertViewHold
         private val tvLocation: TextView = itemView.findViewById(R.id.tv_item_alert_location)
         private val tvBattery: TextView = itemView.findViewById(R.id.tv_item_alert_battery)
 
-        fun bind(alert: Alert) {
+        fun bind(row: AlertRow) {
+            val alert = row.alert
             val context = itemView.context
             val type = alert.alertType()
 
@@ -53,8 +56,7 @@ class AlertHistoryAdapter : ListAdapter<Alert, AlertHistoryAdapter.AlertViewHold
             val location = alert.location
             tvLocation.visibility = if (location == null) View.GONE else View.VISIBLE
             if (location != null) {
-                tvLocation.text =
-                    context.getString(R.string.label_alert_location, location.lat, location.lng)
+                tvLocation.text = AlertFormatting.locationText(context, location, row.placeName)
             }
 
             val battery = alert.battery
@@ -69,11 +71,11 @@ class AlertHistoryAdapter : ListAdapter<Alert, AlertHistoryAdapter.AlertViewHold
         }
     }
 
-    private object AlertDiff : DiffUtil.ItemCallback<Alert>() {
-        override fun areItemsTheSame(oldItem: Alert, newItem: Alert) =
-            oldItem.sequenceId == newItem.sequenceId
+    private object AlertDiff : DiffUtil.ItemCallback<AlertRow>() {
+        override fun areItemsTheSame(oldItem: AlertRow, newItem: AlertRow) =
+            oldItem.alert.sequenceId == newItem.alert.sequenceId
 
-        override fun areContentsTheSame(oldItem: Alert, newItem: Alert) =
+        override fun areContentsTheSame(oldItem: AlertRow, newItem: AlertRow) =
             oldItem == newItem
     }
 }

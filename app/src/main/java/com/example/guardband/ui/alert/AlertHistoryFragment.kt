@@ -107,16 +107,16 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
 
         val latest = state.latest
         latestCard.visibility = if (latest == null) View.GONE else View.VISIBLE
-        if (latest != null) bindLatest(latest)
+        if (latest != null) bindLatest(latest, state.placeNameFor(latest))
 
         val empty = state.emptyMessage
         tvEmpty.visibility = if (empty == null) View.GONE else View.VISIBLE
         if (empty != null) tvEmpty.text = empty
 
-        historyAdapter.submitList(state.history)
+        historyAdapter.submitList(state.rowsOf(state.history))
     }
 
-    private fun bindLatest(alert: Alert) {
+    private fun bindLatest(alert: Alert, placeName: String?) {
         val type = alert.alertType()
 
         tvLatestType.setText(AlertFormatting.typeLabel(type))
@@ -129,7 +129,7 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
         tvLatestLocation.visibility = if (location == null) View.GONE else View.VISIBLE
         if (location != null) {
             tvLatestLocation.text =
-                getString(R.string.label_alert_location, location.lat, location.lng)
+                AlertFormatting.locationText(requireContext(), location, placeName)
         }
 
         val battery = alert.battery

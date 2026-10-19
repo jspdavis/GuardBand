@@ -46,7 +46,7 @@ View ↔ ViewModel ↔ Repository. Pre-auth screens are Activities. After login,
 ```
 com/example/guardband/
 ├── data/
-│   ├── model/            User, EmergencyContact, Alert (+ AlertType), GoogleSignInOutcome (plain data classes; no passwords)
+│   ├── model/            User, EmergencyContact, Alert (+ AlertType), GoogleSignInOutcome, Place (plain data classes; no passwords)
 │   ├── repository/       AuthRepository (suspend, Result<T>)
 │   │                     ContactRepository (observe = Flow<Result<T>>; CRUD = suspend)
 │   │                     AlertRepository (Flow<Result<T>>, live reads)
@@ -56,6 +56,7 @@ com/example/guardband/
 │   │                     AlertParser (wire map → Alert; pure, so it is unit-testable)
 │   │                     ContactFields (the one on-disk shape of a contact)
 │   │                     ProfileProvisioning (when a sign-in may write users/{uid}; both paths)
+│   │                     PlaceRepository → GeocoderPlaceRepository (alert coordinates → place names)
 │   │                     Firebase* = live; InMemory* + InMemoryStore = test doubles
 │   ├── DeviceConstants.kt      DEFAULT_DEVICE_ID = "guardband-001" (until pairing exists)
 │   ├── FirebaseProvider.kt     the one FirebaseAuth / FirebaseDatabase instance
@@ -609,7 +610,9 @@ Track's recent-alerts panel and the Alert history screen read `devices/{deviceId
 
 **Parsing is a pure `Map` → `Alert` step in `AlertParser`,** not a method on the repository. A `DataSnapshot` cannot be built in a JVM test and the project declares no mocking library, so putting the logic behind one would have made all of it untestable. `sequenceId`, `type` and `timestamp` are required; a missing `schemaVersion`, `deviceId`, `battery` or `location` is salvaged rather than dropped, which is deliberately more forgiving than `SCHEMA.md`'s receiver-validation list — this is a *reader*, and refusing to show a panic because its battery node was missing would be the wrong failure. **A malformed history entry is skipped and counted, never fatal:** one bad row from a firmware bug must not hide every good row behind it. Only `latest` can fail as `AlertError.ParseFailure`.
 
-**Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and neither alert screen logs anything either. Same rule as contact phone numbers — see "Contacts and profile data".
+**Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and neither alert screen logs anything either. Same rule as contact phone numbers — see "Contacts and profile data". A place name is a location too.
+
+**Rows show place names, not coordinates (2026-10-20).** `AlertViewModel` looks up each shown alert's point through `PlaceRepository` (Android's `Geocoder`: no key, no dependency, no permission; Google's service on Play-services phones), once per point rounded to 4 decimals, and keeps the names in memory only (`AlertUiState.placeNames`). Coordinates show until a name arrives, and for good when none exists. This sends the band's rounded positions to the geocoder's service, which the notice discloses in a DRAFT row. Details: [docs/alert-data.md](docs/alert-data.md) §7, "Place names".
 
 **Still in-memory:** `InMemoryStore`'s four seeded alerts, which only `InMemoryAlertRepository` reads, and only in tests.
 

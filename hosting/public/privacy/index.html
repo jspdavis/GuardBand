@@ -335,6 +335,25 @@
           and password show their initials instead, and nothing is fetched.
         </td>
       </tr>
+      <!-- DRAFT row, 2026-10-20 (feature/alert-place-names): alert rows show
+           a place name instead of coordinates, from Android's geocoder.
+           Not deployed. DECISION: Jul - whether this needs the notice's
+           version (and CONSENT_VERSION) bumped: unlike the rows above, a
+           company outside Firebase now receives the band's alert positions. -->
+      <tr>
+        <td><strong>Google</strong> (place names)</td>
+        <td>
+          <strong>[DRAFT, pending review]</strong> To show a place name such as
+          a street and barangay on each alert instead of bare coordinates, the
+          app asks your phone's built-in place-name service (Google's, on most
+          Android phones) about <strong>each alert's position, rounded to about
+          11 metres</strong>, along with your phone's IP address. It is asked
+          only while you are looking at alerts. The names are kept in the
+          app's memory until it closes; they are not stored on the phone or in
+          the project's database. If the service cannot be reached, the alert
+          shows its coordinates instead.
+        </td>
+      </tr>
       <tr>
         <td><strong>Google Maps</strong></td>
         <td>
