@@ -52,5 +52,19 @@ data class AlertUiState(
      * says *why* - the band has sent nothing, the window held only tracking
      * updates, or nothing in it could be read.
      */
-    val emptyMessage: String? = null
-)
+    val emptyMessage: String? = null,
+
+    /**
+     * Place names found so far, by [AlertPlaces.keyOf] the alert's location.
+     * Fills in after the list shows; an alert with no entry yet (or none to
+     * be found) shows its coordinates.
+     */
+    val placeNames: Map<String, String> = emptyMap()
+) {
+    /** [alert]'s place name, once known. */
+    fun placeNameFor(alert: Alert): String? =
+        alert.location?.let { placeNames[AlertPlaces.keyOf(it)] }
+
+    /** [alerts] as rows, each with its place name if known. */
+    fun rowsOf(alerts: List<Alert>): List<AlertRow> = alerts.map { AlertRow(it, placeNameFor(it)) }
+}

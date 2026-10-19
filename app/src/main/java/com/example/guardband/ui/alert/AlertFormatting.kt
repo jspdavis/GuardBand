@@ -1,9 +1,11 @@
 package com.example.guardband.ui.alert
 
+import android.content.Context
 import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.example.guardband.R
+import com.example.guardband.data.model.Alert
 import com.example.guardband.data.model.AlertType
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -54,6 +56,14 @@ internal object AlertFormatting {
         }
         return iso
     }
+
+    /**
+     * An alert's location line: its place name once known
+     * ([AlertUiState.placeNames]), else its coordinates, which is also what
+     * shows while the name loads and when none can be found.
+     */
+    fun locationText(context: Context, location: Alert.Location, placeName: String?): String =
+        placeName ?: context.getString(R.string.label_alert_location, location.lat, location.lng)
 
     @StringRes
     fun typeLabel(type: AlertType?): Int =

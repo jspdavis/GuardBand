@@ -63,6 +63,6 @@ class RecentAlertsPanel(
         tvEmpty.isVisible = empty != null
         if (empty != null) tvEmpty.text = empty
 
-        adapter.submitList(state.recent)
+        adapter.submitList(state.rowsOf(state.recent))
     }
 }
