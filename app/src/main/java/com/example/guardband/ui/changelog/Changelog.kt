@@ -60,7 +60,7 @@ object Changelog {
                 "The band's marker on the Track map is a round picture with a white ring and a pointer: your Google photo, or your initials if you signed up with email. The tip of the pointer is the band's position.",
                 "612 unit tests, up from 576 (the Track avatar's tests went with it)."
             ),
-            commit = "7deff47"
+            commit = "eb3571b"
         ),
         ChangelogEntry(
             date = "2026-10-15",

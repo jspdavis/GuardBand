@@ -1,9 +1,11 @@
 # Handoff
 
-**As of 2026-10-19 · `mvvm-main`, pushed, with
+**As of 2026-10-19 · `mvvm-main` with
 `feature/alerts-into-track`, `feature/track-bottom-sheet`,
-`feature/maptiler-tiles`, `feature/rules-and-logo` and
-`feature/credit-overlap-fix` merged (last code commit `7deff47`); `main` is
+`feature/maptiler-tiles`, `feature/rules-and-logo`,
+`feature/credit-overlap-fix` and `feature/track-profile-marker` merged (last
+code commit `eb3571b`; the last merge was **not pushed** when this was
+written); `main` is
 behind it again · 612 unit tests, 0
 failures · run `git status -sb` to see
 whether anything is unpushed. Pick up from §4, starting with the MapTiler
