@@ -74,9 +74,9 @@
 
         <!-- ── Top bar: settings · notifications ──────────────────────────
              The same pair as the Contacts and Profile tabs: gear top-left,
-             bell top-right. Here they are 36dp like the map controls, and
-             16dp from the sides so the bell lines up with Layers and
-             Navigate below it (24dp and 40dp on those tabs). DESIGN: Jul -->
+             bell top-right, 36dp like the map controls and 16dp from the
+             sides so the bell lines up with Layers and Navigate below it.
+             Contacts and Profile match since 2026-10-20. DESIGN: Jul -->
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/ib_track_settings"

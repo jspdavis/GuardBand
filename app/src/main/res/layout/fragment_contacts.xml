@@ -8,19 +8,21 @@
     android:background="@color/white"
     tools:context=".ui.contacts.ContactsFragment">
 
-    <!-- ── Top Action Buttons (Settings & Notifications) ────────────────── -->
+    <!-- ── Top Action Buttons (Settings & Notifications) ──────────────────
+         36dp, 16dp from the sides and 24dp from the top, the same as
+         Track's, so the pair does not jump when switching tabs. DESIGN: Jul -->
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/ib_contacts_settings"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
+        android:layout_marginStart="16dp"
         android:layout_marginTop="24dp"
         android:contentDescription="@string/cd_open_settings"
         android:src="@drawable/ic_settings"
         app:backgroundTint="@color/white"
         app:elevation="4dp"
-        app:fabCustomSize="40dp"
+        app:fabCustomSize="36dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
@@ -31,12 +33,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:layout_marginEnd="24dp"
+        android:layout_marginEnd="16dp"
         android:contentDescription="@string/cd_open_notifications"
         android:src="@drawable/ic_notifications"
         app:backgroundTint="@color/white"
         app:elevation="4dp"
-        app:fabCustomSize="40dp"
+        app:fabCustomSize="36dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
