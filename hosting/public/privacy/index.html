@@ -299,13 +299,40 @@
           <strong>asia-southeast1</strong> region (Singapore).
         </td>
       </tr>
+      <!-- DRAFT row, 2026-10-19 (feature/maptiler-tiles): the map tiles moved
+           from OpenStreetMap's public servers to MapTiler, which replaces the
+           OpenStreetMap row that stood here. Not deployed. DECISION: Jul -
+           whether this change needs the notice's version (and
+           CONSENT_VERSION) bumped, since a different company now receives
+           the IP address. -->
       <tr>
-        <td><strong>OpenStreetMap</strong></td>
+        <td><strong>MapTiler</strong> (map tiles)</td>
         <td>
-          The map is drawn from OpenStreetMap's public tile servers. Each time
-          the map loads, their servers see <strong>your phone's IP address and
-          which part of the map you are looking at</strong>. They do not receive
-          your account details, your contacts or the band's reported position.
+          <strong>[DRAFT, pending review]</strong> The map is served by a
+          third-party tile provider, MapTiler. Each time the map loads, MapTiler
+          receives <strong>your phone's IP address and the map tiles
+          requested</strong>, which reveal the approximate area you are looking
+          at. MapTiler does not receive your account details, your contacts or
+          the band's reported position. The map data itself is from
+          OpenStreetMap.
+        </td>
+      </tr>
+      <!-- DRAFT row, 2026-10-19 (feature/track-profile-marker): the Track
+           map's marker shows the signed-in user's Google profile picture,
+           which the Profile tab already showed. Not deployed. DECISION: Jul -
+           whether this needs the notice's version (and CONSENT_VERSION)
+           bumped. -->
+      <tr>
+        <td><strong>Google</strong> (profile picture)</td>
+        <td>
+          <strong>[DRAFT, pending review]</strong> If you sign in with Google,
+          the app shows your Google profile picture on the Profile tab and on
+          the map, as the marker for the band's position. The picture is loaded
+          from Google's image servers, which receive <strong>your phone's IP
+          address</strong> when it is fetched. The app keeps a copy only in its
+          own image cache on the phone; it is never stored in the project's
+          database or uploaded anywhere. Accounts that sign in with an email
+          and password show their initials instead, and nothing is fetched.
         </td>
       </tr>
       <tr>

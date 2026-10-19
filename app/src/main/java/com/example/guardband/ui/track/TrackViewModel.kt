@@ -11,7 +11,6 @@ import com.example.guardband.data.model.CheckIn
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.data.repository.AlertRepository
 import com.example.guardband.data.repository.AuthRepository
-import com.example.guardband.ui.avatar.AvatarPhoto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -30,7 +29,8 @@ import kotlinx.coroutines.launch
  * **It reads `devices/{id}/latest`,** which is the one screen that should.
  * `latest` is overwritten by every payload including a TRACKING_UPDATE, which
  * is exactly what this tab wants - the newest ping, whatever kind it was - and
- * exactly why the Alert tab derives its card from history instead (D2).
+ * exactly why the Alert history screen derives its card from history
+ * instead (D2).
  *
  * Two things here are less obvious than they look:
  *
@@ -48,22 +48,25 @@ import kotlinx.coroutines.launch
  * status, not an action: nothing here can send a check-in, because only the
  * band does.
  *
- * Nothing here logs. The state holds the wearer's coordinates.
+ * The marker's face, [TrackUiState.markerFace], is worked out once, from the
+ * session, in [markerFace]: the one place that decides whose picture marks
+ * the band.
+ *
+ * Nothing here logs. The state holds the wearer's coordinates, and the face a
+ * photo link.
  *
  * @param staleTicks fires the staleness recompute. Injected so a test can
  *   drive it by hand, or pass an empty flow and be sure nothing is ticking in
  *   the background.
  */
 class TrackViewModel(
-    private val authRepository: AuthRepository,
     private val alertRepository: AlertRepository,
+    private val authRepository: AuthRepository,
     private val clock: Clock = Clock.SYSTEM,
     private val staleTicks: Flow<Unit> = defaultStaleTicks()
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        TrackUiState(userName = sessionName(), avatarUrl = sessionAvatarUrl())
-    )
+    private val _uiState = MutableStateFlow(TrackUiState(markerFace = markerFace()))
     val uiState: StateFlow<TrackUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<TrackEvent>(Channel.BUFFERED)
@@ -111,7 +114,10 @@ class TrackViewModel(
         observeCheckIns()
     }
 
-    /** D6. Does nothing without a fix; the button is disabled in that state. */
+    /**
+     * D6, from a tap on the round Navigate button. Does nothing without a fix;
+     * the button is disabled in that state.
+     */
     fun onNavigateClicked() {
         val location = _uiState.value.location ?: return
         _events.trySend(
@@ -128,6 +134,20 @@ class TrackViewModel(
     fun onLayersClicked() {
         _events.trySend(TrackEvent.ShowMessage(MSG_MAP_LAYERS_UNAVAILABLE))
     }
+
+    /**
+     * **Whose face marks the band. The one place that decides it.**
+     *
+     * Today it is the signed-in user's own, because there is no wearer or
+     * guardian yet: whoever is looking is the only person the app knows. Once
+     * roles or pairing exist, the wearer's photo and name belong here instead,
+     * and nothing else has to change. The session is read synchronously, so
+     * the first state already carries it.
+     */
+    private fun markerFace(): BandMarkerFace = BandMarkerFace.of(
+        person = authRepository.currentUser(),
+        providers = authRepository.currentUserProviders()
+    )
 
     private fun observeLatest() {
         observeJob?.cancel()
@@ -246,7 +266,7 @@ class TrackViewModel(
     /**
      * A failure with a position on screen is a notice; a failure with nothing
      * on screen is the error state, because there the user has no other signal
-     * that anything went wrong. Same split as the Alert tab.
+     * that anything went wrong. Same split as the alert screens.
      */
     private suspend fun reportFailure(error: Throwable) {
         val message = messageFor(error)
@@ -263,7 +283,7 @@ class TrackViewModel(
     }
 
     /**
-     * Wording for each [AlertError], reusing the Alert tab's typed errors and
+     * Wording for each [AlertError], reusing the alert screens' typed errors and
      * mapping them here rather than in the repository.
      *
      * Kept in Kotlin rather than `strings.xml` for the reason every other
@@ -278,20 +298,7 @@ class TrackViewModel(
         else -> MSG_LOAD_FAILED
     }
 
-    /** The avatar's spoken name, straight from the session. */
-    private fun sessionName(): String =
-        authRepository.currentUser()?.name?.takeUnless { it.isBlank() } ?: DEFAULT_USER_NAME
-
-    /**
-     * Read once, like the name: signing in as someone else goes back through
-     * Login, which builds a new host and so a new ViewModel.
-     */
-    private fun sessionAvatarUrl(): String? =
-        AvatarPhoto.urlFor(authRepository.currentUser(), authRepository.currentUserProviders())
-
     companion object {
-        const val DEFAULT_USER_NAME = "User"
-
         /**
          * How often staleness is recomputed. Well under
          * [BandStatus.ONLINE_THRESHOLD_MS] so the badge turns over promptly,
@@ -319,10 +326,7 @@ class TrackViewModel(
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                TrackViewModel(
-                    RepositoryProvider.authRepository,
-                    RepositoryProvider.alertRepository
-                )
+                TrackViewModel(RepositoryProvider.alertRepository, RepositoryProvider.authRepository)
             }
         }
     }

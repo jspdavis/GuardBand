@@ -16,7 +16,7 @@ import java.util.Locale
  * One card per [ChangelogEntry]: date, title, the changes as bullets, and the
  * commit it ends at.
  *
- * Dates are formatted with `SimpleDateFormat`, as the Alert tab does, because
+ * Dates are formatted with `SimpleDateFormat`, as the alert rows are, because
  * `java.time` needs API 26 and minSdk is 24. The parsers are main-thread
  * only, which is where `onBindViewHolder` runs.
  */

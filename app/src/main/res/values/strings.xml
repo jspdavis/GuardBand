@@ -113,25 +113,27 @@
     <!-- Home host: bottom-nav tabs -->
     <string name="tab_track">Track</string>
     <string name="tab_contacts">Contacts</string>
-    <string name="tab_alert">Alert</string>
     <string name="tab_profile">Profile</string>
 
     <!-- Track -->
     <string name="cd_open_settings">Settings</string>
     <string name="cd_open_notifications">Notifications</string>
-    <string name="action_open_profile">open profile</string>
     <string name="label_settings_changelog">Changelog</string>
     <string name="label_changelog_title">Changelog</string>
     <string name="label_changelog_commit">Commit %1$s</string>
     <string name="cd_user_avatar">Profile picture</string>
-    <string name="cd_track_avatar">Profile picture: %1$s</string>
-    <string name="btn_track_navigate">Navigate</string>
-    <string name="cd_map_recenter">Center on band</string>
+    <!-- The round Navigate button: tap opens maps, long-press re-centres. -->
+    <string name="cd_track_navigate">Navigate to band</string>
+    <string name="action_track_recenter">center on band</string>
     <string name="cd_map_layers">Map layers</string>
+    <string name="cd_track_map_credits">Show map credits</string>
+    <!-- The MapTiler logo on the Track map; a link to maptiler.com. -->
+    <string name="cd_track_map_logo">MapTiler</string>
     <string name="label_track_marker_title">Your band</string>
 
     <string name="label_track_never_reported">Your band hasn\'t reported yet.</string>
     <string name="label_track_no_fix">No location fix yet</string>
+    <string name="label_track_map_unavailable">Map unavailable</string>
 
     <!-- Check-in pill (FR-10): a status, never an action. -->
     <string name="label_track_checkin_loading">Loading check-ins…</string>
@@ -152,6 +154,12 @@
         <item quantity="other">Last check-in: %d days ago</item>
     </plurals>
 
+    <!-- Recent alerts panel over the map; See all opens the Alert history screen. -->
+    <string name="label_track_recent_alerts">Recent alerts</string>
+    <string name="btn_track_recent_alerts_see_all">See all</string>
+    <string name="cd_track_recent_alerts_see_all">See all alerts</string>
+    <string name="cd_track_recent_alerts_loading">Loading recent alerts</string>
+
     <!-- Contacts -->
     <string name="label_contacts_title">Emergency Contacts</string>
     <string name="label_contacts_empty">No emergency contacts added yet.</string>
@@ -167,12 +175,10 @@
     <string name="dialog_contact_add_title">Add contact</string>
     <string name="dialog_contact_edit_title">Edit contact</string>
 
-    <!-- Alert -->
-    <string name="label_alert_title">Alerts</string>
+    <!-- Alert history, and the rows Track's recent-alerts panel shares -->
+    <string name="label_alert_title">Alert history</string>
     <string name="label_alert_latest">Current status</string>
     <string name="label_alert_history">History</string>
-    <string name="label_alert_none">No alerts from your band yet.</string>
-    <string name="label_alert_history_empty">No past alerts.</string>
     <string name="btn_alert_retry">Try again</string>
     <string name="label_alert_battery">Battery %1$d%%</string>
     <string name="label_alert_battery_charging">Battery %1$d%% · charging</string>
@@ -192,7 +198,6 @@
     <string name="label_settings_account">Account information</string>
     <string name="label_settings_change_password">Change password</string>
     <string name="label_settings_notifications">Notifications</string>
-    <string name="label_settings_privacy">Privacy &amp; security</string>
     <string name="label_settings_privacy_notice">Privacy Notice</string>
     <string name="btn_logout">Log Out</string>
 

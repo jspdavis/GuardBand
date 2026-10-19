@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Track's recent-alerts sheet when collapsed: the drag handle (48dp)
+         and the header with See all (40dp), plus a little air. No alert row
+         shows until it is dragged up. The map's controls stack on this
+         height, so the collapsed sheet never covers them.
+         DESIGN: Jul -->
+    <dimen name="track_sheet_peek_height">96dp</dimen>
+
+    <!-- The map credits' row, fixed so the check-in pill stacked on it stays
+         put when the credits collapse to the ⓘ. 24dp so the MapTiler logo
+         beside them is 20dp tall inside 2dp of padding. The logo is exactly
+         this tall; the credits are at least this tall, taller only if a
+         large system font needs it. DESIGN: Jul -->
+    <dimen name="track_map_attribution_height">24dp</dimen>
+</resources>

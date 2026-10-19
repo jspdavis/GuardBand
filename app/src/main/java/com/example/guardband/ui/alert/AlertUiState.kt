@@ -3,7 +3,8 @@ package com.example.guardband.ui.alert
 import com.example.guardband.data.model.Alert
 
 /**
- * Render state for [AlertFragment].
+ * Render state for [AlertHistoryFragment] and Track's recent-alerts panel
+ * ([com.example.guardband.ui.track.RecentAlertsPanel]).
  *
  * Four situations in one class: loading, content, empty and error. They are
  * distinguished by which fields are set rather than by a sealed hierarchy,
@@ -27,6 +28,14 @@ data class AlertUiState(
      * and capped at [AlertViewModel.MAX_HISTORY] (D3).
      */
     val history: List<Alert> = emptyList(),
+
+    /**
+     * The newest [AlertViewModel.RECENT_ALERTS_LIMIT] entries of [history], for
+     * the Track tab's recent-alerts panel. A slice of the same list rather
+     * than a second read, so the panel and the history screen can never
+     * disagree.
+     */
+    val recent: List<Alert> = emptyList(),
 
     /**
      * Non-null when the last read failed **and** there is nothing on screen to

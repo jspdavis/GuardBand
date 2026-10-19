@@ -22,8 +22,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Alert tab: the band's ongoing status and its incident history, observed live
- * for as long as the ViewModel lives.
+ * The band's ongoing status and its incident history, observed live for as
+ * long as the ViewModel lives.
+ *
+ * **One instance serves two screens.** It is scoped to the Home host, and
+ * both the Track tab's recent-alerts panel and the Alert history screen get
+ * it with `activityViewModels { AlertViewModel.Factory }`. So there is one
+ * subscription to the history window, not one per screen: the panel reads
+ * [AlertUiState.recent] and the history screen [AlertUiState.history], both
+ * cut from the same emission. The subscription ends when the host's
+ * ViewModelStore is cleared, which cancels the repository's `callbackFlow`
+ * and its `awaitClose` removes the listener.
  *
  * **It reads history only.** The latest card is the newest non-tracking entry
  * in that same window (D2), not `devices/{id}/latest`, because `latest` is
@@ -92,6 +101,7 @@ class AlertViewModel(
                 // D2: the newest surviving entry is the current status.
                 latest = displayable.firstOrNull(),
                 history = displayable,
+                recent = displayable.take(RECENT_ALERTS_LIMIT),
                 errorMessage = null,
                 emptyMessage = emptyMessageFor(history, displayable)
             )
@@ -150,6 +160,13 @@ class AlertViewModel(
     companion object {
         /** D3's display cap, applied after tracking updates are dropped. */
         const val MAX_HISTORY = 50
+
+        /**
+         * How many of the newest displayable alerts the Track tab's panel
+         * shows. Small on purpose: the panel sits over the map, and the full
+         * list is one tap away.
+         */
+        const val RECENT_ALERTS_LIMIT = 3
 
         const val MSG_LOAD_FAILED = "Couldn't load alerts from your band."
         const val MSG_NETWORK = "Couldn't reach your band. Check your connection."

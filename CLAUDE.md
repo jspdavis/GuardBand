@@ -64,7 +64,7 @@ com/example/guardband/
 │   ├── splash/         Splash → Home if signed in, else Login (2 s countdown)
 │   ├── auth/           GoogleIdTokenProvider + GoogleIdTokenResult (the only androidx.credentials users)
 │   ├── avatar/         AvatarPhoto (pure: which Google photo, if any) + AvatarImage (the Coil binder);
-│   │                 shared by the Track and Profile avatars
+│   │                 the Profile tab's avatar (Track's avatar was removed 2026-10-19)
 │   ├── login/          email + password, and "Continue with Google"
 │   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode;
 │   │                 then Welcome, once per account (its only route is Consent's success)
@@ -78,10 +78,13 @@ com/example/guardband/
 │   │                 ResetLinkParser (pure; the trust boundary) + ViewModel
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate and the account gate (HomeViewModel)
-│   ├── track/          Track tab (default): avatar, bell, gear, osmdroid map, Navigate + Check-in (the status panel is gone)
+│   ├── track/          Track tab (default): gear + bell (as on Contacts/Profile), osmdroid map, round Navigate button,
+│   │                 Check-in pill, and the recent-alerts bottom sheet (RecentAlertsPanel; See all → Alert history)
 │   │                 BandStatus + NavigationUrl + OsmdroidConfig (pure helpers; see "Track and map")
+│   │                 BandMarkerFace (pure: photo or initials) + BandMarkerIcon (draws the band's marker)
 │   ├── contacts/       Contacts tab: list + delete
-│   ├── alert/          Alert tab: latest status + incident history
+│   ├── alert/          AlertHistoryFragment (pushed from Track's See all): latest status + incident history;
+│   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel
 │   ├── profile/        Profile tab: welcome header + user info
 │   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row
 │   ├── account/        AccountActivity (Account information), opened from Settings;
@@ -110,18 +113,18 @@ Conventions (copy `ui/login/*` as the reference):
 
 ### Home host (Fragments)
 
-- **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph.
-- **Tabs:** Track (default), Contacts, Alert, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), opened from any tab's top bar. While one is showing, the bottom bar is hidden, and Back (or the screen's back arrow) returns to the last tab and brings the bar back. Back on a tab exits.
-- **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings and Notifications are inside the host, so they're covered too. Since 2026-10-14 the host also keeps the tabs covered until the account's record has been read (see "Consent gate").
+- **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph. The tags, and how a saved one is read back, are `HomeDestinations`.
+- **Tabs (three, icon-only):** Track (default), Contacts, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), opened from any tab's top bar, and **Alert history**, opened from "See all" on Track's recent-alerts panel. While one is showing, the bottom bar is hidden, and Back (or the screen's back arrow) returns to the last tab and brings the bar back. Back on a tab exits. There is no Alert tab (removed 2026-10-19): Track shows the newest alerts, and the full history is the pushed screen. A restored tag the host no longer has (the old `home_alert`) falls back to Track.
+- **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings, Notifications and Alert history are inside the host, so they're covered too. Since 2026-10-14 the host also keeps the tabs covered until the account's record has been read (see "Consent gate").
 - **Fragments follow the Activity conventions,** with these differences:
   - Use `Fragment(R.layout.x)`, and bind views in `onViewCreated` with `view.findViewById`.
   - Collect flows with `viewLifecycleOwner.lifecycleScope.launch { viewLifecycleOwner.repeatOnLifecycle(STARTED) { … } }`.
-  - Get the screen's own ViewModel with `by viewModels { XViewModel.Factory }`.
+  - Get the screen's own ViewModel with `by viewModels { XViewModel.Factory }`. The one exception is `AlertViewModel`, which Track's panel and Alert history both get with `by activityViewModels { AlertViewModel.Factory }`, so the two screens share one instance and one history subscription.
   - Host navigation goes through the shared `HomeViewModel` via `by activityViewModels { HomeViewModel.Factory }` (e.g. Track's gear calls `homeViewModel.onSettingsClicked()`). The Activity executes the resulting `HomeEvent`; Fragments never cast `requireActivity()` to `HomeActivity`.
   - A pushed screen's back arrow calls `requireActivity().onBackPressedDispatcher.onBackPressed()`.
 - **Lists** use `ListAdapter` + `DiffUtil` with `findViewById` in the ViewHolder (`ContactAdapter`, `AlertHistoryAdapter`).
 
-Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (the redesigned pill buttons), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with **Auth** and Database (Analytics was dropped: no code called it, and it collected an advertising id on its own). The Track map adds **osmdroid-android 6.1.20** (see "Track and map"). Tests add kotlinx-coroutines-test and Robolectric. The Track and Profile avatars add **Coil 2.7.0** (pinned; the 2.x line works on a plain `ImageView`). OkHttp is declared `debugImplementation` for the mock sender, but release builds still ship it, transitively, as Coil's network fetcher. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
+Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (the redesigned pill buttons), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with **Auth** and Database (Analytics was dropped: no code called it, and it collected an advertising id on its own). The Track map adds **osmdroid-android 6.1.20** (see "Track and map"). Tests add kotlinx-coroutines-test and Robolectric. The Profile avatar adds **Coil 2.7.0** (pinned; the 2.x line works on a plain `ImageView`). OkHttp is declared `debugImplementation` for the mock sender, but release builds still ship it, transitively, as Coil's network fetcher. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
 
 ## Firebase
 
@@ -134,7 +137,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 - **Password reset happens in the app, not in a browser.** `sendPasswordResetEmail` still sends Firebase's own email, but the link in it is an Android App Link onto `ResetPasswordActivity`, so the new password is set inside GuardBand. Nothing like `otpPlain` or `pendingPassword` is ever written, and there is still **no typed verification code** — see "Forgot password" below.
 - **No PII in logs.** Never log a uid, an email, a token or Firebase error text.
 - **Never overwrite `app/google-services.json` from another branch,** and don't touch it, `.firebaserc` or any signing config as a side effect of other work.
-- **The Security Rules are deployed (2026-10-11), and `RTDBS-RULES.md` is the source of truth.** That file with every `"//"` key stripped *is* the live ruleset; the Console rejects the `"//"` keys. Change the file first, then paste the whole stripped file and publish, so the two cannot drift. It carries nine Rules Playground tests, the only test suite rules get (the project has no emulator suite). Its `devices/` block is deliberately world-readable and world-writable; closing it needs device pairing. **`history` needs its own `.read`**, not just `$sequenceId`'s: a child's read never grants the parent, and the Alert tab and the mock sender both read the list. Before the deploy that line was missing and both got 401.
+- **The Security Rules are deployed (2026-10-11), and `RTDBS-RULES.md` is the source of truth.** That file with every `"//"` key stripped *is* the live ruleset; the Console rejects the `"//"` keys. Change the file first, then paste the whole stripped file and publish, so the two cannot drift. **Since 2026-10-19 the file is ahead of the Console:** it proposes an append-only `devices/.../history` (Option A+), pending Jul's decision and not deployed; its STATUS paragraph says so, and [docs/database-rules.md](docs/database-rules.md) has the path inventory, the `devices/` options, the Rules Playground tests (the only test suite rules get; the project has no emulator suite), the rollout and the live text to roll back to. Its `devices/` block is deliberately world-readable and world-writable; closing it needs device pairing. **`history` needs its own `.read`**, not just `$sequenceId`'s: a child's read never grants the parent, and the alert screens and the mock sender both read the list. Before the deploy that line was missing and both got 401.
 
 ## Google sign-in
 
@@ -313,7 +316,7 @@ The signed-in user's own record, separate from the band's `devices/` tree:
 - **Consent is recorded, not just collected.** `finalizeSignUp` writes `accepted`, a server `acceptedAt` and `UserProfileRepository.CONSENT_VERSION` in the same atomic commit as the profile and contacts, so a profile can never exist without one. Bump the version whenever `label_signup_consent_statement` changes what is being agreed to.
 - **Sign-up finalization is one atomic write.** `UserProfileRepository.finalizeSignUp` puts the profile and every contact into a single multi-path `updateChildren`, so sign-up cannot half-succeed. That is what makes the Retry safe: there is no partial state to reconcile. Registration is deliberately **two** calls — `AuthRepository.createAccount` then `finalizeSignUp` — and the `accountCreated` guard in `SignUpContactsViewModel` means a retry resumes at the write. When they were one call, a failed write left the account created and the only retry went back through account creation, which then failed as "email already in use", so that address could never finish registering.
 - **`saveProfile` merges, never replaces.** It `updateChildren`s its three fields. A `setValue` on `users/{uid}` would delete every emergency contact under it.
-- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all — its avatar's spoken name is the session's name. RTDB disk persistence is **not** enabled.
+- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all and has had no avatar since 2026-10-19; its band marker shows the session's Google photo or initials ("Track and map"). RTDB disk persistence is **not** enabled.
 - **Failures are typed and mapped by code.** `ContactError` + `FirebaseDatabaseErrorMapper`, on `DatabaseError.getCode()`, never on a message. That code is only reachable through the SDK's completion-listener and `ValueEventListener` callbacks — an awaited `Task` fails with a bare `DatabaseException` carrying localised prose — which is why these repositories wrap the listener forms in `suspendCancellableCoroutine` instead of using `.await()`.
 - **Contact phone numbers are never logged**, and neither are contact names. They are a third party's personal data, not the user's own. Nothing in `data/` logs at all.
 
@@ -532,10 +535,10 @@ no permission. A phone with nothing registered for `https` throws
 wording stays with every other `MSG_*`, the same shape as Track's Navigate
 button.
 
-**Settings has two privacy rows on purpose.** "Privacy & security" is a
-placeholder for a screen nobody has built; "Privacy Notice" opens the hosted
-document. Pointing the placeholder at the notice would make the row mean
-something other than its label.
+**Settings has one privacy row, "Privacy Notice",** which opens the hosted
+document. A "Privacy & security" placeholder beside it only said "Coming
+soon" and was removed on 2026-10-19. If a privacy settings screen is ever
+built, give it its own row rather than pointing the notice row at it.
 
 **The draft rules' `phone` `.validate` and `InputValidator` must stay in
 step.** The app normalises to E.164 **before** writing
@@ -551,8 +554,9 @@ nothing, and both pages keep a **DRAFT** banner until a human has reviewed
 them. **Firebase Analytics was dropped** because no app code called it, yet it
 collected an advertising id on its own; the notice now says the app has no
 analytics, so **adding any analytics SDK back means changing the notice in the
-same commit.** And **OpenStreetMap's tile servers see the phone's IP and the
-area being viewed** on every tile, which the notice discloses.
+same commit.** And **the map's tile provider sees the phone's IP and the area
+being viewed** on every tile, which the notice discloses. That is MapTiler
+since 2026-10-19; its notice row is still a draft, not yet deployed.
 
 **The "profile with no consent" gap is closed in the app (2026-10-14).**
 `ProfileProvisioning` still writes only `name` and `email`, so `users/{uid}`
@@ -588,9 +592,9 @@ The band (or the mock sender) PUTs to the RTDB REST API, and Security Rules vali
 
 ## Alert data
 
-The Alert tab reads `devices/{deviceId}` live. `SCHEMA.md` is the authority for the payload — if code, this file and `SCHEMA.md` disagree, `SCHEMA.md` wins and the disagreement gets reported rather than silently resolved.
+Track's recent-alerts panel and the Alert history screen read `devices/{deviceId}/history` live, through **one** host-scoped `AlertViewModel`: the panel shows `AlertUiState.recent` (the newest `RECENT_ALERTS_LIMIT`, 3), the history screen `AlertUiState.history`, both cut from the same emission. `SCHEMA.md` is the authority for the payload — if code, this file and `SCHEMA.md` disagree, `SCHEMA.md` wins and the disagreement gets reported rather than silently resolved.
 
-**The locked decisions behind the tab:**
+**The locked decisions behind the alert screens:**
 - **D1** — `PANIC`, `CHECKIN` and `LOW_BATTERY` are shown and colour-coded. `TRACKING_UPDATE` is hidden from the Alert list. An **unrecognised** type is *not* hidden: it is shown as "Unknown alert", so a type a future firmware adds still appears.
 - **D2** — the latest-alert card is the newest **non-tracking** entry derived from history. It deliberately does **not** read `devices/{id}/latest`, because every payload overwrites that node, tracking updates included, so the card would read "Location update" while a panic sat one row below it. `observeLatestAlert` still exists, unsubscribed, for the Track tab.
 - **D3** — read a window of 100 raw entries, drop tracking updates, show at most 50. The window is over *raw* entries, so a chatty band yields fewer than 50 displayable alerts. `AlertHistory` therefore carries `rawCount` and `malformedCount`, which is what lets the empty state say *which* kind of empty it is instead of implying the band is silent.
@@ -603,21 +607,22 @@ The Alert tab reads `devices/{deviceId}` live. `SCHEMA.md` is the authority for 
 
 **Parsing is a pure `Map` → `Alert` step in `AlertParser`,** not a method on the repository. A `DataSnapshot` cannot be built in a JVM test and the project declares no mocking library, so putting the logic behind one would have made all of it untestable. `sequenceId`, `type` and `timestamp` are required; a missing `schemaVersion`, `deviceId`, `battery` or `location` is salvaged rather than dropped, which is deliberately more forgiving than `SCHEMA.md`'s receiver-validation list — this is a *reader*, and refusing to show a panic because its battery node was missing would be the wrong failure. **A malformed history entry is skipped and counted, never fatal:** one bad row from a firmware bug must not hide every good row behind it. Only `latest` can fail as `AlertError.ParseFailure`.
 
-**Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and the Alert tab logs nothing either. Same rule as contact phone numbers — see "Contacts and profile data".
+**Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and neither alert screen logs anything either. Same rule as contact phone numbers — see "Contacts and profile data".
 
 **Still in-memory:** `InMemoryStore`'s four seeded alerts, which only `InMemoryAlertRepository` reads, and only in tests.
 
 ## Track and map
 
-> The map library itself - why osmdroid, the user agent, the tile source and
-> the blocked-tile trap: [docs/osmdroid.md](docs/osmdroid.md).
+> The map library itself - why osmdroid, the user agent, the MapTiler tile
+> source and its key, attribution, and the blocked-tile trap:
+> [docs/osmdroid.md](docs/osmdroid.md).
 
 The Track tab reads `devices/{deviceId}/latest` live and puts the band's last
-known position on an OpenStreetMap map. `SCHEMA.md` is the authority for the
-payload, as everywhere else.
+known position on a map drawn from **MapTiler** raster tiles (OpenStreetMap
+data). `SCHEMA.md` is the authority for the payload, as everywhere else.
 
 **osmdroid, not the Maps SDK.** `osmdroid-android 6.1.20`, chosen because it
-needs no API key and no billing-enabled GCP project. It is safe on compileSdk
+needs no billing-enabled GCP project. It is safe on compileSdk
 34 without a bump: its POM declares **zero dependencies** and it publishes no
 Gradle module metadata, so there is none of the `minCompileSdk` constraint that
 pins androidx-credentials at 1.3.0.
@@ -631,29 +636,62 @@ in `onCreate`, before the layout inflates and builds the `MapView`:
   default) and the `com.example.*` prefix the project template generates, which
   is still this app's `applicationId`. The block arrives as **HTTP 200 with a
   PNG** reading "access blocked", not as an error, so osmdroid renders and
-  caches it like a good tile and the log says nothing. Deriving the agent from
-  the package or the version is what `ui/track/GuardBandTileSource` exists to
-  prevent — see below.
+  caches it like a good tile and the log says nothing. The MapTiler key is now
+  **restricted to this exact agent**, so changing it refuses every tile until
+  the MapTiler dashboard matches. Deriving the agent from the package or the
+  version is what `ui/track/MapTilerTileSource`'s policy exists to prevent —
+  see below.
 - **Both cache paths point at `cacheDir`**, so tiles live in app-specific
   storage and need **no storage permission** on any API level. osmdroid's own
   default wants external storage.
 
-**`ui/track/GuardBandTileSource` replaces `TileSourceFactory.MAPNIK`, and must
-not be "simplified" back to it.** `MAPNIK` is built with
-`TileSourcePolicy(2, 15)`, and 15 is all four flags including
-`FLAG_USER_AGENT_NORMALIZED`; with that flag osmdroid's `TileDownloader`
-ignores `userAgentValue` and sends `packageName/versionCode` instead —
-`com.example.guardband/1`, which is blocked. The replacement is the same
-server, tiles and attribution with every `MAPNIK` restriction **except**
-normalization. Two consequences worth knowing:
+**`ui/track/MapTilerTileSource` is the one tile source (2026-10-19), and the
+only place a MapTiler URL, the key, the zoom range (0-22) or a credit is
+spelled out.** It replaced `GuardBandTileSource` (OSM's public server). Never
+fall back to `TileSourceFactory.MAPNIK` or any `tile.openstreetmap.org`
+source, key or no key; MAPNIK is also the `MapView`'s default, which is why
+the Fragment sets this source even without a key.
+- **The key is `MAPTILER_API_KEY` in `local.properties`** (gitignored), into
+  `BuildConfig`. Never put the real key in a tracked file; docs use
+  `YOUR_MAPTILER_API_KEY`. A build without it succeeds; the Fragment then
+  turns the data connection off, logs one warning and shows "Map
+  unavailable", and no tile is requested from anywhere. The key ships in the
+  APK and rides in every tile URL: never log a tile URL, and never turn on
+  osmdroid's `isDebugMode` / `isDebugMapTileDownloader`.
+- **The tile cache stays on; no bulk downloading, pre-fetching or offline
+  regions.** `FLAG_NO_BULK` and `FLAG_NO_PREVENTIVE` stay in the policy.
+- **The credits** ("© MapTiler © OpenStreetMap contributors", each linked)
+  are `track_map_attribution`, from `MapTilerTileSource.attribution()`, above
+  the collapsed sheet. `ui/track/MapAttribution` shows them on every Track
+  view creation and collapses them to an ⓘ (`track_map_attribution_info`)
+  after 5 s or the first pan: the OSMF attribution guidelines' rule, which
+  MapTiler has not confirmed (ask before a public release). Never hide them
+  by default, and keep them readable (10 sp is the floor).
+- **The MapTiler logo** (the Free plan requires it) is `track_map_logo`,
+  bottom left in the same row, linked to `MapTilerTileSource.LOGO_URL` by
+  `MapAttribution`. **It never collapses**; only the text goes to the ⓘ.
+  Keep the row's fixed height and the ⓘ's 48 dp touch target. When the
+  credit does not fit beside the logo (narrow screen, large font),
+  `MapAttribution` moves it onto its own line above the logo, measured from
+  its real width; the pill stacks on `barrier_track_credits`, so it moves
+  only for a credit that wraps. Never shrink the credit below 10 sp to fit
+  (`docs/osmdroid.md` §4.6).
+
+**Its policy drops `FLAG_USER_AGENT_NORMALIZED`, and must keep dropping it.**
+`MAPNIK` is built with `TileSourcePolicy(2, 15)`, and 15 is all four flags
+including `FLAG_USER_AGENT_NORMALIZED`; with that flag osmdroid's
+`TileDownloader` ignores `userAgentValue` and sends `packageName/versionCode`
+instead — `com.example.guardband/1`, which OSM blocked and the MapTiler key's
+user-agent restriction would refuse. The policy keeps every `MAPNIK`
+restriction **except** normalization. Two consequences worth knowing:
 - **Never call `Configuration.getInstance().load(context, prefs)`.** It is the
   only thing that computes the normalized agent, and it would re-break the map
   on any tile source that normalizes. Dropping the flag and avoiding `load()`
   are independent guards; keep both.
-- **Its name is deliberately not "Mapnik"**, because osmdroid keys cache rows
-  by `(key, provider)` where `provider` is the source name. A new name starts
-  on clean rows rather than re-serving the blocked images already cached under
-  `Mapnik`.
+- **Its name, `MapTilerStreets`, is the cache key**, because osmdroid keys
+  cache rows by `(key, provider)` where `provider` is the source name. A new
+  name starts on clean rows rather than re-serving the OSM tiles (or the
+  blocked images) cached under `GuardBandOsm` and `Mapnik`.
 
 **No phone-location permission in the main app, ever.** The band supplies the
 location, not the handset. The merged manifest adds only four *optional*
@@ -709,8 +747,33 @@ a fix" — both have no coordinates and read very differently.
 points is view state, like a scroll offset. Following is switched off by a touch
 listener on `ACTION_MOVE`, not a `MapListener`: a listener cannot tell the
 user's pan from the camera moves the screen makes itself, and a tap gives only
-DOWN and UP, so tapping the map keeps following. Recenter turns it back on; with
-no fix it returns to the default Cebu City view rather than refusing.
+DOWN and UP, so tapping the map keeps following. **A long-press on the round
+Navigate button** turns it back on (2026-10-19: re-centring moved there when
+the white Navigate pill went and that button became Navigate; a tap opens
+maps, D6). TalkBack offers it as the button's "center on band" action. The
+button is disabled without a fix, so re-centring needs one too; `onRecenter`
+still falls back to the default Cebu City view if it is ever reached without.
+
+**The recent alerts are a draggable bottom sheet over the map (2026-10-19).**
+`fragment_track.xml` is a CoordinatorLayout; `view_track_recent_alerts.xml` is
+its `BottomSheetBehavior` child (not hideable), bound by
+`ui/track/RecentAlertsPanel`: Material's drag handle, a header with "See all"
+to Alert history, and the newest three alerts in `item_alert` rows. Collapsed,
+it shows `@dimen/track_sheet_peek_height` (96dp: the handle and the header
+only); dragged up, the three rows. The map's controls stack on a `Space` of that
+same height, so the collapsed sheet never covers them; the expanded one does,
+on purpose. The card is `clickable` so a tap on it never reaches the
+`MapView`; drags are the behavior's. The CoordinatorLayout has an id
+(`track_root`), which is what saves the sheet's state across a restore.
+Don't remove either.
+
+**The band's marker is a face (2026-10-19).** `ui/track/BandMarkerIcon` draws
+a round photo or initials in a white ring with a pointer whose tip is the
+anchor; `BandMarkerFace` decides photo or initials, reusing
+`ui/avatar/AvatarPhoto` and Coil. **`TrackViewModel.markerFace()` is the one
+place that decides whose face it is** (the signed-in user's until roles
+exist). It is drawn only when the face changes, never per position; never log
+the photo link. Details: `docs/osmdroid.md` §5.4.
 
 **The `MapView` is detached by hand** in `onDestroyView` (plus `onResume` /
 `onPause`). osmdroid holds a tile cache, a worker and overlay references, so
@@ -725,9 +788,9 @@ out a **new** parser per call: `SimpleDateFormat` is not thread-safe, and
 `BandStatus` runs from a ViewModel. `AlertFormatting`'s own cached parsers are
 main-thread only, so never share those instances with the Track side.
 
-**Not for production as-is:** OpenStreetMap's public tile servers are a
-volunteer-funded service whose usage policy is written for light use. A real
-deployment needs its own tile source or a commercial provider.
+**Not for production as-is:** MapTiler's Free plan is for non-commercial use
+and pauses at its monthly limit, and the key in the APK is protected only by
+the user-agent restriction and that cap. A real release needs a paid plan.
 
 **Not covered by tests:** `OsmdroidConfig`, the `MapView` lifecycle, the marker
 and the D4 follow logic. All of it needs a real `Context`, a running map or an
@@ -743,8 +806,8 @@ has no click, no ripple and TalkBack reads it as text. The app never sends a
 check-in; only the band does (see "Firebase data contract").
 
 - **Read from history, not `latest`.** `AlertRepository.observeLatestCheckIn()`
-  is the newest `CHECKIN` in the same 100-entry history window the Alert tab
-  reads, picked by `CheckInSelector` from what `AlertParser` already parsed.
+  is the newest `CHECKIN` in the same 100-entry history window the alert
+  screens read, picked by `CheckInSelector` from what `AlertParser` already parsed.
   `AlertParser` stays the one reader of the payload; there is no second
   check-in parser, because there is no second payload.
 - **"None" means none recently.** A check-in older than the window drops out,
@@ -765,7 +828,7 @@ For demos without hardware, Phone A runs `MockSenderActivity` and Phone B runs t
 
 **`AlertSender` writes straight to the RTDB REST API,** as the band will: one `PUT` to `/devices/{id}/history/{sequenceId}.json`, then one to `/devices/{id}/latest.json`. There is no Cloud Function in the path — the Spark plan cannot host one, and the `devices` Security Rules already do the validation `ingestAlert` was going to do. (`SCHEMA.md`'s "Receiver validation requirements" still describes that Function; the payload shape it specifies is unchanged.)
 
-- **History is written first, then `latest`.** The Alert tab derives everything from history, so a send that got as far as history is still visible there and only leaves the Track-facing `latest` stale. The reverse would show the alert nowhere in the Alert tab and leave a permanent hole in the history. The sequence id is consumed as soon as its history row lands, so a retry cannot overwrite a good row.
+- **History is written first, then `latest`.** The alert screens (Track's recent-alerts panel and Alert history) derive everything from history, so a send that got as far as history is still visible there and only leaves the Track-facing `latest` stale. The reverse would show the alert on neither and leave a permanent hole in the history. The sequence id is consumed as soon as its history row lands, so a retry cannot overwrite a good row.
 - **The sequence id is seeded from the server,** by reading the history keys with `?shallow=true` once per harness instance and taking the highest integer-parseable one, so a relaunched harness appends instead of overwriting the rows it wrote last run. `shallow` rather than an ordered `limitToLast(1)`: RTDB sorts integer-like keys *ahead* of string keys, so taking the last one would return a string key if the node ever picked one up from the Console — the one case this read exists to survive. A missing node reads as `null` (not an error) and starts at 1; a genuine read failure fails the send, because the `PUT` was about to fail the same way.
 - **Walk mode** sends a `TRACKING_UPDATE` every 5 s around a ~165 m loop at Cebu City, which is what makes the Track marker move. The interval is deliberately far below FR-09's real 60 s so a demo shows movement in seconds and the band keeps reading as online. It stops in `onPause` — a walk still writing under a backgrounded harness would make a dead band look alive — and a failed step stops the walk rather than rewriting the same error every few seconds.
 - **The database URL comes from `FirebaseProvider`,** not a constant, so the harness follows `google-services.json`. That is a Firebase import outside a repository, which the app's layering forbids — the harness sits outside that layering, and the alternative was a hardcoded URL, which is forbidden everywhere.

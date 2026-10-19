@@ -7,13 +7,8 @@
 
     <item
         android:id="@+id/nav_contacts"
-        android:icon="@drawable/ic_group"
+        android:icon="@drawable/ic_phone"
         android:title="@string/tab_contacts" />
-
-    <item
-        android:id="@+id/nav_alert"
-        android:icon="@drawable/ic_warning"
-        android:title="@string/tab_alert" />
 
     <item
         android:id="@+id/nav_profile"

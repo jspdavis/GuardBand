@@ -12,12 +12,12 @@ import com.example.guardband.R
 import com.example.guardband.data.model.Alert
 
 /**
- * Incident-history rows for the Alert tab (`item_alert.xml`), keyed by
- * sequenceId. Adapted from the checkpoint's AlertHistoryAdapter.
+ * Incident-history rows (`item_alert.xml`), keyed by sequenceId: the Alert
+ * history screen's list and Track's recent-alerts panel both use them. Adapted from the checkpoint's AlertHistoryAdapter.
  *
  * Rows only. The latest-alert card used to share this ViewHolder through an
  * `<include>`, which meant constructing one by hand outside any RecyclerView;
- * it is its own block in `fragment_alert.xml` now.
+ * it is its own block in `fragment_alert_history.xml` now.
  */
 class AlertHistoryAdapter : ListAdapter<Alert, AlertHistoryAdapter.AlertViewHolder>(AlertDiff) {
 

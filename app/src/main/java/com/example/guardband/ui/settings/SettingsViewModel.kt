@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * screen is static.
  *
  * Log Out lives here (moved from the old Dashboard, per the Figma). Account
- * information opens its own screen, which holds Delete account; the next three
+ * information opens its own screen, which holds Delete account; the next two
  * rows are placeholders until their screens exist; the Privacy Notice row
  * opens a hosted page.
  *
@@ -35,7 +35,7 @@ class SettingsViewModel(
         _events.trySend(SettingsEvent.OpenAccount)
     }
 
-    /** Change password, Notifications or Privacy & security. */
+    /** Change password or Notifications. */
     fun onPlaceholderRowClicked() {
         _events.trySend(SettingsEvent.ShowMessage(MSG_COMING_SOON))
     }
@@ -43,10 +43,8 @@ class SettingsViewModel(
     /**
      * The Privacy Notice row, which opens the hosted page.
      *
-     * Separate from the "Privacy & security" placeholder above it: that one is
-     * a settings screen nobody has built, this one is a document. Pointing the
-     * placeholder at the notice would have made the row mean something other
-     * than its label.
+     * The one privacy row. A "Privacy & security" placeholder sat above it
+     * until 2026-10-19 and only said "Coming soon", so it was removed.
      */
     fun onPrivacyNoticeClicked() {
         _events.trySend(SettingsEvent.OpenUrl(HostedPages.privacyNotice))

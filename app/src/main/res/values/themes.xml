@@ -104,6 +104,12 @@
         <item name="fontFamily">@font/poppins</item>
         <item name="android:fontFamily">@font/poppins</item>
     </style>
+    <!-- The Track map's credits: one step under LabelSmall's 11sp. Not
+         smaller: the licence asks for a credit that is easily readable.
+         DESIGN: Jul -->
+    <style name="TextAppearance.GuardBand.MapAttribution" parent="TextAppearance.GuardBand.LabelSmall">
+        <item name="android:textSize">10sp</item>
+    </style>
 
     <!-- Buttons -->
     <style name="Widget.GuardBand.Button" parent="Widget.Material3.Button">
@@ -234,5 +240,14 @@
     <style name="ShapeAppearance.GuardBand.Circle" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- A bottom sheet: top corners rounded, bottom ones square against the bar. -->
+    <style name="ShapeAppearance.GuardBand.SheetTop" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">16dp</item>
+        <item name="cornerSizeTopRight">16dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
     </style>
 </resources>

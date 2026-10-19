@@ -1,6 +1,8 @@
 # Home Host and Bottom Navigation
 
-How the GuardBand app is structured after login: one host Activity, four bottom-nav tabs, two pushed screens, and the auth gate around them.
+How the GuardBand app is structured after login: one host Activity, three bottom-nav tabs, three pushed screens, and the auth gate around them.
+
+> **2026-10-19: the Alert tab is gone.** The bar is **Track, Contacts, Profile** (icon-only). Track shows the newest alerts in a draggable bottom sheet over the map, and its **See all** opens **Alert history**, a pushed screen holding the whole list. Both read one host-scoped `AlertViewModel` ([alert-data.md](alert-data.md) §8). Sections below that describe the four-tab layout are kept for the record and marked where they changed.
 
 | | |
 |---|---|
@@ -54,10 +56,11 @@ SplashActivity ──(signed in)────────────────
            SignUp (3) ────┘   │                            ▼
            Forgot (4)         │              ┌──────── HomeActivity ────────┐
                               │              │                              │
-                              │              │  [Track] [Contacts] [Alert] [Profile]   ◄─ bottom nav
+                              │              │  [Track] [Contacts] [Profile]   ◄─ bottom nav
                               │              │     │                        │
                               │              │     ├─ gear ─► Settings      │  pushed: bar
-                              │              │     └─ bell ─► Notifications │  hidden
+                              │              │     ├─ bell ─► Notifications │  hidden
+                              │              │     └─ See all ─► Alert history
                               │              └──────────────────────────────┘
                               │                     │
                               └──── Log Out (Settings), or no session (HomeViewModel)
@@ -68,9 +71,9 @@ Back behavior inside Home:
 | Where you are | Back does |
 |---|---|
 | Any tab | Leaves the app. Home was started with `CLEAR_TASK`, so nothing is under it. |
-| Settings or Notifications | Returns to the tab you came from. The on-screen back arrow does the same. |
+| Settings, Notifications or Alert history | Returns to the tab you came from (always Track for Alert history, the only place See all is). The on-screen back arrow does the same. |
 
-Tapping a tab while Settings or Notifications is open also returns to that tab, including the tab that was active before.
+The bar is hidden on a pushed screen (since 2026-10-13), so Back and the back arrow are the only ways out of one.
 
 ---
 
@@ -79,9 +82,9 @@ Tapping a tab while Settings or Notifications is open also returns to that tab, 
 | Decision | Reason |
 |---|---|
 | **One host Activity + Fragments** for the post-login screens | The bar stays fixed with no flicker, each tab keeps its state, and it's the standard Material pattern. One Activity per tab would re-render the bar, duplicate the nav wiring and fight the back stack. This is the one deliberate exception to "every screen is an Activity". |
-| **No Navigation Component** | Four tabs and two pushed screens need about 40 lines of manual `FragmentManager` code, with no extra dependency or graph XML. Its main benefit, a separate back stack per tab, isn't needed for this design. |
+| **No Navigation Component** | Three tabs and three pushed screens need about 40 lines of manual `FragmentManager` code, with no extra dependency or graph XML. Its main benefit, a separate back stack per tab, isn't needed for this design. |
 | **Show/hide, not `replace()`** | `replace()` (the checkpoint's approach) destroys the tab on every switch, losing scroll position and reloading data. With show/hide each Fragment, and its ViewModel, lives as long as the host. |
-| **Settings and Notifications are Fragments in the host**, not Activities | The Figma keeps the bottom bar visible on them. Being inside the host also means the host's auth check covers them. |
+| **Settings and Notifications are Fragments in the host**, not Activities | The Figma keeps the bottom bar visible on them. Being inside the host also means the host's auth check covers them. *(Alert history, added 2026-10-19, is one too, for the second reason: it has to sit behind the same verification, consent and deletion gates as the tabs.)* |
 | **Two-step auth gate** (Splash + HomeViewModel) | Splash routes signed-in users straight to Home. The in-memory session dies with the process, but Android can restore `HomeActivity` directly after process death, skipping Splash. A fresh `HomeViewModel` re-checks and sends the user to Login. |
 | **In-memory alert data first** | It keeps this pass focused on navigation. Firebase gets its own pass, and swapping it in is a one-line change in `RepositoryProvider`. |
 | **Check-in pill and map buttons are UI only** | FR-10 defines check-in as a double-press on the band; the app doesn't send one. The live map isn't built yet. Their taps show an explanatory toast. *(Since 2026-10-14 the pill is a read-only status of the latest check-in, with no tap: see CLAUDE.md, "Check-in status".)* |
@@ -102,19 +105,21 @@ Every destination is a Fragment identified by a tag:
 |---|---|---|---|
 | `home_track` | `TrackFragment` | tab (default) | `nav_track` |
 | `home_contacts` | `ContactsFragment` | tab | `nav_contacts` |
-| `home_alert` | `AlertFragment` | tab | `nav_alert` |
 | `home_profile` | `ProfileFragment` | tab | `nav_profile` |
 | `home_settings` | `SettingsFragment` | pushed | (none) |
 | `home_notifications` | `NotificationsFragment` | pushed | (none) |
+| `home_alert_history` | `AlertHistoryFragment` | pushed | (none) |
+
+The tags live in `ui/home/HomeDestinations`, a pure object, so the restore rule below is a JVM test (`HomeDestinationsTest`). `home_alert` / `AlertFragment` / `nav_alert` were the Alert tab until 2026-10-19.
 
 ### `show(tag)`
 
 All navigation goes through one function, `show(tag)`, which runs a single transaction:
 1. It hides every visible Fragment except the target.
-2. It shows the target if it exists, or **creates and adds it on first use**. This is lazy, so the Alert tab doesn't start observing until it's first opened.
+2. It shows the target if it exists, or **creates and adds it on first use**. Creation is lazy, but the alerts listener is no longer tied to it: the host-scoped `AlertViewModel` starts with Track, the default tab, because Track's panel shows the newest alerts. Alert history reuses that instance, so opening it starts no second read.
 
 It then updates three pieces of host state:
-- `currentTag`, and `lastTabTag` if the target is a tab.
+- `currentTag`, and `lastTabTag` if the target is a tab. For a tab it also checks that tab's bar item, so the bar can never be left lighting an item it could not restore.
 - The `OnBackPressedCallback`, which is enabled only while a pushed screen is showing.
 - The bar's visibility: the bar and its divider are shown on a tab and hidden on a pushed screen, so Settings and Notifications can only be left with Back. The bar's selection is never touched, so returning still shows the last tab highlighted. (Until 2026-10-13 the bar stayed visible with no tab checked, through `menu.setGroupCheckable`.)
 
@@ -125,7 +130,9 @@ It then updates three pieces of host state:
 
 ### State restore
 
-`currentTag` and `lastTabTag` are saved in `onSaveInstanceState`. On recreation the `FragmentManager` restores the Fragments and their hidden flags itself, and `onCreate` calls `show(currentTag)` once to re-apply the bar and Back state.
+`currentTag` and `lastTabTag` are saved in `onSaveInstanceState`. On recreation the `FragmentManager` restores the Fragments and their hidden flags itself, and `show(currentTag)` runs once **the gate opens** to re-apply the bar and Back state; until then the gate's cover hides everything, so a restore never skips the verification, consent or deletion check.
+
+The saved tags are read back through `HomeDestinations.restoreCurrent` / `restoreLastTab`: a tag the host does not have (the removed Alert tab's `home_alert`, or nothing) is **Track**, and `lastTabTag` is only ever a tab. A process death on Alert history comes back on Alert history, with Back to Track.
 
 ### Host-level events
 
@@ -136,6 +143,7 @@ It then updates three pieces of host state:
 | `NavigateToLogin` | `init` finds no session | Starts `LoginActivity` with `NEW_TASK | CLEAR_TASK` |
 | `ShowSettings` | Track's gear is tapped | `show(home_settings)` |
 | `ShowNotifications` | Track's bell is tapped | `show(home_notifications)` |
+| `ShowAlertHistory` | See all on Track's recent-alerts panel | `show(home_alert_history)` |
 
 Fragments reach `HomeViewModel` with `by activityViewModels { HomeViewModel.Factory }`. They never cast `requireActivity()` to `HomeActivity`.
 
@@ -146,12 +154,13 @@ Fragments reach `HomeViewModel` with `by activityViewModels { HomeViewModel.Fact
 Legend: ✅ works with (in-memory) data · 🟡 placeholder UI
 
 ### Track (default tab), `ui/track/`
-- ✅ **Avatar:** the default profile icon only; the signed-in user's name (falls back to "User") is its TalkBack description, not visible text. Google's profile photo is a later change. *The location line was removed with the `location` field — see below.*
+- *(Removed 2026-10-19: Track has no avatar. Its top bar is the gear top-left and the bell top-right, as on Contacts and Profile.)* ✅ **Avatar:** the default profile icon only; the signed-in user's name (falls back to "User") is its TalkBack description, not visible text. Google's profile photo is a later change. *The location line was removed with the `location` field — see below.*
 - ✅ **Bell** → Notifications, **gear** → Settings (through `HomeViewModel`).
 - 🟡 **Map:** grey `surface_muted` area with a "Live map coming soon" label.
 - 🟡 **Status pill:** static "You are protected." with a green dot. It isn't driven by alert data yet.
-- 🟡 **Round map buttons** (layers, recenter): toast "The live map isn't available yet."
+- 🟡 **Round map buttons** (layers, recenter): toast "The live map isn't available yet." *(Since 2026-10-19 the round arrow is **Navigate**: tap opens maps on the band, long-press re-centres and resumes following. The white Navigate pill is gone. Layers is still a stub.)*
 - ✅ **Check-in pill:** read-only status of the latest check-in ("Last check-in: 5 minutes ago" / "No recent check-ins"); not tappable. Was a toast stub until 2026-10-14.
+- ✅ **Recent alerts sheet (2026-10-19):** a draggable bottom sheet over the map (`BottomSheetBehavior`, not hideable) with a drag handle, **See all** → Alert history, and the newest three alerts (`item_alert` rows, same as Alert history). Collapsed it shows only the handle and the header (96dp); dragged up, the three rows. Its own spinner, error + Try again, and empty text ("No alerts from your band yet."). The pill and the round controls sit just above its collapsed height. Bound by `RecentAlertsPanel`; rows come from the host-scoped `AlertViewModel`.
 
 `TrackViewModel` holds `TrackUiState(userName)` and `TrackEvent.ShowMessage`. It no longer takes a `UserProfileRepository`.
 
@@ -161,7 +170,11 @@ Legend: ✅ works with (in-memory) data · 🟡 placeholder UI
 - ✅ Shows a spinner while loading or deleting, and an empty-state text when there are no contacts.
 - Not built yet: **add** and **edit** (the rest of FR-06).
 
-### Alert, `ui/alert/`
+### Alert history (pushed), `ui/alert/` (the Alert tab until 2026-10-19)
+- **Path:** Track → **See all** on the recent-alerts panel. Back or the back arrow returns to Track; the bar is hidden while it shows. The bell still opens Notifications.
+- `AlertHistoryFragment` + `fragment_alert_history.xml`: the old tab's screen with a white top bar (back arrow + "Alert history") in place of the gear and bell. Everything below it is unchanged.
+
+The Alert tab, as first built:
 - ✅ **Current status:** a card with the latest alert's type (colored dot + label), local time, coordinates and battery (with "charging" if set).
 - ✅ **History (FR-08):** every alert, newest first, in the same card style.
 - ✅ **Live:** both lists update whenever the repository emits. A failed read keeps the last good data and shows a toast.
@@ -186,9 +199,10 @@ Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC 
 - The rest of the tab's content is **not yet defined**. (An inert "Account information" card sat at the bottom until 2026-10-14; it was removed, so that screen has one entry point, in Settings.)
 
 ### Settings (pushed), `ui/settings/`
-- Grey background (`surface_muted`) with a white top bar: back arrow + "Settings".
+- White background, the same as the rows and the top bar (back arrow + "Settings"), so the rows sit on the screen rather than in a raised card (2026-10-19; it was grey `surface_muted` with a shadowed card). Contacts, Profile, Notifications and Alert history went white the same day.
+- **Every top bar** (Settings, Notifications, Alert history, Account information, Changelog) has a 1dp `divider` line along its bottom edge, from the shared `@drawable/bg_top_bar`, so a white bar stays distinct on a white screen. Change the line there, not per layout.
 - ✅ **Account information** opens `ui/account/AccountActivity` (below).
-- 🟡 **Rows:** Change password, Notifications, Privacy & security. Each shows "Coming soon."
+- 🟡 **Rows:** Change password, Notifications. Each shows "Coming soon." (A "Privacy & security" placeholder was removed on 2026-10-19; Privacy Notice is the one privacy row.)
 - ✅ **Privacy Notice** opens the hosted page; **Changelog** opens `ChangelogActivity`.
 - ✅ **Log Out** (outlined button) signs out and goes to Login with the task cleared.
 
@@ -305,7 +319,8 @@ class ExampleFragment : Fragment(R.layout.fragment_example) {
 ```
 
 - **Collect with `viewLifecycleOwner`,** never the Fragment's own lifecycle.
-- **Hiding doesn't pause.** Show/hide doesn't change a Fragment's lifecycle, so hidden tabs keep collecting. That's what keeps the Alert tab live in the background.
+- **Hiding doesn't pause.** Show/hide doesn't change a Fragment's lifecycle, so hidden tabs keep collecting. That's what keeps Track's alerts panel live while another tab is showing.
+- **A ViewModel two screens share is `activityViewModels`.** `AlertViewModel` is the one case: Track's panel and Alert history both use `by activityViewModels { AlertViewModel.Factory }`, so there is one instance and one listener for both.
 - **Toasts and `startActivity`** run in the Fragment (`requireContext()`). Fragment transactions run only in `HomeActivity`.
 - **Pushed screens' back arrow** calls `requireActivity().onBackPressedDispatcher.onBackPressed()`, so the host decides where Back goes.
 - **Ids are snake_case, prefixed by screen:** `iv_track_avatar`, `rv_contacts`. List-row ids use `item_`: `tv_item_contact_name`.
@@ -317,11 +332,11 @@ class ExampleFragment : Fragment(R.layout.fragment_example) {
 
 **A new tab:**
 1. Add an `<item>` to `res/menu/menu_home_bottom_nav.xml` with an icon and a `tab_*` string.
-2. Add a `TAG_*` constant in `HomeActivity`, add it to `TAB_TAGS`, `createFragment()` and `tagFor()`.
+2. Add a tag constant in `HomeDestinations` and put it in `TABS`; add it to `HomeActivity`'s `createFragment()`, `tagFor()` and `menuItemIdFor()`.
 3. Create the package `ui/<name>/` with `<Name>Fragment`, `<Name>ViewModel`, `<Name>UiState`, `<Name>Event`, plus `fragment_<name>.xml`.
 
 **A new pushed screen** (like Settings):
-1. Add a `TAG_*` constant (not in `TAB_TAGS`) and a `createFragment()` branch.
+1. Add a tag constant in `HomeDestinations` and put it in `PUSHED` (not `TABS`); add a `createFragment()` branch.
 2. Add a `HomeEvent.Show<Name>` and an `on<Name>Clicked()` in `HomeViewModel`, and handle it in `HomeActivity.handleEvent`.
 3. Give the screen a back arrow that calls the back dispatcher.
 
@@ -333,8 +348,8 @@ class ExampleFragment : Fragment(R.layout.fragment_example) {
 
 | Kind | Items |
 |---|---|
-| Menu | `menu_home_bottom_nav.xml` (`nav_track`, `nav_contacts`, `nav_alert`, `nav_profile`) |
-| Icons (Material, `?attr/colorControlNormal` tint) | `ic_map` (Track tab), `ic_group` (Contacts), `ic_warning` (Alert), `ic_profile` (Profile, avatars; from the checkpoint), `ic_settings`, `ic_notifications`, `ic_arrow_back` (from the checkpoint's `back_arrow`), `ic_delete`, `ic_navigation`, `ic_layers`, `ic_check_circle`, `ic_chevron_right` |
+| Menu | `menu_home_bottom_nav.xml` (`nav_track`, `nav_contacts`, `nav_profile`; `nav_alert` removed 2026-10-19) |
+| Icons (Material, `?attr/colorControlNormal` tint) | `ic_map` (Track tab), `ic_phone` (Contacts, since 2026-10-19; `ic_group` before, still used by sign-up's consent screen), `ic_warning` (was the Alert tab; Settings still uses it), `ic_profile` (Profile, avatars; from the checkpoint), `ic_settings`, `ic_notifications`, `ic_arrow_back` (from the checkpoint's `back_arrow`), `ic_delete`, `ic_navigation`, `ic_layers`, `ic_check_circle`, `ic_chevron_right` |
 | Shapes | `bg_pill.xml` (white pill with a hairline border), `bg_status_dot.xml` (8dp dot, tinted per use) |
 | Color selector | `color/bottom_nav_item.xml`: green when checked, `text_primary` otherwise |
 | Color tokens | `alert_panic`, `alert_checkin`, `alert_low_battery`, `alert_tracking` |
@@ -388,7 +403,7 @@ Run `gradlew.bat assembleDebug`, then on a device:
 **Tabs**
 - [✓] Every tab switches instantly. Its label and icon turn green, and the others are dark.
 - [✓] Contacts: scroll, switch tabs and come back. The list is still there and doesn't reload.
-- [✓] Alert: a spinner shows for about 1 s, then "Low battery · Battery 20%" as current status and 4 history cards, newest first, with colored dots.
+- [✓] Alert: a spinner shows for about 1 s, then "Low battery · Battery 20%" as current status and 4 history cards, newest first, with colored dots. *(Superseded: there is no Alert tab. See the 2026-10-19 block below.)*
 
 **Track**
 - [✓] The chip shows "Alex Rivera" / "San Francisco, CA".
@@ -399,7 +414,7 @@ Run `gradlew.bat assembleDebug`, then on a device:
 - [✓] Back arrow → Track, highlighted again.
 - [✓] Gear → Settings, then the system Back → Track.
 - [✓] Gear → Settings, then tap **Track** in the bar → Track.
-- [✓] Gear → Settings, then tap **Alert** → Alert.
+- [✓] Gear → Settings, then tap **Alert** → Alert. *(Superseded: no Alert tab, and the bar is hidden on Settings.)*
 - [✓] Bell → Notifications → empty state. Back → Track.
 - [✓] Settings rows show "Coming soon."
 
@@ -411,6 +426,16 @@ Run `gradlew.bat assembleDebug`, then on a device:
 **Log Out**
 - [✓] Settings → Log Out → Login.
 - [✓] Back from Login doesn't return to Home.
+
+**Three tabs and Alert history (2026-10-19)**
+- [ ] The bar shows exactly three icons: Track, Contacts, Profile. Each opens its screen; TalkBack reads each icon's name.
+- [ ] Track shows the recent-alerts sheet collapsed low over the bottom of the map: just the handle and the "Recent alerts · See all" header. Drag it up: at most three rows, newest first. Drag it down, or tap the handle: back to collapsed. It cannot be dragged off screen.
+- [ ] Track's top bar is the gear top-left and the bell top-right, in the same places as on Contacts and Profile. There is no avatar.
+- [ ] The Contacts icon in the bar is a phone.
+- [ ] With a fix, tapping the round arrow opens a maps app on the band; long-pressing it re-centres the map after you have dragged it away. Without a fix it is greyed out. There is no white Navigate pill.
+- [ ] **See all** opens Alert history with the bar hidden. Back, and the back arrow, return to Track with the bar back.
+- [ ] The bell still opens Notifications.
+- [ ] On Alert history, background the app and kill it (`adb shell am kill com.example.guardband`), then reopen from Recents: the gate's spinner covers the screen, then Alert history is back; Back → Track.
 
 **Sign-up path**
 - [✓] Sign up a new user → Loading → Home. The chip and Profile show the new name, and Contacts includes the new contact.

@@ -45,9 +45,17 @@ class FakeAlertRepository(
         private set
 
     /**
+     * How many collectors are subscribed to the history flow right now: the
+     * stand-in for a live RTDB listener, which `awaitClose` removes when its
+     * collector goes away.
+     */
+    val activeHistoryCollectors: Int
+        get() = historyFlow.subscriptionCount.value
+
+    /**
      * How many times a collector subscribed to the latest-alert flow.
      *
-     * The Alert tab must leave this at zero: D2 derives its card from history,
+     * The alert screens' ViewModel must leave this at zero: D2 derives its card from history,
      * so opening a second listener on `devices/{id}/latest` would be waste.
      */
     var latestSubscriptions = 0

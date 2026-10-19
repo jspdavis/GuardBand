@@ -13,16 +13,6 @@ import com.example.guardband.data.model.Alert
  * an error.
  */
 data class TrackUiState(
-    /** The avatar's spoken name; not shown as text (already falls back to "User"). */
-    val userName: String = "",
-
-    /**
-     * The Google profile photo to load into the avatar, already vetted by
-     * [AvatarPhoto][com.example.guardband.ui.avatar.AvatarPhoto]. Null keeps
-     * the default icon and makes no request.
-     */
-    val avatarUrl: String? = null,
-
     /** True until the first read of `devices/{id}/latest` completes. */
     val isLoading: Boolean = true,
 
@@ -66,7 +56,15 @@ data class TrackUiState(
      * failed check-in read never touches the map, and a failed `latest`
      * read never touches the pill.
      */
-    val checkIn: CheckInStatus = CheckInStatus.Loading
+    val checkIn: CheckInStatus = CheckInStatus.Loading,
+
+    /**
+     * What the band's marker shows: a photo link and the initials it falls
+     * back on. Set once, from the session ([TrackViewModel]'s `markerFace`),
+     * and carried unchanged through every position update, so the marker is
+     * drawn again only if the face itself changes.
+     */
+    val markerFace: BandMarkerFace = BandMarkerFace(photoUrl = null, initials = "")
 ) {
     /** Whether there is a position to put a marker on (D3, D4). */
     val hasFix: Boolean get() = location != null

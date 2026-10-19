@@ -6,8 +6,9 @@ sealed interface HomeEvent {
     object ShowSettings : HomeEvent
     object ShowNotifications : HomeEvent
 
-    /** Switch to the Profile tab, as if its bottom-bar item had been tapped. */
-    object ShowProfile : HomeEvent
+    /** Open the full alert history, from the Track tab's recent-alerts panel. */
+    object ShowAlertHistory : HomeEvent
+
 
     /**
      * This account's deletion did not finish: its data is gone and its sign-in

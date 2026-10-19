@@ -408,4 +408,19 @@ class HomeViewModelTest {
 
         assertEquals(listOf<HomeEvent>(HomeEvent.ResumeDeletion), open(verified = true).events)
     }
+
+    // ── Host navigation ───────────────────────────────────────────────────────
+
+    @Test
+    fun `see all on the recent alerts panel asks the host for the alert history`() = runTest {
+        agreed("1.1")
+        val opened = open()
+
+        opened.vm.onSeeAllAlertsClicked()
+        advanceUntilIdle()
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.ShowAlertHistory), opened.events)
+        // Navigation, not a gate change: the gate stays where it was.
+        assertEquals(HomeGateState.OPEN, opened.gate)
+    }
 }

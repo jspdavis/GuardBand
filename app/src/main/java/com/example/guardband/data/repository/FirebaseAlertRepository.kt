@@ -67,7 +67,8 @@ class FirebaseAlertRepository(
      * The same history query as [observeAlertHistory], so it shares its
      * listener handling: [awaitClose] removes the listener when the collector
      * cancels. The SDK also serves identical queries from one subscription,
-     * so the Track and Alert tabs together listen to the window once.
+     * so the check-in pill and the alert screens together listen to the
+     * window once.
      */
     override fun observeLatestCheckIn(): Flow<Result<CheckIn?>> =
         observeAlertHistory(AlertRepository.DEFAULT_HISTORY_WINDOW)
@@ -87,7 +88,7 @@ class FirebaseAlertRepository(
      *
      * The flow stays open on failure so a reconnect can still deliver data,
      * and [awaitClose] removes the listener when the collector cancels - which
-     * is what keeps a cancelled Alert tab from leaking a live RTDB listener.
+     * is what keeps a cleared alert ViewModel from leaking a live RTDB listener.
      */
     private fun <T> Query.asFlow(
         onValue: (DataSnapshot) -> Result<T>

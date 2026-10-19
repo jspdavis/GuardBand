@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
  *
  * [rawCount] and [malformedCount] are carried alongside the alerts so the
  * screen can tell three different silences apart: the band has sent nothing,
- * the window held only entries the Alert tab hides (D1), and the window held
+ * the window held only entries the alert screens hide (D1), and the window held
  * rows that could not be parsed. Without them an empty list is ambiguous, and
  * a tracking-heavy band would show "no incidents" while working perfectly.
  *
@@ -42,8 +42,8 @@ interface AlertRepository {
     /**
      * `/devices/{id}/latest`. Emits null while the device has no alerts.
      *
-     * May hold a `TRACKING_UPDATE`, which is why the Alert tab's latest card
-     * is derived from history instead (D2). This is for the Track tab.
+     * May hold a `TRACKING_UPDATE`, which is why the Alert history screen's
+     * latest card is derived from history instead (D2). This is for the Track tab.
      */
     fun observeLatestAlert(): Flow<Result<Alert?>>
 

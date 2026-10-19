@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<!-- Track tab. A CoordinatorLayout so the recent-alerts panel can be a
+     draggable bottom sheet (BottomSheetBehavior) over the map. It has an id
+     so it saves the sheet's state, collapsed or expanded, across a restore. -->
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/track_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/surface_bg"
@@ -11,191 +15,274 @@
     <!-- DESIGN: Jul — spacing and colours are placeholders. Every view below
          uses theme tokens only. -->
 
-    <!-- ── Map: fills everything under the top bar ──────────────────────── -->
-    <!-- Drawn first so the chip and controls sit on top of it.
-         OsmdroidConfig must run before this is inflated, which is why the
-         Fragment applies it in onCreate. -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-    <org.osmdroid.views.MapView
-        android:id="@+id/track_map_view"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        <!-- ── Map: fills the whole tab ───────────────────────────────────── -->
+        <!-- Drawn first so the buttons and the sheet sit on top of it.
+             OsmdroidConfig must run before this is inflated, which is why the
+             Fragment applies it in onCreate. -->
 
-    <!-- Shown instead of a marker when there is no position: the band has
-         never reported, it has reported with no fix, or the read failed. -->
+        <org.osmdroid.views.MapView
+            android:id="@+id/track_map_view"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/track_empty_view"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"
-        android:background="@drawable/bg_pill"
-        android:drawablePadding="8dp"
-        android:gravity="center"
-        android:paddingStart="20dp"
-        android:paddingTop="16dp"
-        android:paddingEnd="20dp"
-        android:paddingBottom="16dp"
-        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
-        android:textColor="@color/text_secondary"
-        android:visibility="gone"
-        app:drawableTint="@color/text_hint"
-        app:drawableTopCompat="@drawable/ic_map"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:text="@string/label_track_no_fix"
-        tools:visibility="visible" />
+        <!-- The strip the collapsed sheet covers. Nothing is drawn here; the
+             empty overlay and the controls stack on its top edge so the
+             collapsed sheet never hides them. -->
+        <Space
+            android:id="@+id/space_track_sheet_peek"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/track_sheet_peek_height"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- ── Top bar: avatar · bell · gear ──────────────────────────────────
-         The avatar shows the Google profile photo when there is one (loaded
-         by ui/avatar/AvatarImage) and ic_profile otherwise; the tint
-         and contentPadding below apply to the icon only. The user's name is
-         its content description, not visible text. -->
+        <!-- Shown instead of a marker when there is no position: the band has
+             never reported, it has reported with no fix, or the read failed. -->
 
-    <LinearLayout
-        android:id="@+id/ll_track_user_chip"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="8dp"
-        android:background="@drawable/bg_pill"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="2dp"
-        app:layout_constrainedWidth="true"
-        app:layout_constraintEnd_toStartOf="@id/ib_track_notifications"
-        app:layout_constraintHorizontal_bias="0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        <TextView
+            android:id="@+id/track_empty_view"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginEnd="32dp"
+            android:background="@drawable/bg_pill"
+            android:drawablePadding="8dp"
+            android:gravity="center"
+            android:paddingStart="20dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="16dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+            android:textColor="@color/text_secondary"
+            android:visibility="gone"
+            app:drawableTint="@color/text_hint"
+            app:drawableTopCompat="@drawable/ic_map"
+            app:layout_constraintBottom_toTopOf="@id/space_track_sheet_peek"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="@string/label_track_no_fix"
+            tools:visibility="visible" />
 
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/iv_track_avatar"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="@color/surface_card"
-            android:contentDescription="@string/cd_user_avatar"
-            android:src="@drawable/ic_profile"
-            app:contentPadding="6dp"
+        <!-- ── Top bar: settings · notifications ──────────────────────────
+             The same pair, in the same places, as the Contacts and Profile
+             tabs: gear top-left, bell top-right. -->
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/ib_track_settings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="24dp"
+            android:contentDescription="@string/cd_open_settings"
+            android:src="@drawable/ic_settings"
+            app:backgroundTint="@color/white"
+            app:elevation="4dp"
+            app:fabCustomSize="40dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
             app:tint="@color/brand_green" />
-    </LinearLayout>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/ib_track_notifications"
-        android:layout_width="wrap_content"
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/ib_track_notifications"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginEnd="24dp"
+            android:contentDescription="@string/cd_open_notifications"
+            android:src="@drawable/ic_notifications"
+            app:backgroundTint="@color/white"
+            app:elevation="4dp"
+            app:fabCustomSize="40dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+            app:tint="@color/brand_green" />
+
+        <!-- ── Round map controls ─────────────────────────────────────────── -->
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/track_layers_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="12dp"
+            android:contentDescription="@string/cd_map_layers"
+            android:src="@drawable/ic_layers"
+            app:backgroundTint="@color/white"
+            app:fabSize="mini"
+            app:layout_constraintBottom_toTopOf="@id/track_navigate_button"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+            app:tint="@color/brand_green" />
+
+        <!-- Navigate (D6): a tap opens a maps app on the band's position, a
+             long-press re-centres the map and resumes following (D4).
+             Disabled with no fix; the icon tint greys out then. -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/track_navigate_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:contentDescription="@string/cd_track_navigate"
+            android:enabled="false"
+            android:src="@drawable/ic_navigation"
+            app:backgroundTint="@color/white"
+            app:fabSize="mini"
+            app:layout_constraintBottom_toTopOf="@id/track_checkin_pill"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+            app:tint="@color/map_control_icon" />
+
+        <!-- Check-in pill (FR-10): the wearer's latest check-in, read-only.
+             A TextView rather than a Button, so it is not clickable, has no
+             ripple and TalkBack reads it as text, not as a control. Check-ins
+             come from the band; the app never sends one. It stacks on
+             barrier_track_credits: the higher of the room the 48dp ⓘ needs
+             above the logo's row and the top of the credits. So it only
+             rises when the credits, moved above the logo, need more than one
+             line (the largest font sizes), and only by that extra height.
+             DESIGN: Jul (white status pill, as a placeholder) -->
+        <TextView
+            android:id="@+id/track_checkin_pill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_pill"
+            android:drawablePadding="8dp"
+            android:elevation="2dp"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="20dp"
+            android:text="@string/label_track_checkin_loading"
+            android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
+            android:textColor="@color/text_primary"
+            app:drawableStartCompat="@drawable/ic_check_circle"
+            app:drawableTint="@color/alert_checkin"
+            app:layout_constraintBottom_toTopOf="@id/barrier_track_credits"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- The room the 48dp ⓘ needs above the logo's 24dp row. Nothing is
+             drawn here. -->
+        <Space
+            android:id="@+id/space_track_credit_clearance"
+            android:layout_width="0dp"
+            android:layout_height="24dp"
+            app:layout_constraintBottom_toTopOf="@id/track_map_logo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Whichever is higher: that room, or the top of the credits. The
+             credits are INVISIBLE when collapsed, never GONE, so the barrier,
+             and the pill on it, do not move when they collapse. -->
+        <androidx.constraintlayout.widget.Barrier
+            android:id="@+id/barrier_track_credits"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:barrierDirection="top"
+            app:constraint_referenced_ids="space_track_credit_clearance,track_map_attribution" />
+
+        <!-- Map credits (MapTiler's terms): "© MapTiler © OpenStreetMap
+             contributors", each a link, bottom right, just above the strip
+             the collapsed sheet covers so it stays visible. Bound by
+             ui/track/MapAttribution: shown when the map opens, then
+             collapsed to the ⓘ below after 5 s or the first pan (the OSMF
+             attribution guidelines' rule); the ⓘ brings it back. Collapsed
+             it is INVISIBLE, not GONE, so nothing anchored near it moves.
+             The MapTiler logo shares the row, bottom left
+             (track_map_logo, below). This is the line's place when it fits
+             beside the logo; when it does not (a narrow screen, a large
+             system font), MapAttribution moves it onto a line of its own
+             above the logo before the first draw, wrapping if even that line
+             is too narrow. The ⓘ anchors to the logo; the pill to
+             barrier_track_credits.
+             DESIGN: Jul (size and background are placeholders) -->
+        <TextView
+            android:id="@+id/track_map_attribution"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/track_map_attribution_height"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="4dp"
+            android:background="@color/map_attribution_bg"
+            android:gravity="center_vertical"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.MapAttribution"
+            android:textColor="@color/text_secondary"
+            android:textColorLink="@color/text_secondary"
+            app:layout_constraintBottom_toTopOf="@id/space_track_sheet_peek"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="© MapTiler © OpenStreetMap contributors" />
+
+        <!-- MapTiler's logo, which the Free plan requires: bottom left, in the
+             credits' row, linked to maptiler.com (MapAttribution binds the
+             tap). Always visible: unlike the credits it never collapses.
+             20dp tall inside the row's 2dp padding, width from the aspect
+             ratio; never stretched or tinted.
+             DESIGN: Jul (background and padding match the credits) -->
+        <ImageView
+            android:id="@+id/track_map_logo"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/track_map_attribution_height"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="4dp"
+            android:adjustViewBounds="true"
+            android:background="@color/map_attribution_bg"
+            android:contentDescription="@string/cd_track_map_logo"
+            android:paddingStart="4dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="2dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/logo_maptiler"
+            app:layout_constraintBottom_toTopOf="@id/space_track_sheet_peek"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- The collapsed credits: a small ⓘ on a see-through disc, in the
+             same corner. The button is 48dp, the minimum touch target, around
+             the 24dp disc it draws. Hidden while the credits show.
+             DESIGN: Jul -->
+        <ImageButton
+            android:id="@+id/track_map_attribution_info"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_map_attribution_info"
+            android:contentDescription="@string/cd_track_map_credits"
+            android:padding="14dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_info"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/track_map_logo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:tint="@color/text_secondary" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- ── Recent alerts: a draggable bottom sheet over the map ──────────
+         Collapsed, it shows only its handle and its header;
+         dragged up (or its handle tapped) it shows the newest three. See all
+         opens the full history. Not hideable, so it can always be dragged
+         back. Bound by ui/track/RecentAlertsPanel.
+         DESIGN: Jul -->
+    <include
+        android:id="@+id/track_recent_alerts_panel"
+        layout="@layout/view_track_recent_alerts"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:contentDescription="@string/cd_open_notifications"
-        android:src="@drawable/ic_notifications"
-        app:backgroundTint="@color/white"
-        app:fabCustomSize="40dp"
-        app:layout_constraintBottom_toBottomOf="@id/ll_track_user_chip"
-        app:layout_constraintEnd_toStartOf="@id/ib_track_settings"
-        app:layout_constraintTop_toTopOf="@id/ll_track_user_chip"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="@color/brand_green" />
+        app:behavior_hideable="false"
+        app:behavior_peekHeight="@dimen/track_sheet_peek_height"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/ib_track_settings"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:contentDescription="@string/cd_open_settings"
-        android:src="@drawable/ic_settings"
-        app:backgroundTint="@color/white"
-        app:fabCustomSize="40dp"
-        app:layout_constraintBottom_toBottomOf="@id/ll_track_user_chip"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/ll_track_user_chip"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="@color/brand_green" />
-
-    <!-- ── Round map controls ───────────────────────────────────────────── -->
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/track_layers_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="12dp"
-        android:contentDescription="@string/cd_map_layers"
-        android:src="@drawable/ic_layers"
-        app:backgroundTint="@color/white"
-        app:fabSize="mini"
-        app:layout_constraintBottom_toTopOf="@id/track_recenter_button"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="@color/brand_green" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/track_recenter_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="20dp"
-        android:contentDescription="@string/cd_map_recenter"
-        android:src="@drawable/ic_navigation"
-        app:backgroundTint="@color/white"
-        app:fabSize="mini"
-        app:layout_constraintBottom_toTopOf="@id/track_navigate_button"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="@color/brand_green" />
-
-    <!-- ── Bottom actions ───────────────────────────────────────────────── -->
-    <!-- Navigate is filled white, like the round controls above it, so it
-         stays readable over the map tiles. DESIGN: Jul -->
-
-    <Button
-        android:id="@+id/track_navigate_button"
-        style="@style/Widget.GuardBand.Button.Outlined"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
-        android:enabled="false"
-        android:paddingStart="24dp"
-        android:paddingEnd="28dp"
-        android:text="@string/btn_track_navigate"
-        app:backgroundTint="@color/white"
-        app:cornerRadius="24dp"
-        app:icon="@drawable/ic_navigation"
-        app:iconTint="@color/brand_green"
-        app:layout_constraintBottom_toTopOf="@id/track_checkin_pill"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <!-- Check-in pill (FR-10): the wearer's latest check-in, read-only.
-         A TextView rather than a Button, so it is not clickable, has no
-         ripple and TalkBack reads it as text, not as a control. Check-ins
-         come from the band; the app never sends one.
-         DESIGN: Jul (white status pill like the user chip, as a placeholder) -->
-    <TextView
-        android:id="@+id/track_checkin_pill"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:background="@drawable/bg_pill"
-        android:drawablePadding="8dp"
-        android:elevation="2dp"
-        android:gravity="center_vertical"
-        android:minHeight="48dp"
-        android:paddingStart="16dp"
-        android:paddingEnd="20dp"
-        android:text="@string/label_track_checkin_loading"
-        android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
-        android:textColor="@color/text_primary"
-        app:drawableStartCompat="@drawable/ic_check_circle"
-        app:drawableTint="@color/alert_checkin"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

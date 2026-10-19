@@ -45,11 +45,13 @@ gate.
 | **Network on both phones** | Everything goes through the database; there is no local or Bluetooth path. |
 | **One device id** | Everything reads and writes `devices/guardband-001` (`DeviceConstants.DEFAULT_DEVICE_ID`). There is no pairing yet, so **every account sees the same band.** |
 
-**On the Security Rules.** The sender's writes depend on `".write": true` under
-`devices/{deviceId}`, and the receiver's reads on `".read": true`. That is what
-the draft in `RTDBS-RULES.md` says; nobody has read the *deployed* rules from
-the tooling side. If a send comes back `401`, the live rules are tighter than
-the draft and the sender needs an `?auth=` token added.
+**On the Security Rules.** The sender's writes depend on open writes under
+`devices/{deviceId}`, and both its sequence-id seed read and the receiver's
+reads on `".read": true`. The rules deployed on 2026-10-11 allow all of it.
+The proposal pending in `RTDBS-RULES.md` (Option A+,
+[`database-rules.md`](database-rules.md) §4) keeps all of it working but makes
+history **append-only**: a history id can be written once, never again. If a
+send comes back `401`, see §8.
 
 ---
 
@@ -76,16 +78,17 @@ the draft and the sender needs an `?auth=` token added.
    latest                 history (newest 100)
             │                   │
             ▼                   ▼
-      ┌───────────┐       ┌───────────┐
-      │ Track tab │       │ Alert tab │     GuardBand (receiver)
-      └───────────┘       └───────────┘
+      ┌───────────┐       ┌──────────────────────────────┐
+      │ Track map │       │ Track's recent-alerts panel  │  GuardBand
+      └───────────┘       │ + Alert history (See all)    │  (receiver)
+                          └──────────────────────────────┘
 ```
 
-**History is written before `latest`, deliberately.** The Alert tab derives
-everything from history, so a send that only got as far as history is still
-visible there and merely leaves the Track-facing `latest` stale. The reverse
-would show the alert nowhere in the Alert tab *and* leave a permanent hole in
-the history.
+**History is written before `latest`, deliberately.** The alert screens (the
+panel and Alert history) derive everything from history, so a send that only
+got as far as history is still visible there and merely leaves the
+Track-facing `latest` stale. The reverse would show the alert on neither *and*
+leave a permanent hole in the history.
 
 **No Cloud Function is involved.** The project is on the Spark plan, which
 cannot host one. `SCHEMA.md`'s "Receiver validation requirements" section still
@@ -162,57 +165,62 @@ staleness window.
 ## 5. The receiver launcher
 
 Splash → Login (or straight to Home if a session is stored) → `HomeActivity`
-and its four tabs. Two of them read the band.
+and its three tabs: Track, Contacts, Profile. **Track reads the band twice**:
+its map reads `latest`, and its recent-alerts panel reads `history`. The full
+history is **Alert history**, opened with the panel's **See all**. (Until
+2026-10-19 that was a fourth tab, the Alert tab.)
 
-### Track tab — reads `latest`
+### Track tab: the map reads `latest`
 
 The newest ping, whatever kind it was.
 
 The band status panel (Reporting / Not reporting, Last seen, Battery) was
 removed from the screen on 2026-10-14; the Check-in pill is now the tab's one
-status line. Battery is still on each Alert-tab row.
+status line. Battery is still on each alert row.
 
 | Element | Shows |
 |---|---|
-| Map + one marker | Last known position. OpenStreetMap tiles via osmdroid. |
+| Map + one marker | Last known position. MapTiler tiles via osmdroid; "Map unavailable" if the build has no `MAPTILER_API_KEY`. |
 | Empty overlay | *"Your band hasn't reported yet."* / *"No location fix yet"* / a read error. |
-| **Navigate** | Opens a maps app on the position. Disabled with no fix. |
-| Recenter (◎) | Re-centres and resumes following. |
+| **Navigate** (round arrow) | **Tap:** opens a maps app on the position. **Long-press:** re-centres and resumes following. Disabled with no fix. (Since 2026-10-19; the white Navigate pill is gone.) |
 | **Check-in pill** | Read-only status of the latest check-in: *"Last check-in: 5 minutes ago"*, or *"No recent check-ins"*. Read from **history**, not `latest` (see below). Not tappable; the app never sends a check-in. |
 | Layers | UI-only stub. |
+| **Recent alerts sheet** | A draggable bottom sheet over the map: collapsed it shows only its header, dragged up the newest **three**, from `history`, tracking updates hidden, in the same rows as Alert history. **See all** opens Alert history. |
 
-### Alert tab — reads `history`
+### Alert history: reads `history`
 
-The incident log. Reads the newest 100 raw entries, hides tracking updates, and
-shows up to 50.
+The incident log, opened from **See all** on Track's panel (Back returns to
+Track). Reads the newest 100 raw entries, hides tracking updates, and shows up
+to 50. The panel and this screen share one ViewModel and one listener, so they
+always agree.
 
 | Element | Shows |
 |---|---|
 | **Current status** card | The newest **non-tracking** alert: type, time, coordinates, battery. |
 | **History** list | The rest, newest first, colour-coded by type. |
 | Empty state | Says *which* kind of empty: nothing sent, only tracking updates, or nothing readable. |
-| **Retry** | Re-subscribes after a failed read. |
+| **Try again** | Re-subscribes after a failed read. The panel has its own. |
 
-### The one thing to understand about the two tabs
+### The one thing to understand about the map and the alerts
 
 **They deliberately read different nodes.** Every payload overwrites `latest`,
-tracking updates included. If the Alert tab read `latest`, then one tracking
-ping after a panic would make its status card say "Location update" while the
-panic sat one row below it. So the Alert tab derives its card from history and
-ignores `latest` entirely — and Track reads `latest`, because "the newest ping
-whatever it was" is exactly what a map wants.
+tracking updates included. If the alert screens read `latest`, then one
+tracking ping after a panic would make the status card say "Location update"
+while the panic sat one row below it. So the alerts are derived from history
+and ignore `latest` entirely — and the map reads `latest`, because "the newest
+ping whatever it was" is exactly what a map wants.
 
-### What each type does on each tab
+### What each type does
 
-| Type sent | Track tab | Alert tab |
+| Type sent | Track map | Recent-alerts panel and Alert history |
 |---|---|---|
-| `PANIC` | marker moves | shown, and becomes **Current status** |
-| `CHECKIN` | marker moves, and the **Check-in pill** updates | shown |
-| `LOW_BATTERY` | marker moves | shown |
+| `PANIC` | marker moves | new top row; becomes **Current status** |
+| `CHECKIN` | marker moves, and the **Check-in pill** updates | new top row |
+| `LOW_BATTERY` | marker moves | new top row |
 | `TRACKING_UPDATE` | marker moves | **hidden**, and never becomes Current status |
 | an unrecognised type | marker moves if it has a location | shown as **"Unknown alert"** |
 
-A tracking update being invisible on the Alert tab is correct, not a bug. An
+A tracking update being invisible in the alert lists is correct, not a bug. An
 *unknown* type is still shown, so a type a future firmware adds will appear
 rather than vanish.
 
@@ -221,6 +229,8 @@ rather than vanish.
 ## 6. Walkthroughs
 
 Phone A = Mock Sender. Phone B = GuardBand, signed in, Track tab open.
+"Panel" is Track's recent-alerts panel; "History" is Alert history, opened
+with the panel's **See all**.
 
 ### A · Empty database
 
@@ -228,22 +238,27 @@ Clear `devices/guardband-001` in the Console first.
 
 - **Track:** Cebu City at zoom 13, *"Your band hasn't reported yet."*, Navigate
   disabled.
-- **Alert:** *"No alerts from your band yet."*
+- **Panel:** *"No alerts from your band yet."* **History** says the same.
 
 ### B · First panic
 
 Phone A → **Simulate Panic**. Expect `✓ Sent PANIC as #1`.
 
 - **Track:** marker appears and the camera moves to it at street zoom.
-- **Alert:** Current status becomes **Panic** with its coordinates and battery.
+- **Panel:** a red **Panic** row appears at the top, without reopening anything.
+- **History:** Current status is **Panic** with its coordinates and battery,
+  and the same row heads the list.
+- Send three more panics: the panel shows the newest three, History shows all
+  four.
 
 ### C · Walk mode — the marker moves
 
 Phone A → **Start walk**.
 
 - **Track:** the marker steps around a circle every 5 s.
-- **Alert:** nothing changes. Current status stays **Panic** — tracking updates
-  are hidden. This is the single best demonstration of §5's split.
+- **Panel and History:** nothing changes. Current status stays **Panic** —
+  tracking updates are hidden. This is the single best demonstration of §5's
+  split, and you can watch both halves on one screen.
 
 ### D · Going stale — the ticker
 
@@ -260,12 +275,12 @@ the timer is alive.
 1. Start the walk; confirm the camera follows the marker.
 2. **Drag the map away.** Keep walking: the camera must now stay where you put
    it, while the marker keeps moving.
-3. Tap **recenter**: it jumps back to the band and follows again.
+3. **Long-press** the round Navigate button: the map jumps back to the band and follows again.
 4. **Tap** (not drag) the map: following must survive — a tap is not a pan.
 
 ### F · Navigate
 
-With a fix, tap **Navigate** → a maps app opens on the band's coordinates. With
+With a fix, tap the round **Navigate** button → a maps app opens on the band's coordinates. With
 no fix the button is disabled.
 
 ### G · Reporting, but no fix
@@ -288,8 +303,8 @@ tracking pings that follow.
    check-ins…"* for a moment). If an older check-in is already in the newest
    100 history rows, it shows that one instead.
 2. Phone A: **Simulate Check-in**. Within a second or two the pill on Phone B
-   reads *"Last check-in: just now"*, and the Alert tab gains a green
-   *Check-in* row.
+   reads *"Last check-in: just now"*, and the panel gains a green
+   *Check-in* row at the top (History too).
 3. Wait a minute or two without sending: the pill ages to *"Last check-in: 1
    minute ago"*, *"2 minutes ago"*, ... on the 30 s ticker, with no new data.
 4. Phone A: **Start walk**. Tracking updates overwrite `latest` every 5 s; the
@@ -297,8 +312,9 @@ tracking pings that follow.
    would have lost it on the first ping.)
 5. Tap the pill: nothing happens, by design. With TalkBack on it is read as
    text, not as a button.
-6. Phone A: **Simulate Panic**. The Alert tab's Current status becomes the
-   panic exactly as before; the pill still shows the check-in.
+6. Phone A: **Simulate Panic**. The panel's top row, and History's Current
+   status, become the panic exactly as before; the pill still shows the
+   check-in.
 
 ---
 
@@ -319,18 +335,20 @@ payloads, missing fields and unknown types — see §9.
 
 | Symptom | Cause |
 |---|---|
-| `✗ Failed: HTTP 401 …` | Deployed rules are tighter than the draft. The sender writes unauthenticated; it would need an `?auth=` token. |
+| `✗ Failed: HTTP 401 on PUT /devices/…/history/…` | Under the append-only rules (Option A+, [`database-rules.md`](database-rules.md) §4), that history id already exists: an earlier send landed but its reply was lost, or a second sender is running. Relaunch the sender; it re-reads the keys and moves past them. |
+| `✗ Failed: HTTP 401 reading the history keys` | The rules require sign-in to read `devices/` (Option B or C). The sender reads unauthenticated; it would need an `?auth=` token. |
 | `✗ Failed: HTTP 400 …` | A `.validate` rejected the payload — check the enum name, `percent` 0–100, and all six required children. |
 | `✗ Failed:` a network error | No connectivity, or the database URL from `google-services.json` is wrong. |
 | **GPS badge stuck on "Acquiring…"** | Indoors or no satellite view. Sends fall back to Cebu City automatically — there is nothing to fix. |
 | **No location permission dialog on first launch** | Already denied once. Go to App Settings → Permissions → Location and grant it manually. |
 | **Sends show `(simulated)` even though permission is granted** | No fix has arrived yet — the badge will show "Acquiring…". Walk until outdoors or use the network provider fix. |
-| **Every tile reads "access blocked"** | The user agent. OSM blocks shared identifiers — `osmdroid` and the `com.example.*` prefix that is still this app's `applicationId`. The block is an **HTTP 200 PNG** with the text drawn in, so osmdroid caches and draws it and the log stays clean. `OsmdroidConfig.USER_AGENT` and `GuardBandTileSource` are the two halves of the fix; neither works alone — [`osmdroid.md`](osmdroid.md). |
+| **"Map unavailable", grey map** | The build has no MapTiler key. Add `MAPTILER_API_KEY` to `local.properties` and rebuild — [`osmdroid.md`](osmdroid.md) §4.4. |
+| **Grey map, tiles refused** | The MapTiler key, or its user-agent restriction not matching `OsmdroidConfig.USER_AGENT`, or the Free plan's monthly limit — [`osmdroid.md`](osmdroid.md) §6. |
 | **Map is blank/grey, everything else works** | `OsmdroidConfig` did not run before the `MapView` was built. It must be applied in `onCreate`, ahead of inflation. |
 | Marker never appears, panel does | Reporting without a fix (§G), or the payload has no `location`. |
 | Badge stuck on **Reporting** after the band goes quiet | The 30 s staleness ticker (§D). |
-| Camera won't follow the band | Expected after you pan. Tap recenter. |
-| Alert tab ignores your tracking updates | Correct (§5). Send a `PANIC` to see it react. |
+| Camera won't follow the band | Expected after you pan. Long-press the round Navigate button. |
+| Recent alerts panel / Alert history ignore your tracking updates | Correct (§5). Send a `PANIC` to see them react. |
 | Receiver shows nothing at all | Wrong Firebase project, no network, or you are looking at a different `deviceId`. There is only one: `guardband-001`. |
 | Sequence ids restarted at 1 | The history node was cleared. |
 | No Mock Sender icon | You installed a release build. |
@@ -347,4 +365,4 @@ payloads, missing fields and unknown types — see §9.
 | **Pairing** | One hardcoded device id, so every account watches the same band. |
 | **Malformed payloads, unknown types, missing fields** | Console only. The harness always writes a valid payload. |
 | **Map layers** | UI stub. |
-| **A public demo** | The draft rules leave the wearer's coordinates **world-readable**, and the map runs on OpenStreetMap's volunteer tile servers, whose usage policy is written for light use. Close both first. |
+| **A public demo** | The draft rules leave the wearer's coordinates **world-readable**. Close that first. The map runs on MapTiler's Free plan, which is non-commercial and pauses at its monthly limit. |

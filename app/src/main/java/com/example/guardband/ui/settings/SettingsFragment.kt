@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
  * deeper than this list, so the destructive action is not a stray tap away.
  *
  * View ids: ib_settings_back, tv_settings_title, tv_settings_account,
- * tv_settings_change_password, tv_settings_notifications, tv_settings_privacy,
+ * tv_settings_change_password, tv_settings_notifications,
  * tv_settings_privacy_notice, tv_settings_changelog, btn_settings_logout.
  */
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
@@ -51,8 +51,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         listOf(
             R.id.tv_settings_change_password,
-            R.id.tv_settings_notifications,
-            R.id.tv_settings_privacy
+            R.id.tv_settings_notifications
         ).forEach { id ->
             view.findViewById<TextView>(id)
                 .setOnClickListener { viewModel.onPlaceholderRowClicked() }

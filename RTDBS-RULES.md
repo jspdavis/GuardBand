@@ -1,11 +1,22 @@
 {
   "//": [
-    "GuardBand Realtime Database Security Rules - DEPLOYED 2026-10-11.",
+    "GuardBand Realtime Database Security Rules.",
     "",
-    "This file, with every '//' key stripped, IS the live ruleset. The",
-    "Console rejects the '//' keys, so strip them before pasting. Change the",
-    "rules HERE first, then paste the whole stripped file over the Console's",
-    "and publish, so this file and the Console never drift apart again.",
+    "STATUS 2026-10-19: PROPOSED, NOT DEPLOYED. The devices block below is",
+    "Option A+ from docs/database-rules.md section 4, PENDING JUL'S",
+    "DECISION. The users block is unchanged from the rules deployed on",
+    "2026-10-11. Until this is published, the live ruleset is the",
+    "2026-10-11 text kept in docs/database-rules.md section 9, which is also",
+    "the rollback. Once published, delete this STATUS paragraph.",
+    "",
+    "This file, with every '//' key stripped, is meant to BE the live",
+    "ruleset. The Console rejects the '//' keys, so strip them before",
+    "pasting (docs/database-rules.md section 7 has a one-line command).",
+    "Change the rules HERE first, then paste the whole stripped file over",
+    "the Console's and publish, so this file and the Console never drift.",
+    "",
+    "Every database path the app and the mock sender use, and who may read",
+    "or write it, is the inventory in docs/database-rules.md section 2.",
     "",
     "Project guardband-aae65, asia-southeast1, Spark plan.",
     "Related: CLAUDE.md, docs/privacy-and-consent.md, SCHEMA.md (the devices",
@@ -28,41 +39,14 @@
     "local Database Emulator under a demo- project id (never the real one), and",
     "after publishing the history read was re-checked against the real",
     "database: 401 before, 200 after. The project has no emulator suite of its",
-    "own, so the Playground list below is still the test suite to run after any",
+    "own, so the Playground list is still the test suite to run after any",
     "change."
   ],
   "// Rules Playground tests": [
-    "Console -> Realtime Database -> Rules -> Playground. Run all nine.",
-    "Use a real uid for AUTH_UID and a different one for OTHER_UID.",
-    "",
-    "1. READ  /users/AUTH_UID            authenticated as AUTH_UID   -> ALLOW",
-    "2. WRITE /users/AUTH_UID  value null, authenticated as AUTH_UID -> ALLOW",
-    "     (this is Delete account. If it denies, a .validate is being",
-    "      evaluated on a delete and something above is wrong.)",
-    "3. READ  /users/AUTH_UID            authenticated as OTHER_UID  -> DENY",
-    "4. READ  /users/AUTH_UID            unauthenticated             -> DENY",
-    "5. WRITE /users/AUTH_UID/emergency_contacts/c1",
-    "     {\"name\":\"A\",\"phone\":\"0917123456\",\"relationship\":\"\"}",
-    "     authenticated as AUTH_UID                                 -> DENY",
-    "     (not E.164 and not a PH mobile: ten digits, no +63)",
-    "     Then the same with \"+639171234567\"                        -> ALLOW",
-    "6. WRITE /users/AUTH_UID/consent",
-    "     {\"accepted\":false,\"acceptedAt\":0,\"version\":\"1.1\"}",
-    "     authenticated as AUTH_UID                                 -> DENY",
-    "     (accepted must be true)",
-    "     Then {\"accepted\":true,\"version\":\"1.1\"} with no acceptedAt -> DENY",
-    "     Then all three, acceptedAt = a future ms timestamp        -> DENY",
-    "     Then all three, acceptedAt = now                          -> ALLOW",
-    "7. READ  /devices/guardband-001/latest     unauthenticated      -> ALLOW",
-    "8. WRITE /devices/guardband-001/history/1  unauthenticated,",
-    "     a full valid payload per SCHEMA.md                        -> ALLOW",
-    "     (7 and 8 must still pass. The mock sender writes",
-    "      unauthenticated and the Track and Alert tabs read; if either",
-    "      flips, the demo breaks.)",
-    "9. READ  /devices/guardband-001/history    unauthenticated      -> ALLOW",
-    "     (the LIST, not one entry. This is the Alert tab's query and the",
-    "      mock sender's sequence-id lookup. It was DENIED under the rules",
-    "      live before 2026-10-11, which broke both.)"
+    "The list lives in docs/database-rules.md section 5, one place only, so",
+    "it cannot drift from a copy here. Console -> Realtime Database -> Rules",
+    "-> Playground; run every test there before publishing. Tests 1 to 9",
+    "are the nine that used to be listed here, unchanged."
   ],
   "// Why consent is not required here": [
     "It is tempting to add",
@@ -77,14 +61,22 @@
     "first; do not add the rule as a quick fix."
   ],
   "// devices": [
-    "DELIBERATELY UNCHANGED, pending device pairing.",
+    "PENDING JUL'S DECISION: the block below is Option A+ (recommended).",
+    "Options A, A+, B and C, what each breaks, and the full text of each",
+    "devices block are in docs/database-rules.md section 4. Switching",
+    "options means replacing the whole \"devices\" block with that one.",
     "",
-    "It is world-readable AND world-writable: '.read': true and '.write': true",
-    "on the wearer's coordinates. That is not an oversight, it is what the",
-    "current design needs - the debug mock sender PUTs here unauthenticated",
-    "over REST, as the band's firmware will, and the Track and Alert tabs read",
-    "it. There is one shared device id (guardband-001) because nothing pairs a",
-    "band to an account yet.",
+    "A+ keeps reads and writes open, as deployed, with one change: a",
+    "history entry can be CREATED but never overwritten or deleted, its",
+    "key must be a whole number, and it gets the same field checks as",
+    "latest. latest, command and status are exactly as deployed.",
+    "",
+    "It is still world-readable AND world-writable: '.read': true and",
+    "'.write' open on the wearer's coordinates. That is not an oversight,",
+    "it is what the current design needs - the debug mock sender PUTs here",
+    "unauthenticated over REST, as the band's firmware will, and Track and",
+    "Alert history read it. There is one shared device id (guardband-001)",
+    "because nothing pairs a band to an account yet.",
     "",
     "Closing it needs pairing: a device id per account, an auth token for the",
     "band, and AlertSender taught to send ?auth=. That is a separate piece of",
@@ -242,11 +234,34 @@
           ],
           ".read": true,
           "$sequenceId": {
+            "//": [
+              "Append-only (Option A+): '!data.exists()' lets a new entry be",
+              "written and refuses an overwrite or a delete, which would",
+              "otherwise let anyone erase a panic. SCHEMA.md already calls",
+              "history append-only, and the mock sender consumes each id once.",
+              "The Console bypasses rules, so a human can still clear it.",
+              "",
+              "The key must be a whole number: the app orders by key and",
+              "relies on integer-like keys (CLAUDE.md, 'Alert data'). The",
+              "field checks are latest's, which every valid payload already",
+              "passes there."
+            ],
             ".read": true,
-            ".write": true,
-            ".validate": "newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
+            ".write": "!data.exists()",
+            ".validate": "$sequenceId.matches(/^[0-9]+$/) && newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
             "type": {
               ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
+            },
+            "sequenceId": {
+              ".validate": "newData.isNumber()"
+            },
+            "battery": {
+              "percent": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+              },
+              "isCharging": {
+                ".validate": "newData.isBoolean()"
+              }
             }
           }
         },

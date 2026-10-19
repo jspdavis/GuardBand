@@ -152,11 +152,11 @@ class AlertSender {
     }
 
     /**
-     * History is written before `latest` on purpose. The Alert tab derives
-     * everything it shows from history, so a half-finished send that got as
+     * History is written before `latest` on purpose. The alert screens (Track's
+     * recent-alerts panel and Alert history) derive everything from history, so a half-finished send that got as
      * far as history is still visible there and only leaves the Track-facing
      * `latest` node stale. The reverse - `latest` written, history missing -
-     * would show the alert nowhere in the Alert tab and leave a permanent hole
+     * would show the alert on neither of them and leave a permanent hole
      * in the history. For the same reason the sequence id is consumed as soon
      * as its history row lands, so a retry cannot overwrite a good row.
      */
