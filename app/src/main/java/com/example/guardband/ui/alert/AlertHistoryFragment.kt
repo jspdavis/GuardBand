@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -34,7 +35,7 @@ import kotlinx.coroutines.launch
  *
  * View ids: ib_alert_history_back, tv_alert_history_title, alert_progress,
  * alert_error_view, alert_error_message, alert_retry_button,
- * alert_latest_card, alert_latest_dot, alert_latest_type, alert_latest_time,
+ * alert_latest_card, alert_latest_icon, alert_latest_type, alert_latest_time,
  * alert_latest_location, alert_latest_battery, alert_empty_view,
  * alert_history_list, tv_alert_latest_label, tv_alert_history_label.
  *
@@ -50,7 +51,7 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
     private lateinit var tvErrorMessage: TextView
     private lateinit var btnRetry: Button
     private lateinit var latestCard: View
-    private lateinit var latestDot: View
+    private lateinit var latestIcon: ImageView
     private lateinit var tvLatestType: TextView
     private lateinit var tvLatestTime: TextView
     private lateinit var tvLatestLocation: TextView
@@ -74,7 +75,7 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
         tvErrorMessage    = view.findViewById(R.id.alert_error_message)
         btnRetry          = view.findViewById(R.id.alert_retry_button)
         latestCard        = view.findViewById(R.id.alert_latest_card)
-        latestDot         = view.findViewById(R.id.alert_latest_dot)
+        latestIcon        = view.findViewById(R.id.alert_latest_icon)
         tvLatestType      = view.findViewById(R.id.alert_latest_type)
         tvLatestTime      = view.findViewById(R.id.alert_latest_time)
         tvLatestLocation  = view.findViewById(R.id.alert_latest_location)
@@ -119,7 +120,8 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
         val type = alert.alertType()
 
         tvLatestType.setText(AlertFormatting.typeLabel(type))
-        latestDot.backgroundTintList =
+        latestIcon.setImageResource(AlertFormatting.typeIcon(type))
+        latestIcon.imageTintList =
             ColorStateList.valueOf(requireContext().getColor(AlertFormatting.typeColor(type)))
         tvLatestTime.text = AlertFormatting.formatTimestamp(alert.timestamp)
 

@@ -58,7 +58,9 @@ object Changelog {
                 "Every screen with a top bar (Settings, Notifications, Alert history, Account information, Changelog) has a thin line under it.",
                 "Database rules reviewed against every path the app uses (docs/database-rules.md). Proposed, not yet published: band history entries can be added but no longer overwritten or deleted. Whether to require sign-in to read the band's data is still to be decided.",
                 "The band's marker on the Track map is a round picture with a white ring and a pointer: your Google photo, or your initials if you signed up with email. The tip of the pointer is the band's position.",
-                "612 unit tests, up from 576 (the Track avatar's tests went with it)."
+                "Alerts show a symbol in their colour instead of a dot: a red octagon for a panic, an orange warning triangle for low battery, a green tick for a check-in, and a grey question mark for a type the app does not know.",
+                "Track's four round buttons are the same smaller size, and the notifications bell lines up with the map buttons below it.",
+                "616 unit tests, up from 576 (the Track avatar's tests went with it)."
             ),
             commit = "eb3571b"
         ),

@@ -4,6 +4,7 @@ import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -33,7 +34,7 @@ class AlertHistoryAdapter : ListAdapter<Alert, AlertHistoryAdapter.AlertViewHold
 
     /** Binds one `item_alert.xml` row. */
     class AlertViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val viewDot: View = itemView.findViewById(R.id.view_item_alert_dot)
+        private val ivIcon: ImageView = itemView.findViewById(R.id.iv_item_alert_icon)
         private val tvType: TextView = itemView.findViewById(R.id.tv_item_alert_type)
         private val tvTime: TextView = itemView.findViewById(R.id.tv_item_alert_time)
         private val tvLocation: TextView = itemView.findViewById(R.id.tv_item_alert_location)
@@ -44,7 +45,8 @@ class AlertHistoryAdapter : ListAdapter<Alert, AlertHistoryAdapter.AlertViewHold
             val type = alert.alertType()
 
             tvType.setText(AlertFormatting.typeLabel(type))
-            viewDot.backgroundTintList =
+            ivIcon.setImageResource(AlertFormatting.typeIcon(type))
+            ivIcon.imageTintList =
                 ColorStateList.valueOf(context.getColor(AlertFormatting.typeColor(type)))
             tvTime.text = AlertFormatting.formatTimestamp(alert.timestamp)
 

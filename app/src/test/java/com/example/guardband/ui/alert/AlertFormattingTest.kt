@@ -1,5 +1,7 @@
 package com.example.guardband.ui.alert
 
+import com.example.guardband.R
+import com.example.guardband.data.model.AlertType
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -66,5 +68,33 @@ class AlertFormattingTest {
     fun `an out of range date is shown raw rather than rolled over`() {
         // isLenient = false, so month 13 is not quietly January of next year.
         assertEquals("2026-13-04T08:45:00Z", format("2026-13-04T08:45:00Z"))
+    }
+
+    // ── Type symbols ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `panic is the red alert octagon, low battery the orange warning triangle`() {
+        assertEquals(R.drawable.ic_alert_panic, AlertFormatting.typeIcon(AlertType.PANIC))
+        assertEquals(R.color.alert_panic, AlertFormatting.typeColor(AlertType.PANIC))
+        assertEquals(R.drawable.ic_warning, AlertFormatting.typeIcon(AlertType.LOW_BATTERY))
+        assertEquals(R.color.alert_low_battery, AlertFormatting.typeColor(AlertType.LOW_BATTERY))
+    }
+
+    @Test
+    fun `a check-in is the green tick, as on the Check-in pill`() {
+        assertEquals(R.drawable.ic_check_circle, AlertFormatting.typeIcon(AlertType.CHECKIN))
+        assertEquals(R.color.alert_checkin, AlertFormatting.typeColor(AlertType.CHECKIN))
+    }
+
+    @Test
+    fun `an unrecognised type gets its own question-mark symbol, not another type's`() {
+        assertEquals(R.drawable.ic_alert_unknown, AlertFormatting.typeIcon(null))
+    }
+
+    @Test
+    fun `every shown type has a different symbol`() {
+        val shown = listOf(AlertType.PANIC, AlertType.CHECKIN, AlertType.LOW_BATTERY, null)
+
+        assertEquals(shown.size, shown.map(AlertFormatting::typeIcon).toSet().size)
     }
 }
