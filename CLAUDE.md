@@ -136,7 +136,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 - **Password reset happens in the app, not in a browser.** `sendPasswordResetEmail` still sends Firebase's own email, but the link in it is an Android App Link onto `ResetPasswordActivity`, so the new password is set inside GuardBand. Nothing like `otpPlain` or `pendingPassword` is ever written, and there is still **no typed verification code** — see "Forgot password" below.
 - **No PII in logs.** Never log a uid, an email, a token or Firebase error text.
 - **Never overwrite `app/google-services.json` from another branch,** and don't touch it, `.firebaserc` or any signing config as a side effect of other work.
-- **The Security Rules are deployed (2026-10-11), and `RTDBS-RULES.md` is the source of truth.** That file with every `"//"` key stripped *is* the live ruleset; the Console rejects the `"//"` keys. Change the file first, then paste the whole stripped file and publish, so the two cannot drift. It carries nine Rules Playground tests, the only test suite rules get (the project has no emulator suite). Its `devices/` block is deliberately world-readable and world-writable; closing it needs device pairing. **`history` needs its own `.read`**, not just `$sequenceId`'s: a child's read never grants the parent, and the alert screens and the mock sender both read the list. Before the deploy that line was missing and both got 401.
+- **The Security Rules are deployed (2026-10-11), and `RTDBS-RULES.md` is the source of truth.** That file with every `"//"` key stripped *is* the live ruleset; the Console rejects the `"//"` keys. Change the file first, then paste the whole stripped file and publish, so the two cannot drift. **Since 2026-10-19 the file is ahead of the Console:** it proposes an append-only `devices/.../history` (Option A+), pending Jul's decision and not deployed; its STATUS paragraph says so, and [docs/database-rules.md](docs/database-rules.md) has the path inventory, the `devices/` options, the Rules Playground tests (the only test suite rules get; the project has no emulator suite), the rollout and the live text to roll back to. Its `devices/` block is deliberately world-readable and world-writable; closing it needs device pairing. **`history` needs its own `.read`**, not just `$sequenceId`'s: a child's read never grants the parent, and the alert screens and the mock sender both read the list. Before the deploy that line was missing and both got 401.
 
 ## Google sign-in
 
@@ -665,9 +665,11 @@ the Fragment sets this source even without a key.
   view creation and collapses them to an ⓘ (`track_map_attribution_info`)
   after 5 s or the first pan: the OSMF attribution guidelines' rule, which
   MapTiler has not confirmed (ask before a public release). Never hide them
-  by default, and keep them readable (10 sp is the floor). MapTiler's Free
-  plan also requires its logo bottom left; that is not done and waits on Jul
-  (it needs an asset).
+  by default, and keep them readable (10 sp is the floor).
+- **The MapTiler logo** (the Free plan requires it) is `track_map_logo`,
+  bottom left in the same row, linked to `MapTilerTileSource.LOGO_URL` by
+  `MapAttribution`. **It never collapses**; only the text goes to the ⓘ.
+  Keep the row's fixed height and the ⓘ's 48 dp touch target.
 
 **Its policy drops `FLAG_USER_AGENT_NORMALIZED`, and must keep dropping it.**
 `MAPNIK` is built with `TileSourcePolicy(2, 15)`, and 15 is all four flags

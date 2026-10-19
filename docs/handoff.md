@@ -1,12 +1,14 @@
 # Handoff
 
-**As of 2026-10-19 · `mvvm-main` at `896c8e3`, pushed, with
-`feature/alerts-into-track`, `feature/track-bottom-sheet` and
-`feature/maptiler-tiles` merged (last code commit `a194b65`); `main` is behind
-it again · 588 unit tests, 0
+**As of 2026-10-19 · `mvvm-main` with
+`feature/alerts-into-track`, `feature/track-bottom-sheet`,
+`feature/maptiler-tiles` and `feature/rules-and-logo` merged (last code commit
+`2ed649b`; the last merge was **not pushed** when this was written); `main` is
+behind it again · 588 unit tests, 0
 failures · run `git status -sb` to see
 whether anything is unpushed. Pick up from §4, starting with the MapTiler
-key: until a developer has one, the Track map reads "Map unavailable". Every branch written on
+key: until a developer has one, the Track map reads "Map unavailable". Then
+the `devices/` rules decision, which is waiting on Jul ([`database-rules.md`](database-rules.md)). Every branch written on
 2026-10-14 is merged (§3), the avatar and profile fixes landed as `0b8db04`,
 and the Alert tab is gone: its content is now Track's recent-alerts panel and
 the Alert history screen (§3). The
@@ -30,13 +32,13 @@ the files under §2, not here.
 | **Firebase Hosting** | Live at `guardband-aae65.web.app`: a root page, `/privacy`, `/delete-account`, `/.well-known/assetlinks.json`. Deploy from `hosting/` (§6). |
 | **Privacy Notice + delete page** | Every decision filled in, **still carrying the DRAFT banner**. The adviser review was parked on 2026-10-11 (§4). They will need one combined wording update after the 2026-10-14 work merges (§4). |
 | **Password reset** | The App Link claims Firebase's own handler, `guardband-aae65.firebaseapp.com/__/auth/action`, because the Console action URL cannot be changed. Verified on a device; manual pass passed. |
-| **Security Rules** | Deployed. [`../RTDBS-RULES.md`](../RTDBS-RULES.md), with its `//` keys stripped, *is* the live ruleset. |
+| **Security Rules** | Deployed 2026-10-11. **Since 2026-10-19 [`../RTDBS-RULES.md`](../RTDBS-RULES.md) is ahead of the Console**: an append-only `history` (Option A+), pending Jul's decision, not deployed; `users/` unchanged. Inventory, options, Playground tests, rollout and rollback text: [`database-rules.md`](database-rules.md). |
 | **Legacy nodes** | `password_resets`, `phone_index`, `email_index`: rules removed, data exported and deleted. |
 | **Firebase Analytics** | Removed. The notice says the app has no analytics; adding any back means changing the notice in the same commit. |
 | **Manual pass, 2026-10-11** | Consent, forgot password, Delete account: **passed**. Alert (now Track's recent-alerts panel and Alert history), Track, mock sender: **with a teammate** (§4). Delete account has **moved and changed since** (Account information, the deletion marker), so it needs passing again (§4). |
 | **Account safety, 2026-10-14** | Delete account lives in **Settings → Account information**, in a danger zone at the bottom. A half-finished deletion leaves `users/{uid}: { deletion_pending: true }` and resumes on the next sign-in; **no rules change** (checked in the emulator). Email/password accounts are sent a **verification email**; the link is handled in the app through the existing App Link. **Unverified password accounts are locked out** of everything behind Home until they verify (a client-side gate; Google accounts exempt). |
 | **Teammate UI pass, 2026-10-13** | `f34487b` (Jehan's redesign) did not compile; fixed and built on in `b05d769`, with real GPS in the mock sender from `c045738`. Everything that changed, and what is still open, is in [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md). **None of it has had a phone pass yet** (§4). |
-| **Map tiles, 2026-10-19** | **MapTiler** raster tiles (Streets, 256 px) replace OpenStreetMap's public server, merged from `feature/maptiler-tiles` (`1ca8177`). The key lives in each machine's `local.properties` as `MAPTILER_API_KEY`; without it the build still succeeds and the map says "Map unavailable" and requests nothing. Credits shown bottom right; **the Free plan's MapTiler logo is not on the map yet** (§4). [`osmdroid.md`](osmdroid.md) §4. |
+| **Map tiles, 2026-10-19** | **MapTiler** raster tiles (Streets, 256 px) replace OpenStreetMap's public server, merged from `feature/maptiler-tiles` (`1ca8177`). The key lives in each machine's `local.properties` as `MAPTILER_API_KEY`; without it the build still succeeds and the map says "Map unavailable" and requests nothing. Credits shown bottom right; the Free plan's **MapTiler logo** bottom left since `feature/rules-and-logo` (never collapses). [`osmdroid.md`](osmdroid.md) §4. |
 | **Release manifest, 2026-10-14** | Checked at the merge stage (`:app:processReleaseManifest`), last at `68055fb` and again on `feature/maptiler-tiles` (2026-10-19, unchanged): **no location permission** and no mock sender; the App Link entry is byte-identical to before email verification. Permissions present: `INTERNET`, `ACCESS_NETWORK_STATE`, `READ_GSERVICES` (reCAPTCHA, via Firebase Auth), and the app's own `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. The notice's "no location permission" line is accurate for release; debug builds do ask. Re-run after any dependency change (§6). |
 
 **Branches.** `mvvm-main` is ahead of `main`. Branch new work off `mvvm-main`
@@ -61,7 +63,7 @@ table now includes `main`.
 | The 2026-10-13 teammate UI pass: what was fixed, what to check | [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md) |
 | Privacy Notice, consent versions, hosted pages | [`privacy-and-consent.md`](privacy-and-consent.md) |
 | The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md): **authoritative** |
-| Security Rules | [`../RTDBS-RULES.md`](../RTDBS-RULES.md): the source of truth |
+| Security Rules | [`../RTDBS-RULES.md`](../RTDBS-RULES.md): the source of truth; [`database-rules.md`](database-rules.md): every path, the `devices/` options, the Playground tests, rollout |
 
 ---
 
@@ -147,9 +149,15 @@ table now includes `main`.
   `tile.openstreetmap.org`. The key is `MAPTILER_API_KEY` in each machine's
   `local.properties` (without it: "Map unavailable", no requests). The credits
   show bottom right and collapse to an ⓘ after 5 s or the first pan, per the
-  OSMF guidelines. Still open: Jul's key, the Free plan's logo, a phone check
-  with the key, and asking MapTiler about the collapse (§4).
+  OSMF guidelines. Still open: Jul's key, a phone check with the key, and
+  asking MapTiler about the collapse (§4).
   [`osmdroid.md`](osmdroid.md) §4.
+- **MapTiler logo** (`feature/rules-and-logo`, 2026-10-19). Bottom left of
+  the Track map, in the credits' row, 20 dp tall, linked to maptiler.com,
+  and it **never collapses**. The row grew from 18 to 24 dp and the ⓘ from
+  40 to 48 dp; the check-in pill and the buttons above it sit 14 dp higher.
+  Open: on a narrow screen or with a large system font the expanded credit
+  can overlap the logo (DECISION: Jul, [`osmdroid.md`](osmdroid.md) §4.6).
 
 ### In flight
 
@@ -159,7 +167,8 @@ trusting that, run `git branch --no-merged mvvm-main`; only `main` and the MVP
 checkpoint branches should be listed.
 
 `feature/maptiler-tiles` was merged on 2026-10-19 **before** a phone check
-with a real key and **without** the MapTiler logo, both still open (§4).
+with a real key, which is still open (§4). The logo followed in
+`feature/rules-and-logo`.
 
 ---
 
@@ -170,9 +179,11 @@ with a real key and **without** the MapTiler logo, both still open (§4).
 | | Who | Notes |
 |---|---|---|
 | **Phone pass of everything since 2026-10-13** | anyone with the phone | Section A of [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md): tab layouts, back arrows, gear/bell on every tab, the shorter icon-only bar, the Track avatar, the consent step, Welcome (once only), the reset success screen and the launcher icon. **Plus the 2026-10-14 changes:** every button label (capitals), the Welcome and reset-success images, the Check-in pill (starts empty, updates from the mock sender, not tappable), the contact pencil icon, the Google photo on the avatar (Google account: round photo; email account: default icon; airplane mode: default icon; switching accounts: no stale photo), the avatar opening Profile (the Track avatar was removed on 2026-10-19, so check the photo on Profile only), the Changelog. **And account safety** ([`email-verification.md`](email-verification.md) §7 for the email half): Delete account gone from Settings' own list and at the bottom of Account information, with the confirmation dialog; a new email/password sign-up gets a verification email and reads "Not verified"; the link opens the app (or the browser fallback) and the status turns "Verified" on return; Resend works once, then counts down; a Google account reads "Verified" with no Resend; the reset link still works; and a pending deletion resumes on the next sign-in instead of making a blank profile. **That last one is hard to produce with airplane mode** (the window between the two calls is milliseconds): set `users/{uid}/deletion_pending: true` on a throwaway account in the Console, then sign in. **And the consent gate:** [`privacy-and-consent.md`](privacy-and-consent.md) §6, steps 9 to 16. |
-| **MapTiler key and logo** | Jul | **Blocks the map on every machine.** Create a dedicated GuardBand key in the MapTiler dashboard, restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), and give it to each developer privately for their own `local.properties` (`MAPTILER_API_KEY=…`, never committed; then Sync and rebuild). **Decide the logo:** the Free plan requires the MapTiler logo, linked to maptiler.com, bottom left of the map; it needs an asset (MapTiler publishes `logo.svg`), so it was not guessed. [`osmdroid.md`](osmdroid.md) §4.4 and §4.6. |
-| **Phone check of the MapTiler map** | whoever has the key first | Merged without one. With the key: tiles render; the credit shows, collapses to the ⓘ after 5 s or a pan, and its links open; pan, zoom, follow and markers behave as before; logcat shows tile requests to `api.maptiler.com` only. Then confirm the zoom limit (22) against the style's `tiles.json`. [`osmdroid.md`](osmdroid.md) §8. Without a key it was checked on a phone on 2026-10-19: "Map unavailable", no crash. |
+| **MapTiler key** | Jul | **Blocks the map on every machine.** Create a dedicated GuardBand key in the MapTiler dashboard, restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), and give it to each developer privately for their own `local.properties` (`MAPTILER_API_KEY=…`, never committed; then Sync and rebuild). The logo is done (§3). [`osmdroid.md`](osmdroid.md) §4.4. |
+| **Credit and logo on narrow screens** | Jul | The expanded credit and the logo need about 319 dp side by side at the default font size, so they touch on a 320 dp phone and overlap on a 360 dp one at a 1.3× system font. Decide whether the credit should wrap onto its own row above the logo when they do not fit. [`osmdroid.md`](osmdroid.md) §4.6. |
+| **Phone check of the MapTiler map** | whoever has the key first | Merged without one. With the key: tiles render; the credit shows, collapses to the ⓘ after 5 s or a pan, and its links open; the MapTiler logo shows bottom left, stays when the credit collapses, and opens maptiler.com; pan, zoom, follow and markers behave as before; logcat shows tile requests to `api.maptiler.com` only. Then confirm the zoom limit (22) against the style's `tiles.json`. [`osmdroid.md`](osmdroid.md) §8. Without a key it was checked on a phone on 2026-10-19: "Map unavailable", no crash. |
 | **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. Their guide says only that the text "must appear on every map"; the ⓘ collapse follows the OSMF guidelines, not a MapTiler statement. If they refuse, keep the credit always expanded ([`osmdroid.md`](osmdroid.md) §4.6 says how). |
+| **Decide `devices/` and publish the rules** | Jul | Pick A, A+ (recommended), B or C ([`database-rules.md`](database-rules.md) §4); B breaks the mock sender and C breaks every receiver until pairing. Then follow §7 there: save the live rules, strip, run the §5 Playground tests, publish, check the app and the mock sender. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
 | **Mock sender GPS on Phone A** | anyone with two phones | Allow location: alerts carry the phone's real position. Refuse: they fall back to the Cebu City point. Pre-grant location on any phone used for a demo, or the prompt appears mid-demo. |
 | **Two app-wide theme changes** | Jehan + Jul | Confirm they are intended: outlined buttons went from 8 dp to 28 dp corners, and every sign-up screen's top padding from 96 dp to 24 dp (`themes.xml`, `f34487b`). |
 | **Test Track (map and recent-alerts panel), Alert history and the mock sender** | teammate | Never had a full human pass. Checklists: [`mock-sender-and-receiver.md` §6](mock-sender-and-receiver.md), [`alert-data.md` §12](alert-data.md) and the 2026-10-19 block in [`home-host-and-bottom-nav.md` §12](home-host-and-bottom-nav.md). Pan-and-follow matters most, now with the panel over the bottom of the map: a drag that starts on the panel must not stop the map following. (The staleness badge is no longer on screen: the Track status panel was removed on 2026-10-14.) Before 2026-10-11 every history read was denied by the rules, so this has effectively never worked end to end until now. |
@@ -216,8 +227,9 @@ with a real key and **without** the MapTiler logo, both still open (§4).
 ## 5. Needs a human, not an agent
 
 - **Changing the Security Rules.** Edit `RTDBS-RULES.md`, strip every `"//"`
-  key, paste the whole file over the Console's, run the nine Playground tests
-  (or the emulator recipe in §6), publish. Copy the live rules out first. The
+  key, paste the whole file over the Console's, run the Playground tests in
+  [`database-rules.md`](database-rules.md) §5 (or the emulator recipe in §6),
+  publish. Copy the live rules out first. The steps are §7 of that file. The
   deletion-pending marker needed **no** rule. If anyone ever adds
   `"$other": { ".validate": false }` at `users/$uid`, give `deletion_pending`
   a rule of its own in the same change, or Delete account fails at step 2.

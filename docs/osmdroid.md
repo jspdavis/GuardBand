@@ -10,7 +10,7 @@ involved.
 | **Library** | `org.osmdroid:osmdroid-android:6.1.20` |
 | **Branch** | `mvvm-main` |
 | **Tiles** | MapTiler Cloud, Streets style, 256 px raster, since 2026-10-19 (OpenStreetMap's public server before that) |
-| **Status** | MapTiler swap merged into `mvvm-main` (`1ca8177`), 588 tests passing. **MapTiler tiles not yet confirmed on a device**, which needs a real key — see §8. **The MapTiler logo is still missing** (§4.6). |
+| **Status** | MapTiler swap merged into `mvvm-main` (`1ca8177`), 588 tests passing. **MapTiler tiles not yet confirmed on a device**, which needs a real key — see §8. The MapTiler logo is on the map since 2026-10-19 (§4.6). |
 | **Owns it** | [`ui/track/OsmdroidConfig.kt`](../app/src/main/java/com/example/guardband/ui/track/OsmdroidConfig.kt), [`ui/track/MapTilerTileSource.kt`](../app/src/main/java/com/example/guardband/ui/track/MapTilerTileSource.kt) |
 | **Uses it** | [`ui/track/TrackFragment.kt`](../app/src/main/java/com/example/guardband/ui/track/TrackFragment.kt) only |
 | **Related** | [`../CLAUDE.md`](../CLAUDE.md) ("Track and map"), [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) (troubleshooting) |
@@ -266,7 +266,38 @@ for a dynamic map in a mobile app:
 | Requirement | Status |
 |---|---|
 | **Text, on every map:** "© MapTiler" linked to `https://www.maptiler.com/copyright/` and "© OpenStreetMap contributors" linked to `https://www.openstreetmap.org/copyright`, bottom right | **Done, collapsible** (below). `track_map_attribution`, a `TextView` whose text and links come from `MapTilerTileSource.attribution()`, bottom right, just above the strip the collapsed sheet covers; `track_map_attribution_info`, the ⓘ, in the same corner. |
-| **Logo, Free plan only:** the MapTiler logo, linked to `https://www.maptiler.com/`, bottom left | **Not done — waiting on Jul.** It needs an asset (MapTiler publishes `https://api.maptiler.com/resources/logo.svg` and a press kit). Paid plans can drop the logo; nobody can drop the text without MapTiler's written permission. |
+| **Logo, Free plan only:** the MapTiler logo, linked to `https://www.maptiler.com/`, bottom left | **Done (2026-10-19), never collapses.** `track_map_logo`, an `ImageView` of `@drawable/logo_maptiler`, bottom left in the credits' row; `MapAttribution` opens `MapTilerTileSource.LOGO_URL` on a tap. Paid plans can drop the logo; nobody can drop the text without MapTiler's written permission. |
+
+**The logo (2026-10-19).** The source was MapTiler's own PNG (812 × 212). It was
+cropped to its visible bounds (721 × 186, so the transparent margin does not
+eat the 20 dp) and exported once per density bucket, `drawable-mdpi` to
+`drawable-xxxhdpi`, at 20 dp tall (20 px to 80 px). It is drawn 20 dp tall,
+width from the aspect ratio (about 78 dp), never stretched or tinted, on the
+same 70% white (`map_attribution_bg`) and 4 dp side padding as the credit,
+with 2 dp above and below. Content description "MapTiler". **It must stay
+visible:** `MapAttribution` never changes its visibility, the credit's
+collapse does not touch it, and the collapsed sheet does not cover it (it
+sits on the same `space_track_sheet_peek` edge as the credit). To replace the
+asset, keep the five buckets and crop to the visible bounds first.
+
+**The shared row is 24 dp** (`track_map_attribution_height`, 18 dp before the
+logo), so the logo fits inside its 2 dp padding. The **ⓘ is 48 dp**, the
+minimum touch target, around the same 24 dp disc as before (its inset went
+from 8 to 12 dp). Being taller than the row, it would reach into the check-in
+pill above on a narrow screen, so the pill's bottom margin went from 16 to
+24 dp. The pill and the round buttons above it therefore sit 14 dp higher than
+before; they still never move when the credit collapses.
+
+**On narrow screens the expanded credit and the logo can overlap.** At the
+default font size the row needs about 319 dp (logo and margins 94 dp, the
+credit line 210 dp at 10 sp plus 16 dp of padding and margin): a 360 dp phone
+has about 40 dp to spare and a 320 dp one none. The credit is in `sp` and the
+logo in `dp`, so a larger system font closes the gap: on a 360 dp phone they
+touch at about 1.2× (Android's "Large" is 1.3×). Nothing was shortened. **Not
+fixed yet (DECISION: Jul):** the proposal is to let the credit wrap onto a row
+of its own above the logo when the two do not fit, for example with a
+ConstraintLayout `Flow` in `wrap_mode="chain"`, which keeps an `INVISIBLE`
+credit's space so the collapse still does not move anything.
 
 Before 2026-10-19 the map showed **no** attribution at all: the OSM source had
 a copyright string, but nothing drew it (osmdroid only does with a
@@ -304,9 +335,10 @@ positioning and amount of time that it is visible". The collapsed line is
 
 **Never hide it by default** — behind the sheet, off screen, or only in
 Settings. Both MapTiler and the OSMF require it on the map without the user
-having to go looking. Dragging the sheet up still covers it, as it covers the
-map controls; that is the user's own, temporary action, and the sheet at rest
-never does.
+having to go looking. The same goes for the logo, which may not even
+collapse. Dragging the sheet up still covers both, as it covers the map
+controls; that is the user's own, temporary action, and the sheet at rest
+(collapsed, `BottomSheetBehavior`'s default) never does.
 
 ### 4.7 Zoom range
 
@@ -393,7 +425,7 @@ MapTiler's **Free plan**:
 - **It pauses at its monthly limit** instead of billing. Past the cap the key
   stops serving tiles until the next period, so a busy month leaves every
   install with a grey map. The cache (§4.5) is what keeps a demo under it.
-- **It requires the MapTiler logo** on the map (§4.6).
+- **It requires the MapTiler logo** on the map, which is there (§4.6).
 
 **The key and the user agent are both baked into the installed APK** (§4.4).
 If either has to change, installed copies keep sending the old values until
@@ -434,7 +466,8 @@ reasoning can be right and a typo'd base URL still gives you a grey map.
 A green build proves **none** of this. The compiler cannot tell you that the
 user agent reached the server, that the tile source is the one being used, or
 that a tile came back. For the MapTiler swap, check on a device with a real
-key: tiles render, the credits show and their links open, and logcat (or a
+key: tiles render, the credits show and their links open, the logo shows
+bottom left, stays when the credit collapses and opens maptiler.com, and logcat (or a
 network inspector) shows tile requests to `api.maptiler.com` and none to
 `tile.openstreetmap.org`. Then build once **without** the key and check for
 "Map unavailable", no crash and no tile requests at all. Update the Status row

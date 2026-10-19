@@ -45,11 +45,13 @@ gate.
 | **Network on both phones** | Everything goes through the database; there is no local or Bluetooth path. |
 | **One device id** | Everything reads and writes `devices/guardband-001` (`DeviceConstants.DEFAULT_DEVICE_ID`). There is no pairing yet, so **every account sees the same band.** |
 
-**On the Security Rules.** The sender's writes depend on `".write": true` under
-`devices/{deviceId}`, and the receiver's reads on `".read": true`. That is what
-the draft in `RTDBS-RULES.md` says; nobody has read the *deployed* rules from
-the tooling side. If a send comes back `401`, the live rules are tighter than
-the draft and the sender needs an `?auth=` token added.
+**On the Security Rules.** The sender's writes depend on open writes under
+`devices/{deviceId}`, and both its sequence-id seed read and the receiver's
+reads on `".read": true`. The rules deployed on 2026-10-11 allow all of it.
+The proposal pending in `RTDBS-RULES.md` (Option A+,
+[`database-rules.md`](database-rules.md) §4) keeps all of it working but makes
+history **append-only**: a history id can be written once, never again. If a
+send comes back `401`, see §8.
 
 ---
 
@@ -333,7 +335,8 @@ payloads, missing fields and unknown types — see §9.
 
 | Symptom | Cause |
 |---|---|
-| `✗ Failed: HTTP 401 …` | Deployed rules are tighter than the draft. The sender writes unauthenticated; it would need an `?auth=` token. |
+| `✗ Failed: HTTP 401 on PUT /devices/…/history/…` | Under the append-only rules (Option A+, [`database-rules.md`](database-rules.md) §4), that history id already exists: an earlier send landed but its reply was lost, or a second sender is running. Relaunch the sender; it re-reads the keys and moves past them. |
+| `✗ Failed: HTTP 401 reading the history keys` | The rules require sign-in to read `devices/` (Option B or C). The sender reads unauthenticated; it would need an `?auth=` token. |
 | `✗ Failed: HTTP 400 …` | A `.validate` rejected the payload — check the enum name, `percent` 0–100, and all six required children. |
 | `✗ Failed:` a network error | No connectivity, or the database URL from `google-services.json` is wrong. |
 | **GPS badge stuck on "Acquiring…"** | Indoors or no satellite view. Sends fall back to Cebu City automatically — there is nothing to fix. |

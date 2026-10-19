@@ -38,7 +38,7 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-19",
-            title = "Alerts move onto the Track tab; Track's controls tidied; MapTiler map tiles; Settings tidied",
+            title = "Alerts move onto the Track tab; Track's controls tidied; MapTiler map tiles and logo; Settings tidied",
             changes = listOf(
                 "The bottom bar has three icons: Track, Contacts and Profile. The Alert tab is gone.",
                 "Track shows the newest three alerts in a panel over the bottom of the map, which can be collapsed.",
@@ -50,12 +50,15 @@ object Changelog {
                 "The Contacts tab's icon is a phone.",
                 "The Track map's tiles come from MapTiler instead of OpenStreetMap's public servers. Each developer keeps the key in local.properties; without one the map says \"Map unavailable\" and loads nothing.",
                 "The map shows its credits (© MapTiler © OpenStreetMap contributors, each a link), which shrink to an ⓘ button after 5 seconds or the first pan.",
+                "The MapTiler logo, which MapTiler's free plan requires, sits bottom left of the map and links to maptiler.com. Unlike the credits it never shrinks away.",
+                "The ⓘ button is a full 48dp touch target; the check-in pill above it moved up slightly to make room.",
                 "Settings has one privacy row, Privacy Notice; the \"Privacy & security\" placeholder, which only said \"Coming soon\", is gone.",
                 "Settings, Contacts, Profile, Notifications and Alert history have a white background, and the Settings rows no longer sit in a raised card.",
                 "Every screen with a top bar (Settings, Notifications, Alert history, Account information, Changelog) has a thin line under it.",
+                "Database rules reviewed against every path the app uses (docs/database-rules.md). Proposed, not yet published: band history entries can be added but no longer overwritten or deleted. Whether to require sign-in to read the band's data is still to be decided.",
                 "588 unit tests, up from 576 (the Track avatar's tests went with it)."
             ),
-            commit = "a194b65"
+            commit = "2ed649b"
         ),
         ChangelogEntry(
             date = "2026-10-15",
