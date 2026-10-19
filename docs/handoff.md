@@ -1,14 +1,13 @@
 # Handoff
 
-**As of 2026-10-19 · `mvvm-main` with
+**As of 2026-10-19 · `mvvm-main`, pushed, with
 `feature/alerts-into-track`, `feature/track-bottom-sheet`,
 `feature/maptiler-tiles`, `feature/rules-and-logo` and
-`feature/credit-overlap-fix` merged (last code commit `7deff47`; the last two
-merges were **not pushed** when this was written); `main` is
+`feature/credit-overlap-fix` merged (last code commit `7deff47`); `main` is
 behind it again · 588 unit tests, 0
 failures · run `git status -sb` to see
 whether anything is unpushed. Pick up from §4, starting with the MapTiler
-key: until a developer has one, the Track map reads "Map unavailable". Then
+key: a developer without one sees "Map unavailable" on Track. Then
 the `devices/` rules decision, which is waiting on Jul ([`database-rules.md`](database-rules.md)). Every branch written on
 2026-10-14 is merged (§3), the avatar and profile fixes landed as `0b8db04`,
 and the Alert tab is gone: its content is now Track's recent-alerts panel and
@@ -40,7 +39,7 @@ the files under §2, not here.
 | **Account safety, 2026-10-14** | Delete account lives in **Settings → Account information**, in a danger zone at the bottom. A half-finished deletion leaves `users/{uid}: { deletion_pending: true }` and resumes on the next sign-in; **no rules change** (checked in the emulator). Email/password accounts are sent a **verification email**; the link is handled in the app through the existing App Link. **Unverified password accounts are locked out** of everything behind Home until they verify (a client-side gate; Google accounts exempt). |
 | **Teammate UI pass, 2026-10-13** | `f34487b` (Jehan's redesign) did not compile; fixed and built on in `b05d769`, with real GPS in the mock sender from `c045738`. Everything that changed, and what is still open, is in [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md). **None of it has had a phone pass yet** (§4). |
 | **Map tiles, 2026-10-19** | **MapTiler** raster tiles (Streets, 256 px) replace OpenStreetMap's public server, merged from `feature/maptiler-tiles` (`1ca8177`). The key lives in each machine's `local.properties` as `MAPTILER_API_KEY`; without it the build still succeeds and the map says "Map unavailable" and requests nothing. Credits shown bottom right; the Free plan's **MapTiler logo** bottom left since `feature/rules-and-logo` (never collapses). [`osmdroid.md`](osmdroid.md) §4. |
-| **Release manifest, 2026-10-14** | Checked at the merge stage (`:app:processReleaseManifest`), last at `68055fb` and again on `feature/maptiler-tiles` (2026-10-19, unchanged): **no location permission** and no mock sender; the App Link entry is byte-identical to before email verification. Permissions present: `INTERNET`, `ACCESS_NETWORK_STATE`, `READ_GSERVICES` (reCAPTCHA, via Firebase Auth), and the app's own `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. The notice's "no location permission" line is accurate for release; debug builds do ask. Re-run after any dependency change (§6). |
+| **Release manifest, 2026-10-14** | Checked at the merge stage (`:app:processReleaseManifest`), last at `68055fb` and again on `feature/maptiler-tiles`, `feature/rules-and-logo` and `feature/credit-overlap-fix` (2026-10-19, unchanged each time): **no location permission** and no mock sender; the App Link entry is byte-identical to before email verification. Permissions present: `INTERNET`, `ACCESS_NETWORK_STATE`, `READ_GSERVICES` (reCAPTCHA, via Firebase Auth), and the app's own `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. The notice's "no location permission" line is accurate for release; debug builds do ask. Re-run after any dependency change (§6). |
 
 **Branches.** `mvvm-main` is ahead of `main`. Branch new work off `mvvm-main`
 and merge back with `--no-ff`, as `feature/trust-gaps` was. CLAUDE.md's branch
@@ -166,13 +165,19 @@ table now includes `main`.
 ### In flight
 
 Nothing: every branch written on 2026-10-14, `feature/alerts-into-track`,
-`feature/track-bottom-sheet` and `feature/maptiler-tiles` are merged. Before
-trusting that, run `git branch --no-merged mvvm-main`; only `main` and the MVP
-checkpoint branches should be listed.
+`feature/track-bottom-sheet`, `feature/maptiler-tiles`,
+`feature/rules-and-logo` and `feature/credit-overlap-fix` are merged and
+pushed. Before trusting that, run `git branch --no-merged mvvm-main`; only
+`main` and the MVP checkpoint branches should be listed.
 
-`feature/maptiler-tiles` was merged on 2026-10-19 **before** a phone check
-with a real key, which is still open (§4). The logo followed in
-`feature/rules-and-logo`.
+`feature/maptiler-tiles` was merged on 2026-10-19 before any phone check with
+a key. Part of that check happened the same day (§4); the rest is still open.
+The logo followed in `feature/rules-and-logo`, and the narrow-screen fix for
+the credit in `feature/credit-overlap-fix`.
+
+**Rules proposal not deployed.** `RTDBS-RULES.md` is ahead of the Console
+(Option A+, pending Jul). Do not describe it as the live ruleset until someone
+has published it ([`database-rules.md`](database-rules.md) §7).
 
 ---
 
@@ -183,8 +188,8 @@ with a real key, which is still open (§4). The logo followed in
 | | Who | Notes |
 |---|---|---|
 | **Phone pass of everything since 2026-10-13** | anyone with the phone | Section A of [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md): tab layouts, back arrows, gear/bell on every tab, the shorter icon-only bar, the Track avatar, the consent step, Welcome (once only), the reset success screen and the launcher icon. **Plus the 2026-10-14 changes:** every button label (capitals), the Welcome and reset-success images, the Check-in pill (starts empty, updates from the mock sender, not tappable), the contact pencil icon, the Google photo on the avatar (Google account: round photo; email account: default icon; airplane mode: default icon; switching accounts: no stale photo), the avatar opening Profile (the Track avatar was removed on 2026-10-19, so check the photo on Profile only), the Changelog. **And account safety** ([`email-verification.md`](email-verification.md) §7 for the email half): Delete account gone from Settings' own list and at the bottom of Account information, with the confirmation dialog; a new email/password sign-up gets a verification email and reads "Not verified"; the link opens the app (or the browser fallback) and the status turns "Verified" on return; Resend works once, then counts down; a Google account reads "Verified" with no Resend; the reset link still works; and a pending deletion resumes on the next sign-in instead of making a blank profile. **That last one is hard to produce with airplane mode** (the window between the two calls is milliseconds): set `users/{uid}/deletion_pending: true` on a throwaway account in the Console, then sign in. **And the consent gate:** [`privacy-and-consent.md`](privacy-and-consent.md) §6, steps 9 to 16. |
-| **MapTiler key** | Jul | **Blocks the map on every machine.** Create a dedicated GuardBand key in the MapTiler dashboard, restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), and give it to each developer privately for their own `local.properties` (`MAPTILER_API_KEY=…`, never committed; then Sync and rebuild). The logo is done (§3). [`osmdroid.md`](osmdroid.md) §4.4. |
-| **Phone check of the MapTiler map** | whoever has the key first | Merged without one. With the key: tiles render; the credit shows, collapses to the ⓘ after 5 s or a pan, and its links open; the MapTiler logo shows bottom left, stays when the credit collapses, and opens maptiler.com; pan, zoom, follow and markers behave as before; logcat shows tile requests to `api.maptiler.com` only. Then confirm the zoom limit (22) against the style's `tiles.json`. [`osmdroid.md`](osmdroid.md) §8. Without a key it was checked on a phone on 2026-10-19: "Map unavailable", no crash. |
+| **MapTiler key** | Jul | **Blocks the map on every machine without one.** One development machine had a key by 2026-10-19 (tiles rendered on a phone); whether it is the dedicated, restricted key below is not recorded. Create a dedicated GuardBand key in the MapTiler dashboard, restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), and give it to each developer privately for their own `local.properties` (`MAPTILER_API_KEY=…`, never committed; then Sync and rebuild). The logo is done (§3). [`osmdroid.md`](osmdroid.md) §4.4. |
+| **Phone check of the MapTiler map** | whoever has the key | **Partly done 2026-10-19**, with a key, on a Realme RMX5111, during the credit-overlap size checks: MapTiler tiles render; the credit shows, collapses to the ⓘ after 5 s, and the ⓘ brings it back; the logo shows bottom left and stays when the credit collapses; the marker shows. **Still open:** tapping the two credit links and the logo (each should open its page); pan, zoom and follow behaving as before; logcat showing tile requests to `api.maptiler.com` only; and the zoom limit (22) against the style's `tiles.json`. [`osmdroid.md`](osmdroid.md) §8. Without a key it was checked on a phone on 2026-10-19: "Map unavailable", no crash. |
 | **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. Their guide says only that the text "must appear on every map"; the ⓘ collapse follows the OSMF guidelines, not a MapTiler statement. If they refuse, keep the credit always expanded ([`osmdroid.md`](osmdroid.md) §4.6 says how). |
 | **Decide `devices/` and publish the rules** | Jul | Pick A, A+ (recommended), B or C ([`database-rules.md`](database-rules.md) §4); B breaks the mock sender and C breaks every receiver until pairing. Then follow §7 there: save the live rules, strip, run the §5 Playground tests, publish, check the app and the mock sender. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
 | **Mock sender GPS on Phone A** | anyone with two phones | Allow location: alerts carry the phone's real position. Refuse: they fall back to the Cebu City point. Pre-grant location on any phone used for a demo, or the prompt appears mid-demo. |
