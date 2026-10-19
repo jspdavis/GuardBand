@@ -20,6 +20,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.data.model.Alert
+import com.example.guardband.ui.alert.AlertEvent
+import com.example.guardband.ui.alert.AlertViewModel
 import com.example.guardband.ui.avatar.AvatarImage
 import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -34,19 +36,23 @@ import org.osmdroid.views.overlay.Marker
 
 /**
  * Track tab (the default tab): the band's last known position on an
- * OpenStreetMap map and the bottom actions. The check-in pill is the
- * screen's one status line; the band status panel (reporting badge, last
- * seen, battery) was removed on 2026-10-14.
+ * OpenStreetMap map, the bottom actions, and the recent-alerts panel over the
+ * bottom of the map. The check-in pill is the screen's one status line; the
+ * band status panel (reporting badge, last seen, battery) was removed on
+ * 2026-10-14.
  *
  * View IDs, so the layout can be restyled without touching this file:
  * `track_map_view`, `track_empty_view`, `track_recenter_button`,
  * `track_navigate_button`, `track_layers_button`, `track_checkin_pill` (a
- * read-only status, not a button), plus the top bar's `iv_track_avatar`,
+ * read-only status, not a button), `track_recent_alerts_panel` (its own ids
+ * are listed on [RecentAlertsPanel]), plus the top bar's `iv_track_avatar`,
  * `ib_track_notifications` and `ib_track_settings`.
  *
  * Gear and bell forward to the shared [HomeViewModel], which asks the host to
  * show Settings or Notifications. The avatar does the same for the Profile
- * tab.
+ * tab, and the panel's "See all" for the Alert history screen. The panel's
+ * rows come from the host-scoped [AlertViewModel], the same instance the
+ * history screen reads.
  *
  * **Recentring lives here, not in the ViewModel.** Where the camera is pointing
  * is view state, like a scroll offset: it survives nothing, means nothing to
@@ -67,9 +73,16 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     private lateinit var tvEmpty: TextView
     private lateinit var btnNavigate: Button
     private lateinit var tvCheckIn: TextView
+    private lateinit var recentAlerts: RecentAlertsPanel
 
     private val viewModel: TrackViewModel by viewModels { TrackViewModel.Factory }
     private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
+
+    /**
+     * Host-scoped, so the panel and the Alert history screen share one
+     * instance and one subscription. See [AlertViewModel].
+     */
+    private val alertViewModel: AlertViewModel by activityViewModels { AlertViewModel.Factory }
 
     /** The band's one marker, created on the first fix. */
     private var marker: Marker? = null
@@ -102,6 +115,15 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         tvCheckIn      = view.findViewById(R.id.track_checkin_pill)
 
         avatarImage    = AvatarImage(ivAvatar)
+
+        recentAlerts = RecentAlertsPanel(
+            view.findViewById(R.id.track_recent_alerts_panel),
+            onSeeAll = { homeViewModel.onSeeAllAlertsClicked() },
+            onRetry = { alertViewModel.onRetryClicked() }
+        )
+        savedInstanceState?.let {
+            recentAlerts.setExpanded(it.getBoolean(STATE_RECENT_ALERTS_EXPANDED, true))
+        }
 
         setUpMap()
 
@@ -138,6 +160,26 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
                 viewModel.uiState.map { it.avatarUrl }.distinctUntilChanged()
                     .collect(avatarImage::show)
             }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                alertViewModel.uiState.collect(recentAlerts::render)
+            }
+        }
+        // Collected here as well as on the history screen: each event reaches
+        // one collector, and without this one a failure notice would wait in
+        // the channel until the history screen first opened, then show late.
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                alertViewModel.events.collect(::handleAlertEvent)
+            }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (::recentAlerts.isInitialized) {
+            outState.putBoolean(STATE_RECENT_ALERTS_EXPANDED, recentAlerts.isExpanded)
         }
     }
 
@@ -290,6 +332,13 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         }
     }
 
+    private fun handleAlertEvent(event: AlertEvent) {
+        when (event) {
+            is AlertEvent.ShowMessage ->
+                Toast.makeText(requireContext(), event.text, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     /**
      * D6: hands the position to whatever maps app the device has, via a plain
      * `ACTION_VIEW` on Google Maps' keyless universal URL.
@@ -315,5 +364,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
         /** Street level, used once when the first fix arrives. */
         const val FIX_ZOOM = 16.0
+
+        const val STATE_RECENT_ALERTS_EXPANDED = "state_recent_alerts_expanded"
     }
 }

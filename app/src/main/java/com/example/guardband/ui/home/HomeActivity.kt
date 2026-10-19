@@ -152,6 +152,8 @@ class HomeActivity : AppCompatActivity() {
             // Through the bar rather than show(TAG_PROFILE), so the Profile item
             // is highlighted too: selecting it runs the same listener a tap does.
             HomeEvent.ShowProfile -> bottomNav.selectedItemId = R.id.nav_profile
+            // The full history is still the Alert tab for now.
+            HomeEvent.ShowAlertHistory -> bottomNav.selectedItemId = R.id.nav_alert
 
             // The task is cleared so the tabs cannot be reached with Back:
             // there is no account behind them any more, only a sign-in to

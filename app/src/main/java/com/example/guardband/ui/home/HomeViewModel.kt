@@ -172,6 +172,11 @@ class HomeViewModel(
         _events.trySend(HomeEvent.ShowProfile)
     }
 
+    /** "See all" on Track's recent-alerts panel. */
+    fun onSeeAllAlertsClicked() {
+        _events.trySend(HomeEvent.ShowAlertHistory)
+    }
+
     companion object {
         /**
          * How long the gate waits for the record before offering Retry. Both
