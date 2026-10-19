@@ -46,4 +46,8 @@
     <color name="rule_met">#4E8B38</color>
     <color name="rule_unmet">#D32F2F</color>
     <color name="rule_neutral">#8E8E93</color>
+
+    <!-- Map credits: 70% white, so the map shows through while the
+         text_secondary text keeps its contrast. DESIGN: Jul -->
+    <color name="map_attribution_bg">#B3FFFFFF</color>
 </resources>

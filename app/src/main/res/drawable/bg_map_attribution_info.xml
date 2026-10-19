@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The see-through disc behind the Track map's ⓘ credits button. Inset so
+     the disc hugs the icon while the button keeps a larger touch target.
+     DESIGN: Jul -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:inset="8dp">
+    <shape android:shape="oval">
+        <solid android:color="@color/map_attribution_bg" />
+    </shape>
+</inset>

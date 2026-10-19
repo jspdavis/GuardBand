@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageButton
@@ -30,16 +31,18 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 
 /**
- * Track tab (the default tab): the band's last known position on an
- * OpenStreetMap map, the round map controls, and the recent-alerts sheet, a
- * draggable bottom sheet over the map. The check-in pill is the screen's one
- * status line; the band status panel (reporting badge, last seen, battery)
- * was removed on 2026-10-14.
+ * Track tab (the default tab): the band's last known position on a map
+ * (MapTiler tiles, see [MapTilerTileSource]), the round map controls, and the
+ * recent-alerts sheet, a draggable bottom sheet over the map. The check-in
+ * pill is the screen's one status line; the band status panel (reporting
+ * badge, last seen, battery) was removed on 2026-10-14.
  *
  * View IDs, so the layout can be restyled without touching this file:
  * `track_root`, `track_map_view`, `track_empty_view`, `track_navigate_button`,
  * `track_layers_button`, `track_checkin_pill` (a read-only status, not a
- * button), `space_track_sheet_peek`, `track_recent_alerts_panel` (its own ids
+ * button), `track_map_attribution` and `track_map_attribution_info` (the map
+ * credits and their ⓘ; see [MapAttribution]), `space_track_sheet_peek`,
+ * `track_recent_alerts_panel` (its own ids
  * are listed on [RecentAlertsPanel]), plus the top bar's `ib_track_settings`
  * (top-left) and `ib_track_notifications` (top-right), placed as on the
  * Contacts and Profile tabs.
@@ -60,7 +63,8 @@ import org.osmdroid.views.overlay.Marker
  * the rest of the app, and [TrackViewModel] would have to model it only to hand
  * it straight back.
  *
- * Nothing here logs. The state carries the wearer's coordinates.
+ * Nothing here logs except one warning when the build has no MapTiler key.
+ * The state carries the wearer's coordinates, and the tile URLs the key.
  */
 class TrackFragment : Fragment(R.layout.fragment_track) {
 
@@ -69,6 +73,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     private lateinit var btnNavigate: FloatingActionButton
     private lateinit var tvCheckIn: TextView
     private lateinit var recentAlerts: RecentAlertsPanel
+    private lateinit var attribution: MapAttribution
 
     private val viewModel: TrackViewModel by viewModels { TrackViewModel.Factory }
     private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
@@ -113,6 +118,13 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             onSeeAll = { homeViewModel.onSeeAllAlertsClicked() },
             onRetry = { alertViewModel.onRetryClicked() }
         )
+
+        // MapTiler's required credits: shown now, then collapsed to an ⓘ.
+        attribution = MapAttribution(
+            view.findViewById(R.id.track_map_attribution),
+            view.findViewById(R.id.track_map_attribution_info)
+        )
+        attribution.expand()
 
         setUpMap()
 
@@ -174,6 +186,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
      */
     override fun onDestroyView() {
         mapView.onDetach()
+        attribution.release()
         marker = null
         super.onDestroyView()
     }
@@ -181,8 +194,16 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     // ── Map ───────────────────────────────────────────────────────────────────
 
     private fun setUpMap() {
-        // Not TileSourceFactory.MAPNIK - see GuardBandTileSource for why.
-        mapView.setTileSource(GuardBandTileSource.OSM)
+        // The one tile source; see MapTilerTileSource. Set even without a key,
+        // so the MapView's default (OSM's public server) is never used.
+        val tileSource = MapTilerTileSource.STREETS
+        mapView.setTileSource(tileSource)
+        mapView.setMinZoomLevel(tileSource.minimumZoomLevel.toDouble())
+        mapView.setMaxZoomLevel(tileSource.maximumZoomLevel.toDouble())
+        if (!MapTilerTileSource.hasApiKey) {
+            mapView.setUseDataConnection(false)
+            Log.w(TAG, "MAPTILER_API_KEY is not set in local.properties; map tiles are disabled.")
+        }
         mapView.setMultiTouchControls(true)
         // The layout supplies its own round controls.
         mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
@@ -194,8 +215,12 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         // D4. ACTION_MOVE rather than a MapListener, because a listener cannot
         // tell the user's pan from the camera moves this screen makes itself.
         // A tap gives DOWN and UP only, so tapping the map keeps following.
+        // A pan or a pinch is also what lets the credits collapse.
         mapView.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_MOVE) followBand = false
+            if (event.action == MotionEvent.ACTION_MOVE) {
+                followBand = false
+                attribution.collapse()
+            }
             false
         }
     }
@@ -285,6 +310,8 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
      */
     private fun renderEmptyView(state: TrackUiState) {
         val message = when {
+            // A build without a MapTiler key: no tiles will ever load.
+            !MapTilerTileSource.hasApiKey -> getString(R.string.label_track_map_unavailable)
             state.isLoading -> null
             state.errorMessage != null -> state.errorMessage
             !state.hasReported -> getString(R.string.label_track_never_reported)
@@ -332,6 +359,8 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     }
 
     private companion object {
+        const val TAG = "TrackFragment"
+
         /** D5: Cebu City, the default view before the band has ever reported. */
         const val DEFAULT_LAT = 10.3157
         const val DEFAULT_LNG = 123.8854

@@ -6,4 +6,8 @@
          height, so the collapsed sheet never covers them.
          DESIGN: Jul -->
     <dimen name="track_sheet_peek_height">96dp</dimen>
+
+    <!-- The map credits' row, fixed so the check-in pill stacked on it stays
+         put when the credits collapse to the ⓘ. DESIGN: Jul -->
+    <dimen name="track_map_attribution_height">18dp</dimen>
 </resources>
