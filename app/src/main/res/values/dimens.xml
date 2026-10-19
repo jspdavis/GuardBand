@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Track's recent-alerts sheet when collapsed: the drag handle (48dp)
+         and the header with See all (40dp), plus a little air. No alert row
+         shows until it is dragged up. The map's controls stack on this
+         height, so the collapsed sheet never covers them.
+         DESIGN: Jul -->
+    <dimen name="track_sheet_peek_height">96dp</dimen>
+</resources>

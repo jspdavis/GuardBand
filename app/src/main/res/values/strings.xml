@@ -118,14 +118,13 @@
     <!-- Track -->
     <string name="cd_open_settings">Settings</string>
     <string name="cd_open_notifications">Notifications</string>
-    <string name="action_open_profile">open profile</string>
     <string name="label_settings_changelog">Changelog</string>
     <string name="label_changelog_title">Changelog</string>
     <string name="label_changelog_commit">Commit %1$s</string>
     <string name="cd_user_avatar">Profile picture</string>
-    <string name="cd_track_avatar">Profile picture: %1$s</string>
-    <string name="btn_track_navigate">Navigate</string>
-    <string name="cd_map_recenter">Center on band</string>
+    <!-- The round Navigate button: tap opens maps, long-press re-centres. -->
+    <string name="cd_track_navigate">Navigate to band</string>
+    <string name="action_track_recenter">center on band</string>
     <string name="cd_map_layers">Map layers</string>
     <string name="label_track_marker_title">Your band</string>
 
@@ -156,8 +155,6 @@
     <string name="btn_track_recent_alerts_see_all">See all</string>
     <string name="cd_track_recent_alerts_see_all">See all alerts</string>
     <string name="cd_track_recent_alerts_loading">Loading recent alerts</string>
-    <string name="action_track_recent_alerts_collapse">collapse recent alerts</string>
-    <string name="action_track_recent_alerts_expand">expand recent alerts</string>
 
     <!-- Contacts -->
     <string name="label_contacts_title">Emergency Contacts</string>

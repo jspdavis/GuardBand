@@ -64,7 +64,7 @@ com/example/guardband/
 │   ├── splash/         Splash → Home if signed in, else Login (2 s countdown)
 │   ├── auth/           GoogleIdTokenProvider + GoogleIdTokenResult (the only androidx.credentials users)
 │   ├── avatar/         AvatarPhoto (pure: which Google photo, if any) + AvatarImage (the Coil binder);
-│   │                 shared by the Track and Profile avatars
+│   │                 the Profile tab's avatar (Track's avatar was removed 2026-10-19)
 │   ├── login/          email + password, and "Continue with Google"
 │   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode;
 │   │                 then Welcome, once per account (its only route is Consent's success)
@@ -78,8 +78,8 @@ com/example/guardband/
 │   │                 ResetLinkParser (pure; the trust boundary) + ViewModel
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate and the account gate (HomeViewModel)
-│   ├── track/          Track tab (default): avatar, bell, gear, osmdroid map, Navigate + Check-in (the status panel is gone)
-│   │                 and the recent-alerts panel over the map (RecentAlertsPanel; See all → Alert history)
+│   ├── track/          Track tab (default): gear + bell (as on Contacts/Profile), osmdroid map, round Navigate button,
+│   │                 Check-in pill, and the recent-alerts bottom sheet (RecentAlertsPanel; See all → Alert history)
 │   │                 BandStatus + NavigationUrl + OsmdroidConfig (pure helpers; see "Track and map")
 │   ├── contacts/       Contacts tab: list + delete
 │   ├── alert/          AlertHistoryFragment (pushed from Track's See all): latest status + incident history;
@@ -123,7 +123,7 @@ Conventions (copy `ui/login/*` as the reference):
   - A pushed screen's back arrow calls `requireActivity().onBackPressedDispatcher.onBackPressed()`.
 - **Lists** use `ListAdapter` + `DiffUtil` with `findViewById` in the ViewHolder (`ContactAdapter`, `AlertHistoryAdapter`).
 
-Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (the redesigned pill buttons), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with **Auth** and Database (Analytics was dropped: no code called it, and it collected an advertising id on its own). The Track map adds **osmdroid-android 6.1.20** (see "Track and map"). Tests add kotlinx-coroutines-test and Robolectric. The Track and Profile avatars add **Coil 2.7.0** (pinned; the 2.x line works on a plain `ImageView`). OkHttp is declared `debugImplementation` for the mock sender, but release builds still ship it, transitively, as Coil's network fetcher. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
+Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (the redesigned pill buttons), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with **Auth** and Database (Analytics was dropped: no code called it, and it collected an advertising id on its own). The Track map adds **osmdroid-android 6.1.20** (see "Track and map"). Tests add kotlinx-coroutines-test and Robolectric. The Profile avatar adds **Coil 2.7.0** (pinned; the 2.x line works on a plain `ImageView`). OkHttp is declared `debugImplementation` for the mock sender, but release builds still ship it, transitively, as Coil's network fetcher. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
 
 ## Firebase
 
@@ -315,7 +315,7 @@ The signed-in user's own record, separate from the band's `devices/` tree:
 - **Consent is recorded, not just collected.** `finalizeSignUp` writes `accepted`, a server `acceptedAt` and `UserProfileRepository.CONSENT_VERSION` in the same atomic commit as the profile and contacts, so a profile can never exist without one. Bump the version whenever `label_signup_consent_statement` changes what is being agreed to.
 - **Sign-up finalization is one atomic write.** `UserProfileRepository.finalizeSignUp` puts the profile and every contact into a single multi-path `updateChildren`, so sign-up cannot half-succeed. That is what makes the Retry safe: there is no partial state to reconcile. Registration is deliberately **two** calls — `AuthRepository.createAccount` then `finalizeSignUp` — and the `accountCreated` guard in `SignUpContactsViewModel` means a retry resumes at the write. When they were one call, a failed write left the account created and the only retry went back through account creation, which then failed as "email already in use", so that address could never finish registering.
 - **`saveProfile` merges, never replaces.** It `updateChildren`s its three fields. A `setValue` on `users/{uid}` would delete every emergency contact under it.
-- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all — its avatar's spoken name is the session's name. RTDB disk persistence is **not** enabled.
+- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all, and has no avatar since 2026-10-19. RTDB disk persistence is **not** enabled.
 - **Failures are typed and mapped by code.** `ContactError` + `FirebaseDatabaseErrorMapper`, on `DatabaseError.getCode()`, never on a message. That code is only reachable through the SDK's completion-listener and `ValueEventListener` callbacks — an awaited `Task` fails with a bare `DatabaseException` carrying localised prose — which is why these repositories wrap the listener forms in `suspendCancellableCoroutine` instead of using `.await()`.
 - **Contact phone numbers are never logged**, and neither are contact names. They are a third party's personal data, not the user's own. Nothing in `data/` logs at all.
 
@@ -711,17 +711,25 @@ a fix" — both have no coordinates and read very differently.
 points is view state, like a scroll offset. Following is switched off by a touch
 listener on `ACTION_MOVE`, not a `MapListener`: a listener cannot tell the
 user's pan from the camera moves the screen makes itself, and a tap gives only
-DOWN and UP, so tapping the map keeps following. Recenter turns it back on; with
-no fix it returns to the default Cebu City view rather than refusing.
+DOWN and UP, so tapping the map keeps following. **A long-press on the round
+Navigate button** turns it back on (2026-10-19: re-centring moved there when
+the white Navigate pill went and that button became Navigate; a tap opens
+maps, D6). TalkBack offers it as the button's "center on band" action. The
+button is disabled without a fix, so re-centring needs one too; `onRecenter`
+still falls back to the default Cebu City view if it is ever reached without.
 
-**The recent-alerts panel sits over the bottom of the map (2026-10-19).**
-`view_track_recent_alerts.xml`, bound by `ui/track/RecentAlertsPanel`: the
-newest three alerts in `item_alert` rows, "See all" to Alert history, and a
-header that collapses it. The pill, Navigate and the round controls stack on
-its top edge, so collapsing it gives the map back its lower part. The card is
-`clickable` so a drag that starts on it never reaches the `MapView`, where an
-`ACTION_MOVE` would switch following off; don't make it non-clickable. Its
-expanded state is view state, saved by the Fragment.
+**The recent alerts are a draggable bottom sheet over the map (2026-10-19).**
+`fragment_track.xml` is a CoordinatorLayout; `view_track_recent_alerts.xml` is
+its `BottomSheetBehavior` child (not hideable), bound by
+`ui/track/RecentAlertsPanel`: Material's drag handle, a header with "See all"
+to Alert history, and the newest three alerts in `item_alert` rows. Collapsed,
+it shows `@dimen/track_sheet_peek_height` (96dp: the handle and the header
+only); dragged up, the three rows. The map's controls stack on a `Space` of that
+same height, so the collapsed sheet never covers them; the expanded one does,
+on purpose. The card is `clickable` so a tap on it never reaches the
+`MapView`; drags are the behavior's. The CoordinatorLayout has an id
+(`track_root`), which is what saves the sheet's state across a restore.
+Don't remove either.
 
 **The `MapView` is detached by hand** in `onDestroyView` (plus `onResume` /
 `onPause`). osmdroid holds a tile cache, a worker and overlay references, so

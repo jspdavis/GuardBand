@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
-import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -22,12 +21,8 @@ import com.example.guardband.R
 import com.example.guardband.data.model.Alert
 import com.example.guardband.ui.alert.AlertEvent
 import com.example.guardband.ui.alert.AlertViewModel
-import com.example.guardband.ui.avatar.AvatarImage
 import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.imageview.ShapeableImageView
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
@@ -36,42 +31,42 @@ import org.osmdroid.views.overlay.Marker
 
 /**
  * Track tab (the default tab): the band's last known position on an
- * OpenStreetMap map, the bottom actions, and the recent-alerts panel over the
- * bottom of the map. The check-in pill is the screen's one status line; the
- * band status panel (reporting badge, last seen, battery) was removed on
- * 2026-10-14.
+ * OpenStreetMap map, the round map controls, and the recent-alerts sheet, a
+ * draggable bottom sheet over the map. The check-in pill is the screen's one
+ * status line; the band status panel (reporting badge, last seen, battery)
+ * was removed on 2026-10-14.
  *
  * View IDs, so the layout can be restyled without touching this file:
- * `track_map_view`, `track_empty_view`, `track_recenter_button`,
- * `track_navigate_button`, `track_layers_button`, `track_checkin_pill` (a
- * read-only status, not a button), `track_recent_alerts_panel` (its own ids
- * are listed on [RecentAlertsPanel]), plus the top bar's `iv_track_avatar`,
- * `ib_track_notifications` and `ib_track_settings`.
+ * `track_root`, `track_map_view`, `track_empty_view`, `track_navigate_button`,
+ * `track_layers_button`, `track_checkin_pill` (a read-only status, not a
+ * button), `space_track_sheet_peek`, `track_recent_alerts_panel` (its own ids
+ * are listed on [RecentAlertsPanel]), plus the top bar's `ib_track_settings`
+ * (top-left) and `ib_track_notifications` (top-right), placed as on the
+ * Contacts and Profile tabs.
  *
  * Gear and bell forward to the shared [HomeViewModel], which asks the host to
- * show Settings or Notifications. The avatar does the same for the Profile
- * tab, and the panel's "See all" for the Alert history screen. The panel's
- * rows come from the host-scoped [AlertViewModel], the same instance the
- * history screen reads.
+ * show Settings or Notifications; the sheet's "See all" does the same for the
+ * Alert history screen. The sheet's rows come from the host-scoped
+ * [AlertViewModel], the same instance the history screen reads. Track has no
+ * avatar since 2026-10-19; the Profile tab is reached from the bar.
+ *
+ * **Navigate is the round arrow button** (2026-10-19; the white Navigate pill
+ * is gone). A tap opens a maps app on the band's position (D6); a long-press
+ * re-centres the map and resumes following (D4), and TalkBack offers that as
+ * a named action. Both need a fix, so the button is disabled without one.
  *
  * **Recentring lives here, not in the ViewModel.** Where the camera is pointing
  * is view state, like a scroll offset: it survives nothing, means nothing to
  * the rest of the app, and [TrackViewModel] would have to model it only to hand
  * it straight back.
  *
- * **The avatar** is the Google profile photo when [TrackUiState.avatarUrl] has
- * one, and the default icon otherwise; [AvatarImage] does the loading, the
- * same way as on the Profile tab.
- *
  * Nothing here logs. The state carries the wearer's coordinates.
  */
 class TrackFragment : Fragment(R.layout.fragment_track) {
 
     private lateinit var mapView: MapView
-    private lateinit var ivAvatar: ShapeableImageView
-    private lateinit var avatarImage: AvatarImage
     private lateinit var tvEmpty: TextView
-    private lateinit var btnNavigate: Button
+    private lateinit var btnNavigate: FloatingActionButton
     private lateinit var tvCheckIn: TextView
     private lateinit var recentAlerts: RecentAlertsPanel
 
@@ -89,7 +84,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
     /**
      * D4: whether new fixes still move the camera. True until the user pans or
-     * zooms, and true again when they tap recenter - so the map follows the
+     * zooms, and true again when they long-press Navigate - so the map follows the
      * band by default but never fights someone who is looking somewhere else.
      */
     private var followBand = true
@@ -109,39 +104,34 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         super.onViewCreated(view, savedInstanceState)
 
         mapView        = view.findViewById(R.id.track_map_view)
-        ivAvatar       = view.findViewById(R.id.iv_track_avatar)
         tvEmpty        = view.findViewById(R.id.track_empty_view)
         btnNavigate    = view.findViewById(R.id.track_navigate_button)
         tvCheckIn      = view.findViewById(R.id.track_checkin_pill)
-
-        avatarImage    = AvatarImage(ivAvatar)
 
         recentAlerts = RecentAlertsPanel(
             view.findViewById(R.id.track_recent_alerts_panel),
             onSeeAll = { homeViewModel.onSeeAllAlertsClicked() },
             onRetry = { alertViewModel.onRetryClicked() }
         )
-        savedInstanceState?.let {
-            recentAlerts.setExpanded(it.getBoolean(STATE_RECENT_ALERTS_EXPANDED, true))
-        }
 
         setUpMap()
 
-        ivAvatar.setOnClickListener { homeViewModel.onProfileClicked() }
-        // TalkBack: "double-tap to open profile" rather than "to activate".
-        ViewCompat.replaceAccessibilityAction(
-            ivAvatar, AccessibilityActionCompat.ACTION_CLICK,
-            getString(R.string.action_open_profile), null
-        )
         view.findViewById<ImageButton>(R.id.ib_track_notifications)
             .setOnClickListener { homeViewModel.onNotificationsClicked() }
         view.findViewById<ImageButton>(R.id.ib_track_settings)
             .setOnClickListener { homeViewModel.onSettingsClicked() }
         view.findViewById<FloatingActionButton>(R.id.track_layers_button)
             .setOnClickListener { viewModel.onLayersClicked() }
-        view.findViewById<FloatingActionButton>(R.id.track_recenter_button)
-            .setOnClickListener { onRecenter() }
         btnNavigate.setOnClickListener { viewModel.onNavigateClicked() }
+        btnNavigate.setOnLongClickListener {
+            onRecenter()
+            true
+        }
+        // TalkBack: "double-tap and hold to center on band", not "to long press".
+        ViewCompat.replaceAccessibilityAction(
+            btnNavigate, AccessibilityActionCompat.ACTION_LONG_CLICK,
+            getString(R.string.action_track_recenter), null
+        )
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -151,14 +141,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.events.collect(::handleEvent)
-            }
-        }
-        // Its own collector, so the 30 s staleness tick does not re-request
-        // the photo: only a different URL reaches the avatar.
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.map { it.avatarUrl }.distinctUntilChanged()
-                    .collect(avatarImage::show)
             }
         }
         viewLifecycleOwner.lifecycleScope.launch {
@@ -173,13 +155,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 alertViewModel.events.collect(::handleAlertEvent)
             }
-        }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        if (::recentAlerts.isInitialized) {
-            outState.putBoolean(STATE_RECENT_ALERTS_EXPANDED, recentAlerts.isExpanded)
         }
     }
 
@@ -198,7 +173,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
      * MapView has to be detached by hand or the Fragment's view leaks with it.
      */
     override fun onDestroyView() {
-        avatarImage.dispose()
         mapView.onDetach()
         marker = null
         super.onDestroyView()
@@ -226,7 +200,11 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         }
     }
 
-    /** D4: resume following, and move now. With no fix, go back to D5's view. */
+    /**
+     * D4, from a long-press on Navigate: resume following, and move now. With
+     * no fix, go back to D5's view (only reachable if the button is ever left
+     * enabled without one; today it is disabled then).
+     */
     private fun onRecenter() {
         followBand = true
 
@@ -270,9 +248,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     // ── Rendering ─────────────────────────────────────────────────────────────
 
     private fun render(state: TrackUiState) {
-        // No visible name: TalkBack still says whose app this is.
-        ivAvatar.contentDescription = getString(R.string.cd_track_avatar, state.userName)
-
         renderEmptyView(state)
         tvCheckIn.text = checkInText(state.checkIn)
 
@@ -364,7 +339,5 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
         /** Street level, used once when the first fix arrives. */
         const val FIX_ZOOM = 16.0
-
-        const val STATE_RECENT_ALERTS_EXPANDED = "state_recent_alerts_expanded"
     }
 }

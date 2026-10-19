@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Track tab's recent-alerts panel, included by fragment_track.xml over the
-     lower part of the map and bound by ui/track/RecentAlertsPanel. The rows
-     are item_alert.xml, the same rows the Alert history screen shows.
+<!-- Track tab's recent-alerts sheet, included by fragment_track.xml as a
+     BottomSheetBehavior child of its CoordinatorLayout, and bound by
+     ui/track/RecentAlertsPanel. The rows are item_alert.xml, the same rows
+     the Alert history screen shows.
 
-     Clickable so a drag that starts on the panel stays on the panel: the map
-     underneath turns following off on any ACTION_MOVE it receives. Not
-     important for accessibility itself, so TalkBack reads its children rather
-     than announcing a control with no action.
-     DESIGN: Jul (white card over the map, as a placeholder) -->
+     Clickable so a tap on the sheet stays on the sheet instead of reaching
+     the map underneath; drags are taken by the sheet's behavior. Not
+     important for accessibility itself, so TalkBack reads its children
+     rather than announcing a control with no action. Expanding and
+     collapsing for TalkBack is the drag handle's job.
+     DESIGN: Jul (white sheet, top corners rounded, as a placeholder) -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -18,9 +20,9 @@
     android:focusable="false"
     android:importantForAccessibility="no"
     app:cardBackgroundColor="@color/surface_bg"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
+    app:cardElevation="8dp"
     app:rippleColor="@android:color/transparent"
+    app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.SheetTop"
     app:strokeWidth="0dp">
 
     <LinearLayout
@@ -31,33 +33,27 @@
         android:paddingEnd="12dp"
         android:paddingBottom="4dp">
 
-        <!-- Header: tapping it collapses or expands the body. -->
+        <!-- Material's drag handle: the visible grip, and the accessible way
+             to expand or collapse (it is a button TalkBack can activate). -->
+        <com.google.android.material.bottomsheet.BottomSheetDragHandleView
+            android:id="@+id/track_recent_alerts_drag_handle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Header: title, and See all to the full history. -->
         <LinearLayout
             android:id="@+id/ll_track_recent_alerts_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
             android:gravity="center_vertical"
-            android:minHeight="48dp"
+            android:minHeight="40dp"
             android:orientation="horizontal">
-
-            <!-- Rotated in code: down while expanded, up while collapsed. -->
-            <ImageView
-                android:id="@+id/iv_track_recent_alerts_toggle"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:importantForAccessibility="no"
-                android:rotation="90"
-                android:src="@drawable/ic_chevron_right"
-                app:tint="@color/text_secondary" />
 
             <TextView
                 android:id="@+id/tv_track_recent_alerts_title"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="4dp"
                 android:layout_weight="1"
                 android:text="@string/label_track_recent_alerts"
                 android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
@@ -124,6 +120,7 @@
                 android:id="@+id/track_recent_alerts_empty_view"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
                 android:layout_marginBottom="8dp"
                 android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
                 android:textColor="@color/text_secondary"

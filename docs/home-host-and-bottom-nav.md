@@ -2,7 +2,7 @@
 
 How the GuardBand app is structured after login: one host Activity, three bottom-nav tabs, three pushed screens, and the auth gate around them.
 
-> **2026-10-19: the Alert tab is gone.** The bar is **Track, Contacts, Profile** (icon-only). Track shows the newest alerts in a collapsible panel over the bottom of the map, and its **See all** opens **Alert history**, a pushed screen holding the whole list. Both read one host-scoped `AlertViewModel` ([alert-data.md](alert-data.md) §8). Sections below that describe the four-tab layout are kept for the record and marked where they changed.
+> **2026-10-19: the Alert tab is gone.** The bar is **Track, Contacts, Profile** (icon-only). Track shows the newest alerts in a draggable bottom sheet over the map, and its **See all** opens **Alert history**, a pushed screen holding the whole list. Both read one host-scoped `AlertViewModel` ([alert-data.md](alert-data.md) §8). Sections below that describe the four-tab layout are kept for the record and marked where they changed.
 
 | | |
 |---|---|
@@ -143,7 +143,6 @@ The saved tags are read back through `HomeDestinations.restoreCurrent` / `restor
 | `NavigateToLogin` | `init` finds no session | Starts `LoginActivity` with `NEW_TASK | CLEAR_TASK` |
 | `ShowSettings` | Track's gear is tapped | `show(home_settings)` |
 | `ShowNotifications` | Track's bell is tapped | `show(home_notifications)` |
-| `ShowProfile` | Track's avatar is tapped | selects `nav_profile` |
 | `ShowAlertHistory` | See all on Track's recent-alerts panel | `show(home_alert_history)` |
 
 Fragments reach `HomeViewModel` with `by activityViewModels { HomeViewModel.Factory }`. They never cast `requireActivity()` to `HomeActivity`.
@@ -155,13 +154,13 @@ Fragments reach `HomeViewModel` with `by activityViewModels { HomeViewModel.Fact
 Legend: ✅ works with (in-memory) data · 🟡 placeholder UI
 
 ### Track (default tab), `ui/track/`
-- ✅ **Avatar:** the default profile icon only; the signed-in user's name (falls back to "User") is its TalkBack description, not visible text. Google's profile photo is a later change. *The location line was removed with the `location` field — see below.*
+- *(Removed 2026-10-19: Track has no avatar. Its top bar is the gear top-left and the bell top-right, as on Contacts and Profile.)* ✅ **Avatar:** the default profile icon only; the signed-in user's name (falls back to "User") is its TalkBack description, not visible text. Google's profile photo is a later change. *The location line was removed with the `location` field — see below.*
 - ✅ **Bell** → Notifications, **gear** → Settings (through `HomeViewModel`).
 - 🟡 **Map:** grey `surface_muted` area with a "Live map coming soon" label.
 - 🟡 **Status pill:** static "You are protected." with a green dot. It isn't driven by alert data yet.
-- 🟡 **Round map buttons** (layers, recenter): toast "The live map isn't available yet."
+- 🟡 **Round map buttons** (layers, recenter): toast "The live map isn't available yet." *(Since 2026-10-19 the round arrow is **Navigate**: tap opens maps on the band, long-press re-centres and resumes following. The white Navigate pill is gone. Layers is still a stub.)*
 - ✅ **Check-in pill:** read-only status of the latest check-in ("Last check-in: 5 minutes ago" / "No recent check-ins"); not tappable. Was a toast stub until 2026-10-14.
-- ✅ **Recent alerts panel (2026-10-19):** a white card over the bottom of the map with the newest three alerts (`item_alert` rows, same as Alert history), a header that collapses it, and **See all** → Alert history. Its own spinner, error + Try again, and empty text ("No alerts from your band yet."). The pill, Navigate and the round controls stack on its top edge. Bound by `RecentAlertsPanel`; rows come from the host-scoped `AlertViewModel`.
+- ✅ **Recent alerts sheet (2026-10-19):** a draggable bottom sheet over the map (`BottomSheetBehavior`, not hideable) with a drag handle, **See all** → Alert history, and the newest three alerts (`item_alert` rows, same as Alert history). Collapsed it shows only the handle and the header (96dp); dragged up, the three rows. Its own spinner, error + Try again, and empty text ("No alerts from your band yet."). The pill and the round controls sit just above its collapsed height. Bound by `RecentAlertsPanel`; rows come from the host-scoped `AlertViewModel`.
 
 `TrackViewModel` holds `TrackUiState(userName)` and `TrackEvent.ShowMessage`. It no longer takes a `UserProfileRepository`.
 
@@ -349,7 +348,7 @@ class ExampleFragment : Fragment(R.layout.fragment_example) {
 | Kind | Items |
 |---|---|
 | Menu | `menu_home_bottom_nav.xml` (`nav_track`, `nav_contacts`, `nav_profile`; `nav_alert` removed 2026-10-19) |
-| Icons (Material, `?attr/colorControlNormal` tint) | `ic_map` (Track tab), `ic_group` (Contacts), `ic_warning` (was the Alert tab; Settings still uses it), `ic_profile` (Profile, avatars; from the checkpoint), `ic_settings`, `ic_notifications`, `ic_arrow_back` (from the checkpoint's `back_arrow`), `ic_delete`, `ic_navigation`, `ic_layers`, `ic_check_circle`, `ic_chevron_right` |
+| Icons (Material, `?attr/colorControlNormal` tint) | `ic_map` (Track tab), `ic_phone` (Contacts, since 2026-10-19; `ic_group` before, still used by sign-up's consent screen), `ic_warning` (was the Alert tab; Settings still uses it), `ic_profile` (Profile, avatars; from the checkpoint), `ic_settings`, `ic_notifications`, `ic_arrow_back` (from the checkpoint's `back_arrow`), `ic_delete`, `ic_navigation`, `ic_layers`, `ic_check_circle`, `ic_chevron_right` |
 | Shapes | `bg_pill.xml` (white pill with a hairline border), `bg_status_dot.xml` (8dp dot, tinted per use) |
 | Color selector | `color/bottom_nav_item.xml`: green when checked, `text_primary` otherwise |
 | Color tokens | `alert_panic`, `alert_checkin`, `alert_low_battery`, `alert_tracking` |
@@ -429,7 +428,10 @@ Run `gradlew.bat assembleDebug`, then on a device:
 
 **Three tabs and Alert history (2026-10-19)**
 - [ ] The bar shows exactly three icons: Track, Contacts, Profile. Each opens its screen; TalkBack reads each icon's name.
-- [ ] Track shows the recent-alerts panel over the bottom of the map, newest first, at most three rows. Collapsing it leaves only its header; the pill and Navigate drop down with it.
+- [ ] Track shows the recent-alerts sheet collapsed low over the bottom of the map: just the handle and the "Recent alerts · See all" header. Drag it up: at most three rows, newest first. Drag it down, or tap the handle: back to collapsed. It cannot be dragged off screen.
+- [ ] Track's top bar is the gear top-left and the bell top-right, in the same places as on Contacts and Profile. There is no avatar.
+- [ ] The Contacts icon in the bar is a phone.
+- [ ] With a fix, tapping the round arrow opens a maps app on the band; long-pressing it re-centres the map after you have dragged it away. Without a fix it is greyed out. There is no white Navigate pill.
 - [ ] **See all** opens Alert history with the bar hidden. Back, and the back arrow, return to Track with the bar back.
 - [ ] The bell still opens Notifications.
 - [ ] On Alert history, background the app and kill it (`adb shell am kill com.example.guardband`), then reopen from Recents: the gate's spinner covers the screen, then Alert history is back; Back → Track.

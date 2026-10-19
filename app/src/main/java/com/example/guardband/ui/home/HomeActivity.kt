@@ -157,10 +157,6 @@ class HomeActivity : AppCompatActivity() {
 
             HomeEvent.ShowSettings -> show(HomeDestinations.SETTINGS)
             HomeEvent.ShowNotifications -> show(HomeDestinations.NOTIFICATIONS)
-            // Through the bar rather than show(HomeDestinations.PROFILE), so the
-            // Profile item is highlighted too: selecting it runs the same
-            // listener a tap does.
-            HomeEvent.ShowProfile -> bottomNav.selectedItemId = R.id.nav_profile
             HomeEvent.ShowAlertHistory -> show(HomeDestinations.ALERT_HISTORY)
 
             // The task is cleared so the tabs cannot be reached with Back:
