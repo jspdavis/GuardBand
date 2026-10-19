@@ -175,11 +175,15 @@
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <View
-                            android:id="@+id/alert_latest_dot"
-                            android:layout_width="10dp"
-                            android:layout_height="10dp"
-                            android:background="@drawable/bg_status_dot" />
+                        <!-- The type's symbol, as on the rows below, a
+                             little larger. Decorative. DESIGN: Jul -->
+                        <ImageView
+                            android:id="@+id/alert_latest_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:importantForAccessibility="no"
+                            tools:src="@drawable/ic_alert_panic"
+                            tools:tint="@color/alert_panic" />
 
                         <TextView
                             android:id="@+id/alert_latest_type"

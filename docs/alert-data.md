@@ -81,10 +81,15 @@ Nothing on this path logs. An alert carries the wearer's coordinates.
 ## 3. Decisions and why
 
 **D1 — `TRACKING_UPDATE` is hidden; unknown types are not.**
-`PANIC`, `CHECKIN` and `LOW_BATTERY` are shown and colour-coded. Tracking
+`PANIC`, `CHECKIN` and `LOW_BATTERY` are shown, each with its own symbol in
+its own colour (`AlertFormatting.typeIcon` / `typeColor`, since 2026-10-19;
+a coloured dot before): panic a red octagon with "!" (alert), low battery an
+orange triangle with "!" (warning), a check-in a green circle with a tick. The
+shapes differ as well as the colours, so the types stay apart without colour
+vision. Tracking
 updates are the band's background chatter (FR-09 sends one a minute for half an
 hour) and would bury the incidents. A type the app doesn't recognise is
-*shown*, as "Unknown alert" — so a type a later firmware adds appears in the
+*shown*, as "Unknown alert" with a grey circled "?" — so a type a later firmware adds appears in the
 list instead of silently vanishing from it.
 
 **D2 — the latest card comes from history, not from `latest`.**
@@ -343,7 +348,7 @@ arrow (`ib_alert_history_back`) returns to Track. Its title is
 | `alert_error_message` | the error text |
 | `alert_retry_button` | → `onRetryClicked()` |
 | `alert_latest_card` | current status card (D2) |
-| `alert_latest_dot` | type colour |
+| `alert_latest_icon` | type symbol, tinted in the type colour (`typeIcon` / `typeColor`) |
 | `alert_latest_type` / `_time` / `_location` / `_battery` | card fields |
 | `alert_empty_view` | the "which kind of empty" text |
 | `alert_history_list` | `RecyclerView`, `ListAdapter` + `DiffUtil` on `sequenceId` |
@@ -496,7 +501,7 @@ all**.
       payload, `type: "PANIC"`. On Track, a new top row appears in the panel
       within a second or so. **See all**: the card and the same top row are
       there too.
-- [ ] The card shows type, local time, coordinates and battery; the dot is red.
+- [ ] The card shows type, local time, coordinates and battery; the symbol is the red octagon.
       The panel's row reads the same.
 - [ ] Add `6` with `type: "CHECKIN"`. The card becomes the check-in; the panic
       stays in history and moves down a row in the panel.

@@ -350,7 +350,7 @@ class ExampleFragment : Fragment(R.layout.fragment_example) {
 |---|---|
 | Menu | `menu_home_bottom_nav.xml` (`nav_track`, `nav_contacts`, `nav_profile`; `nav_alert` removed 2026-10-19) |
 | Icons (Material, `?attr/colorControlNormal` tint) | `ic_map` (Track tab), `ic_phone` (Contacts, since 2026-10-19; `ic_group` before, still used by sign-up's consent screen), `ic_warning` (was the Alert tab; Settings still uses it), `ic_profile` (Profile, avatars; from the checkpoint), `ic_settings`, `ic_notifications`, `ic_arrow_back` (from the checkpoint's `back_arrow`), `ic_delete`, `ic_navigation`, `ic_layers`, `ic_check_circle`, `ic_chevron_right` |
-| Shapes | `bg_pill.xml` (white pill with a hairline border), `bg_status_dot.xml` (8dp dot, tinted per use) |
+| Shapes | `bg_pill.xml` (white pill with a hairline border). `bg_status_dot.xml` was removed on 2026-10-19, when the alert rows' dots became symbols (`alert-data.md`, D1) |
 | Color selector | `color/bottom_nav_item.xml`: green when checked, `text_primary` otherwise |
 | Color tokens | `alert_panic`, `alert_checkin`, `alert_low_battery`, `alert_tracking` |
 | Styles | `Widget.GuardBand.BottomNavigation`: white, no M3 indicator pill, tint selector, always labeled. `Widget.GuardBand.SettingsRow` / `SettingsDivider`. `ShapeAppearance.GuardBand.Circle` (from the theme pass) is now used for every avatar and the round map buttons. |

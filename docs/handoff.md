@@ -1,12 +1,11 @@
 # Handoff
 
-**As of 2026-10-19 · `mvvm-main` with
+**As of 2026-10-19 · `mvvm-main`, pushed, with
 `feature/alerts-into-track`, `feature/track-bottom-sheet`,
 `feature/maptiler-tiles`, `feature/rules-and-logo`,
-`feature/credit-overlap-fix` and `feature/track-profile-marker` merged (last
-code commit `eb3571b`; the last merge was **not pushed** when this was
-written); `main` is
-behind it again · 612 unit tests, 0
+`feature/credit-overlap-fix`, `feature/track-profile-marker` and
+`feature/alert-symbols-track-buttons` merged (last code commit `464f874`);
+`main` was merged up to it and pushed the same day · 616 unit tests, 0
 failures · run `git status -sb` to see
 whether anything is unpushed. Pick up from §4, starting with the MapTiler
 key: a developer without one sees "Map unavailable" on Track. Then
@@ -17,6 +16,13 @@ the Alert history screen (§3). The
 developer checks every change on their own phone during each session
 (CLAUDE.md, "Working agreements"), so the device checklists below are a
 reference, not a queue to chase.**
+
+**Where the 2026-10-19 session stopped.** Everything is merged and pushed;
+nothing is in flight. The open threads, all in §4: the device checks of the
+face marker, the alert symbols and the Track buttons; two small design
+questions (match Contacts' and Profile's top buttons to Track's, and a
+battery icon for low battery); Jul's MapTiler key; and Jul's `devices/` rules
+decision, with `RTDBS-RULES.md` still ahead of the Console.
 
 The core build is in place for now, and its backend is live: Hosting, the
 Security Rules and the password-reset App Link were all deployed and checked on
@@ -171,6 +177,14 @@ table now includes `main`.
   place that decides whose face it is, for when roles exist. Seen on a phone
   with a Google account; the rest of its device checks are in §4.
   [`osmdroid.md`](osmdroid.md) §5.4.
+- **Alert symbols and Track buttons** (`feature/alert-symbols-track-buttons`,
+  2026-10-19). Alert rows and the latest-alert card show a symbol in the
+  type's colour instead of a dot: a red octagon with "!" for a panic, an
+  orange warning triangle for low battery, a green tick for a check-in, a
+  grey "?" for an unknown type (`AlertFormatting.typeIcon`;
+  [`alert-data.md`](alert-data.md) D1). Track's four round buttons are all
+  36 dp, and the bell and gear are 16 dp from the sides, so the bell lines up
+  with Layers and Navigate. Contacts and Profile were left at 40 dp / 24 dp.
 
 ### In flight
 
@@ -203,6 +217,8 @@ has published it ([`database-rules.md`](database-rules.md) §7).
 | **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. Their guide says only that the text "must appear on every map"; the ⓘ collapse follows the OSMF guidelines, not a MapTiler statement. If they refuse, keep the credit always expanded ([`osmdroid.md`](osmdroid.md) §4.6 says how). |
 | **Decide `devices/` and publish the rules** | Jul | Pick A, A+ (recommended), B or C ([`database-rules.md`](database-rules.md) §4); B breaks the mock sender and C breaks every receiver until pairing. Then follow §7 there: save the live rules, strip, run the §5 Playground tests, publish, check the app and the mock sender. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
 | **Mock sender GPS on Phone A** | anyone with two phones | Allow location: alerts carry the phone's real position. Refuse: they fall back to the Cebu City point. Pre-grant location on any phone used for a demo, or the prompt appears mid-demo. |
+| **Device check: alert symbols and Track buttons** | whoever has the phone | From `feature/alert-symbols-track-buttons`. The symbols on Track's recent-alerts sheet, on Alert history's rows and on its latest-alert card (send a panic, a low battery and a check-in from the mock sender); the four 36 dp buttons on Track, with the bell over Layers and Navigate. |
+| **Two small design questions** | Jul | **(1)** Contacts and Profile still have 40 dp top buttons at 24 dp margins, Track 36 dp at 16 dp, so the gear and bell jump about 8 dp when switching tabs: match them to Track? **(2)** Low battery uses the generic warning triangle; a battery-with-"!" icon would say what the warning is about. Both `DESIGN: Jul`. |
 | **Device checks of the face marker** | whoever has the phone | From `feature/track-profile-marker`. **Seen:** a Google account's photo on the marker after a cold launch, above the collapsed sheet. **Still to check:** an email/password account shows initials; airplane mode on a fresh launch shows initials (or the cached photo) and does not crash; the pointer's tip on the same spot as the old pin's at the same coordinate and zoom (use the mock sender's fixed point, follow on); pan, zoom and follow unchanged with no stutter. [`osmdroid.md`](osmdroid.md) §5.4. |
 | **Two app-wide theme changes** | Jehan + Jul | Confirm they are intended: outlined buttons went from 8 dp to 28 dp corners, and every sign-up screen's top padding from 96 dp to 24 dp (`themes.xml`, `f34487b`). |
 | **Test Track (map and recent-alerts panel), Alert history and the mock sender** | teammate | Never had a full human pass. Checklists: [`mock-sender-and-receiver.md` §6](mock-sender-and-receiver.md), [`alert-data.md` §12](alert-data.md) and the 2026-10-19 block in [`home-host-and-bottom-nav.md` §12](home-host-and-bottom-nav.md). Pan-and-follow matters most, now with the panel over the bottom of the map: a drag that starts on the panel must not stop the map following. (The staleness badge is no longer on screen: the Track status panel was removed on 2026-10-14.) Before 2026-10-11 every history read was denied by the rules, so this has effectively never worked end to end until now. |

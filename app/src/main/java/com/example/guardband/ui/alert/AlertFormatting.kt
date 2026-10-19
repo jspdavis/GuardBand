@@ -1,6 +1,7 @@
 package com.example.guardband.ui.alert
 
 import androidx.annotation.ColorRes
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.example.guardband.R
 import com.example.guardband.data.model.AlertType
@@ -72,6 +73,23 @@ internal object AlertFormatting {
             AlertType.LOW_BATTERY -> R.color.alert_low_battery
             AlertType.TRACKING_UPDATE -> R.color.alert_tracking
             null -> R.color.text_hint
+        }
+
+    /**
+     * Each type's symbol, tinted with [typeColor]. The shapes differ as well
+     * as the colours (octagon, triangle, circle with a tick, circle with a
+     * question mark), so the types stay apart for someone who cannot tell
+     * red from orange or green, and in bright sun. Decorative for TalkBack:
+     * the label beside it already says the type.
+     */
+    @DrawableRes
+    fun typeIcon(type: AlertType?): Int =
+        when (type) {
+            AlertType.PANIC -> R.drawable.ic_alert_panic
+            AlertType.CHECKIN -> R.drawable.ic_check_circle
+            AlertType.LOW_BATTERY -> R.drawable.ic_warning
+            AlertType.TRACKING_UPDATE -> R.drawable.ic_info
+            null -> R.drawable.ic_alert_unknown
         }
 
     private const val DISPLAY_PATTERN = "MMM d, h:mm a"
