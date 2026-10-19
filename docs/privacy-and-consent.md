@@ -180,8 +180,9 @@ Needs §1 steps 1–3 done.
     consent screen. None of them reach the tabs.
 
 **Not testable here:** the Security Rules. There is no emulator suite in this
-project, so the nine Rules Playground tests at the top of `RTDBS-RULES.md`
-are the test suite for them. Run all nine before publishing.
+project, so the Rules Playground tests in
+[`database-rules.md`](database-rules.md) §5 are the test suite for them. Run
+all of them before publishing.
 
 ---
 

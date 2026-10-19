@@ -55,9 +55,10 @@ object Changelog {
                 "Settings has one privacy row, Privacy Notice; the \"Privacy & security\" placeholder, which only said \"Coming soon\", is gone.",
                 "Settings, Contacts, Profile, Notifications and Alert history have a white background, and the Settings rows no longer sit in a raised card.",
                 "Every screen with a top bar (Settings, Notifications, Alert history, Account information, Changelog) has a thin line under it.",
+                "Database rules reviewed against every path the app uses (docs/database-rules.md). Proposed, not yet published: band history entries can be added but no longer overwritten or deleted. Whether to require sign-in to read the band's data is still to be decided.",
                 "588 unit tests, up from 576 (the Track avatar's tests went with it)."
             ),
-            commit = "a194b65"
+            commit = "2ed649b"
         ),
         ChangelogEntry(
             date = "2026-10-15",

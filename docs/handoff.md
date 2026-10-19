@@ -1,12 +1,14 @@
 # Handoff
 
-**As of 2026-10-19 · `mvvm-main` at `896c8e3`, pushed, with
-`feature/alerts-into-track`, `feature/track-bottom-sheet` and
-`feature/maptiler-tiles` merged (last code commit `a194b65`); `main` is behind
-it again · 588 unit tests, 0
+**As of 2026-10-19 · `mvvm-main` with
+`feature/alerts-into-track`, `feature/track-bottom-sheet`,
+`feature/maptiler-tiles` and `feature/rules-and-logo` merged (last code commit
+`2ed649b`; the last merge was **not pushed** when this was written); `main` is
+behind it again · 588 unit tests, 0
 failures · run `git status -sb` to see
 whether anything is unpushed. Pick up from §4, starting with the MapTiler
-key: until a developer has one, the Track map reads "Map unavailable". Every branch written on
+key: until a developer has one, the Track map reads "Map unavailable". Then
+the `devices/` rules decision, which is waiting on Jul ([`database-rules.md`](database-rules.md)). Every branch written on
 2026-10-14 is merged (§3), the avatar and profile fixes landed as `0b8db04`,
 and the Alert tab is gone: its content is now Track's recent-alerts panel and
 the Alert history screen (§3). The
@@ -30,7 +32,7 @@ the files under §2, not here.
 | **Firebase Hosting** | Live at `guardband-aae65.web.app`: a root page, `/privacy`, `/delete-account`, `/.well-known/assetlinks.json`. Deploy from `hosting/` (§6). |
 | **Privacy Notice + delete page** | Every decision filled in, **still carrying the DRAFT banner**. The adviser review was parked on 2026-10-11 (§4). They will need one combined wording update after the 2026-10-14 work merges (§4). |
 | **Password reset** | The App Link claims Firebase's own handler, `guardband-aae65.firebaseapp.com/__/auth/action`, because the Console action URL cannot be changed. Verified on a device; manual pass passed. |
-| **Security Rules** | Deployed. [`../RTDBS-RULES.md`](../RTDBS-RULES.md), with its `//` keys stripped, *is* the live ruleset. |
+| **Security Rules** | Deployed 2026-10-11. **Since 2026-10-19 [`../RTDBS-RULES.md`](../RTDBS-RULES.md) is ahead of the Console**: an append-only `history` (Option A+), pending Jul's decision, not deployed; `users/` unchanged. Inventory, options, Playground tests, rollout and rollback text: [`database-rules.md`](database-rules.md). |
 | **Legacy nodes** | `password_resets`, `phone_index`, `email_index`: rules removed, data exported and deleted. |
 | **Firebase Analytics** | Removed. The notice says the app has no analytics; adding any back means changing the notice in the same commit. |
 | **Manual pass, 2026-10-11** | Consent, forgot password, Delete account: **passed**. Alert (now Track's recent-alerts panel and Alert history), Track, mock sender: **with a teammate** (§4). Delete account has **moved and changed since** (Account information, the deletion marker), so it needs passing again (§4). |
@@ -61,7 +63,7 @@ table now includes `main`.
 | The 2026-10-13 teammate UI pass: what was fixed, what to check | [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md) |
 | Privacy Notice, consent versions, hosted pages | [`privacy-and-consent.md`](privacy-and-consent.md) |
 | The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md): **authoritative** |
-| Security Rules | [`../RTDBS-RULES.md`](../RTDBS-RULES.md): the source of truth |
+| Security Rules | [`../RTDBS-RULES.md`](../RTDBS-RULES.md): the source of truth; [`database-rules.md`](database-rules.md): every path, the `devices/` options, the Playground tests, rollout |
 
 ---
 
@@ -181,6 +183,7 @@ with a real key, which is still open (§4). The logo followed in
 | **Credit and logo on narrow screens** | Jul | The expanded credit and the logo need about 319 dp side by side at the default font size, so they touch on a 320 dp phone and overlap on a 360 dp one at a 1.3× system font. Decide whether the credit should wrap onto its own row above the logo when they do not fit. [`osmdroid.md`](osmdroid.md) §4.6. |
 | **Phone check of the MapTiler map** | whoever has the key first | Merged without one. With the key: tiles render; the credit shows, collapses to the ⓘ after 5 s or a pan, and its links open; the MapTiler logo shows bottom left, stays when the credit collapses, and opens maptiler.com; pan, zoom, follow and markers behave as before; logcat shows tile requests to `api.maptiler.com` only. Then confirm the zoom limit (22) against the style's `tiles.json`. [`osmdroid.md`](osmdroid.md) §8. Without a key it was checked on a phone on 2026-10-19: "Map unavailable", no crash. |
 | **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. Their guide says only that the text "must appear on every map"; the ⓘ collapse follows the OSMF guidelines, not a MapTiler statement. If they refuse, keep the credit always expanded ([`osmdroid.md`](osmdroid.md) §4.6 says how). |
+| **Decide `devices/` and publish the rules** | Jul | Pick A, A+ (recommended), B or C ([`database-rules.md`](database-rules.md) §4); B breaks the mock sender and C breaks every receiver until pairing. Then follow §7 there: save the live rules, strip, run the §5 Playground tests, publish, check the app and the mock sender. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
 | **Mock sender GPS on Phone A** | anyone with two phones | Allow location: alerts carry the phone's real position. Refuse: they fall back to the Cebu City point. Pre-grant location on any phone used for a demo, or the prompt appears mid-demo. |
 | **Two app-wide theme changes** | Jehan + Jul | Confirm they are intended: outlined buttons went from 8 dp to 28 dp corners, and every sign-up screen's top padding from 96 dp to 24 dp (`themes.xml`, `f34487b`). |
 | **Test Track (map and recent-alerts panel), Alert history and the mock sender** | teammate | Never had a full human pass. Checklists: [`mock-sender-and-receiver.md` §6](mock-sender-and-receiver.md), [`alert-data.md` §12](alert-data.md) and the 2026-10-19 block in [`home-host-and-bottom-nav.md` §12](home-host-and-bottom-nav.md). Pan-and-follow matters most, now with the panel over the bottom of the map: a drag that starts on the panel must not stop the map following. (The staleness badge is no longer on screen: the Track status panel was removed on 2026-10-14.) Before 2026-10-11 every history read was denied by the rules, so this has effectively never worked end to end until now. |
@@ -224,8 +227,9 @@ with a real key, which is still open (§4). The logo followed in
 ## 5. Needs a human, not an agent
 
 - **Changing the Security Rules.** Edit `RTDBS-RULES.md`, strip every `"//"`
-  key, paste the whole file over the Console's, run the nine Playground tests
-  (or the emulator recipe in §6), publish. Copy the live rules out first. The
+  key, paste the whole file over the Console's, run the Playground tests in
+  [`database-rules.md`](database-rules.md) §5 (or the emulator recipe in §6),
+  publish. Copy the live rules out first. The steps are §7 of that file. The
   deletion-pending marker needed **no** rule. If anyone ever adds
   `"$other": { ".validate": false }` at `users/$uid`, give `deletion_pending`
   a rule of its own in the same change, or Delete account fails at step 2.
