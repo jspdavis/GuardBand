@@ -1,8 +1,9 @@
 # Handoff
 
 **As of 2026-10-19 · `mvvm-main` (`git log -1 --oneline`), with
-`feature/alerts-into-track` merged (last code commit `f55f7ac`); `main` is
-behind it again · 593 unit tests, 0 failures · run `git status -sb` to see
+`feature/alerts-into-track` and `feature/track-bottom-sheet` merged (last
+code commit `277cd31`); `main` is behind it again · 588 unit tests, 0
+failures · run `git status -sb` to see
 whether anything is unpushed. Pick up from §4. Every branch written on
 2026-10-14 is merged (§3), the avatar and profile fixes landed as `0b8db04`,
 and the Alert tab is gone: its content is now Track's recent-alerts panel and
