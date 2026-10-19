@@ -432,6 +432,64 @@ An alert carries the wearer's position. Nothing in `data/` logs at all, and
 neither the Track tab nor anything osmdroid-facing logs a coordinate. Same rule
 as contact phone numbers — see `CLAUDE.md`.
 
+### 5.4 The band's marker (2026-10-19)
+
+The one marker on the Track map is the band's last reported position (never
+the phone's). Since `feature/track-profile-marker` it is a **face**: a round
+picture in a white ring, with a soft shadow and a short pointer underneath.
+Before that it was osmdroid's default pin. What the marker means, how it
+moves, follow mode and the rest of the map are unchanged. There are no other
+markers or polylines on Track.
+
+| | |
+|---|---|
+| Face | 44 dp circle: the photo, centre-cropped, or initials in white on `brand_green` (Poppins SemiBold, 17 dp; a person glyph if there are no initials) |
+| Ring | 3 dp, white; with the face, 50 dp across |
+| Pointer | 8 dp tall, 14 dp wide, white, joined to the ring |
+| Shadow | 3 dp blur, 1 dp down, 33% black, inside 4 dp of padding on every side |
+| Bitmap | 58 × 66 dp |
+| **Anchor** | **the pointer's tip:** horizontally centred, 62 of 66 dp down. `BandMarkerIcon.anchorU` / `anchorV` compute it from the bitmap's rounded pixel size, so the tip is on the coordinate to the pixel. The old pin used `ANCHOR_CENTER, ANCHOR_BOTTOM`, its own tip, so the position marked is the same |
+
+The white ring and shadow keep it readable on light tiles and on water or
+other dark areas alike.
+
+**Whose face.** `TrackViewModel.markerFace()` is **the one place** that
+decides. Today it is the signed-in user's own: there is no wearer or guardian
+role yet. When roles exist, change that function and nothing else.
+
+**Where the picture comes from**, reusing the Profile tab's avatar code rather
+than a second mechanism:
+
+- `BandMarkerFace.of(user, providers)` (pure, tested) takes the link from
+  `ui/avatar/AvatarPhoto.urlFor`: a Google account only, `https` only, and
+  Google's `=s96-c` size suffix rewritten to `=s288-c`. 288 px is about twice
+  the 48 dp marker on an xxhdpi screen, and it is the same link Profile loads,
+  so the two share Coil's caches.
+- **Initials** are the first letter of the first and the last word of the
+  session's display name, or one letter for a single word. With no usable
+  name, the email's first letter. They work on code points in any script,
+  skip punctuation and emoji, and upper-case one code point at a time.
+- **The initials face is drawn at once** on the main thread, one small bitmap,
+  so the marker is never blank and nothing waits on the network. The photo
+  then loads through **Coil** (already a dependency) off the main thread, and
+  the marker is composed inside a Coil `Transformation` on Coil's thread. The
+  composed bitmap sits in Coil's memory cache, keyed by the link and the
+  screen density. A failed or offline load keeps the initials.
+- **Drawn only when the face changes.** `BandMarkerFace` is a data class, set
+  once per `TrackViewModel` and carried through every state `copy`, and
+  `BandMarkerIcon.bind` returns early on an equal face. So a new position
+  costs what it did before: move the marker, invalidate. Nothing recycles a
+  bitmap; Coil owns the photo ones.
+- **The link is never logged, and the picture is never stored or uploaded**
+  beyond Coil's own on-phone caches, the same ones Profile uses. Loading it
+  means Google's image servers see the phone's IP address: see the DRAFT row
+  in the Privacy Notice and [`privacy-and-consent.md`](privacy-and-consent.md)
+  §4.
+
+**Accessibility:** osmdroid overlays are not accessibility nodes, so the
+marker cannot carry a content description of its own; a tap shows its title,
+"Your band", as before.
+
 ---
 
 ## 6. Troubleshooting
@@ -490,11 +548,13 @@ Tracked in [`handoff.md`](handoff.md).
 
 ## 8. Not covered by tests
 
-`OsmdroidConfig`, `MapTilerTileSource`, the `MapView` lifecycle, the marker
-and the follow logic all need a real `Context`, a running map, or an
+`OsmdroidConfig`, `MapTilerTileSource`, the `MapView` lifecycle, the marker's
+placement and the follow logic all need a real `Context`, a running map, or an
 instrumented test — and the project declares no mocking library. The testable
-logic was lifted out instead: `BandStatus`, `NavigationUrl` and
-`TrackViewModel`, all covered under
+logic was lifted out instead: `BandStatus`, `NavigationUrl`,
+`TrackViewModel`, `BandMarkerFace` (photo or initials, and the initials
+themselves) and `BandMarkerIcon` under Robolectric (drawn once per face, and
+the anchor; the photo path needs a device), all covered under
 [`app/src/test/java/com/example/guardband/ui/track/`](../app/src/test/java/com/example/guardband/ui/track/).
 
 **So the map is verified by running it.** After any change in this file's

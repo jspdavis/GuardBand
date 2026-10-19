@@ -4,7 +4,7 @@
 `feature/alerts-into-track`, `feature/track-bottom-sheet`,
 `feature/maptiler-tiles`, `feature/rules-and-logo` and
 `feature/credit-overlap-fix` merged (last code commit `7deff47`); `main` is
-behind it again · 588 unit tests, 0
+behind it again · 612 unit tests, 0
 failures · run `git status -sb` to see
 whether anything is unpushed. Pick up from §4, starting with the MapTiler
 key: a developer without one sees "Map unavailable" on Track. Then
@@ -161,6 +161,14 @@ table now includes `main`.
   its own line above it (wrapping at the largest font sizes); the pill rises
   only for a wrapped credit. Checked on a phone at five width and font-scale
   combinations ([`osmdroid.md`](osmdroid.md) §4.6).
+- **The band's marker is a face** (`feature/track-profile-marker`,
+  2026-10-19). The Track marker is a round picture in a white ring with a
+  pointer whose tip is the band's position: the signed-in user's Google photo,
+  or their initials on brand green (email accounts, offline, a failed load).
+  It reuses `AvatarPhoto` and Coil; `TrackViewModel.markerFace()` is the one
+  place that decides whose face it is, for when roles exist. Seen on a phone
+  with a Google account; the rest of its device checks are in §4.
+  [`osmdroid.md`](osmdroid.md) §5.4.
 
 ### In flight
 
@@ -193,10 +201,11 @@ has published it ([`database-rules.md`](database-rules.md) §7).
 | **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. Their guide says only that the text "must appear on every map"; the ⓘ collapse follows the OSMF guidelines, not a MapTiler statement. If they refuse, keep the credit always expanded ([`osmdroid.md`](osmdroid.md) §4.6 says how). |
 | **Decide `devices/` and publish the rules** | Jul | Pick A, A+ (recommended), B or C ([`database-rules.md`](database-rules.md) §4); B breaks the mock sender and C breaks every receiver until pairing. Then follow §7 there: save the live rules, strip, run the §5 Playground tests, publish, check the app and the mock sender. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
 | **Mock sender GPS on Phone A** | anyone with two phones | Allow location: alerts carry the phone's real position. Refuse: they fall back to the Cebu City point. Pre-grant location on any phone used for a demo, or the prompt appears mid-demo. |
+| **Device checks of the face marker** | whoever has the phone | From `feature/track-profile-marker`. **Seen:** a Google account's photo on the marker after a cold launch, above the collapsed sheet. **Still to check:** an email/password account shows initials; airplane mode on a fresh launch shows initials (or the cached photo) and does not crash; the pointer's tip on the same spot as the old pin's at the same coordinate and zoom (use the mock sender's fixed point, follow on); pan, zoom and follow unchanged with no stutter. [`osmdroid.md`](osmdroid.md) §5.4. |
 | **Two app-wide theme changes** | Jehan + Jul | Confirm they are intended: outlined buttons went from 8 dp to 28 dp corners, and every sign-up screen's top padding from 96 dp to 24 dp (`themes.xml`, `f34487b`). |
 | **Test Track (map and recent-alerts panel), Alert history and the mock sender** | teammate | Never had a full human pass. Checklists: [`mock-sender-and-receiver.md` §6](mock-sender-and-receiver.md), [`alert-data.md` §12](alert-data.md) and the 2026-10-19 block in [`home-host-and-bottom-nav.md` §12](home-host-and-bottom-nav.md). Pan-and-follow matters most, now with the panel over the bottom of the map: a drag that starts on the panel must not stop the map following. (The staleness badge is no longer on screen: the Track status panel was removed on 2026-10-14.) Before 2026-10-11 every history read was denied by the rules, so this has effectively never worked end to end until now. |
 | **Band firmware sends check-ins** | band/firmware teammate | The app now reads the check-in payload defined in `SCHEMA.md` (FR-10: double-press within 2 seconds, no emergency alert). The band has to write exactly that. Until then only the mock sender produces check-ins. |
-| **Adviser review of the hosted pages** | Jul + adviser | Parked on 2026-10-11. Send `/privacy` and `/delete-account`; when approved, remove the DRAFT banner from both and redeploy. **Since 2026-10-19 the notice's sharing table names MapTiler instead of OpenStreetMap** (a row marked DRAFT, from `feature/maptiler-tiles`; not deployed). Decide whether a different company receiving the IP address needs a notice version and `CONSENT_VERSION` bump (a `DECISION: Jul` comment sits beside the row). A wording change that alters what users agree to bumps `CONSENT_VERSION` with the notice's own version. |
+| **Adviser review of the hosted pages** | Jul + adviser | Parked on 2026-10-11. Send `/privacy` and `/delete-account`; when approved, remove the DRAFT banner from both and redeploy. **Since 2026-10-19 the notice's sharing table names MapTiler instead of OpenStreetMap** (a row marked DRAFT, from `feature/maptiler-tiles`; not deployed). **Also a DRAFT row for the Google profile picture** (`feature/track-profile-marker`): shown on Profile and now on the map marker, loaded from Google's image servers, which see the IP address; not deployed, with its own version-bump question ([`privacy-and-consent.md`](privacy-and-consent.md) §4). Decide whether a different company receiving the IP address needs a notice version and `CONSENT_VERSION` bump (a `DECISION: Jul` comment sits beside the row). A wording change that alters what users agree to bumps `CONSENT_VERSION` with the notice's own version. |
 | **Hosted-page wording after the 2026-10-14 merges** | Jul | Do this in the same deploy as the adviser review. Check: the in-app path to Delete account, now **Track → gear → Settings → Account information → Delete account** (`/delete-account` lines 163 and 168–169, and the notice's "Delete your account" paragraph, still name the old one); the verification email (the notice's email row says only "how you sign in, and how a password reset reaches you"); whether to mention the `deletion_pending` marker left under a deleted account's uid (no personal data); the Google profile photo being fetched from Google's servers; Navigate handing the band's coordinates to a maps app, if that is built; and that the notice says clearly that the **band's** position is collected even though the app asks for no location permission. Since the consent gate: whether the notice should say that an account found without a consent record is asked to agree before it can use the app, and that declining signs out without deleting anything. |
 | **Each teammate's fingerprints** | each developer | Debug **SHA-1** in Firebase Console → Project settings (else Google sign-in fails on their build). Debug **SHA-256** added to `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else the reset and verification links open the browser; Firebase's own page still completes them). `assetlinks.json` holds **one** developer's today. Release keystore's SHA-1 and SHA-256 before any signed build. |
 
