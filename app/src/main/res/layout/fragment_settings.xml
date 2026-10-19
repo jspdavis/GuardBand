@@ -141,7 +141,11 @@
 
                     <View style="@style/Widget.GuardBand.SettingsDivider" />
 
-                    <!-- Notifications Row -->
+                    <!-- Alert notifications: a switch, its help text, the
+                         system page when blocked, and the battery row while
+                         on. The help, the button and the battery row line up
+                         under the switch's text (36 + 12 + 16 dp).
+                         DESIGN: Jul -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -153,19 +157,56 @@
                             android:layout_height="36dp"
                             android:layout_marginEnd="12dp"
                             android:background="@drawable/bg_settings_icon_badge"
+                            android:importantForAccessibility="no"
                             android:padding="8dp"
                             android:src="@drawable/ic_notifications"
                             app:tint="@color/white" />
 
-                        <TextView
-                            android:id="@+id/tv_settings_notifications"
-                            style="@style/Widget.GuardBand.SettingsRow"
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/sw_settings_alert_notifications"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:fontFamily="@font/poppins_extralight"
-                            android:text="@string/label_settings_notifications" />
+                            android:minHeight="56dp"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:text="@string/label_settings_alert_notifications"
+                            android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
+                            android:textColor="@color/text_primary" />
                     </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tv_settings_alert_notifications_help"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="64dp"
+                        android:layout_marginEnd="16dp"
+                        android:layout_marginBottom="12dp"
+                        android:text="@string/label_settings_alert_notifications_help"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                        android:textColor="@color/text_secondary" />
+
+                    <Button
+                        android:id="@+id/btn_settings_notification_settings"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="52dp"
+                        android:layout_marginBottom="8dp"
+                        android:text="@string/btn_settings_notification_settings"
+                        android:textAllCaps="false"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
+                    <TextView
+                        android:id="@+id/tv_settings_alert_battery"
+                        style="@style/Widget.GuardBand.SettingsRow"
+                        android:layout_marginStart="48dp"
+                        android:fontFamily="@font/poppins_extralight"
+                        android:text="@string/label_settings_alert_battery"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
 
                     <View style="@style/Widget.GuardBand.SettingsDivider" />
 

@@ -197,7 +197,11 @@
     <string name="label_settings_title">Settings</string>
     <string name="label_settings_account">Account information</string>
     <string name="label_settings_change_password">Change password</string>
-    <string name="label_settings_notifications">Notifications</string>
+    <string name="label_settings_alert_notifications">Alert notifications</string>
+    <string name="label_settings_alert_notifications_help">Shows your band\'s alerts on this phone, even when GuardBand is closed. Keeps a small notification while it\'s on. After the phone restarts, open GuardBand once to start watching again.</string>
+    <string name="label_settings_alert_notifications_blocked">Notifications are blocked for GuardBand on this phone. Allow them in the phone\'s settings to use alert notifications.</string>
+    <string name="btn_settings_notification_settings">Open notification settings</string>
+    <string name="label_settings_alert_battery">Keep watching while the phone sleeps</string>
     <string name="label_settings_privacy_notice">Privacy Notice</string>
     <string name="btn_logout">Log Out</string>
 
@@ -251,6 +255,31 @@
     <!-- Notifications -->
     <string name="label_notifications_title">Notifications</string>
     <string name="label_notifications_empty">No notifications yet.</string>
+
+    <!-- Alert notifications (the system shade). Never a location, a name or
+         a contact: the type, the time and the battery only. -->
+    <string name="notif_channel_panic">Panic alerts</string>
+    <string name="notif_channel_battery">Band battery</string>
+    <string name="notif_channel_checkin">Check-ins</string>
+    <string name="notif_channel_other">Other band alerts</string>
+    <string name="notif_channel_watch">Alert watch</string>
+    <string name="notif_panic_title">Panic alert sent</string>
+    <string name="notif_panic_text">Your band sent a panic alert at %1$s.</string>
+    <string name="notif_battery_title">Band battery low</string>
+    <string name="notif_battery_text">Your band is at %1$d%%. Charge it soon.</string>
+    <string name="notif_battery_text_unknown">Your band\'s battery is low.</string>
+    <string name="notif_checkin_title">Check-in received</string>
+    <string name="notif_checkin_text">Your check-in at %1$s reached GuardBand.</string>
+    <string name="notif_other_title">New band alert</string>
+    <string name="notif_other_text">Your band sent an alert at %1$s. Open GuardBand to see it.</string>
+    <string name="notif_public_title">GuardBand</string>
+    <string name="notif_public_text">New alert from your band. Unlock to see it.</string>
+    <plurals name="notif_summary_text">
+        <item quantity="one">%d more alert from your band.</item>
+        <item quantity="other">%d more alerts from your band.</item>
+    </plurals>
+    <string name="notif_watch_title">GuardBand</string>
+    <string name="notif_watch_text">Watching your band for alerts</string>
 
     <string name="cd_back">Back</string>
 

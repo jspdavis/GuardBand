@@ -4,6 +4,15 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Alert notifications (docs/notifications.md). POST_NOTIFICATIONS is
+         asked for at runtime on API 33+, only when the user turns the switch
+         on in Settings. The two FOREGROUND_SERVICE ones are install-time and
+         exist for the opt-in alert watch below. Nothing else: no boot
+         receiver, no wake lock, no battery-exemption request. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -170,6 +179,19 @@
             android:name=".ui.home.HomeActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
+
+        <!-- ── Alert watch (opt-in, from Settings) ─────────────────────────────
+             specialUse rather than dataSync, which gets a daily time limit
+             once the app targets API 35. -->
+
+        <service
+            android:name=".ui.notifications.AlertWatchService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Personal safety: watches the user's own wearable band for panic and low-battery alerts and shows them as notifications." />
+        </service>
 
     </application>
 
