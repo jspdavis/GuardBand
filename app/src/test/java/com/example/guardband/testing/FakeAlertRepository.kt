@@ -55,7 +55,7 @@ class FakeAlertRepository(
     /**
      * How many times a collector subscribed to the latest-alert flow.
      *
-     * The Alert tab must leave this at zero: D2 derives its card from history,
+     * The alert screens' ViewModel must leave this at zero: D2 derives its card from history,
      * so opening a second listener on `devices/{id}/latest` would be waste.
      */
     var latestSubscriptions = 0

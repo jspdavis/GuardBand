@@ -5,7 +5,7 @@ package com.example.guardband.data.repository
  *
  * Carries no message, for the same reason [ContactError] and [AuthError] do
  * not: the wording belongs to the screen, so [AlertViewModel][com.example.guardband.ui.alert.AlertViewModel]
- * maps these to its own `MSG_*` constants. The Alert tab used to Toast
+ * maps these to its own `MSG_*` constants. The alert screen used to Toast
  * `error.message`, which is exactly how localised Firebase prose reaches a
  * user.
  *

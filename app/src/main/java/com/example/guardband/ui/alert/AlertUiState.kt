@@ -3,7 +3,8 @@ package com.example.guardband.ui.alert
 import com.example.guardband.data.model.Alert
 
 /**
- * Render state for [AlertFragment].
+ * Render state for [AlertHistoryFragment] and Track's recent-alerts panel
+ * ([com.example.guardband.ui.track.RecentAlertsPanel]).
  *
  * Four situations in one class: loading, content, empty and error. They are
  * distinguished by which fields are set rather than by a sealed hierarchy,

@@ -57,7 +57,7 @@ internal object BandStatus {
     /**
      * Epoch millis for an ISO 8601 UTC timestamp, or null if it cannot be read.
      *
-     * The accepted formats are [AlertFormatting.ISO_PATTERNS], the Alert tab's.
+     * The accepted formats are [AlertFormatting.ISO_PATTERNS], the alert rows'.
      * A new parser per call: SimpleDateFormat is not thread-safe, and this is
      * reached from a ViewModel rather than only the main thread.
      */

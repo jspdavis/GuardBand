@@ -13,7 +13,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.ui.account.AccountActivity
-import com.example.guardband.ui.alert.AlertFragment
 import com.example.guardband.ui.alert.AlertHistoryFragment
 import com.example.guardband.ui.consent.ConsentRequiredActivity
 import com.example.guardband.ui.contacts.ContactsFragment
@@ -27,9 +26,12 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.launch
 
 /**
- * Post-auth host: four tab Fragments (Track, Contacts, Alert, Profile) under a
- * BottomNavigationView, plus two pushed Fragments (Settings, Notifications)
- * opened from Track's top bar. No Navigation Component.
+ * Post-auth host: three tab Fragments (Track, Contacts, Profile) under a
+ * BottomNavigationView, plus three pushed Fragments: Settings and
+ * Notifications from a tab's top bar, and Alert history from "See all" on
+ * Track's recent-alerts panel. No Navigation Component. The destinations and
+ * the restore rule are [HomeDestinations]; the Alert tab was removed on
+ * 2026-10-19.
  *
  * Fragments are added once and then shown/hidden, so every tab keeps its
  * state. A pushed screen hides the bar (it is not a place the tabs lead
@@ -63,10 +65,10 @@ class HomeActivity : AppCompatActivity() {
     private val viewModel: HomeViewModel by viewModels { HomeViewModel.Factory }
 
     /** Tag of the Fragment on screen: a tab or a pushed screen. */
-    private var currentTag = TAG_TRACK
+    private var currentTag = HomeDestinations.TRACK
 
     /** Last tab shown; Back from a pushed screen returns here. */
-    private var lastTabTag = TAG_TRACK
+    private var lastTabTag = HomeDestinations.TRACK
 
     /** Enabled only while a pushed screen is showing. */
     private val backToTab = object : OnBackPressedCallback(false) {
@@ -90,8 +92,13 @@ class HomeActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, backToTab)
 
         if (savedInstanceState != null) {
-            currentTag = savedInstanceState.getString(STATE_CURRENT_TAG, TAG_TRACK)
-            lastTabTag = savedInstanceState.getString(STATE_LAST_TAB_TAG, TAG_TRACK)
+            // A tag this build does not host (the removed Alert tab) is Track.
+            currentTag = HomeDestinations.restoreCurrent(
+                savedInstanceState.getString(STATE_CURRENT_TAG)
+            )
+            lastTabTag = HomeDestinations.restoreLastTab(
+                savedInstanceState.getString(STATE_LAST_TAB_TAG)
+            )
         }
 
         bottomNav.setOnItemSelectedListener { item ->
@@ -148,12 +155,13 @@ class HomeActivity : AppCompatActivity() {
                     }
                 )
 
-            HomeEvent.ShowSettings -> show(TAG_SETTINGS)
-            HomeEvent.ShowNotifications -> show(TAG_NOTIFICATIONS)
-            // Through the bar rather than show(TAG_PROFILE), so the Profile item
-            // is highlighted too: selecting it runs the same listener a tap does.
+            HomeEvent.ShowSettings -> show(HomeDestinations.SETTINGS)
+            HomeEvent.ShowNotifications -> show(HomeDestinations.NOTIFICATIONS)
+            // Through the bar rather than show(HomeDestinations.PROFILE), so the
+            // Profile item is highlighted too: selecting it runs the same
+            // listener a tap does.
             HomeEvent.ShowProfile -> bottomNav.selectedItemId = R.id.nav_profile
-            HomeEvent.ShowAlertHistory -> show(TAG_ALERT_HISTORY)
+            HomeEvent.ShowAlertHistory -> show(HomeDestinations.ALERT_HISTORY)
 
             // The task is cleared so the tabs cannot be reached with Back:
             // there is no account behind them any more, only a sign-in to
@@ -201,46 +209,46 @@ class HomeActivity : AppCompatActivity() {
         transaction.commit()
 
         currentTag = tag
-        val isTab = tag in TAB_TAGS
-        if (isTab) lastTabTag = tag
+        val isTab = HomeDestinations.isTab(tag)
+        if (isTab) {
+            lastTabTag = tag
+            // The bar restores its own selection, but a selection it cannot
+            // restore (the removed Alert tab's item) would leave it guessing.
+            bottomNav.menu.findItem(menuItemIdFor(tag))?.isChecked = true
+        }
         backToTab.isEnabled = !isTab
-        // Settings and Notifications are reached from a tab, not from the bar,
-        // so the bar is not offered while they are showing.
+        // Pushed screens are reached from a tab, not from the bar, so the bar
+        // is not offered while they are showing.
         bottomNav.isVisible = isTab
         navDivider.isVisible = isTab
     }
 
     private fun createFragment(tag: String): Fragment =
         when (tag) {
-            TAG_TRACK -> TrackFragment()
-            TAG_CONTACTS -> ContactsFragment()
-            TAG_ALERT -> AlertFragment()
-            TAG_PROFILE -> ProfileFragment()
-            TAG_SETTINGS -> SettingsFragment()
-            TAG_NOTIFICATIONS -> NotificationsFragment()
-            TAG_ALERT_HISTORY -> AlertHistoryFragment()
+            HomeDestinations.TRACK -> TrackFragment()
+            HomeDestinations.CONTACTS -> ContactsFragment()
+            HomeDestinations.PROFILE -> ProfileFragment()
+            HomeDestinations.SETTINGS -> SettingsFragment()
+            HomeDestinations.NOTIFICATIONS -> NotificationsFragment()
+            HomeDestinations.ALERT_HISTORY -> AlertHistoryFragment()
             else -> throw IllegalArgumentException("Unknown Home destination: $tag")
         }
 
     private fun tagFor(menuItemId: Int): String =
         when (menuItemId) {
-            R.id.nav_contacts -> TAG_CONTACTS
-            R.id.nav_alert -> TAG_ALERT
-            R.id.nav_profile -> TAG_PROFILE
-            else -> TAG_TRACK
+            R.id.nav_contacts -> HomeDestinations.CONTACTS
+            R.id.nav_profile -> HomeDestinations.PROFILE
+            else -> HomeDestinations.TRACK
+        }
+
+    private fun menuItemIdFor(tabTag: String): Int =
+        when (tabTag) {
+            HomeDestinations.CONTACTS -> R.id.nav_contacts
+            HomeDestinations.PROFILE -> R.id.nav_profile
+            else -> R.id.nav_track
         }
 
     private companion object {
-        const val TAG_TRACK = "home_track"
-        const val TAG_CONTACTS = "home_contacts"
-        const val TAG_ALERT = "home_alert"
-        const val TAG_PROFILE = "home_profile"
-        const val TAG_SETTINGS = "home_settings"
-        const val TAG_NOTIFICATIONS = "home_notifications"
-        const val TAG_ALERT_HISTORY = "home_alert_history"
-
-        val TAB_TAGS = setOf(TAG_TRACK, TAG_CONTACTS, TAG_ALERT, TAG_PROFILE)
-
         const val STATE_CURRENT_TAG = "state_current_tag"
         const val STATE_LAST_TAB_TAG = "state_last_tab_tag"
     }

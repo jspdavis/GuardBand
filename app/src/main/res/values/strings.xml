@@ -113,7 +113,6 @@
     <!-- Home host: bottom-nav tabs -->
     <string name="tab_track">Track</string>
     <string name="tab_contacts">Contacts</string>
-    <string name="tab_alert">Alert</string>
     <string name="tab_profile">Profile</string>
 
     <!-- Track -->
@@ -175,12 +174,10 @@
     <string name="dialog_contact_add_title">Add contact</string>
     <string name="dialog_contact_edit_title">Edit contact</string>
 
-    <!-- Alert -->
+    <!-- Alert history, and the rows Track's recent-alerts panel shares -->
     <string name="label_alert_title">Alert history</string>
     <string name="label_alert_latest">Current status</string>
     <string name="label_alert_history">History</string>
-    <string name="label_alert_none">No alerts from your band yet.</string>
-    <string name="label_alert_history_empty">No past alerts.</string>
     <string name="btn_alert_retry">Try again</string>
     <string name="label_alert_battery">Battery %1$d%%</string>
     <string name="label_alert_battery_charging">Battery %1$d%% · charging</string>
