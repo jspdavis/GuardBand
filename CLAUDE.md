@@ -553,8 +553,9 @@ nothing, and both pages keep a **DRAFT** banner until a human has reviewed
 them. **Firebase Analytics was dropped** because no app code called it, yet it
 collected an advertising id on its own; the notice now says the app has no
 analytics, so **adding any analytics SDK back means changing the notice in the
-same commit.** And **OpenStreetMap's tile servers see the phone's IP and the
-area being viewed** on every tile, which the notice discloses.
+same commit.** And **the map's tile provider sees the phone's IP and the area
+being viewed** on every tile, which the notice discloses. That is MapTiler
+since 2026-10-19; its notice row is still a draft, not yet deployed.
 
 **The "profile with no consent" gap is closed in the app (2026-10-14).**
 `ProfileProvisioning` still writes only `name` and `email`, so `users/{uid}`
@@ -611,15 +612,16 @@ Track's recent-alerts panel and the Alert history screen read `devices/{deviceId
 
 ## Track and map
 
-> The map library itself - why osmdroid, the user agent, the tile source and
-> the blocked-tile trap: [docs/osmdroid.md](docs/osmdroid.md).
+> The map library itself - why osmdroid, the user agent, the MapTiler tile
+> source and its key, attribution, and the blocked-tile trap:
+> [docs/osmdroid.md](docs/osmdroid.md).
 
 The Track tab reads `devices/{deviceId}/latest` live and puts the band's last
-known position on an OpenStreetMap map. `SCHEMA.md` is the authority for the
-payload, as everywhere else.
+known position on a map drawn from **MapTiler** raster tiles (OpenStreetMap
+data). `SCHEMA.md` is the authority for the payload, as everywhere else.
 
 **osmdroid, not the Maps SDK.** `osmdroid-android 6.1.20`, chosen because it
-needs no API key and no billing-enabled GCP project. It is safe on compileSdk
+needs no billing-enabled GCP project. It is safe on compileSdk
 34 without a bump: its POM declares **zero dependencies** and it publishes no
 Gradle module metadata, so there is none of the `minCompileSdk` constraint that
 pins androidx-credentials at 1.3.0.
@@ -633,29 +635,55 @@ in `onCreate`, before the layout inflates and builds the `MapView`:
   default) and the `com.example.*` prefix the project template generates, which
   is still this app's `applicationId`. The block arrives as **HTTP 200 with a
   PNG** reading "access blocked", not as an error, so osmdroid renders and
-  caches it like a good tile and the log says nothing. Deriving the agent from
-  the package or the version is what `ui/track/GuardBandTileSource` exists to
-  prevent — see below.
+  caches it like a good tile and the log says nothing. The MapTiler key is now
+  **restricted to this exact agent**, so changing it refuses every tile until
+  the MapTiler dashboard matches. Deriving the agent from the package or the
+  version is what `ui/track/MapTilerTileSource`'s policy exists to prevent —
+  see below.
 - **Both cache paths point at `cacheDir`**, so tiles live in app-specific
   storage and need **no storage permission** on any API level. osmdroid's own
   default wants external storage.
 
-**`ui/track/GuardBandTileSource` replaces `TileSourceFactory.MAPNIK`, and must
-not be "simplified" back to it.** `MAPNIK` is built with
-`TileSourcePolicy(2, 15)`, and 15 is all four flags including
-`FLAG_USER_AGENT_NORMALIZED`; with that flag osmdroid's `TileDownloader`
-ignores `userAgentValue` and sends `packageName/versionCode` instead —
-`com.example.guardband/1`, which is blocked. The replacement is the same
-server, tiles and attribution with every `MAPNIK` restriction **except**
-normalization. Two consequences worth knowing:
+**`ui/track/MapTilerTileSource` is the one tile source (2026-10-19), and the
+only place a MapTiler URL, the key, the zoom range (0-22) or a credit is
+spelled out.** It replaced `GuardBandTileSource` (OSM's public server). Never
+fall back to `TileSourceFactory.MAPNIK` or any `tile.openstreetmap.org`
+source, key or no key; MAPNIK is also the `MapView`'s default, which is why
+the Fragment sets this source even without a key.
+- **The key is `MAPTILER_API_KEY` in `local.properties`** (gitignored), into
+  `BuildConfig`. Never put the real key in a tracked file; docs use
+  `YOUR_MAPTILER_API_KEY`. A build without it succeeds; the Fragment then
+  turns the data connection off, logs one warning and shows "Map
+  unavailable", and no tile is requested from anywhere. The key ships in the
+  APK and rides in every tile URL: never log a tile URL, and never turn on
+  osmdroid's `isDebugMode` / `isDebugMapTileDownloader`.
+- **The tile cache stays on; no bulk downloading, pre-fetching or offline
+  regions.** `FLAG_NO_BULK` and `FLAG_NO_PREVENTIVE` stay in the policy.
+- **The credits** ("© MapTiler © OpenStreetMap contributors", each linked)
+  are `track_map_attribution`, from `MapTilerTileSource.attribution()`, above
+  the collapsed sheet. `ui/track/MapAttribution` shows them on every Track
+  view creation and collapses them to an ⓘ (`track_map_attribution_info`)
+  after 5 s or the first pan: the OSMF attribution guidelines' rule, which
+  MapTiler has not confirmed (ask before a public release). Never hide them
+  by default, and keep them readable (10 sp is the floor). MapTiler's Free
+  plan also requires its logo bottom left; that is not done and waits on Jul
+  (it needs an asset).
+
+**Its policy drops `FLAG_USER_AGENT_NORMALIZED`, and must keep dropping it.**
+`MAPNIK` is built with `TileSourcePolicy(2, 15)`, and 15 is all four flags
+including `FLAG_USER_AGENT_NORMALIZED`; with that flag osmdroid's
+`TileDownloader` ignores `userAgentValue` and sends `packageName/versionCode`
+instead — `com.example.guardband/1`, which OSM blocked and the MapTiler key's
+user-agent restriction would refuse. The policy keeps every `MAPNIK`
+restriction **except** normalization. Two consequences worth knowing:
 - **Never call `Configuration.getInstance().load(context, prefs)`.** It is the
   only thing that computes the normalized agent, and it would re-break the map
   on any tile source that normalizes. Dropping the flag and avoiding `load()`
   are independent guards; keep both.
-- **Its name is deliberately not "Mapnik"**, because osmdroid keys cache rows
-  by `(key, provider)` where `provider` is the source name. A new name starts
-  on clean rows rather than re-serving the blocked images already cached under
-  `Mapnik`.
+- **Its name, `MapTilerStreets`, is the cache key**, because osmdroid keys
+  cache rows by `(key, provider)` where `provider` is the source name. A new
+  name starts on clean rows rather than re-serving the OSM tiles (or the
+  blocked images) cached under `GuardBandOsm` and `Mapnik`.
 
 **No phone-location permission in the main app, ever.** The band supplies the
 location, not the handset. The merged manifest adds only four *optional*
@@ -744,9 +772,9 @@ out a **new** parser per call: `SimpleDateFormat` is not thread-safe, and
 `BandStatus` runs from a ViewModel. `AlertFormatting`'s own cached parsers are
 main-thread only, so never share those instances with the Track side.
 
-**Not for production as-is:** OpenStreetMap's public tile servers are a
-volunteer-funded service whose usage policy is written for light use. A real
-deployment needs its own tile source or a commercial provider.
+**Not for production as-is:** MapTiler's Free plan is for non-commercial use
+and pauses at its monthly limit, and the key in the APK is protected only by
+the user-agent restriction and that cap. A real release needs a paid plan.
 
 **Not covered by tests:** `OsmdroidConfig`, the `MapView` lifecycle, the marker
 and the D4 follow logic. All of it needs a real `Context`, a running map or an
