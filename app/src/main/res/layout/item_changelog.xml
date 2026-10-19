@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    One changelog milestone: date, title, bullet list of changes, commit ref.
+    DESIGN: Jul (card styling copied from item_alert.xml as a placeholder)
+-->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/surface_card"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tv_item_changelog_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.GuardBand.LabelMedium"
+            android:textColor="@color/brand_green"
+            tools:text="14 Oct 2026" />
+
+        <TextView
+            android:id="@+id/tv_item_changelog_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.TitleMedium"
+            android:textColor="@color/text_primary"
+            tools:text="Google profile photo on Track" />
+
+        <TextView
+            android:id="@+id/tv_item_changelog_changes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="4dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+            android:textColor="@color/text_primary"
+            tools:text="• The Track avatar shows the Google profile photo.\n• Coil 2.7.0 added as the image loader." />
+
+        <TextView
+            android:id="@+id/tv_item_changelog_commit"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.LabelSmall"
+            android:textColor="@color/text_secondary"
+            tools:text="Commit b75156b" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -43,7 +43,8 @@ import kotlinx.coroutines.launch
  * each call, which is also why a failed submit "keeps what was typed" for
  * free — the fields are never cleared, so a retry re-sends the same text.
  *
- * Flow: (email link) → ResetPasswordActivity → LoginActivity (back stack cleared)
+ * Flow: (email link) → ResetPasswordActivity → ResetSuccessActivity → LoginActivity
+ * (back stack cleared at each step)
  */
 class ResetPasswordViewModel(
     private val authRepository: AuthRepository
@@ -194,7 +195,7 @@ class ResetPasswordViewModel(
                     _uiState.update {
                         it.copy(stage = ResetPasswordStage.DONE, message = null)
                     }
-                    _events.send(ResetPasswordEvent.NavigateToLoginWithSuccess)
+                    _events.send(ResetPasswordEvent.NavigateToSuccess)
                 }
                 .onFailure { error -> failSubmit(error) }
         }

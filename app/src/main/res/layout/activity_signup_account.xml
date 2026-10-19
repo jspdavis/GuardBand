@@ -12,6 +12,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     style="@style/Widget.GuardBand.SignUpStep"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     tools:context=".ui.signup.SignUpAccountActivity">
 
     <include
@@ -27,7 +29,8 @@
         android:id="@+id/tv_signup_account_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="24dp"
+        android:fontFamily="@font/poppins_semibold"
         android:text="@string/label_signup_account_title"
         android:textAppearance="@style/TextAppearance.GuardBand.SignUpTitle"
         app:layout_constraintEnd_toEndOf="parent"
@@ -39,6 +42,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
+        android:fontFamily="@font/poppins_extralight"
         android:text="@string/label_signup_account_subtitle"
         android:textAppearance="@style/TextAppearance.GuardBand.SignUpSubtitle"
         app:layout_constraintStart_toStartOf="parent"
@@ -49,7 +53,8 @@
         android:id="@+id/tv_signup_email_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="24dp"
+        android:fontFamily="@font/poppins_extralight"
         android:text="@string/label_field_email"
         android:textAppearance="@style/TextAppearance.GuardBand.SignUpFieldLabel"
         app:layout_constraintStart_toStartOf="parent"
@@ -66,6 +71,7 @@
             android:id="@+id/et_signup_email"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_extralight"
             android:hint="@string/hint_email"
             android:inputType="textEmailAddress"
             android:maxLines="1" />
@@ -76,7 +82,8 @@
         android:id="@+id/tv_signup_password_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/poppins_extralight"
         android:text="@string/label_field_password"
         android:textAppearance="@style/TextAppearance.GuardBand.SignUpFieldLabel"
         app:layout_constraintStart_toStartOf="parent"
@@ -94,6 +101,7 @@
             android:id="@+id/et_signup_password"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_extralight"
             android:hint="@string/hint_password"
             android:inputType="textPassword"
             android:maxLines="1" />
@@ -104,7 +112,8 @@
         android:id="@+id/tv_signup_confirm_password_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/poppins_extralight"
         android:text="@string/label_field_confirm_password"
         android:textAppearance="@style/TextAppearance.GuardBand.SignUpFieldLabel"
         app:layout_constraintStart_toStartOf="parent"
@@ -122,17 +131,37 @@
             android:id="@+id/et_signup_confirm_password"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_extralight"
             android:hint="@string/hint_confirm_password"
             android:inputType="textPassword"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <Button
-        android:id="@+id/btn_signup_account_next"
-        style="@style/Widget.GuardBand.SignUpContinue"
-        android:text="@string/btn_continue"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/til_signup_confirm_password" />
+    <!-- Continue Button with poppins_extralight font -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:layout_marginBottom="32dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="5dp"
+        app:cardMaxElevation="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/til_signup_confirm_password"
+        app:layout_constraintStart_toStartOf="@id/til_signup_confirm_password">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_signup_account_next"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_signup_continue"
+            android:fontFamily="@font/poppins_extralight"
+            android:gravity="center"
+            android:text="@string/btn_continue"
+            android:textAllCaps="true"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

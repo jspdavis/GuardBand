@@ -1,9 +1,7 @@
 package com.example.guardband.ui.track
 
+import com.example.guardband.ui.alert.AlertFormatting
 import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
 
 /**
  * Wall clock, injected so the staleness rules are deterministic in tests.
@@ -57,33 +55,16 @@ internal object BandStatus {
     const val ONLINE_THRESHOLD_MS = 3 * 60 * 1000L
 
     /**
-     * Accepted wire formats, matching
-     * [AlertFormatting][com.example.guardband.ui.alert.AlertFormatting]:
-     * SCHEMA.md's example carries no milliseconds, the debug mock sender writes
-     * them. Both are valid ISO 8601.
+     * Epoch millis for an ISO 8601 UTC timestamp, or null if it cannot be read.
      *
-     * Duplicated from the Alert tab deliberately for now - sharing it would
-     * mean editing that tab, which this pass is scoped out of. It is the same
-     * two patterns, and folding them into one helper is a one-line change
-     * whenever the Alert tab is next open.
-     *
+     * The accepted formats are [AlertFormatting.ISO_PATTERNS], the Alert tab's.
      * A new parser per call: SimpleDateFormat is not thread-safe, and this is
      * reached from a ViewModel rather than only the main thread.
      */
-    private val ISO_PATTERNS = listOf(
-        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-        "yyyy-MM-dd'T'HH:mm:ss'Z'"
-    )
-
-    /** Epoch millis for an ISO 8601 UTC timestamp, or null if it cannot be read. */
     fun parseIsoUtcMillis(iso: String): Long? {
-        for (pattern in ISO_PATTERNS) {
+        for (pattern in AlertFormatting.ISO_PATTERNS) {
             try {
-                val parser = SimpleDateFormat(pattern, Locale.US).apply {
-                    timeZone = TimeZone.getTimeZone("UTC")
-                    isLenient = false
-                }
-                return parser.parse(iso)?.time ?: continue
+                return AlertFormatting.newIsoUtcParser(pattern).parse(iso)?.time ?: continue
             } catch (e: ParseException) {
                 // Try the next format.
             }

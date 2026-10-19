@@ -1,60 +1,117 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface_bg"
+    android:background="@color/surface_muted"
     tools:context=".ui.profile.ProfileFragment">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/iv_profile_avatar"
-            android:layout_width="88dp"
-            android:layout_height="88dp"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="16dp"
-            android:background="@color/surface_card"
-            android:contentDescription="@string/cd_user_avatar"
-            android:src="@drawable/ic_profile"
-            app:contentPadding="20dp"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-            app:tint="@color/text_secondary" />
-
-        <TextView
-            android:id="@+id/tv_profile_welcome"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:gravity="center_horizontal"
-            android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
-            android:textColor="@color/text_primary"
-            tools:text="Welcome back, Alex Rivera" />
+            android:orientation="vertical"
+            android:padding="24dp">
 
-        <TextView
-            android:id="@+id/tv_profile_email_label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:text="@string/label_profile_email"
-            android:textAppearance="@style/TextAppearance.GuardBand.LabelMedium"
-            android:textColor="@color/text_secondary" />
+            <!-- Top Action Buttons (Settings & Notifications) -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp">
 
-        <TextView
-            android:id="@+id/tv_profile_email"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
-            android:textColor="@color/text_primary"
-            tools:text="alex@guardband.com" />
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/ib_profile_settings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:contentDescription="@string/cd_open_settings"
+                    android:src="@drawable/ic_settings"
+                    app:backgroundTint="@color/white"
+                    app:elevation="4dp"
+                    app:fabCustomSize="40dp"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+                    app:tint="@color/brand_green" />
 
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/ib_profile_notifications"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:contentDescription="@string/cd_open_notifications"
+                    android:src="@drawable/ic_notifications"
+                    app:backgroundTint="@color/white"
+                    app:elevation="4dp"
+                    app:fabCustomSize="40dp"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+                    app:tint="@color/brand_green" />
+            </RelativeLayout>
 
-    </LinearLayout>
-</ScrollView>
+            <!-- Profile Avatar -->
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/iv_profile_avatar"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:background="@color/surface_card"
+                android:contentDescription="@string/cd_user_avatar"
+                android:src="@drawable/ic_profile"
+                app:contentPadding="20dp"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+                app:tint="@color/text_secondary" />
+
+            <!-- Name / Welcome TextView -->
+            <TextView
+                android:id="@+id/tv_profile_welcome"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:gravity="center_horizontal"
+                android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
+                android:textColor="@color/text_primary"
+                tools:text="User" />
+
+            <!-- Credentials Stacked Directly Underneath Avatar / Name -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_profile_email"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_extralight"
+                    android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                    android:textColor="@color/text_secondary"
+                    tools:text="alexrivera@gmail.com" />
+
+                <TextView
+                    android:id="@+id/tv_profile_phone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="@font/poppins_extralight"
+                    android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                    android:textColor="@color/text_secondary"
+                    tools:text="+921-848-6041" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

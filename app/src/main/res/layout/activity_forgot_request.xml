@@ -28,88 +28,115 @@
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/text_primary" />
 
-    <!-- Title -->
-    <TextView
-        android:id="@+id/tv_forgot_request_title"
-        android:layout_width="0dp"
+    <!-- Container centering original content vertically -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="@string/label_forgot_request_title"
-        android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
-        android:textColor="@color/text_primary"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ib_forgot_request_back" />
+        app:layout_constraintTop_toBottomOf="@id/ib_forgot_request_back"
+        app:layout_constraintVertical_bias="0.35">
 
-    <!--
-      Swapped between "enter your email" and "check your email" by the
-      Activity. The sent wording says nothing about whether the address is
-      registered.
-    -->
-    <TextView
-        android:id="@+id/tv_forgot_request_subtitle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/label_forgot_request_subtitle"
-        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
-        android:textColor="@color/text_secondary"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_forgot_request_title" />
-
-    <!-- Email input -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/til_forgot_request_email"
-        style="@style/Widget.GuardBand.TextInputLayout"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:hint="@string/hint_email"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_forgot_request_subtitle">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_forgot_request_email"
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tv_forgot_request_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textEmailAddress"
-            android:maxLines="1" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:fontFamily="@font/poppins_semibold"
+            android:text="@string/label_forgot_request_title"
+            android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
+            android:textColor="@color/brand_green"
+            android:textStyle="bold" />
 
-    <!-- Request / Resend. Its label and enabled state both come from the state. -->
-    <Button
-        android:id="@+id/btn_forgot_request_send"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="@string/btn_request_reset_link"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/til_forgot_request_email" />
+        <!-- Subtitle -->
+        <TextView
+            android:id="@+id/tv_forgot_request_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:fontFamily="@font/poppins_extralight"
+            android:text="@string/label_forgot_request_subtitle"
+            android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+            android:textColor="@color/text_secondary" />
 
-    <Button
-        android:id="@+id/btn_forgot_request_cancel"
-        style="@style/Widget.GuardBand.Button.Outlined"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/btn_cancel"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_forgot_request_send" />
+        <!-- Email input -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_forgot_request_email"
+            style="@style/Widget.GuardBand.TextInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:hint="@string/hint_email">
 
-    <!-- Progress indicator -->
-    <ProgressBar
-        android:id="@+id/progress_forgot_request"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:contentDescription="@string/cd_forgot_request_progress"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_forgot_request_cancel" />
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_forgot_request_email"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_extralight"
+                android:inputType="textEmailAddress"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Request / Resend button with Figma gradient and drop shadow -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cv_forgot_request_send"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="24dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="5dp"
+            app:cardMaxElevation="10dp">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_forgot_request_send"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_signup_continue"
+                android:fontFamily="@font/poppins_extralight"
+                android:gravity="center"
+                android:text="@string/btn_request_reset_link"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Cancel button -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cv_forgot_request_cancel"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:cardMaxElevation="0dp">
+
+            <Button
+                android:id="@+id/btn_forgot_request_cancel"
+                style="@style/Widget.GuardBand.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fontFamily="@font/poppins_extralight"
+                android:text="@string/btn_cancel"
+                android:textAllCaps="false"
+                app:cornerRadius="28dp" />
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Progress indicator (exact original view attributes preserved) -->
+        <ProgressBar
+            android:id="@+id/progress_forgot_request"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:contentDescription="@string/cd_forgot_request_progress"
+            android:visibility="gone" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -79,11 +79,13 @@ email-enumeration protection exists to refuse, and Login and forgot-password
 both already decline to answer it. A sign-up screen that answered it would undo
 that for all three.
 
-**Sign-up requires one contact; the banner asks for three.**
-`SignUpContactsViewModel.MIN_AT_SIGNUP = 1`, while the banner counts toward
-`InputValidator.MIN_CONTACTS = 3`. A band in use with one contact beats a
-sign-up abandoned at the third. The Contacts tab's repository-level minimum of
-3-on-delete is unchanged and still protects the **stored** record.
+**Sign-up requires one contact, the same as the Contacts tab.**
+`SignUpContactsViewModel.MIN_AT_SIGNUP` is `InputValidator.MIN_CONTACTS`, which
+is 1, and the cap is 3. Until 2026-10-13 the minimum was 3 and sign-up only
+nudged toward it; with a minimum of one the two agree, and the "n of 1 minimum"
+banner shows only on an empty list. The Contacts tab's repository-level
+minimum still protects the **stored** record: its last contact cannot be
+deleted.
 
 **Consent is recorded, not just ticked.** `finalizeSignUp` writes
 `users/{uid}/consent/{accepted, acceptedAt, version}` in the same atomic commit,

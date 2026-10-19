@@ -6,6 +6,9 @@
     <!-- Brand palette -->
     <color name="brand_primary">#4E8B38</color>
     <color name="brand_primary_dark">#3D6F2C</color>
+    <!-- Redesign greens (2026-10-13): pill buttons, icon tints, screen titles -->
+    <color name="brand_green">#478831</color>
+    <color name="brand_green_dark">#3D7D28</color>
     <color name="brand_accent">#1A1A1A</color>
 
     <!-- Splash -->

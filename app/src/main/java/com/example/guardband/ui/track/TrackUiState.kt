@@ -13,8 +13,15 @@ import com.example.guardband.data.model.Alert
  * an error.
  */
 data class TrackUiState(
-    /** User-chip name (already falls back to "User"). */
+    /** The avatar's spoken name; not shown as text (already falls back to "User"). */
     val userName: String = "",
+
+    /**
+     * The Google profile photo to load into the avatar, already vetted by
+     * [AvatarPhoto][com.example.guardband.ui.avatar.AvatarPhoto]. Null keeps
+     * the default icon and makes no request.
+     */
+    val avatarUrl: String? = null,
 
     /** True until the first read of `devices/{id}/latest` completes. */
     val isLoading: Boolean = true,
@@ -51,7 +58,15 @@ data class TrackUiState(
      * goes out as [TrackEvent.ShowMessage] instead, so the user is told it is
      * stale without losing it.
      */
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+
+    /**
+     * The Check-in pill: the wearer's latest check-in, from the history
+     * window rather than `latest`. Independent of everything above - a
+     * failed check-in read never touches the map, and a failed `latest`
+     * read never touches the pill.
+     */
+    val checkIn: CheckInStatus = CheckInStatus.Loading
 ) {
     /** Whether there is a position to put a marker on (D3, D4). */
     val hasFix: Boolean get() = location != null

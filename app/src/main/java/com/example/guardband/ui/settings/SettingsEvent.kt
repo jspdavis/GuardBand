@@ -13,4 +13,10 @@ sealed interface SettingsEvent {
      * the Hosting domain is spelled out.
      */
     data class OpenUrl(val url: String) : SettingsEvent
+
+    /** Open Account information, which holds Delete account. */
+    object OpenAccount : SettingsEvent
+
+    /** Open the in-app Changelog. */
+    object OpenChangelog : SettingsEvent
 }

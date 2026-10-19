@@ -131,6 +131,29 @@ class InMemoryAuthRepository : AuthRepository {
         return Result.success(Unit)
     }
 
+    /** This double sends no email, so nothing it holds is ever verified. */
+    override fun isEmailVerified(): Boolean = false
+
+    /** Not supported: there is no email to send. Reported as a plain failure. */
+    override suspend fun sendEmailVerification(): Result<Unit> {
+        delay(InMemoryStore.SIMULATED_DELAY_MS)
+        return if (currentUser() == null) {
+            Result.failure(AuthError.NotSignedIn)
+        } else {
+            Result.failure(AuthError.Unknown(null))
+        }
+    }
+
+    /** Nothing to refresh: the store is already the source of truth. */
+    override suspend fun reloadUser(): Result<Unit> =
+        if (currentUser() == null) Result.failure(AuthError.NotSignedIn) else Result.success(Unit)
+
+    /** Not supported, for the same reason as [verifyPasswordResetCode]. */
+    override suspend fun applyEmailVerification(code: String): Result<Unit> {
+        delay(InMemoryStore.SIMULATED_DELAY_MS)
+        return Result.failure(AuthError.InvalidActionCode)
+    }
+
     override fun isLoggedIn(): Boolean = currentUser() != null
 
     override fun signOut() = InMemoryStore.clearSession()

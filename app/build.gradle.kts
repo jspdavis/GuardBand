@@ -116,7 +116,13 @@ dependencies {
     // by ui/track/OsmdroidConfig (user agent + app-specific tile cache).
     implementation(libs.osmdroid.android)
 
-    // OkHttp — only the debug-only MockSender harness (src/debug) uses it
+    // Track avatar - the Google profile photo, circle-cropped. Coil's own
+    // defaults (memory + disk cache in cacheDir, no logger); see
+    // ui/track/AvatarPhoto for which URLs it is ever given.
+    implementation(libs.coil)
+
+    // OkHttp — the debug-only MockSender harness (src/debug) calls it directly.
+    // Release still ships OkHttp, transitively, as Coil's network fetcher.
     debugImplementation(libs.okhttp)
 
     // CardView — used in activity_dashboard.xml status card

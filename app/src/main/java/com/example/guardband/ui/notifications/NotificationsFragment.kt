@@ -7,11 +7,15 @@ import androidx.fragment.app.Fragment
 import com.example.guardband.R
 
 /**
- * Notifications inbox, pushed inside the Home host from Track's bell (the
- * bottom bar stays visible with no tab selected).
+ * Notifications inbox, pushed inside the Home host from a tab's bell (the
+ * host hides the bottom bar while it shows).
  *
- * Deliberately has no ViewModel, the only screen without one: a static
- * placeholder whose only action is Back. Give it one when the inbox gets data.
+ * Deliberately has no ViewModel, like the other static navigation-only
+ * screens (`ResetSuccessActivity`, `WelcomeActivity`): a placeholder whose
+ * only action is Back. Give it one when the inbox gets data.
+ *
+ * View ids: ib_notifications_back, tv_notifications_title,
+ * tv_notifications_empty.
  */
 class NotificationsFragment : Fragment(R.layout.fragment_notifications) {
 

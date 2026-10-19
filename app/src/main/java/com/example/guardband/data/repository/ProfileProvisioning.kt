@@ -1,5 +1,6 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.model.User
 
 /**
@@ -18,6 +19,13 @@ import com.example.guardband.data.model.User
  * Writing on every sign-in would put that thin version over whatever the user
  * already has. Limiting the write to records that do not exist yet is what
  * makes it safe to call on every sign-in.
+ *
+ * **A deletion marker is not an empty slot.** An account whose data was
+ * deleted but whose sign-in survived reads [ProfileState.DELETION_PENDING],
+ * and is never re-provisioned: that used to bring the account back with a
+ * name and an email but no contacts and no consent. The deletion is resumed
+ * instead, by the Home gate - see
+ * [HomeViewModel][com.example.guardband.ui.home.HomeViewModel].
  */
 internal object ProfileProvisioning {
 
@@ -26,9 +34,11 @@ internal object ProfileProvisioning {
      * leaves it alone.
      *
      * Writes when [isNewUser] (the account was just created, so there is
-     * certainly no record) or when the record is confirmed absent. A *failed*
-     * existence read writes nothing: it cannot tell an absent record from an
-     * unreachable one, and skipping is the option that cannot destroy data.
+     * certainly no record) or when the record is confirmed
+     * [ProfileState.ABSENT]. A live profile and a deletion marker are both left
+     * alone. A *failed* read writes nothing: it cannot tell an absent record
+     * from an unreachable one, and skipping is the option that cannot destroy
+     * data.
      *
      * Returns the write's [Result], or null when no write was attempted.
      * Callers deliberately ignore a failure: the Firebase session already
@@ -44,7 +54,7 @@ internal object ProfileProvisioning {
         isNewUser: Boolean
     ): Result<Unit>? {
         val missing = isNewUser ||
-            userProfileRepository.profileExists(user.id).getOrNull() == false
+            userProfileRepository.profileState(user.id).getOrNull() == ProfileState.ABSENT
         if (!missing) return null
 
         return userProfileRepository.saveProfile(

@@ -70,18 +70,50 @@
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         tools:listitem="@layout/item_contact" />
 
-    <Button
-        android:id="@+id/btn_signup_contacts_add"
-        style="@style/Widget.GuardBand.Button.Outlined"
+    <!-- Add Contact Button (Retains outlined style with 56dp height and 28dp pill radius) -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:layout_marginTop="8dp"
-        android:text="@string/btn_signup_add_contact" />
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="0dp"
+        app:cardMaxElevation="0dp">
 
-    <Button
-        android:id="@+id/btn_signup_contacts_next"
-        style="@style/Widget.GuardBand.SignUpContinue"
+        <Button
+            android:id="@+id/btn_signup_contacts_add"
+            style="@style/Widget.GuardBand.Button.Outlined"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fontFamily="@font/poppins_extralight"
+            android:text="@string/btn_signup_add_contact"
+            android:textAllCaps="false"
+            app:cornerRadius="28dp" />
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Continue Button (Green linear gradient bg_signup_continue) -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:text="@string/btn_continue" />
+        android:layout_height="56dp"
+        android:layout_marginTop="12dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="5dp"
+        app:cardMaxElevation="10dp">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_signup_contacts_next"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_signup_continue"
+            android:fontFamily="@font/poppins_extralight"
+            android:gravity="center"
+            android:text="@string/btn_continue"
+            android:textAllCaps="true"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+
+    </androidx.cardview.widget.CardView>
 
 </LinearLayout>

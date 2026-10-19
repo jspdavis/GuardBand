@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Password reset: the confirmation, after the new password is set.
+  Visual design from Jehan's forgot-password success mock-up (f34487b).
+  DESIGN: Jul owns spacing, typography and colour here.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface_bg"
+    android:padding="24dp"
+    tools:context=".ui.reset.ResetSuccessActivity">
+
+    <!-- Decorative: the title says what happened, so TalkBack skips this. -->
+    <ImageView
+        android:id="@+id/iv_reset_success_icon"
+        android:layout_width="319dp"
+        android:layout_height="323dp"
+        android:contentDescription="@null"
+        android:src="@drawable/reset_success"
+        app:layout_constraintBottom_toTopOf="@id/tv_reset_success_title"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
+
+    <TextView
+        android:id="@+id/tv_reset_success_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/poppins_semibold"
+        android:gravity="start"
+        android:text="@string/label_reset_success_title"
+        android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
+        android:textColor="@color/brand_green"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@id/tv_reset_success_subtitle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_reset_success_icon" />
+
+    <TextView
+        android:id="@+id/tv_reset_success_subtitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="@font/poppins_extralight"
+        android:gravity="start"
+        android:text="@string/label_reset_success_subtitle"
+        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+        android:textColor="@color/text_secondary"
+        app:layout_constraintBottom_toTopOf="@id/cv_reset_success_login"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_reset_success_title" />
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cv_reset_success_login"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:layout_marginTop="32dp"
+        app:cardBackgroundColor="@android:color/transparent"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="5dp"
+        app:cardMaxElevation="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_reset_success_subtitle">
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_reset_success_login"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_signup_continue"
+            android:fontFamily="@font/poppins_extralight"
+            android:gravity="center"
+            android:text="@string/btn_reset_success_login"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+
+    </androidx.cardview.widget.CardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

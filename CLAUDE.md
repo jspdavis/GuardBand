@@ -31,6 +31,7 @@ Each branch holds a deliberately different architecture. Check which one you are
 
 | Branch | Purpose |
 |---|---|
+| `main` | The stable branch, kept behind `mvvm-main`. New work branches off `mvvm-main` and merges back into it with `--no-ff`. |
 | `mvvm-main` | The real product build (MVVM) |
 | `mvp-checkpoint` (+ `-local-backup`, `-phone`) | Instructor-assigned checkpoint that must stay **strict MVP** (Login, Register, Forgot Password, Change Password, Dashboard). Kept separate so it doesn't mix with product work. |
 | `mvvm-jedd`, `ishi` | Individual teammates' working branches |
@@ -62,19 +63,30 @@ com/example/guardband/
 ├── ui/
 │   ├── splash/         Splash → Home if signed in, else Login (2 s countdown)
 │   ├── auth/           GoogleIdTokenProvider + GoogleIdTokenResult (the only androidx.credentials users)
+│   ├── avatar/         AvatarPhoto (pure: which Google photo, if any) + AvatarImage (the Coil binder);
+│   │                 shared by the Track and Profile avatars
 │   ├── login/          email + password, and "Continue with Google"
-│   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode
+│   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode;
+│   │                 then Welcome, once per account (its only route is Consent's success)
+│   ├── consent/        ConsentRequiredActivity: the consent step the Home gate sends an account with
+│   │                 no consent record to (sign-up's layout, relabelled); ConsentGate (pure) decides
 │   ├── forgot/         one screen: email → "check your email" + Resend (60 s cooldown)
-│   ├── reset/          New Credentials, opened by the App Link in the reset email
+│   ├── reset/          New Credentials, opened by the App Link in the reset email;
+│   │                 EmailActionLink routes the other email links (verifyEmail) away first
+│   ├── verify/         VerifyEmailActivity: applies the code from the verification email;
+│   │                 VerifyRequiredActivity: the gate an unverified password account meets instead of Home
 │   │                 ResetLinkParser (pure; the trust boundary) + ViewModel
 │   ├── loading/        1.8 s transition → Home (Back blocked)
-│   ├── home/           HomeActivity: bottom-nav host + second auth gate (HomeViewModel)
-│   ├── track/          Track tab (default): user chip, bell, gear, osmdroid map, band status panel, Navigate + Check-in
+│   ├── home/           HomeActivity: bottom-nav host + second auth gate and the account gate (HomeViewModel)
+│   ├── track/          Track tab (default): avatar, bell, gear, osmdroid map, Navigate + Check-in (the status panel is gone)
 │   │                 BandStatus + NavigationUrl + OsmdroidConfig (pure helpers; see "Track and map")
 │   ├── contacts/       Contacts tab: list + delete
 │   ├── alert/          Alert tab: latest status + incident history
 │   ├── profile/        Profile tab: welcome header + user info
-│   ├── settings/       pushed from Track's gear; holds Log Out
+│   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row
+│   ├── account/        AccountActivity (Account information), opened from Settings;
+│   │                 Delete account sits in its danger zone (DeleteAccountViewModel)
+│   ├── changelog/      ChangelogActivity, opened from Settings; Changelog.entries is the progress log
 │   └── notifications/  pushed from Track's bell; placeholder inbox
 └── utils/
     ├── InputValidator.kt       shared input predicates (no messages)
@@ -86,7 +98,7 @@ com/example/guardband/
 
 `InMemoryAuthRepository`, `InMemoryContactRepository` and `InMemoryAlertRepository` are still in the tree but are **not** wired into `RepositoryProvider` — they are the unit-test doubles for the Firebase implementations and return the same `AuthError`s / `ContactError`s / `AlertError`s, so each pair stays interchangeable. `InMemoryStore.replaceContacts` exists purely as a test seam, because `addContact` assigns its own id.
 
-`ui/dashboard/` and `res/layout/activity_dashboard.xml` are gone, replaced by `ui/home/`. Two leftovers from them are still waiting to be removed: the `label_dashboard_*`/`label_your_contacts` strings and the CardView dependency, which now has no user at all.
+`ui/dashboard/` and `res/layout/activity_dashboard.xml` are gone, replaced by `ui/home/`. Their leftover strings are gone too. (The CardView dependency is in use again: the 2026-10-13 redesign wraps its pill buttons in CardViews.)
 
 Conventions (copy `ui/login/*` as the reference):
 - **State:** one `XUiState` data class per screen, held in a `MutableStateFlow` and exposed as a `StateFlow`. Update it only with `_uiState.update { it.copy(...) }`.
@@ -94,13 +106,13 @@ Conventions (copy `ui/login/*` as the reference):
 - **ViewModels** take repositories through the constructor and hold no `Context` or View. They expose `companion object { val Factory = viewModelFactory { initializer { XViewModel(RepositoryProvider.…) } } }`, and Activities use `by viewModels { XViewModel.Factory }`; plain `by viewModels()` is fine when there are no dependencies. User-facing messages are `MSG_*` constants in the ViewModel — including the wording for every `AuthError`, which each screen maps itself in a private `messageFor(error)`. Those messages stay in Kotlin rather than `strings.xml` precisely because a ViewModel holds no `Context`.
 - **Activities** bind views with `findViewById`, forward raw input and clicks, render state, and execute events (Toast, `startActivity`, `finish`). They collect each flow in its own `lifecycleScope.launch { repeatOnLifecycle(STARTED) { … } }`. Building `Intent`s stays in the Activity.
 - **Wizard data** moves between screens as Intent extras. The Activity passes the extras into the ViewModel's click handler, and the navigation event carries the data back.
-- **Exception:** `NotificationsFragment` has no ViewModel. It is a static screen whose only action is navigation, and the last one of its kind - `ForgotSuccessActivity` was the other, and it is gone (see "Forgot password").
+- **Exception:** `NotificationsFragment`, `ui/reset/ResetSuccessActivity`, `ui/signup/WelcomeActivity` and `ui/changelog/ChangelogActivity` have no ViewModel. Each is a static screen whose only action is navigation. (`ForgotSuccessActivity` was another, and it is gone - see "Forgot password".)
 
 ### Home host (Fragments)
 
 - **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph.
-- **Tabs:** Track (default), Contacts, Alert, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), both opened from Track's top bar. While one is showing, the bar stays visible with no tab checked, and Back (or the screen's back arrow) returns to the last tab. Back on a tab exits.
-- **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings and Notifications are inside the host, so they're covered too.
+- **Tabs:** Track (default), Contacts, Alert, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), opened from any tab's top bar. While one is showing, the bottom bar is hidden, and Back (or the screen's back arrow) returns to the last tab and brings the bar back. Back on a tab exits.
+- **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings and Notifications are inside the host, so they're covered too. Since 2026-10-14 the host also keeps the tabs covered until the account's record has been read (see "Consent gate").
 - **Fragments follow the Activity conventions,** with these differences:
   - Use `Fragment(R.layout.x)`, and bind views in `onViewCreated` with `view.findViewById`.
   - Collect flows with `viewLifecycleOwner.lifecycleScope.launch { viewLifecycleOwner.repeatOnLifecycle(STARTED) { … } }`.
@@ -109,7 +121,7 @@ Conventions (copy `ui/login/*` as the reference):
   - A pushed screen's back arrow calls `requireActivity().onBackPressedDispatcher.onBackPressed()`.
 - **Lists** use `ListAdapter` + `DiffUtil` with `findViewById` in the ViewHolder (`ContactAdapter`, `AlertHistoryAdapter`).
 
-Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (now unused; pending removal), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with **Auth** and Database (Analytics was dropped: no code called it, and it collected an advertising id on its own). The Track map adds **osmdroid-android 6.1.20** (see "Track and map"). Tests add kotlinx-coroutines-test and Robolectric. OkHttp stays `debugImplementation`. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
+Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (the redesigned pill buttons), activity-ktx, fragment-ktx 1.8.2, RecyclerView 1.3.2, lifecycle-viewmodel-ktx and lifecycle-runtime-ktx 2.8.7, kotlinx-coroutines-android 1.9.0, kotlinx-coroutines-play-services 1.9.0, and the Firebase BoM 32.8.1 with **Auth** and Database (Analytics was dropped: no code called it, and it collected an advertising id on its own). The Track map adds **osmdroid-android 6.1.20** (see "Track and map"). Tests add kotlinx-coroutines-test and Robolectric. The Track and Profile avatars add **Coil 2.7.0** (pinned; the 2.x line works on a plain `ImageView`). OkHttp is declared `debugImplementation` for the mock sender, but release builds still ship it, transitively, as Coil's network fetcher. Everything except CardView now lives in `gradle/libs.versions.toml`. Google sign-in adds **androidx.credentials 1.3.0**, **credentials-play-services-auth 1.3.0** and **googleid 1.1.1** — pinned there because newer versions need compileSdk 35 (see "Google sign-in" below).
 
 ## Firebase
 
@@ -146,7 +158,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 
 **Error wording stays neutral.** `ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL` maps to its own `AuthError.AccountExistsWithDifferentCredential`, shown as "This email uses a different sign-in method." It must not name the other provider: saying "that address uses a password" confirms the account exists, which is the whole thing the shared invalid-credentials message exists to prevent.
 
-**Log out clears the credential state.** `SettingsFragment` calls `GoogleIdTokenProvider.clearCredentialState()` before navigating, so the chooser reappears instead of silently reusing the last account. It is bounded by a 2 s timeout and its failures are ignored — the user is already signed out of Firebase, so nothing may keep them on that screen. `HomeViewModel`'s failed auth gate does **not** clear it: that is a dead session, not a user logging out.
+**Log out clears the credential state.** `ui/auth/LoginNavigation.clearCredentialsThenGoToLogin` calls `GoogleIdTokenProvider.clearCredentialState()` before navigating (Log Out in Settings and a finished Delete account in Account information both go through it), so the chooser reappears instead of silently reusing the last account. It is bounded by a 2 s timeout and its failures are ignored — the user is already signed out of Firebase, so nothing may keep them on that screen. `HomeViewModel`'s failed auth gate does **not** clear it: that is a dead session, not a user logging out.
 
 **Never log a token**, an account name or an email, here or anywhere else.
 
@@ -194,8 +206,11 @@ Firebase's own `/__/auth/action` is the one exception, and it is **an exact
 `android:path`, never `pathPrefix`**: `/__/auth/handler`, the OAuth redirect
 handler, is on the same host. Every Firebase email action (`verifyEmail`,
 `recoverEmail`, ...) arrives at that one path, so the parser's
-`mode=resetPassword` check is what keeps the others out; adding email
-verification later means deciding what the app does with those links.
+`mode=resetPassword` check is what keeps the others out. Since 2026-10-14
+`ui/reset/EmailActionLink.routeOf` runs first in `ResetPasswordActivity` and
+hands `verifyEmail` (and any mode the app does not handle) to
+`VerifyEmailActivity`; every reset link, and every malformed one, still takes
+exactly the old path. See "Email verification".
 
 **`ResetPasswordActivity` is the one `exported="true"` Activity in the app**,
 because an external click has to reach it. `ui/reset/ResetLinkParser` is
@@ -240,6 +255,44 @@ written out again.
 linked for it. Every other developer's debug SHA-256, and a release one, still
 has to be added. The doc's §1 is the checklist.
 
+## Email verification
+
+> The flow, the link routing, the traps and the manual pass:
+> [docs/email-verification.md](docs/email-verification.md).
+
+- **Sent once, best effort,** by `SignUpConsentViewModel` right after
+  `createAccount` succeeds, in its own coroutine so it can neither delay nor
+  fail sign-up. Not on a Retry, never for a Google account. Plain
+  `sendEmailVerification()` with **no `ActionCodeSettings`**, like the reset.
+- **The link reuses the reset App Link.** No manifest change: `ResetPasswordActivity`
+  routes `mode=verifyEmail` to the non-exported `ui/verify/VerifyEmailActivity`,
+  which re-checks the link and calls `AuthRepository.applyEmailVerification`.
+  That checks the code's kind first (`checkActionCode` must say
+  `VERIFY_EMAIL`), so it never applies another action. Other modes get "isn't
+  supported", never "invalid reset link", and never a crash.
+- **Status lives in Account information**: Verified / Not verified, from
+  `EmailVerification.of(providers, isEmailVerified)`. Google accounts are
+  always Verified and never see Resend. The user is **reloaded every time the
+  screen comes to the front**, so a link opened elsewhere shows up without a
+  sign-out.
+- **Resend has a 60 s cooldown** on the forgot-password pattern (injected
+  `Clock` + ticker). `AuthError.TooManyRequests` is worded kindly and starts
+  the cooldown; offline does not.
+- **The app is locked until it is verified (2026-10-14).** `HomeViewModel`'s
+  gate sends an unverified **password** account to `ui/verify/VerifyRequiredActivity`
+  (task cleared) instead of the tabs - `EmailVerification.requiredBeforeUse`.
+  Google accounts, and accounts with no known provider, are never gated. The
+  gate screen reloads on every `onStart` and lets them straight through once
+  verified; it also offers "I've verified my email", Resend (same cooldown),
+  Log Out, and "Wrong email? Delete this account" (Account information), so a
+  mistyped address is never a dead end. Every route in - Splash, login, Google,
+  sign-up via Welcome - ends at Home, which is why the gate lives there.
+- **It is a product gate, not a security boundary.** The Security Rules do not
+  check `email_verified`, and must not on `users/$uid`: sign-up's
+  `finalizeSignUp` writes the profile **before** the user can have verified,
+  so such a rule would fail every sign-up. `devices/` is open to everyone
+  anyway until pairing.
+
 ## Contacts and profile data
 
 The signed-in user's own record, separate from the band's `devices/` tree:
@@ -253,36 +306,45 @@ The signed-in user's own record, separate from the band's `devices/` tree:
 
 - **There is no `location`.** It was a city or region typed at sign-up, and it was dropped with the sign-up revamp: the band's GPS is the real location, and a stale self-reported city on the Track chip was worse than nothing. The field, its sign-up step and its Profile/Track rows are gone — don't reintroduce it without deciding what reads it.
 - **`phone` is always E.164.** `InputValidator.normalizePhoneToE164` is the only thing that decides the stored form: it takes `09XXXXXXXXX`, `639XXXXXXXXX` and `+639XXXXXXXXX` and stores all three as `+639XXXXXXXXX`, and it accepts any other number that is already valid E.164 (`+` and 8–15 digits), stored as typed. It strips spaces, hyphens, parentheses and dots first. ViewModels pass the phone through **untouched** — normalising in a screen would mean two places could disagree. `relationship` is optional and stored as `""` when blank.
-- **Minimum 3, cap 10.** `InputValidator.MIN_CONTACTS` / `MAX_CONTACTS`. Enforced in the **repository**, not just the dialog: a delete that would leave fewer than 3 fails with `ContactError.MinimumContacts`, and an add at 10 with `MaximumContacts`. Editing is always allowed — it is the way out of a wrong number. Security Rules **cannot** enforce these, because RTDB rules cannot count children, so the repository is the last line. The Contacts tab shows "n of 3 minimum" until the user reaches it, and so does sign-up step 3 — but **sign-up requires one, not three** (`SignUpContactsViewModel.MIN_AT_SIGNUP`). A band in use with one contact beats a sign-up abandoned at the third.
+- **Minimum 1, cap 3** (2026-10-13; it was 3 and 10). `InputValidator.MIN_CONTACTS` / `MAX_CONTACTS`. These are the people the band texts first, so the list is short on purpose. Enforced in the **repository**, not just the dialog: deleting the last contact fails with `ContactError.MinimumContacts`, and an add at 3 with `MaximumContacts`. Editing is always allowed — it is the way out of a wrong number. Security Rules **cannot** enforce these, because RTDB rules cannot count children, so the repository is the last line. Sign-up requires the same one (`SignUpContactsViewModel.MIN_AT_SIGNUP` *is* `MIN_CONTACTS`). An account stored with more than 3 under the old cap keeps them all, and the add button refuses until it is back under 3; nothing trims it.
+- **No "other" (non-emergency) contacts yet, deliberately.** Everything under `emergency_contacts` is someone the band texts, and the Privacy Notice gives that as *the entire reason* the numbers are collected. Storing contacts the band never texts needs a stated purpose first, then the notice, `CONSENT_VERSION` and the notice's version changed in the same commit.
 - **Every mutation is a transaction** on the `emergency_contacts` node, not a write to one child. The bounds are counts over siblings, so a check-then-write would let two devices both pass the cap or both delete below the minimum.
 - **The sign-up wizard collects; only Consent writes.** Account → Name → Contacts → Consent. Steps 1–3 stage everything in memory and pass it on as Intent extras (contacts as `Parcelable`), so abandoning the wizard leaves nothing behind and never occupies an email address. The cost is that a taken address is not discovered until the final submit — deliberately, because checking earlier is the question Firebase's email-enumeration protection exists to refuse, and Login and forgot-password both already decline to answer it.
 - **Consent is recorded, not just collected.** `finalizeSignUp` writes `accepted`, a server `acceptedAt` and `UserProfileRepository.CONSENT_VERSION` in the same atomic commit as the profile and contacts, so a profile can never exist without one. Bump the version whenever `label_signup_consent_statement` changes what is being agreed to.
 - **Sign-up finalization is one atomic write.** `UserProfileRepository.finalizeSignUp` puts the profile and every contact into a single multi-path `updateChildren`, so sign-up cannot half-succeed. That is what makes the Retry safe: there is no partial state to reconcile. Registration is deliberately **two** calls — `AuthRepository.createAccount` then `finalizeSignUp` — and the `accountCreated` guard in `SignUpContactsViewModel` means a retry resumes at the write. When they were one call, a failed write left the account created and the only retry went back through account creation, which then failed as "email already in use", so that address could never finish registering.
 - **`saveProfile` merges, never replaces.** It `updateChildren`s its three fields. A `setValue` on `users/{uid}` would delete every emergency contact under it.
-- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all — its chip is the session's name. RTDB disk persistence is **not** enabled.
+- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all — its avatar's spoken name is the session's name. RTDB disk persistence is **not** enabled.
 - **Failures are typed and mapped by code.** `ContactError` + `FirebaseDatabaseErrorMapper`, on `DatabaseError.getCode()`, never on a message. That code is only reachable through the SDK's completion-listener and `ValueEventListener` callbacks — an awaited `Task` fails with a bare `DatabaseException` carrying localised prose — which is why these repositories wrap the listener forms in `suspendCancellableCoroutine` instead of using `.await()`.
 - **Contact phone numbers are never logged**, and neither are contact names. They are a third party's personal data, not the user's own. Nothing in `data/` logs at all.
 
 ## Account deletion
 
-A destructive row at the bottom of Settings, driven by
-`ui/settings/DeleteAccountViewModel` — its own ViewModel, because
-`SettingsViewModel` is deliberately events-only for a static screen and this
-flow has six steps, two guards and a credential prompt.
+A destructive row in a red-outlined **danger zone** at the bottom of
+**Account information** (`ui/account/AccountActivity`, opened from the
+Settings row of that name), driven by `ui/account/DeleteAccountViewModel` —
+its own ViewModel, because `AccountViewModel` only shows the account and this
+flow has six steps, two guards and a credential prompt. It was a row at the
+foot of Settings until 2026-10-14; one level deeper it is much harder to hit
+by accident. The path users are told is **Track → gear → Settings → Account
+information → Delete account**, and the hosted `/delete-account` page and the
+Privacy Notice must say the same.
 
 **The order of operations is the design, and reversing it loses data for good:**
 
 1. **Re-authenticate.** Firebase refuses `delete()` on a session that has been
    sitting around (`AuthError.RequiresRecentLogin`). A password account types
    its password; a Google account goes back through the chooser.
-2. **Remove `users/{uid}`** in **one** `removeValue` — profile fields, every
-   emergency contact and the consent record — **while still signed in.** The
-   rules authorise it with `auth.uid == $uid`, so once step 3 succeeds there is
-   no session left that could make this write and the subtree is orphaned
-   permanently.
+2. **Replace `users/{uid}` with the deletion marker** in **one** `setValue`
+   (`UserProfileRepository.markDeletionPending`): profile fields, every
+   emergency contact and the consent record go, and `{ "deletion_pending":
+   true }` is all that is left — **while still signed in.** The rules
+   authorise it with `auth.uid == $uid`, so once step 3 succeeds there is no
+   session left that could make this write and the subtree is orphaned
+   permanently. Data out and marker in are one commit, so there is never a
+   moment when the data is gone and nothing says why.
 3. **Delete the Auth user.**
 4. **Go to Login** with the back stack cleared, through the same
-   `clearCredentialsThenGoToLogin` that Log Out uses.
+   `LoginNavigation.clearCredentialsThenGoToLogin` that Log Out uses.
 
 **Which credential it asks for comes from `AuthRepository.currentUserProviders()`,
 and `PASSWORD` wins a mixed account.** Providers are read off
@@ -310,21 +372,123 @@ through the prompt rather than into a call Firebase will refuse again.
 until pairing exists, so one user's deletion must not take the band's history
 with it — and the modal says so, rather than implying everything is gone.
 
-**Known gap:** if step 2 succeeds, step 3 fails and the user gives up, the
-account survives with no record behind it, and the next sign-in has
-`ProfileProvisioning` write a fresh minimal `users/{uid}` from the session's
-name and email. Nothing leaks, but the account comes back thinner rather than
-staying deleted. Closing it properly needs a "deletion pending" marker that
-`ProfileProvisioning` honours.
+**The deletion marker closes the "comes back thin" gap (2026-10-14).** If step
+2 succeeds, step 3 fails and the user gives up, the marker is what survives:
+- **`ProfileState`** is three-valued — `ABSENT`, `PRESENT`, `DELETION_PENDING`
+  (`UserProfileRepository.profileState`) — and `ProfileProvisioning` writes
+  only on `ABSENT`. A marker is never re-provisioned; that used to bring the
+  account back with a name and email but no contacts and no consent.
+- **`HomeViewModel`'s gate reads it.** Every way in — a restored session from
+  Splash, an email login, a Google sign-in — lands on Home, which sends a
+  pending account to Account information with the task cleared
+  (`HomeEvent.ResumeDeletion`) instead of into tabs that would write a contact
+  under a deleted account. A failed read used to let them in; since the
+  consent gate it is a Retry cover instead (see "Consent gate").
+- **`DeleteAccountViewModel` reads it on start** and opens in the same state a
+  failure after step 2 leaves: `FAILED`, `profileDeleted`, no fresh
+  credential, wording `MSG_RESUME_PENDING`. Retry asks for the password or
+  the Google account again before anything is called. **Log Out** is offered
+  beside Retry once the data is gone, because the marker keeps the deletion
+  waiting for the next sign-in, on any phone.
+- **It is per uid**, so another account on the same phone is untouched, and a
+  later sign-up with the same email gets a new uid and no marker.
 
-**No rules change was needed.** `users/$uid` already has
-`".write": "auth != null && auth.uid == $uid"`, a removal is a write of null
-at that path, and there are no `.validate` rules under `users` (RTDB skips
-them on deletes regardless).
+**The marker outlives a finished deletion, by necessity.** Once the Auth user
+is gone no session can write `users/{uid}`, so `deletion_pending: true` stays
+under a uid that no longer belongs to anyone — no name, no email, no contacts.
+Any marker cleared before the Auth delete would reopen the gap. A human can
+sweep them from the Console. The hosted pages do not mention it yet (a human
+decision).
 
-**Not covered by tests:** `reauthenticate` and `delete` themselves, which need
-a real `FirebaseAuth`. The sequencing, the wording and both guards are covered
-— `DeleteAccountViewModelTest`, 28 tests.
+**No rules change was needed, and that was checked.** `users/$uid` has
+`".write": "auth != null && auth.uid == $uid"`, nothing at that level refuses
+an unlisted child, and RTDB skips `.validate` on the children a replace nulls.
+On 2026-10-14 the stripped `RTDBS-RULES.md` was loaded into the local Database
+Emulator (a `demo-` project id): the owner's replace was allowed and left only
+the marker, a stranger's and an unauthenticated one were denied, the retry and
+the gate's read were allowed, and Playground test 2 still passed. **If a
+`$other: { ".validate": false }` is ever added at `users/$uid`, give
+`deletion_pending` a rule of its own first**, or every Delete account fails at
+step 2 — safely, with nothing deleted, but it fails.
+
+**Not covered by tests:** `reauthenticate`, `delete` and the RTDB write
+themselves, which need a real Firebase. The sequencing, the wording, both
+guards and every marker path (written before the Auth delete, resume on a later
+visit, offline, recent-login, Log Out, another account, a failed read) are
+covered — `DeleteAccountViewModelTest` (39), `HomeViewModelTest` (28, with
+the consent gate's) and
+`ProfileProvisioningTest`.
+
+## Consent gate
+
+> The routes, the decisions and the manual pass:
+> [docs/privacy-and-consent.md](docs/privacy-and-consent.md) §8 and §6.
+
+**An account with no `users/{uid}/consent` never reaches the tabs
+(2026-10-14).** `ProfileProvisioning` gives a Console-made account, and a
+Google account whose record went missing, only a `name` and an `email`.
+`HomeViewModel` now reads the record before anything is shown and sends such
+an account to `ui/consent/ConsentRequiredActivity` (`HomeEvent.RequireConsent`,
+task cleared).
+
+- **Order:** no session → Login; unverified password account → the
+  verification gate; `deletion_pending` → Account information; **then**
+  consent. A pending deletion always wins. Provisioning has already finished
+  on every sign-in path by then: it runs inside `login` and
+  `signInWithGoogle`, before they return.
+- **Only a missing record triggers it.** `ConsentGate.needsConsent(record)` is
+  `record == null`, so `1.0` stays `1.0` and is let in. A re-consent flow
+  would add its version rule there, not in the gate. A node without
+  `accepted: true` reads as no record; the rules refuse to store one anyway.
+- **Three outcomes, never two.** `UserProfileRepository.consentRecord` returns
+  a record, null, or a failure. A failure, or no answer within
+  `HomeViewModel.GATE_READ_TIMEOUT_MS` (10 s), is `HomeGateState.FAILED`: a
+  Retry cover, **never** the consent screen and never the tabs. The timeout is
+  load-bearing: with no disk persistence an RTDB read made offline does not
+  fail, it waits forever. This ends the deletion check's old "a failed read
+  lets them in".
+- **No flash.** `HomeActivity` adds no tab Fragment until the gate is `OPEN`;
+  the cover `fl_home_gate` (spinner, or Retry) sits over everything until
+  then, including Fragments a restore re-added.
+- **The same agreement as sign-up.** The screen inflates
+  `activity_signup_consent.xml` itself and relabels only the title and the two
+  bottom buttons (Decline, Agree), so the statement, the checkbox and the
+  notice button are sign-up's own views and strings. Agree calls
+  `recordConsent`, which writes the same three paths as `finalizeSignUp` from
+  one shared builder, at `CONSENT_VERSION`, for the **live session's** uid.
+  Rewording the statement still means bumping `CONSENT_VERSION`, and now it
+  changes both routes at once.
+- **Agree continues only after the write lands,** to `HomeActivity`, whose gate
+  reads the record again. A failed write, or one that does not land within
+  `ConsentRequiredViewModel.WRITE_TIMEOUT_MS` (an offline write queues rather
+  than failing), stays on the screen with Try again.
+- **Decline signs out and changes nothing else.** Nothing is written to
+  `consent` and the profile and contacts are left alone. It leaves through
+  `LoginNavigation.clearCredentialsThenGoToLogin`, with a toast saying why,
+  and the next sign-in meets the screen again. There is no in-app delete from
+  here, because Settings is behind the gate; the hosted `/delete-account`
+  page's manual route covers it.
+- **Sign-up is not prompted twice,** and no flag says so: its own atomic write
+  stored consent before Home reads it, so a stale flag cannot wave anyone
+  through.
+- **No rules change.** Checked on 2026-10-14 in the local Database Emulator
+  against the stripped `RTDBS-RULES.md`: the owner's late write is allowed on
+  an existing profile and on an absent one; a stranger's, an unauthenticated
+  one, a partial one and `accepted: false` are denied; Playground test 2 still
+  passes. **Still do not add `users/$uid/.validate: newData.hasChildren(['consent'])`.**
+- **A product gate, not a security boundary,** like the verification gate:
+  nothing server-side requires consent.
+- **Known limits.** An account that reaches the gate with no record at all
+  (`ABSENT`: its provisioning write failed) gets only `consent` written, and
+  the Profile tab falls back to the session's name and email. A first-time
+  Google user who abandons the contacts step now meets this screen on their
+  next launch and can agree with **no emergency contacts**: the gate checks
+  consent, not contacts.
+
+**Not covered by tests:** the RTDB read and write themselves and the two
+Activities. The decision, every outcome, the timeouts, Agree, Retry and
+Decline are covered: `HomeViewModelTest` (28), `ConsentGateTest`,
+`ConsentRequiredViewModelTest`.
 
 ## Privacy, consent and the hosted pages
 
@@ -390,12 +554,15 @@ analytics, so **adding any analytics SDK back means changing the notice in the
 same commit.** And **OpenStreetMap's tile servers see the phone's IP and the
 area being viewed** on every tile, which the notice discloses.
 
-**Known gap, documented not fixed:** `ProfileProvisioning` writes only `name`
-and `email`, so `users/{uid}` can exist with no `consent` subtree - including
-after a failed account deletion, where the next sign-in repopulates a thin
-record. **Do not add `users/$uid/.validate: newData.hasChildren(['consent'])`**
-as a fix: it would fail that legitimate write and leave the user with no
-profile at all. The options are in the doc.
+**The "profile with no consent" gap is closed in the app (2026-10-14).**
+`ProfileProvisioning` still writes only `name` and `email`, so `users/{uid}`
+can still exist with no `consent` subtree (an account made in the Console, a
+Google account whose record went missing), but such an account now meets the
+consent step before the tabs - see "Consent gate". The failed account deletion
+route is closed by the deletion marker - see "Account deletion". **Do not add
+`users/$uid/.validate: newData.hasChildren(['consent'])`** anyway: it would
+fail that legitimate provisioning write and leave the user with no profile at
+all. The original options are in the doc.
 
 ## Firebase data contract
 
@@ -416,6 +583,8 @@ The band (or the mock sender) PUTs to the RTDB REST API, and Security Rules vali
 - `sequenceId`
 
 `data/model/Alert.kt` mirrors it and `data/repository/AlertParser.kt` reads it — see "Alert data" below for how. Check the field names against the deployed Security Rules before relying on them.
+
+**A check-in (FR-10) is a `CHECKIN` alert, and the main app never writes one.** It is the wearer's double-press on the band, sent with the payload above to `history` and `latest`; there is no separate check-in node. Nothing under `app/src/main` may write a check-in, or anything else, to `devices/` — only the band does, and the debug mock sender stands in for it. See "Check-in status" below.
 
 ## Alert data
 
@@ -486,13 +655,31 @@ normalization. Two consequences worth knowing:
   on clean rows rather than re-serving the blocked images already cached under
   `Mapnik`.
 
-**No phone-location permission, ever.** The band supplies the location, not the
-handset. The merged manifest adds only four *optional* `uses-feature` entries
-from osmdroid (`location.network`, `location.gps`, `telephony`, `wifi`, all
-`required="false"`) and **no** `uses-permission` at all; `ACCESS_NETWORK_STATE`
-was already there via Firebase. Never add `ACCESS_FINE_LOCATION` or
-`ACCESS_COARSE_LOCATION`, and never use osmdroid's `MyLocationNewOverlay` —
-that is the class that would drag them back in.
+**No phone-location permission in the main app, ever.** The band supplies the
+location, not the handset. The merged manifest adds only four *optional*
+`uses-feature` entries from osmdroid (`location.network`, `location.gps`,
+`telephony`, `wifi`, all `required="false"`) and **no** `uses-permission` at
+all; `ACCESS_NETWORK_STATE` was already there via Firebase. Never add
+`ACCESS_FINE_LOCATION` or `ACCESS_COARSE_LOCATION` to the main manifest, and
+never use osmdroid's `MyLocationNewOverlay` — that is the class that would drag
+them back in.
+
+**The one deliberate exception: `app/src/debug/AndroidManifest.xml`.** The mock
+sender stands in for the ESP32 + NEO-6M hardware, and it is correct for it to
+report Phone A's own GPS fix — that is what the real band will do. Both
+`ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION` are declared there and
+**only** there, so a release build contains neither permission. `MockSenderActivity`
+requests them at runtime via `ActivityCompat.requestPermissions` and falls back
+to the Cebu City random position if denied, so the permission refusal is always
+survivable. If this exception is ever removed, remove the runtime request, the
+`LocationListener` and the GPS badge from `MockSenderActivity` in the same
+commit.
+
+**The band status panel was removed from the screen (2026-10-14).** The
+Check-in pill is now Track's one status line, so the Reporting badge, "Last
+seen" and battery are no longer shown. `TrackViewModel` still computes
+`isOnline`, `elapsed` and `battery` and the tests still cover them; the rules
+below are what they mean if a screen shows them again.
 
 **"Reporting", not "Online".** `BandStatus.ONLINE_THRESHOLD_MS` is **180 s**,
 three of FR-09's 60 s tracking intervals, so one dropped update does not flip
@@ -532,9 +719,11 @@ without it the Fragment's view leaks.
 **Coordinates are never logged.** Same rule as contact phone numbers and
 alerts — see "Alert data". Neither the Track tab nor anything in `data/` logs.
 
-**`BandStatus` duplicates `AlertFormatting`'s two ISO-8601 patterns** for now,
-because sharing them would mean editing the Alert tab. Folding them into one
-helper is a one-line change whenever that tab is next open.
+**The two ISO-8601 patterns live once, in `AlertFormatting.ISO_PATTERNS`.**
+`BandStatus` reads them through `AlertFormatting.newIsoUtcParser`, which hands
+out a **new** parser per call: `SimpleDateFormat` is not thread-safe, and
+`BandStatus` runs from a ViewModel. `AlertFormatting`'s own cached parsers are
+main-thread only, so never share those instances with the Track side.
 
 **Not for production as-is:** OpenStreetMap's public tile servers are a
 volunteer-funded service whose usage policy is written for light use. A real
@@ -545,11 +734,34 @@ and the D4 follow logic. All of it needs a real `Context`, a running map or an
 instrumented test, and the project declares no mocking library. The testable
 logic was lifted out instead — `BandStatus`, `NavigationUrl` and the ViewModel.
 
+## Check-in status
+
+The Track tab's Check-in pill (`track_checkin_pill`) shows the wearer's latest
+check-in (FR-10): "Last check-in: 5 minutes ago", or "No recent check-ins".
+**It is a status, never an action.** It is a `TextView`, not a `Button`, so it
+has no click, no ripple and TalkBack reads it as text. The app never sends a
+check-in; only the band does (see "Firebase data contract").
+
+- **Read from history, not `latest`.** `AlertRepository.observeLatestCheckIn()`
+  is the newest `CHECKIN` in the same 100-entry history window the Alert tab
+  reads, picked by `CheckInSelector` from what `AlertParser` already parsed.
+  `AlertParser` stays the one reader of the payload; there is no second
+  check-in parser, because there is no second payload.
+- **"None" means none recently.** A check-in older than the window drops out,
+  which is why the wording is "No recent check-ins" and not "never".
+- **It ages on the existing ticker.** `TrackViewModel.recomputeStaleness`
+  recomputes the check-in's `Elapsed` on the same injected `staleTicks` as the
+  band status, and the Fragment words it with the same plurals pattern.
+- **Independent of the map.** A failed check-in read never touches the map,
+  and a failed `latest` read never touches the pill. A failure keeps whatever
+  the pill already says; only a pill with nothing yet becomes "Check-ins
+  unavailable".
+
 ## Mock sender
 
 > Operating manual for both launchers, end to end: [docs/mock-sender-and-receiver.md](docs/mock-sender-and-receiver.md).
 
-For demos without hardware, Phone A runs `MockSenderActivity` and Phone B runs the receiver screens. Both icons belong to **one install** — same `applicationId` — so a single phone can play both ends. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives in the **debug source set** (`app/src/debug/java/.../ui/mocksender/`, plus `app/src/debug/AndroidManifest.xml`, which gives it its own "GuardBand Mock Sender" launcher icon), so release builds contain neither the code nor the icon. OkHttp is `debugImplementation` for the same reason.
+For demos without hardware, Phone A runs `MockSenderActivity` and Phone B runs the receiver screens. Both icons belong to **one install** — same `applicationId` — so a single phone can play both ends. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives in the **debug source set** (`app/src/debug/java/.../ui/mocksender/`, plus `app/src/debug/AndroidManifest.xml`, which gives it its own "GuardBand Mock Sender" launcher icon), so release builds contain neither the code nor the icon. OkHttp is `debugImplementation` for the same reason (release still gets it through Coil, but nothing in `main` calls it).
 
 **`AlertSender` writes straight to the RTDB REST API,** as the band will: one `PUT` to `/devices/{id}/history/{sequenceId}.json`, then one to `/devices/{id}/latest.json`. There is no Cloud Function in the path — the Spark plan cannot host one, and the `devices` Security Rules already do the validation `ingestAlert` was going to do. (`SCHEMA.md`'s "Receiver validation requirements" still describes that Function; the payload shape it specifies is unchanged.)
 
@@ -568,6 +780,40 @@ The payload itself follows `SCHEMA.md` and satisfies the `devices` validation: a
 - The agent does NOT: tune spacing, colors, typography, or icons beyond placeholders. Mark such spots with `<!-- DESIGN: Jul -->`.
 - Each screen's KDoc lists its view IDs so the layout XML can be restyled without touching logic.
 
+## Changing the launcher icon
+
+The 2026-10-13 icons were generated from `res/drawable-nodpi/logo_mark.png` by a
+PowerShell script that was never committed. **That script is gone; don't try to
+recreate it** — a guess at its sizing would silently change the icons. Use
+Android Studio's **Image Asset** tool instead (right-click `res` → New → Image
+Asset → Launcher Icons, name `ic_launcher`):
+
+- **Foreground:** `logo_mark.png`, resized so the logo stays inside the safe
+  zone and no launcher mask clips it.
+- **Background:** colour, white (`ic_launcher_background`, `#FFFFFF`).
+- **No monochrome layer.** Themed icons are drawn from a layer's transparency,
+  and the logo is an opaque picture on white, so it would theme as a plain
+  square. Without one, Android shows the colour icon.
+
+Image Asset rewrites `mipmap-anydpi-v26/ic_launcher.xml` and
+`ic_launcher_round.xml`, so check afterwards that neither gained a
+`<monochrome>` line, and put back their header comment. The mock sender has no
+icon of its own; it shows the same one under a different label.
+
+## Changelog
+
+Settings → Changelog opens `ui/changelog/ChangelogActivity`, a progress log
+for the team and the instructor, built from the `mvvm-main` history. The
+content is `Changelog.entries`: one entry per day that work landed, newest
+first, each with the short hash of that day's last commit. **When work merges
+into `mvvm-main`, add (or extend) the entry for that day at the top, in the
+same merge.** `ChangelogTest` checks the order, the dates and the hashes.
+
+It is an Activity rather than a Fragment pushed over the Home host because the
+host's Back always returns to a tab, and Back from here must return to
+Settings. It is outside the host's auth gate, which is fine: it shows nothing
+about the user.
+
 ## Gotchas
 
 - `README.md` is UTF-16 encoded. Plain `cat`/`grep` will show it with spaces between characters, so use `iconv -f UTF-16 -t UTF-8 README.md` to read it.
@@ -585,3 +831,4 @@ The payload itself follows `SCHEMA.md` and satisfies the `devices` validation: a
 - The agent does not run builds, Gradle or the emulator unless the pass prompt explicitly asks for build confirmation (Prompt 08 did). The emulator is always the developer's.
 - No state-changing git commands (commit, checkout, merge, reset, push, …) unless explicitly asked. Delete or move files with filesystem operations, not `git rm`/`git mv`.
 - Never port MVP code into MVVM branches, or the reverse.
+- **The developer tests on their own phone in every development session.** James checks each change on a personal phone while the session runs, so don't ask whether something has been tried on a device, and don't end reports with repeated "needs a phone pass" reminders. When a change adds device behaviour, still write its manual checklist into the relevant doc once; just don't chase it.

@@ -117,8 +117,8 @@
           "$contactId": {
             "//": [
               "Counts cannot be enforced here: RTDB rules cannot count",
-              "children, so InputValidator.MIN_CONTACTS (3) and MAX_CONTACTS",
-              "(10) stay the repository's job. These rules only police the",
+              "children, so InputValidator.MIN_CONTACTS (1) and MAX_CONTACTS",
+              "(3) stay the repository's job. These rules only police the",
               "shape of one contact."
             ],
             ".read": "auth != null && auth.uid == $uid",

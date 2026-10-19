@@ -2,175 +2,254 @@
 <!-- Alert tab: current status card above the incident history.
      Spacing, type and colour are placeholders on theme tokens. -->
 <!-- DESIGN: Jul -->
-<LinearLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface_bg"
-    android:orientation="vertical"
-    android:paddingStart="24dp"
-    android:paddingTop="24dp"
-    android:paddingEnd="24dp"
+    android:background="@color/surface_muted"
     tools:context=".ui.alert.AlertFragment">
 
-    <TextView
-        android:id="@+id/tv_alert_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/label_alert_title"
-        android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
-        android:textColor="@color/text_primary" />
+    <!-- ── Top Action Buttons (Settings & Notifications) ────────────────── -->
 
-    <ProgressBar
-        android:id="@+id/alert_progress"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/ib_alert_settings"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="16dp"
-        android:visibility="gone"
-        tools:visibility="visible" />
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:contentDescription="@string/cd_open_settings"
+        android:src="@drawable/ic_settings"
+        app:backgroundTint="@color/white"
+        app:elevation="4dp"
+        app:fabCustomSize="40dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+        app:tint="@color/brand_green" />
 
-    <!-- ── Error, with retry ─────────────────────────────────────────────── -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/ib_alert_notifications"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="24dp"
+        android:contentDescription="@string/cd_open_notifications"
+        android:src="@drawable/ic_notifications"
+        app:backgroundTint="@color/white"
+        app:elevation="4dp"
+        app:fabCustomSize="40dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+        app:tint="@color/brand_green" />
+
+    <!-- ── Non-Scrollable Header Container (Progress & Errors) ──────────── -->
 
     <LinearLayout
-        android:id="@+id/alert_error_view"
-        android:layout_width="match_parent"
+        android:id="@+id/ll_alert_top_status_container"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
         android:orientation="vertical"
-        android:visibility="gone"
-        tools:visibility="visible">
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ib_alert_settings">
 
-        <TextView
-            android:id="@+id/alert_error_message"
+        <ProgressBar
+            android:id="@+id/alert_progress"
+            style="@style/Widget.AppCompat.ProgressBar"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:indeterminateDrawable="@drawable/bg_spinner_gradient"
+            android:visibility="gone"
+            tools:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/alert_error_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
-            android:textColor="@color/error_red"
-            tools:text="Couldn't reach your band. Check your connection." />
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
 
-        <Button
-            android:id="@+id/alert_retry_button"
-            style="@style/Widget.GuardBand.Button.Outlined"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/btn_alert_retry" />
+            <TextView
+                android:id="@+id/alert_error_message"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                android:textColor="@color/error_red"
+                tools:text="Couldn't reach your band. Check your connection." />
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cv_alert_retry"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="4dp"
+                app:cardMaxElevation="8dp">
+
+                <Button
+                    android:id="@+id/alert_retry_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_retry_gradient"
+                    android:fontFamily="@font/poppins_extralight"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:text="@string/btn_alert_retry"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    app:backgroundTint="@null"
+                    app:strokeWidth="0dp" />
+
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+
     </LinearLayout>
 
-    <!-- ── Current status (D2: newest non-tracking alert) ────────────────── -->
+    <!-- ── Scrollable Body Content (Current Status & History) ────────────── -->
 
-    <TextView
-        android:id="@+id/tv_alert_latest_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="8dp"
-        android:text="@string/label_alert_latest"
-        android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
-        android:textColor="@color/text_secondary" />
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/alert_latest_card"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        app:cardBackgroundColor="@color/surface_card"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="0dp"
-        tools:visibility="visible">
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ll_alert_top_status_container">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingStart="24dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="24dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <View
-                    android:id="@+id/alert_latest_dot"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
-                    android:background="@drawable/bg_status_dot" />
-
-                <TextView
-                    android:id="@+id/alert_latest_type"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:textAppearance="@style/TextAppearance.GuardBand.TitleSmall"
-                    android:textColor="@color/text_primary"
-                    tools:text="Panic" />
-
-                <TextView
-                    android:id="@+id/alert_latest_time"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
-                    android:textColor="@color/text_secondary"
-                    tools:text="Oct 3, 9:05 PM" />
-            </LinearLayout>
+            <!-- ── Current status (D2: newest non-tracking alert) ────────────────── -->
 
             <TextView
-                android:id="@+id/alert_latest_location"
+                android:id="@+id/tv_alert_latest_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/label_alert_latest"
+                android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
+                android:textColor="@color/text_secondary" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/alert_latest_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/surface_card"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:id="@+id/alert_latest_dot"
+                            android:layout_width="10dp"
+                            android:layout_height="10dp"
+                            android:background="@drawable/bg_status_dot" />
+
+                        <TextView
+                            android:id="@+id/alert_latest_type"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
+                            android:textAppearance="@style/TextAppearance.GuardBand.TitleSmall"
+                            android:textColor="@color/text_primary"
+                            tools:text="Panic" />
+
+                        <TextView
+                            android:id="@+id/alert_latest_time"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                            android:textColor="@color/text_secondary"
+                            tools:text="Oct 3, 9:05 PM" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/alert_latest_location"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                        android:textColor="@color/text_secondary"
+                        tools:text="10.31570, 123.88540" />
+
+                    <TextView
+                        android:id="@+id/alert_latest_battery"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                        android:textColor="@color/text_secondary"
+                        tools:text="Battery 64%" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Nothing to show, and why (band silent / only tracking / unreadable) -->
+            <TextView
+                android:id="@+id/alert_empty_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
                 android:textColor="@color/text_secondary"
-                tools:text="10.31570, 123.88540" />
+                android:visibility="gone"
+                tools:text="No alerts from your band yet."
+                tools:visibility="visible" />
+
+            <!-- ── History (FR-08) ───────────────────────────────────────────────── -->
 
             <TextView
-                android:id="@+id/alert_latest_battery"
+                android:id="@+id/tv_alert_history_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
-                android:textColor="@color/text_secondary"
-                tools:text="Battery 64%" />
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/label_alert_history"
+                android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
+                android:textColor="@color/text_secondary" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/alert_history_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                tools:listitem="@layout/item_alert" />
+
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+    </ScrollView>
 
-    <!-- Nothing to show, and why (band silent / only tracking / unreadable) -->
-    <TextView
-        android:id="@+id/alert_empty_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
-        android:textColor="@color/text_secondary"
-        android:visibility="gone"
-        tools:text="No alerts from your band yet."
-        tools:visibility="visible" />
-
-    <!-- ── History (FR-08) ───────────────────────────────────────────────── -->
-
-    <TextView
-        android:id="@+id/tv_alert_history_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:layout_marginBottom="8dp"
-        android:text="@string/label_alert_history"
-        android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
-        android:textColor="@color/text_secondary" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/alert_history_list"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingBottom="16dp"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/item_alert" />
-
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

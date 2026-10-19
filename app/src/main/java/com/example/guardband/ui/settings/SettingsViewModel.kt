@@ -15,11 +15,13 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * Settings (pushed over the Home host from Track's gear). No UiState — the
  * screen is static.
  *
- * Log Out lives here (moved from the old Dashboard, per the Figma). The first
- * four rows are placeholders until their screens exist; the Privacy Notice row
- * below them opens a hosted page, so it is the one that already works.
+ * Log Out lives here (moved from the old Dashboard, per the Figma). Account
+ * information opens its own screen, which holds Delete account; the next three
+ * rows are placeholders until their screens exist; the Privacy Notice row
+ * opens a hosted page.
  *
  * Flow: Settings → (Log Out) → LoginActivity (back-stack cleared)
+ *       Settings → (Account information) → AccountActivity
  */
 class SettingsViewModel(
     private val authRepository: AuthRepository
@@ -28,7 +30,12 @@ class SettingsViewModel(
     private val _events = Channel<SettingsEvent>(Channel.BUFFERED)
     val events: Flow<SettingsEvent> = _events.receiveAsFlow()
 
-    /** Account information, Change password, Notifications or Privacy & security. */
+    /** Account information: the account's details, and Delete account. */
+    fun onAccountClicked() {
+        _events.trySend(SettingsEvent.OpenAccount)
+    }
+
+    /** Change password, Notifications or Privacy & security. */
     fun onPlaceholderRowClicked() {
         _events.trySend(SettingsEvent.ShowMessage(MSG_COMING_SOON))
     }
@@ -43,6 +50,11 @@ class SettingsViewModel(
      */
     fun onPrivacyNoticeClicked() {
         _events.trySend(SettingsEvent.OpenUrl(HostedPages.privacyNotice))
+    }
+
+    /** The Changelog row: the app's progress, as an in-app page. */
+    fun onChangelogClicked() {
+        _events.trySend(SettingsEvent.OpenChangelog)
     }
 
     /** No app on the phone can open a web page. */

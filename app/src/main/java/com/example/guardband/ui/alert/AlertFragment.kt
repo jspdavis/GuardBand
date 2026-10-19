@@ -4,10 +4,12 @@ import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -15,17 +17,19 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
 import com.example.guardband.data.model.Alert
+import com.example.guardband.ui.home.HomeViewModel
 import kotlinx.coroutines.launch
 
 /**
  * Alert tab: the band's current status (latest card) above its incident
  * history. Data is live from [AlertViewModel].
  *
- * View ids: alert_progress, alert_error_view, alert_error_message,
- * alert_retry_button, alert_latest_card, alert_latest_dot, alert_latest_type,
- * alert_latest_time, alert_latest_location, alert_latest_battery,
- * alert_empty_view, alert_history_list, tv_alert_title,
- * tv_alert_latest_label, tv_alert_history_label.
+ * View ids: ib_alert_settings, ib_alert_notifications, alert_progress,
+ * alert_error_view, alert_error_message, alert_retry_button,
+ * alert_latest_card, alert_latest_dot, alert_latest_type, alert_latest_time,
+ * alert_latest_location, alert_latest_battery, alert_empty_view,
+ * alert_history_list, tv_alert_title, tv_alert_latest_label,
+ * tv_alert_history_label.
  *
  * The latest card is its own block rather than an `<include>` of
  * `item_alert.xml`: an include cannot rename its children, so sharing the
@@ -49,9 +53,15 @@ class AlertFragment : Fragment(R.layout.fragment_alert) {
     private val historyAdapter = AlertHistoryAdapter()
 
     private val viewModel: AlertViewModel by viewModels { AlertViewModel.Factory }
+    private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        view.findViewById<ImageButton>(R.id.ib_alert_settings)
+            .setOnClickListener { homeViewModel.onSettingsClicked() }
+        view.findViewById<ImageButton>(R.id.ib_alert_notifications)
+            .setOnClickListener { homeViewModel.onNotificationsClicked() }
 
         progressBar       = view.findViewById(R.id.alert_progress)
         errorView         = view.findViewById(R.id.alert_error_view)

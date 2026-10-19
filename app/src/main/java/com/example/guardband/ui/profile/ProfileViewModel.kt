@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.repository.AuthRepository
 import com.example.guardband.data.repository.UserProfileRepository
+import com.example.guardband.ui.avatar.AvatarPhoto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,8 +19,8 @@ import kotlinx.coroutines.launch
  * Profile tab: the welcome header and the signed-in user's details. Read-only.
  * No events: nothing on the screen acts yet.
  *
- * The name and email come from the session synchronously, so the header is
- * never blank, and the `users/{uid}` read then replaces them with the stored
+ * The name, email and avatar photo come from the session synchronously, so
+ * the header is never blank, and the `users/{uid}` read then replaces them with the stored
  * record — see [AuthRepository.currentUser].
  *
  * A read that finds no record, or fails, leaves the session's values in place.
@@ -70,7 +71,8 @@ class ProfileViewModel(
         return ProfileUiState(
             isLoading = true,
             userName = user?.name?.takeUnless { it.isBlank() } ?: DEFAULT_USER_NAME,
-            email = user?.email.orEmpty()
+            email = user?.email.orEmpty(),
+            avatarUrl = AvatarPhoto.urlFor(user, authRepository.currentUserProviders())
         )
     }
 

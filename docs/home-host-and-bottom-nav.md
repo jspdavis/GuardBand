@@ -56,8 +56,8 @@ SplashActivity ──(signed in)────────────────
                               │              │                              │
                               │              │  [Track] [Contacts] [Alert] [Profile]   ◄─ bottom nav
                               │              │     │                        │
-                              │              │     ├─ gear ─► Settings      │  pushed: bar stays,
-                              │              │     └─ bell ─► Notifications │  no tab checked
+                              │              │     ├─ gear ─► Settings      │  pushed: bar
+                              │              │     └─ bell ─► Notifications │  hidden
                               │              └──────────────────────────────┘
                               │                     │
                               └──── Log Out (Settings), or no session (HomeViewModel)
@@ -84,7 +84,7 @@ Tapping a tab while Settings or Notifications is open also returns to that tab, 
 | **Settings and Notifications are Fragments in the host**, not Activities | The Figma keeps the bottom bar visible on them. Being inside the host also means the host's auth check covers them. |
 | **Two-step auth gate** (Splash + HomeViewModel) | Splash routes signed-in users straight to Home. The in-memory session dies with the process, but Android can restore `HomeActivity` directly after process death, skipping Splash. A fresh `HomeViewModel` re-checks and sends the user to Login. |
 | **In-memory alert data first** | It keeps this pass focused on navigation. Firebase gets its own pass, and swapping it in is a one-line change in `RepositoryProvider`. |
-| **Check-in pill and map buttons are UI only** | FR-10 defines check-in as a double-press on the band; the app doesn't send one. The live map isn't built yet. Their taps show an explanatory toast. |
+| **Check-in pill and map buttons are UI only** | FR-10 defines check-in as a double-press on the band; the app doesn't send one. The live map isn't built yet. Their taps show an explanatory toast. *(Since 2026-10-14 the pill is a read-only status of the latest check-in, with no tap: see CLAUDE.md, "Check-in status".)* |
 | **Device id is a constant** (`guardband-001`) behind the repository | ViewModels never see it, so user↔band pairing can replace it later without UI changes. |
 
 ---
@@ -116,12 +116,12 @@ All navigation goes through one function, `show(tag)`, which runs a single trans
 It then updates three pieces of host state:
 - `currentTag`, and `lastTabTag` if the target is a tab.
 - The `OnBackPressedCallback`, which is enabled only while a pushed screen is showing.
-- The bar's checked state, through `menu.setGroupCheckable(0, isTab, true)`. When the menu group isn't checkable, the bar draws no tab as selected. Making it checkable again restores the previous tab's highlight. This is why the nav style disables the Material3 "active indicator" pill: the pill would stay drawn on the old tab.
+- The bar's visibility: the bar and its divider are shown on a tab and hidden on a pushed screen, so Settings and Notifications can only be left with Back. The bar's selection is never touched, so returning still shows the last tab highlighted. (Until 2026-10-13 the bar stayed visible with no tab checked, through `menu.setGroupCheckable`.)
 
 ### Listeners
 
 - `setOnItemSelectedListener` → `show(tag for item)`.
-- `setOnItemReselectedListener` → the same. The bar treats tapping the *already-checked* tab as a reselect, which is exactly the case "in Settings, tap the tab I came from".
+- No reselect listener: it only existed for "in Settings, tap the tab I came from", and the bar is now hidden there.
 
 ### State restore
 
@@ -146,12 +146,12 @@ Fragments reach `HomeViewModel` with `by activityViewModels { HomeViewModel.Fact
 Legend: ✅ works with (in-memory) data · 🟡 placeholder UI
 
 ### Track (default tab), `ui/track/`
-- ✅ **User chip:** avatar circle and name of the signed-in user (falls back to "User"). *The location line was removed with the `location` field — see below.*
+- ✅ **Avatar:** the default profile icon only; the signed-in user's name (falls back to "User") is its TalkBack description, not visible text. Google's profile photo is a later change. *The location line was removed with the `location` field — see below.*
 - ✅ **Bell** → Notifications, **gear** → Settings (through `HomeViewModel`).
 - 🟡 **Map:** grey `surface_muted` area with a "Live map coming soon" label.
 - 🟡 **Status pill:** static "You are protected." with a green dot. It isn't driven by alert data yet.
 - 🟡 **Round map buttons** (layers, recenter): toast "The live map isn't available yet."
-- 🟡 **Check-in pill:** toast "Check-ins come from the band: double-press its button."
+- ✅ **Check-in pill:** read-only status of the latest check-in ("Last check-in: 5 minutes ago" / "No recent check-ins"); not tappable. Was a toast stub until 2026-10-14.
 
 `TrackViewModel` holds `TrackUiState(userName)` and `TrackEvent.ShowMessage`. It no longer takes a `UserProfileRepository`.
 
@@ -183,16 +183,25 @@ Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC 
 
 ### Profile, `ui/profile/`
 - ✅ Avatar, "Welcome back, *name*" and email. Read-only.
-- The rest of the tab's content is **not yet defined**.
+- The rest of the tab's content is **not yet defined**. (An inert "Account information" card sat at the bottom until 2026-10-14; it was removed, so that screen has one entry point, in Settings.)
 
 ### Settings (pushed), `ui/settings/`
 - Grey background (`surface_muted`) with a white top bar: back arrow + "Settings".
-- 🟡 **Rows:** Account information, Change password, Notifications, Privacy & security. Each shows "Coming soon."
+- ✅ **Account information** opens `ui/account/AccountActivity` (below).
+- 🟡 **Rows:** Change password, Notifications, Privacy & security. Each shows "Coming soon."
+- ✅ **Privacy Notice** opens the hosted page; **Changelog** opens `ChangelogActivity`.
 - ✅ **Log Out** (outlined button) signs out and goes to Login with the task cleared.
+
+### Account information, `ui/account/` (an Activity, opened from Settings)
+- **Path:** Track (or any tab) → gear → Settings → **Account information**. Back returns to Settings. Also opened by the verification gate's "Wrong email? Delete this account".
+- **Before any tab:** `HomeViewModel` sends an unverified password account to `ui/verify/VerifyRequiredActivity` (task cleared) instead of the tabs. See [`email-verification.md`](email-verification.md) §8.
+- An **Activity**, not a pushed Fragment, for the Changelog's reason: the host's Back always returns to a tab, and from here it has to return to Settings. Being outside the host also puts it outside `HomeViewModel`'s gate, so `AccountViewModel` sends a session-less restore to Login itself.
+- ✅ **Details card:** name and email, from the session.
+- ✅ **Danger zone** at the very bottom: a red heading, a red-outlined card saying what deleting removes, and the **Delete account** row. Below it, the failure card with Retry and the progress spinner. Everything the flow had in Settings came with it unchanged: the confirmation modal (focus on Cancel), re-authentication, the retry guards and the Back block while it runs. See CLAUDE.md, "Account deletion".
 
 ### Notifications (pushed), `ui/notifications/`
 - 🟡 Static empty inbox: "No notifications yet."
-- It has **no ViewModel**, and is now the only screen without one (`ForgotSuccessActivity` was the other; the forgot-password rework removed it). Add one when the inbox gets data.
+- It has **no ViewModel**, like `ResetSuccessActivity`, the other static navigation-only screen. Add one when the inbox gets data.
 
 ---
 
@@ -299,7 +308,7 @@ class ExampleFragment : Fragment(R.layout.fragment_example) {
 - **Hiding doesn't pause.** Show/hide doesn't change a Fragment's lifecycle, so hidden tabs keep collecting. That's what keeps the Alert tab live in the background.
 - **Toasts and `startActivity`** run in the Fragment (`requireContext()`). Fragment transactions run only in `HomeActivity`.
 - **Pushed screens' back arrow** calls `requireActivity().onBackPressedDispatcher.onBackPressed()`, so the host decides where Back goes.
-- **Ids are snake_case, prefixed by screen:** `tv_track_user_name`, `rv_contacts`. List-row ids use `item_`: `tv_item_contact_name`.
+- **Ids are snake_case, prefixed by screen:** `iv_track_avatar`, `rv_contacts`. List-row ids use `item_`: `tv_item_contact_name`.
 - **Lists:** `ListAdapter` + `DiffUtil` with a stable key, `findViewById` in the ViewHolder, and `app:layoutManager` set in XML.
 
 ---

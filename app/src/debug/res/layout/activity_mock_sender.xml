@@ -1,93 +1,126 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/surface_muted"
+    android:gravity="center"
     android:orientation="vertical"
     android:padding="24dp"
-    android:gravity="center">
+    tools:context=".ui.mock.MockSenderActivity">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:fontFamily="@font/poppins_semibold"
         android:text="GuardBand Mock Sender"
         android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
+        android:textStyle="bold" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:fontFamily="@font/poppins_extralight"
         android:text="Simulates ESP32 wearable device alerts"
-        android:textSize="14sp"
         android:textColor="#666666"
-        android:layout_marginBottom="32dp" />
+        android:textSize="14sp" />
 
     <Button
         android:id="@+id/btnSimulatePanic"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="#D32F2F"
+        android:fontFamily="@font/poppins_extralight"
         android:text="Simulate Panic"
         android:textAllCaps="false"
-        android:layout_marginBottom="12dp"
-        android:backgroundTint="#D32F2F" />
+        android:textColor="@android:color/white" />
 
     <Button
         android:id="@+id/btnSimulateCheckin"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="#1976D2"
+        android:fontFamily="@font/poppins_extralight"
         android:text="Simulate Check-in"
         android:textAllCaps="false"
-        android:layout_marginBottom="12dp"
-        android:backgroundTint="#1976D2" />
+        android:textColor="@android:color/white" />
 
     <Button
         android:id="@+id/btnSimulateLowBattery"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="#F57C00"
+        android:fontFamily="@font/poppins_extralight"
         android:text="Simulate Low Battery"
         android:textAllCaps="false"
-        android:layout_marginBottom="12dp"
-        android:backgroundTint="#F57C00" />
+        android:textColor="@android:color/white" />
 
     <Button
         android:id="@+id/btnSimulateTracking"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="#388E3C"
+        android:fontFamily="@font/poppins_extralight"
         android:text="Simulate Tracking Update"
         android:textAllCaps="false"
-        android:layout_marginBottom="12dp"
-        android:backgroundTint="#388E3C" />
+        android:textColor="@android:color/white" />
 
     <Button
         android:id="@+id/btnWalk"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:backgroundTint="#6A1B9A"
+        android:fontFamily="@font/poppins_extralight"
         android:text="@string/mock_sender_walk_start"
         android:textAllCaps="false"
-        android:layout_marginBottom="32dp"
-        android:backgroundTint="#6A1B9A" />
+        android:textColor="@android:color/white" />
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#E0E0E0"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="16dp"
+        android:background="#E0E0E0" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:fontFamily="@font/poppins_semibold"
         android:text="Status:"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
+        android:textStyle="bold" />
 
     <TextView
         android:id="@+id/tvStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Ready to send alerts"
-        android:textAlignment="center"
+        android:background="#F5F5F5"
+        android:fontFamily="@font/poppins_extralight"
         android:minHeight="48dp"
         android:padding="12dp"
-        android:background="#F5F5F5" />
+        android:text="Ready to send alerts"
+        android:textAlignment="center" />
+
+    <!-- GPS fix badge: updated by MockSenderActivity whenever the fix changes -->
+    <TextView
+        android:id="@+id/tvGpsStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:contentDescription="GPS fix status"
+        android:fontFamily="@font/poppins_extralight"
+        android:padding="8dp"
+        android:text="@string/mock_sender_gps_acquiring"
+        android:textAlignment="center"
+        android:textColor="@color/black"
+        android:textSize="12sp" />
 
 </LinearLayout>

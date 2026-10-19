@@ -135,10 +135,10 @@ class SignUpConsentViewModelTest {
     }
 
     @Test
-    fun `success navigates to Loading`() = runTest {
+    fun `success navigates to Welcome`() = runTest {
         submit()
 
-        assertEquals(SignUpConsentEvent.NavigateToLoadingHome, viewModel.events.first())
+        assertEquals(SignUpConsentEvent.NavigateToWelcome, viewModel.events.first())
     }
 
     // ── Account-creation failures ─────────────────────────────────────────────
@@ -208,7 +208,7 @@ class SignUpConsentViewModelTest {
         profiles.finalizeSignUpResult = Result.success(Unit)
         submit()
 
-        assertEquals(SignUpConsentEvent.NavigateToLoadingHome, viewModel.events.first())
+        assertEquals(SignUpConsentEvent.NavigateToWelcome, viewModel.events.first())
         // The whole point of the split: one account, two writes.
         assertEquals(1, auth.createAccountCalls)
         assertEquals(2, profiles.finalizeSignUpCalls)
@@ -314,5 +314,60 @@ class SignUpConsentViewModelTest {
 
         assertEquals(SignUpConsentViewModel.MSG_NO_CONNECTION, firstMessage(vm))
         assertTrue(vm.uiState.value.canRetry)
+    }
+
+    // ── The verification email ────────────────────────────────────────────────
+
+    @Test
+    fun `a new password account is sent a verification email once`() = runTest {
+        submit()
+        viewModel.events.first()
+
+        assertEquals(1, auth.sendEmailVerificationCalls)
+    }
+
+    /** Best effort: the account exists, and Account information offers Resend. */
+    @Test
+    fun `a failed verification email does not block sign-up`() = runTest {
+        auth.sendEmailVerificationResult = Result.failure(AuthError.Network)
+
+        submit()
+
+        assertEquals(SignUpConsentEvent.NavigateToWelcome, viewModel.events.first())
+    }
+
+    @Test
+    fun `a retry of the write does not send a second email`() = runTest {
+        profiles.finalizeSignUpResult = Result.failure(AuthError.Network)
+        submit()
+        firstMessage()
+
+        profiles.finalizeSignUpResult = Result.success(Unit)
+        submit()
+        viewModel.events.first()
+
+        assertEquals(1, auth.sendEmailVerificationCalls)
+    }
+
+    @Test
+    fun `a failed account creation sends nothing`() = runTest {
+        auth.createAccountResult = Result.failure(AuthError.EmailAlreadyInUse)
+
+        submit()
+        firstMessage()
+
+        assertEquals(0, auth.sendEmailVerificationCalls)
+    }
+
+    /** Complete-profile mode is a Google sign-up: Google verified the address. */
+    @Test
+    fun `complete-profile mode sends no verification email`() = runTest {
+        val google = FakeAuthRepository(signedIn = true)
+        val vm = SignUpConsentViewModel(google, profiles)
+
+        submit(vm = vm, completeProfile = true)
+        vm.events.first()
+
+        assertEquals(0, google.sendEmailVerificationCalls)
     }
 }

@@ -63,6 +63,10 @@ Login  →  "Forgot Password?"  →  ForgotRequestActivity
                     │  verifyPasswordResetCode(oobCode)  → the account's email
                     │  confirmPasswordReset(oobCode, newPassword)
                     ▼
+          ResetSuccessActivity ("Password changed"), back stack cleared
+                    │
+                    │  Go to Login, or Back
+                    ▼
                  LoginActivity, back stack cleared
 ```
 
@@ -145,10 +149,14 @@ through `assetlinks.json`, and ignores the path. Claiming Firebase's own
   day a redirect-based provider is added.
 - **Every email action arrives at this one path.** `verifyEmail`,
   `recoverEmail` and `verifyAndChangeEmail` all use it, and an intent filter
-  cannot match on a query parameter. The app sends none of them today, and the
-  parser refuses any `mode` other than `resetPassword`. Adding email
-  verification later means deciding what the app does with those links,
-  because they will open it.
+  cannot match on a query parameter. Since 2026-10-14 the app sends
+  verification emails, so `ResetPasswordActivity` runs
+  `EmailActionLink.routeOf` first: `verifyEmail` and any mode the app does not
+  handle go to `VerifyEmailActivity`, and every reset link - and every
+  malformed link - takes exactly the path described here. The parser itself
+  still refuses any `mode` other than `resetPassword`; its URL checks now live
+  in `EmailActionLink.paramsFrom`, moved verbatim, and `ResetLinkParserTest` is
+  unchanged. [`email-verification.md`](email-verification.md) §2.
 
 **If the action URL ever becomes editable** (a Blaze upgrade, or Firebase
 lifting the restriction), leave it at the default. Changing it moves the link
@@ -263,8 +271,8 @@ Needs §1 complete. Nothing below can be checked by a unit test.
    Credentials, and the line under the title names the right address.
 4. Watch the criteria list respond as you type. Submit stays dead until both
    rules are green.
-5. Submit. It lands on Login with a confirmation. Sign in with the **new**
-   password; the old one must fail.
+5. Submit. It shows "Password changed"; Go to Login (or Back) lands on Login.
+   Sign in with the **new** password; the old one must fail.
 6. **Tap the same link again.** It must say the link has already been used and
    offer a new one.
 7. **An expired link:** request one, wait out Firebase's expiry, then open it.
@@ -277,7 +285,7 @@ Needs §1 complete. Nothing below can be checked by a unit test.
 10. **A desktop browser** on a fresh link shows Firebase's reset page, and
     setting a password there works too.
 11. **Already signed in:** open the link while signed in. The reset still runs,
-    and the session is not disturbed until success sends you to Login.
+    and the session is not disturbed until success sends you on to Login.
 
 **Not covered by tests:** the App Link verification itself, the two Firebase
 calls, the fallback page, and `PasswordCriteriaList`'s tinting. The first needs
@@ -294,7 +302,7 @@ instead — `ResetLinkParser`, `PasswordCriteria`, and both ViewModels.
 | **The link opens a browser, not the app.** | App Link not verified. Check `adb shell pm get-app-links com.example.guardband`. Usually a missing or wrong SHA-256 in `assetlinks.json` (§1 step 2) — including a teammate's debug keystore that was never added. |
 | **`/.well-known/assetlinks.json` returns 404 after a deploy.** | The default Hosting `ignore` list dropped the dotfolder. §5. |
 | **The link opens Firebase's own web page.** | The same thing as the first row: the App Link is not verified on this phone, so the browser handled the default handler URL. That page is the intended fallback (§6), not a misconfiguration. |
-| **The app opens but says the link isn't valid.** | The URL did not pass `ResetLinkParser`: wrong host or path for this build, or `mode` is not `resetPassword`. A `verifyEmail` or `recoverEmail` link lands here by design (§3). If a reset link does, check whether someone changed the Console action URL away from the default. |
+| **The app opens but says the link isn't valid.** | The URL did not pass `ResetLinkParser`: wrong host or path for this build, or no usable `mode` / `oobCode`. A `verifyEmail` link no longer lands here - it opens the verify screen - and a `recoverEmail` link says "isn't supported" ([`email-verification.md`](email-verification.md) §2). If a reset link does, check whether someone changed the Console action URL away from the default. |
 | **"This reset link has already been used."** | It has — codes are single-use. Also fires when a *newer* reset request revoked it, so requesting twice and opening the first email does this. |
 | **The reset works but the user can still sign in with the old password.** | They did not finish: `confirmPasswordReset` never succeeded. Check the Submit step reported success rather than a Toast. |
 | **Resend seems stuck.** | It is on a 60 s cooldown by design, counted on the button. The countdown is recomputed from the clock, so it cannot be stranded by a dropped tick. |

@@ -19,16 +19,27 @@ internal object AlertFormatting {
     /**
      * Accepted wire formats: SCHEMA.md's example has no milliseconds, the
      * debug mock sender writes them. java.time would need API 26 (minSdk is 24).
+     *
+     * The one copy in the app: [BandStatus][com.example.guardband.ui.track.BandStatus]
+     * reads the same two through [newIsoUtcParser].
      */
-    private val isoParsers = listOf(
+    val ISO_PATTERNS = listOf(
         "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
         "yyyy-MM-dd'T'HH:mm:ss'Z'"
-    ).map { pattern ->
+    )
+
+    /**
+     * A strict UTC parser for one of [ISO_PATTERNS]. A new instance on every
+     * call, so a caller off the main thread can own its parser outright.
+     */
+    fun newIsoUtcParser(pattern: String): SimpleDateFormat =
         SimpleDateFormat(pattern, Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
             isLenient = false
         }
-    }
+
+    /** Built once and reused: this object is only called from the main thread. */
+    private val isoParsers = ISO_PATTERNS.map(::newIsoUtcParser)
 
     /** e.g. "Oct 4, 4:45 PM" in local time; the raw value if it can't be parsed. */
     fun formatTimestamp(iso: String): String {

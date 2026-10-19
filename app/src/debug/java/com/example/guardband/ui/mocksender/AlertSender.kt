@@ -59,35 +59,91 @@ class AlertSender {
     }
 
     /**
-     * Writes one alert of [type] at a randomised position near Cebu City.
+     * Writes one alert of [type].
+     *
+     * When [lat], [lng] and [accuracy] are supplied (from Phone A's GPS fix)
+     * they are used directly and reported as a real fix in the status line.
+     * When they are null the sender falls back to a random point within ±0.01°
+     * of Cebu City, preserving the original behaviour for indoor demos or when
+     * the permission has been denied.
+     *
+     * [accuracy] maps to `location.accuracyMeters` in the SCHEMA.md payload.
+     * When a real fix is used, pass `android.location.Location.accuracy`
+     * (metres, float); when falling back, a random 5–15 m value is used.
+     *
+     * [batteryPercent] and [isCharging] should come from the phone's
+     * [android.os.BatteryManager]. When null, random values are used as a
+     * fallback so the payload remains valid (battery is required by SCHEMA.md).
      *
      * @return the sequenceId that was written, or the failure that stopped it
      */
-    suspend fun sendAlert(type: AlertType): Result<Int> {
-        val lat = CEBU_LAT + Random.nextDouble(-0.01, 0.01)
-        val lng = CEBU_LNG + Random.nextDouble(-0.01, 0.01)
-        return send(type, lat, lng, Random.nextInt(20, 101))
+    suspend fun sendAlert(
+        type: AlertType,
+        lat: Double? = null,
+        lng: Double? = null,
+        accuracy: Double? = null,
+        batteryPercent: Int? = null,
+        isCharging: Boolean? = null
+    ): Result<Int> {
+        val resolvedLat = lat ?: (CEBU_LAT + Random.nextDouble(-0.01, 0.01))
+        val resolvedLng = lng ?: (CEBU_LNG + Random.nextDouble(-0.01, 0.01))
+        val resolvedAccuracy = accuracy ?: Random.nextDouble(5.0, 15.0)
+        val resolvedBattery = batteryPercent ?: Random.nextInt(20, 101)
+        val resolvedCharging = isCharging ?: Random.nextBoolean()
+        return send(resolvedLat, resolvedLng, type, resolvedBattery, resolvedCharging, resolvedAccuracy)
     }
 
     /**
-     * Writes one TRACKING_UPDATE at the next position along the walk loop, so
-     * repeated calls move the Track marker. The battery drains as it goes, so a
-     * demo shows the status panel changing rather than a frozen number.
+     * Writes one TRACKING_UPDATE.
+     *
+     * When [lat], [lng] and [accuracy] are supplied (real GPS fix), they are
+     * sent directly — the marker moves to the phone's actual position on each
+     * tick. This is the preferred path when GPS is available (accuracy ≤ ~20 m).
+     *
+     * When they are null (no fix, or indoors), the sender falls back to the
+     * synthetic circle: [WALK_STEPS] positions around a ~165 m loop anchored
+     * at [originLat]/[originLng]. The circle is kept so indoor demos still show
+     * a moving marker even without GPS.
      */
-    suspend fun sendWalkStep(): Result<Int> {
-        val step = walkStep
-        val angle = 2 * Math.PI * (step % WALK_STEPS) / WALK_STEPS
-        val lat = CEBU_LAT + WALK_RADIUS_DEG * sin(angle)
-        // Longitude degrees shrink with latitude, so dividing by cos(lat) keeps
-        // the loop round on the ground instead of stretched east-west.
-        val lng = CEBU_LNG + WALK_RADIUS_DEG * cos(angle) / cos(Math.toRadians(CEBU_LAT))
+    suspend fun sendWalkStep(
+        lat: Double? = null,
+        lng: Double? = null,
+        accuracy: Double? = null,
+        originLat: Double = WALK_ORIGIN_LAT,
+        originLng: Double = WALK_ORIGIN_LNG,
+        batteryPercent: Int? = null,
+        isCharging: Boolean? = null
+    ): Result<Int> {
+        val resolvedBattery = batteryPercent ?: max(WALK_BATTERY_FLOOR, WALK_BATTERY_START - walkStep / 2)
+        val resolvedCharging = isCharging ?: false
 
-        return send(
-            type = AlertType.TRACKING_UPDATE,
-            lat = lat,
-            lng = lng,
-            batteryPercent = max(WALK_BATTERY_FLOOR, WALK_BATTERY_START - step / 2)
-        ).onSuccess { walkStep = step + 1 }
+        return if (lat != null && lng != null && accuracy != null) {
+            // Real GPS available — send the actual position directly.
+            send(
+                lat = lat,
+                lng = lng,
+                type = AlertType.TRACKING_UPDATE,
+                batteryPercent = resolvedBattery,
+                isCharging = resolvedCharging,
+                accuracyMeters = accuracy
+            ).onSuccess { walkStep++ }
+        } else {
+            // No fix — fall back to synthetic circle for indoor demos.
+            val step = walkStep
+            val angle = 2 * Math.PI * (step % WALK_STEPS) / WALK_STEPS
+            val circleLat = originLat + WALK_RADIUS_DEG * sin(angle)
+            // Longitude degrees shrink with latitude; dividing by cos(lat) keeps
+            // the loop round on the ground instead of stretched east-west.
+            val circleLng = originLng + WALK_RADIUS_DEG * cos(angle) / cos(Math.toRadians(originLat))
+            send(
+                lat = circleLat,
+                lng = circleLng,
+                type = AlertType.TRACKING_UPDATE,
+                batteryPercent = resolvedBattery,
+                isCharging = resolvedCharging,
+                accuracyMeters = WALK_SYNTHETIC_ACCURACY
+            ).onSuccess { walkStep = step + 1 }
+        }
     }
 
     /** Resets the walk to the start of the loop. */
@@ -105,14 +161,16 @@ class AlertSender {
      * as its history row lands, so a retry cannot overwrite a good row.
      */
     private suspend fun send(
-        type: AlertType,
         lat: Double,
         lng: Double,
-        batteryPercent: Int
+        type: AlertType,
+        batteryPercent: Int,
+        isCharging: Boolean,
+        accuracyMeters: Double
     ): Result<Int> = withContext(Dispatchers.IO) {
         try {
             val sequenceId = nextSequenceId ?: (readHighestHistoryKey() + 1)
-            val payload = buildPayload(type, sequenceId, lat, lng, batteryPercent)
+            val payload = buildPayload(type, sequenceId, lat, lng, batteryPercent, isCharging, accuracyMeters)
 
             putJson("devices/$DEVICE_ID/history/$sequenceId.json", payload)
             nextSequenceId = sequenceId + 1
@@ -184,11 +242,10 @@ class AlertSender {
         sequenceId: Int,
         lat: Double,
         lng: Double,
-        batteryPercent: Int
+        batteryPercent: Int,
+        isCharging: Boolean,
+        accuracyMeters: Double
     ): String {
-        val isCharging = Random.nextBoolean()
-        val accuracy = Random.nextDouble(5.0, 15.0)
-
         return """
         {
             "schemaVersion": "1.0",
@@ -198,7 +255,7 @@ class AlertSender {
             "location": {
                 "lat": $lat,
                 "lng": $lng,
-                "accuracyMeters": $accuracy
+                "accuracyMeters": $accuracyMeters
             },
             "battery": {
                 "percent": $batteryPercent,
@@ -219,19 +276,32 @@ class AlertSender {
             .format(Date())
 
     companion object {
-        /** Cebu City, matching the example coordinates in SCHEMA.md. */
+        /** Cebu City centre — fallback when no GPS fix is available. */
         const val CEBU_LAT = 10.3157
         const val CEBU_LNG = 123.8854
 
         /**
+         * Walk-loop origin. Defaults to Cebu City so a demo without a real fix
+         * behaves exactly as before. [MockSenderActivity] passes the phone's
+         * real fix here when one is available, anchoring the loop around the
+         * actual location instead of the hardcoded city centre.
+         */
+        const val WALK_ORIGIN_LAT = CEBU_LAT
+        const val WALK_ORIGIN_LNG = CEBU_LNG
+
+        /**
          * The walk loop: [WALK_STEPS] positions around a circle of
-         * [WALK_RADIUS_DEG] degrees, roughly 165 m - far enough for the marker
-         * to move visibly at street zoom, small enough to stay in Cebu City.
+         * [WALK_RADIUS_DEG] degrees, roughly 165 m — far enough for the marker
+         * to move visibly at street zoom, small enough to stay near the origin.
+         *
+         * Walk mode uses a fixed synthetic accuracy rather than GPS, because the
+         * loop is deterministic, not a sequence of real fixes.
          */
         private const val WALK_STEPS = 24
         private const val WALK_RADIUS_DEG = 0.0015
         private const val WALK_BATTERY_START = 95
         private const val WALK_BATTERY_FLOOR = 20
+        private const val WALK_SYNTHETIC_ACCURACY = 10.0
 
         private val JSON = "application/json".toMediaType()
         private const val DEVICE_ID = DeviceConstants.DEFAULT_DEVICE_ID

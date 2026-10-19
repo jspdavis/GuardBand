@@ -21,7 +21,7 @@ import com.example.guardband.BuildConfig
 import com.example.guardband.R
 import com.example.guardband.ui.auth.PasswordCriteriaList
 import com.example.guardband.ui.forgot.ForgotRequestActivity
-import com.example.guardband.ui.login.LoginActivity
+import com.example.guardband.ui.verify.VerifyEmailActivity
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.launch
@@ -57,7 +57,17 @@ import kotlinx.coroutines.launch
  * btn_reset_cancel, group_reset_dead, tv_reset_message,
  * btn_reset_request_new, btn_reset_retry_verify, progress_reset.
  *
- * Flow: (email link) → ResetPasswordActivity → LoginActivity (back stack cleared)
+ * **It is also the front door for every other Firebase email link,** because
+ * they all arrive at the same handler URL and an intent filter cannot match on
+ * `mode`. [EmailActionLink.routeOf] runs first: a `verifyEmail` link, or a
+ * mode the app does not handle, is passed to [VerifyEmailActivity] and never
+ * touches this screen's ViewModel. Everything else - every reset link, and
+ * every link that is not a well-formed action link at all - takes exactly the
+ * path it took before.
+ *
+ * Flow: (email link) → ResetPasswordActivity → ResetSuccessActivity → LoginActivity
+ * (back stack cleared at each step)
+ *       (verify link) → ResetPasswordActivity → VerifyEmailActivity
  */
 class ResetPasswordActivity : AppCompatActivity() {
 
@@ -85,6 +95,14 @@ class ResetPasswordActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Before anything of the reset screen exists: a link that belongs to
+        // another screen is handed on, and this one never shows.
+        if (savedInstanceState == null && handedToAnotherScreen(intent)) {
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_reset_password)
 
         tvEmail = findViewById(R.id.tv_reset_email)
@@ -143,11 +161,36 @@ class ResetPasswordActivity : AppCompatActivity() {
         if (savedInstanceState == null) handleLink(intent)
     }
 
-    /** The link arriving while this Activity is already on top. */
+    /**
+     * The link arriving while this Activity is already on top. A verify link
+     * is handed on and the reset in progress here is left alone; it used to be
+     * replaced by a "this reset link isn't valid" dead end.
+     */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        if (handedToAnotherScreen(intent)) return
         setIntent(intent)
         handleLink(intent)
+    }
+
+    /**
+     * Passes a link that is not for this screen to [VerifyEmailActivity], and
+     * says whether it did.
+     *
+     * The link goes on as the Intent's data, exactly as it arrived, to a
+     * non-exported Activity in this app; it is not copied into an extra and
+     * nothing logs it. The verify screen re-checks it itself.
+     */
+    private fun handedToAnotherScreen(intent: Intent?): Boolean {
+        val data = intent?.data ?: return false
+        val route = EmailActionLink.routeOf(
+            url = data.toString(),
+            expectedHost = BuildConfig.RESET_LINK_HOST,
+            expectedPath = BuildConfig.RESET_LINK_PATH
+        )
+        if (route == EmailActionLink.Route.RESET_SCREEN) return false
+        startActivity(Intent(this, VerifyEmailActivity::class.java).setData(data))
+        return true
     }
 
     /**
@@ -210,10 +253,9 @@ class ResetPasswordActivity : AppCompatActivity() {
             is ResetPasswordEvent.ShowMessage ->
                 Toast.makeText(this, event.text, Toast.LENGTH_LONG).show()
 
-            ResetPasswordEvent.NavigateToLoginWithSuccess -> {
-                Toast.makeText(this, R.string.msg_password_reset_done, Toast.LENGTH_LONG).show()
+            ResetPasswordEvent.NavigateToSuccess -> {
                 startActivity(
-                    Intent(this, LoginActivity::class.java).apply {
+                    Intent(this, ResetSuccessActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
                 )

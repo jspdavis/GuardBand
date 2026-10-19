@@ -93,11 +93,4 @@ class SignUpNameViewModelTest {
     fun `fullName is the single place the two parts combine`() {
         assertEquals("Alex Rivera", SignUpNameViewModel.fullName(" Alex ", " Rivera "))
     }
-
-    @Test
-    fun `the Google shortcut hands over to Login`() = runTest {
-        viewModel.onGoogleSignInClicked()
-
-        assertEquals(SignUpNameEvent.NavigateToGoogleSignIn, viewModel.events.first())
-    }
 }

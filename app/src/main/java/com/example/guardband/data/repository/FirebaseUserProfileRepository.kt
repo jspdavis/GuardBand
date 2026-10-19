@@ -1,6 +1,8 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.model.ConsentRecord
 import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.model.User
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -18,8 +20,9 @@ import kotlin.coroutines.resumeWithException
  *
  * Writes use [DatabaseReference.updateChildren], never `setValue` on
  * `users/{uid}`: the node now also holds `emergency_contacts`, and replacing it
- * would delete every contact the user has. The uid is the key, so it is not
- * duplicated inside the record.
+ * would delete every contact the user has. The one exception is
+ * [markDeletionPending], where deleting everything is the point. The uid is
+ * the key, so it is not duplicated inside the record.
  *
  * Failures are mapped by [DatabaseError.getCode] through
  * [FirebaseDatabaseErrorMapper] - see its KDoc for why the listener forms are
@@ -61,8 +64,13 @@ class FirebaseUserProfileRepository(
         }
     }
 
-    override suspend fun profileExists(uid: String): Result<Boolean> = profileResult {
-        userRef(uid).readOnce().exists()
+    override suspend fun profileState(uid: String): Result<ProfileState> = profileResult {
+        val snapshot = userRef(uid).readOnce()
+        when {
+            !snapshot.exists() -> ProfileState.ABSENT
+            snapshot.child(FIELD_DELETION_PENDING).value == true -> ProfileState.DELETION_PENDING
+            else -> ProfileState.PRESENT
+        }
     }
 
     override suspend fun finalizeSignUp(
@@ -80,14 +88,9 @@ class FirebaseUserProfileRepository(
         // is harmless on a new account but a trap if this is ever reused.
         val updates = mutableMapOf<String, Any?>(
             "$NODE_USERS/$uid/$FIELD_NAME" to name,
-            "$NODE_USERS/$uid/$FIELD_EMAIL" to email,
-            "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_ACCEPTED" to true,
-            "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_VERSION" to consentVersion,
-            // Server time, not the handset's: a device clock can be wrong or
-            // deliberately set, and this is the field that says when the user
-            // actually agreed.
-            "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_AT" to ServerValue.TIMESTAMP
+            "$NODE_USERS/$uid/$FIELD_EMAIL" to email
         )
+        updates += consentUpdates(uid, consentVersion)
 
         contacts.forEach { contact ->
             // Validated before anything is sent, so one bad phone number fails
@@ -101,8 +104,46 @@ class FirebaseUserProfileRepository(
         database.reference.update(updates)
     }
 
-    override suspend fun deleteProfile(uid: String): Result<Unit> = profileResult {
-        userRef(uid).remove()
+    /** An accepted record, or null for no node at all or one that is not `accepted: true`. */
+    override suspend fun consentRecord(uid: String): Result<ConsentRecord?> = profileResult {
+        val snapshot = userRef(uid).child(NODE_CONSENT).readOnce()
+        if (snapshot.child(FIELD_CONSENT_ACCEPTED).value == true) {
+            ConsentRecord(version = snapshot.child(FIELD_CONSENT_VERSION).value?.toString().orEmpty())
+        } else {
+            null
+        }
+    }
+
+    /**
+     * The consent paths of [finalizeSignUp] on their own, against the root
+     * like that write, so the late record and the sign-up one cannot differ.
+     */
+    override suspend fun recordConsent(uid: String, consentVersion: String): Result<Unit> =
+        profileResult {
+            database.reference.update(consentUpdates(uid, consentVersion))
+        }
+
+    /**
+     * The three consent paths, absolute from the root: `accepted`, the
+     * version and a server timestamp. The one place a consent record is
+     * spelled out, shared by [finalizeSignUp] and [recordConsent]. All three
+     * go together, because the rules refuse a consent node missing any.
+     */
+    private fun consentUpdates(uid: String, consentVersion: String): Map<String, Any?> = mapOf(
+        "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_ACCEPTED" to true,
+        "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_VERSION" to consentVersion,
+        // Server time, not the handset's: a device clock can be wrong or
+        // deliberately set, and this is the field that says when the user
+        // actually agreed.
+        "$NODE_USERS/$uid/$NODE_CONSENT/$FIELD_CONSENT_AT" to ServerValue.TIMESTAMP
+    )
+
+    /**
+     * A `setValue` on `users/{uid}`, deliberately: the one place a replace of
+     * the whole record is wanted. Everywhere else writes merge.
+     */
+    override suspend fun markDeletionPending(uid: String): Result<Unit> = profileResult {
+        userRef(uid).replace(mapOf(FIELD_DELETION_PENDING to true))
     }
 
     // ── Plumbing ──────────────────────────────────────────────────────────────
@@ -125,16 +166,11 @@ class FirebaseUserProfileRepository(
             }
         }
 
-    /**
-     * [DatabaseReference.removeValue], suspending, with the error code kept.
-     *
-     * Removing an absent node succeeds, which is what a retry after a
-     * half-finished delete relies on.
-     */
-    private suspend fun DatabaseReference.remove(): Unit =
+    /** [DatabaseReference.setValue], suspending, with the error code kept. */
+    private suspend fun DatabaseReference.replace(value: Map<String, Any?>): Unit =
         suspendCancellableCoroutine { continuation ->
-            removeValue { error, _ ->
-                if (!continuation.isActive) return@removeValue
+            setValue(value) { error, _ ->
+                if (!continuation.isActive) return@setValue
                 if (error == null) {
                     continuation.resume(Unit)
                 } else {
@@ -190,5 +226,8 @@ class FirebaseUserProfileRepository(
         const val FIELD_CONSENT_ACCEPTED = "accepted"
         const val FIELD_CONSENT_VERSION = "version"
         const val FIELD_CONSENT_AT = "acceptedAt"
+
+        /** The marker a half-finished deletion leaves - see [markDeletionPending]. */
+        const val FIELD_DELETION_PENDING = "deletion_pending"
     }
 }

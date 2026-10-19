@@ -3,7 +3,13 @@ package com.example.guardband.ui.signup
 /** One-shot events emitted by [SignUpConsentViewModel]. */
 sealed interface SignUpConsentEvent {
     data class ShowMessage(val text: String) : SignUpConsentEvent
-    object NavigateToLoadingHome : SignUpConsentEvent
+
+    /**
+     * The account and profile are written. Go to [WelcomeActivity] with the
+     * back stack cleared; being the only route there is what makes Welcome a
+     * once-per-account screen.
+     */
+    object NavigateToWelcome : SignUpConsentEvent
 
     /**
      * Open the Privacy Notice in the browser.

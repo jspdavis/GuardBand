@@ -201,7 +201,7 @@ class ResetPasswordViewModelTest {
         assertEquals(CODE, auth.lastResetCode)
         assertEquals(GOOD_PASSWORD, auth.lastNewPassword)
         assertEquals(ResetPasswordStage.DONE, state.stage)
-        assertTrue(ResetPasswordEvent.NavigateToLoginWithSuccess in events)
+        assertTrue(ResetPasswordEvent.NavigateToSuccess in events)
     }
 
     @Test

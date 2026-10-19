@@ -53,11 +53,6 @@ class SignUpNameViewModel : ViewModel() {
         )
     }
 
-    /** "Continue with Google" on the sign-up entry screen. */
-    fun onGoogleSignInClicked() {
-        _events.trySend(SignUpNameEvent.NavigateToGoogleSignIn)
-    }
-
     companion object {
         /**
          * The stored form: both parts trimmed, joined by a single space.

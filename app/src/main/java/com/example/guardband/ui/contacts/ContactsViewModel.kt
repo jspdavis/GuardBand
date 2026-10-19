@@ -184,8 +184,9 @@ class ContactsViewModel(
          * [MIN_CONTACTS][InputValidator.MIN_CONTACTS] is the point of the list.
          */
         const val MSG_AT_MINIMUM =
-            "Keep at least ${InputValidator.MIN_CONTACTS} contacts. Add another one first."
-        const val MSG_AT_CAP = "You can have up to ${InputValidator.MAX_CONTACTS} contacts."
+            "The list can't go below ${InputValidator.MIN_CONTACTS}, because the band " +
+                "needs someone to text. Add another contact first."
+        const val MSG_AT_CAP = "You can only have up to ${InputValidator.MAX_CONTACTS} contacts."
 
         const val MSG_CONTACT_GONE = "That contact no longer exists."
         const val MSG_NO_CONNECTION = "No connection. Check your network and try again."

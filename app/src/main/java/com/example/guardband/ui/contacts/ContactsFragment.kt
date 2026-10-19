@@ -3,11 +3,12 @@ package com.example.guardband.ui.contacts
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -15,16 +16,19 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
 import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.ui.home.HomeViewModel
 import com.example.guardband.utils.InputValidator
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
 
 /**
  * Contacts tab: the emergency-contact list with add, edit and delete (FR-06).
  *
- * View ids: tv_contacts_title, contacts_min_notice, progress_contacts,
- * tv_contacts_empty, rv_contacts, contacts_add_button. Rows add
+ * View ids: ib_contacts_settings, ib_contacts_notifications,
+ * tv_contacts_title, contacts_min_notice, progress_contacts,
+ * tv_contacts_empty, rv_contacts, contacts_add_button (a FAB). Rows add
  * ib_item_contact_edit beside ib_item_contact_delete, and the editor dialog
  * (`dialog_contact_editor.xml`) holds contact_name_input, contact_phone_input
  * and contact_relationship_input.
@@ -34,13 +38,19 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmpty: TextView
     private lateinit var tvMinNotice: TextView
-    private lateinit var btnAdd: Button
+    private lateinit var btnAdd: FloatingActionButton
     private lateinit var adapter: ContactAdapter
 
     private val viewModel: ContactsViewModel by viewModels { ContactsViewModel.Factory }
+    private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        view.findViewById<ImageButton>(R.id.ib_contacts_settings)
+            .setOnClickListener { homeViewModel.onSettingsClicked() }
+        view.findViewById<ImageButton>(R.id.ib_contacts_notifications)
+            .setOnClickListener { homeViewModel.onNotificationsClicked() }
 
         progressBar  = view.findViewById(R.id.progress_contacts)
         tvEmpty      = view.findViewById(R.id.tv_contacts_empty)

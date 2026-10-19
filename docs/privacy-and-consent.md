@@ -47,7 +47,10 @@ to, which fails if the number cannot be matched to a document.
 **Existing users are not re-prompted.** A record written at `1.0` keeps `1.0`;
 nothing rewrites it, and there is no re-consent flow. Building one means
 deciding what to do with an account that declines, which is a product
-question, not a code one — so it is deliberately not in this pass.
+question, not a code one — so it is deliberately not in this pass. The
+consent gate (§8) does not change that: it fires only when there is **no**
+record, and writes at the current version only for those accounts. It needed
+no new row here, because the statement it shows is unchanged.
 
 ---
 
@@ -132,10 +135,49 @@ Needs §1 steps 1–3 done.
 5. **Settings → Privacy Notice** opens the same page.
 6. The notice's displayed version reads **1.1**, matching step 4.
 7. Open `/delete-account` and follow its in-app steps exactly as written —
-   Track → gear → Settings → Delete account. The wording should match what the
-   app actually does.
+   Track → gear → Settings → Account information → Delete account (moved
+   one level down on 2026-10-14; the hosted page still names the old path
+   until a human updates it). The wording should match what the app actually
+   does.
 8. An **existing** account that accepted `1.0` still shows `1.0` in the
    Console, and is **not** asked to agree again.
+
+**The consent gate (§8).** Use throwaway accounts.
+
+9. **Console-created account.** Add an email/password user in Firebase
+   Console → Authentication and sign in with it on the phone. It is
+   unverified, so **Verify your email** comes first: Resend, open the link,
+   return. Then **Before you continue** appears before any tab, with sign-up's
+   statement and "Read the Privacy Notice". Tap **Agree**: the Console shows
+   `users/{uid}/consent` with `version: "1.1"`, `accepted: true` and a server
+   `acceptedAt`, and the app opens.
+10. **Missing Google profile.** For a Google account, delete only
+    `users/{uid}` in the Console (leave its Authentication user) and sign in
+    again. The record comes back with a name and email, then the consent
+    screen appears. Agree writes consent as in step 9.
+11. **Decline.** On the consent screen, tap **Decline**: a message says
+    consent is required, Login opens, and the Google chooser is offered again.
+    Nothing appears under `consent`; the name, email and any contacts are
+    unchanged. Relaunching opens Login, not the app; signing in again shows the
+    consent screen again.
+12. **Normal accounts.** An account with consent at `1.1`, and one whose
+    `version` you set to `"1.0"` in the Console, both go straight in with no
+    prompt, and their `acceptedAt` does not change.
+13. **New sign-up.** The wizard's consent step is shown once; after Welcome,
+    the app opens with no second prompt.
+14. **Pending deletion.** Set `users/{uid}/deletion_pending: true` on an
+    account with no consent: sign-in goes to Account information to finish
+    the deletion, not to the consent screen.
+15. **Offline.** Sign-in itself needs a connection, so sign in first, then turn
+    on airplane mode and relaunch. A spinner, then after about 10 s "We
+    couldn't check your account" with **Try again**: not the consent screen
+    and not the tabs. Turn the network back on and tap Try again. Also: on the
+    consent screen in airplane mode, Agree shows a no-connection message with
+    Try again after about 10 s, and Decline still works.
+16. **Back and recents.** On the consent screen, the system Back leaves the
+    app, and relaunching shows the consent screen again. Switching away and
+    back from recents, and force-stopping then reopening, also land on the
+    consent screen. None of them reach the tabs.
 
 **Not testable here:** the Security Rules. There is no emulator suite in this
 project, so the nine Rules Playground tests at the top of `RTDBS-RULES.md`
@@ -187,22 +229,58 @@ other, and re-run that check.**
 
 ---
 
-## 8. The gap this pass did not close
+## 8. Profiles with no consent record: closed in the app
 
 `ProfileProvisioning.ensureProfile` writes **only `name` and `email`** when a
 sign-in finds `users/{uid}` absent. So a profile **can** exist with no
-`consent` subtree, by at least three routes:
+`consent` subtree, by two routes:
 
 - an account created in the Console, on its first sign-in;
-- a Google account whose record went missing;
-- **an account whose data was deleted but whose Auth user survived a failed
-  delete** — the next sign-in repopulates a thin record.
+- a Google account whose record went missing.
 
-The last one matters most: a user who asked to be deleted ends up with an
-account again, minus their contacts and consent.
+**Both are closed by an in-app consent gate (2026-10-14,
+`feature/consent-gate`).** The Home host reads the record before it shows any
+tab. An account with no consent record is sent to **Before you continue**,
+which is sign-up's consent screen: the same statement on the same checkbox,
+the same "Read the Privacy Notice" button, and Agree writes the same three
+fields (`accepted: true`, a server `acceptedAt`, `version` =
+`CONSENT_VERSION`) through the same code as sign-up. **Decline** signs the
+user out and changes nothing: no consent is written and the account and its
+data are left as they were. The next sign-in meets the screen again.
 
-**Two options, neither taken here** (this pass was scoped to the notice and the
-rules):
+What it covers, and what it does not:
+
+| Covered | Not covered |
+|---|---|
+| A **missing** record, on every way in: sign-in, Google, a restored session, a return from recents. | **Versions.** Someone who agreed to `1.0` is let in; there is still no re-consent flow (§2). `ConsentGate.needsConsent` is where a version rule would go. |
+| A record that **cannot be read** (offline, refused, no answer in 10 s): a Retry cover, never the consent screen and never the tabs. | **Contacts.** An account let in with consent may still have no emergency contacts (a Google first-timer who abandoned that step). |
+| A pending deletion, which still wins over consent. | **Server-side enforcement.** The rules still do not require consent, and must not (below). |
+
+**No rules change was needed.** The late write was tested in the local
+Database Emulator against the stripped `RTDBS-RULES.md`: the owner may add
+`consent` to an existing profile, or to a record that does not exist yet; a
+stranger, an unauthenticated client, a partial record and `accepted: false`
+are all refused.
+
+**Declining has no in-app delete.** Settings is behind the gate, so a user who
+declines and wants their data gone uses the hosted `/delete-account` page's
+manual route, by email. The hosted pages do not describe the gate yet (a human
+decision).
+
+**The third route is closed (2026-10-14, `feature/account-safety`).** An
+account whose data was deleted but whose Auth user survived a failed delete
+used to have a thin record repopulated on the next sign-in. Delete account now
+replaces `users/{uid}` with `{ "deletion_pending": true }` in the same write
+that removes the data; `ProfileProvisioning` never re-provisions over it, and
+the next sign-in is sent to finish the deletion instead. It needed **no rules
+change** (checked in the local emulator). It differs from Option B below in
+one respect worth knowing: the marker lives **inside** `users/{uid}`, and after
+a finished deletion it stays there, a uid and one boolean with no personal data,
+because no session is left that could clear it. CLAUDE.md, "Account
+deletion", has the details. The table below is the original analysis.
+
+**The original analysis, kept for the record.** Two options, neither taken at
+the time (that pass was scoped to the notice and the rules):
 
 | | Option A — leave it documented | Option B — a deletion-pending marker |
 |---|---|---|

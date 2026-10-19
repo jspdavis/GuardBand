@@ -103,8 +103,8 @@ interface AuthRepository {
      * The signed-in user, or null. Synchronous, so it is safe in a ViewModel's
      * constructor.
      *
-     * Fills `id`, `name` (the Firebase display name) and `email`, which is
-     * the whole of [User]. A screen wanting the stored record reads it with
+     * Fills `id`, `name` (the Firebase display name), `email` and
+     * `photoUrl`, which is the whole of [User]. A screen wanting the stored record reads it with
      * [UserProfileRepository.fetchProfile] and uses this as the fallback for
      * when no record exists yet.
      */
@@ -163,9 +163,10 @@ interface AuthRepository {
      * Deletes the Firebase Auth user, ending the account.
      *
      * **Deletes nothing from the database.** The `users/{uid}` subtree is
-     * removed separately by [UserProfileRepository.deleteProfile], and it has
-     * to go **first**: the rules authorise that write with `auth.uid`, so once
-     * this call succeeds there is no longer a session that can make it.
+     * replaced by a deletion marker beforehand, by
+     * [UserProfileRepository.markDeletionPending], and that has to happen
+     * **first**: the rules authorise the write with `auth.uid`, so once this
+     * call succeeds there is no longer a session that can make it.
      *
      * Fails with [AuthError.RequiresRecentLogin] unless a re-authentication
      * happened recently enough, which is why both `reauthenticate` calls
@@ -173,6 +174,51 @@ interface AuthRepository {
      * to sign out of.
      */
     suspend fun deleteAccount(): Result<Unit>
+
+    // ── Email verification ───────────────────────────────────────────────────
+
+    /**
+     * True when Firebase has the signed-in account's email as verified.
+     * False with no session.
+     *
+     * Synchronous, like [currentUser], and only as fresh as the session's last
+     * refresh: a link opened in a browser does not reach this until
+     * [reloadUser] runs. Google accounts come back verified from Google.
+     */
+    fun isEmailVerified(): Boolean
+
+    /**
+     * Asks Firebase to email the signed-in account a verification link.
+     *
+     * The plain call with **no `ActionCodeSettings`**, exactly like
+     * [sendPasswordReset], so the link is Firebase's own default handler on
+     * `firebaseapp.com` - the one the App Link claims - and no Dynamic Links
+     * machinery is involved (`docs/forgot-password.md` §11).
+     *
+     * Fails with [AuthError.TooManyRequests] when Firebase's own rate limit is
+     * hit, and [AuthError.NotSignedIn] with no session.
+     */
+    suspend fun sendEmailVerification(): Result<Unit>
+
+    /**
+     * Refreshes the signed-in account from Firebase, so [isEmailVerified]
+     * reflects a link the user has just opened, without signing anyone out.
+     */
+    suspend fun reloadUser(): Result<Unit>
+
+    /**
+     * Applies the code from an email-verification link.
+     *
+     * **Needs no signed-in user**, like the reset calls: the code is the
+     * authorisation. It is checked first and must be a **verify-email** code;
+     * anything else (a recover-email code under a crafted `mode=verifyEmail`,
+     * say) fails with [AuthError.InvalidActionCode] and is not applied, so this
+     * screen can never carry out an action it does not describe.
+     *
+     * Fails with [AuthError.ExpiredActionCode] or [AuthError.InvalidActionCode]
+     * for a stale, spent or wrong code. The code is never logged.
+     */
+    suspend fun applyEmailVerification(code: String): Result<Unit>
 
     fun isLoggedIn(): Boolean
     fun signOut()

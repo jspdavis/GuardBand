@@ -37,4 +37,62 @@
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/menu_home_bottom_nav" />
 
+    <!-- The account gate's cover. Up until HomeViewModel's gate is OPEN, so the
+         tabs are never seen by an account that is then sent away (no consent,
+         a pending deletion). Opaque, clickable and raised above the bottom bar
+         so nothing under it can be reached. Shows the spinner while checking,
+         or the retry panel when the record could not be read. -->
+    <!-- DESIGN: Jul -->
+    <FrameLayout
+        android:id="@+id/fl_home_gate"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@color/surface_bg"
+        android:clickable="true"
+        android:elevation="16dp"
+        android:focusable="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ProgressBar
+            android:id="@+id/progress_home_gate"
+            style="@style/Widget.AppCompat.ProgressBar"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center"
+            android:contentDescription="@string/cd_home_gate_progress"
+            android:indeterminateDrawable="@drawable/bg_spinner_gradient" />
+
+        <LinearLayout
+            android:id="@+id/ll_home_gate_failed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingStart="32dp"
+            android:paddingEnd="32dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                android:id="@+id/tv_home_gate_failed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/label_home_gate_failed"
+                android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                android:textColor="@color/text_secondary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_home_gate_retry"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/btn_alert_retry" />
+        </LinearLayout>
+    </FrameLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

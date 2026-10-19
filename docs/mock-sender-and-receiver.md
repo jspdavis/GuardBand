@@ -101,11 +101,11 @@ and unchanged.
 
 | Control | Writes | Position | Battery |
 |---|---|---|---|
-| **Simulate Panic** | one `PANIC` | random, within ±0.01° of Cebu City | random 20–100% |
-| **Simulate Check-in** | one `CHECKIN` | same | same |
+| **Simulate Panic** | one `PANIC` | Phone A's real GPS fix; falls back to random ±0.01° of Cebu City if no fix or permission denied | random 20–100% |
+| **Simulate Check-in** | one `CHECKIN` (the band's FR-10 double-press) | same | same |
 | **Simulate Low Battery** | one `LOW_BATTERY` | same | same |
 | **Simulate Tracking Update** | one `TRACKING_UPDATE` | same | same |
-| **Start walk / Stop walk** | a `TRACKING_UPDATE` every **5 s** | a ~165 m circle around Cebu City, 24 steps | drains 95% → 20% |
+| **Start walk / Stop walk** | a `TRACKING_UPDATE` every **5 s** | a ~165 m synthetic circle anchored at Phone A's real fix (or Cebu City if no fix), 24 steps | drains 95% → 20% |
 
 Every send writes the full `SCHEMA.md` v1.0 payload: `schemaVersion` (the
 *string* `"1.0"`), `deviceId`, `type`, `timestamp` (ISO 8601 UTC with
@@ -118,12 +118,23 @@ and `sequenceId`.
 |---|---|
 | `Ready to send alerts` | Nothing sent yet this session. |
 | `Sending PANIC...` | In flight. |
-| `✓ Sent PANIC as #7` | Written. **`#7` is the history key**, so you can find it in the Console. |
-| `⚑ Walking: 12 sent, latest #19` | Walk running; count and the newest key. |
+| `✓ Sent PANIC as #7 (real GPS)` | Written using Phone A's real GPS fix. |
+| `✓ Sent PANIC as #7 (simulated)` | Written using the Cebu City fallback — no fix available or permission denied. |
+| `⚑ Walking: 12 sent, latest #19 (real origin)` | Walk running, loop anchored at the real fix. |
+| `⚑ Walking: 12 sent, latest #19 (simulated)` | Walk running, loop anchored at Cebu City. |
 | `Walk stopped` | You tapped Stop. |
 | `Walk stopped (harness left the foreground)` | You backgrounded the harness. See below. |
 | `✗ Failed: HTTP 401 on PUT /devices/…` | See §8. |
 | `✗ Walk stopped after 4: …` | A step failed, so the whole walk stopped. |
+
+The **GPS badge** below the status line shows the current fix state independently of sends:
+
+| Badge text | Meaning |
+|---|---|
+| `GPS fix: 10.3157, 123.8854 (±8 m)` | Real fix in hand; sends will use it. |
+| `Acquiring GPS fix…` | Permission granted, waiting for first fix. Sends fall back to Cebu City in the meantime. |
+| `No GPS fix — using simulated Cebu City location` | Permission granted but no fix yet and the provider never fired (e.g. indoors for a long time). |
+| `Location permission denied — using simulated Cebu City location` | Permission was denied; all sends use Cebu City. |
 
 ### Sequence ids
 
@@ -157,16 +168,18 @@ and its four tabs. Two of them read the band.
 
 The newest ping, whatever kind it was.
 
+The band status panel (Reporting / Not reporting, Last seen, Battery) was
+removed from the screen on 2026-10-14; the Check-in pill is now the tab's one
+status line. Battery is still on each Alert-tab row.
+
 | Element | Shows |
 |---|---|
 | Map + one marker | Last known position. OpenStreetMap tiles via osmdroid. |
-| **Reporting / Not reporting** | Whether the last report is under **180 s** old. |
-| **Last seen …** | `just now` under a minute, then minutes / hours / days. |
-| **Battery n%** | `· Charging` when the payload says so; `Battery unknown` if absent. |
 | Empty overlay | *"Your band hasn't reported yet."* / *"No location fix yet"* / a read error. |
 | **Navigate** | Opens a maps app on the position. Disabled with no fix. |
 | Recenter (◎) | Re-centres and resumes following. |
-| Layers, **Check in** | UI-only stubs. Check-in writes nothing: FR-10 check-in is a double-press on the band. |
+| **Check-in pill** | Read-only status of the latest check-in: *"Last check-in: 5 minutes ago"*, or *"No recent check-ins"*. Read from **history**, not `latest` (see below). Not tappable; the app never sends a check-in. |
+| Layers | UI-only stub. |
 
 ### Alert tab — reads `history`
 
@@ -193,11 +206,11 @@ whatever it was" is exactly what a map wants.
 
 | Type sent | Track tab | Alert tab |
 |---|---|---|
-| `PANIC` | marker + panel update | shown, and becomes **Current status** |
-| `CHECKIN` | marker + panel update | shown |
-| `LOW_BATTERY` | marker + panel update | shown |
-| `TRACKING_UPDATE` | marker + panel update | **hidden**, and never becomes Current status |
-| an unrecognised type | panel updates | shown as **"Unknown alert"** |
+| `PANIC` | marker moves | shown, and becomes **Current status** |
+| `CHECKIN` | marker moves, and the **Check-in pill** updates | shown |
+| `LOW_BATTERY` | marker moves | shown |
+| `TRACKING_UPDATE` | marker moves | **hidden**, and never becomes Current status |
+| an unrecognised type | marker moves if it has a location | shown as **"Unknown alert"** |
 
 A tracking update being invisible on the Alert tab is correct, not a bug. An
 *unknown* type is still shown, so a type a future firmware adds will appear
@@ -213,24 +226,22 @@ Phone A = Mock Sender. Phone B = GuardBand, signed in, Track tab open.
 
 Clear `devices/guardband-001` in the Console first.
 
-- **Track:** Cebu City at zoom 13, *"Your band hasn't reported yet."*, no status
-  panel, Navigate disabled.
+- **Track:** Cebu City at zoom 13, *"Your band hasn't reported yet."*, Navigate
+  disabled.
 - **Alert:** *"No alerts from your band yet."*
 
 ### B · First panic
 
 Phone A → **Simulate Panic**. Expect `✓ Sent PANIC as #1`.
 
-- **Track:** marker appears, camera moves to it at street zoom, panel reads
-  *Reporting · Last seen just now · Battery n%*.
+- **Track:** marker appears and the camera moves to it at street zoom.
 - **Alert:** Current status becomes **Panic** with its coordinates and battery.
 
 ### C · Walk mode — the marker moves
 
 Phone A → **Start walk**.
 
-- **Track:** the marker steps around a circle every 5 s; battery ticks down;
-  *Last seen* stays *just now*.
+- **Track:** the marker steps around a circle every 5 s.
 - **Alert:** nothing changes. Current status stays **Panic** — tracking updates
   are hidden. This is the single best demonstration of §5's split.
 
@@ -238,11 +249,11 @@ Phone A → **Start walk**.
 
 Stop the walk. Leave Track open and **wait 3 minutes**.
 
-The badge must flip to **Not reporting** on its own, with no interaction, and
-*Last seen* must start counting up. Nothing arrives from the database to cause
-this — a silent band sends nothing — so it is driven by a 30 s timer in the
-ViewModel. **If it never flips, that timer is broken**, and that is the whole
-bug the timer exists to prevent.
+**Nothing on screen shows this any more**: the badge and *Last seen* went with
+the status panel on 2026-10-14. The 30 s timer still runs in the ViewModel and
+`TrackViewModelTest` still covers the flip, and the Check-in pill keeps ageing on
+the same timer, so a check-in's "N minutes ago" counting up is the visible sign
+the timer is alive.
 
 ### E · Follow, and not fighting the user
 
@@ -263,9 +274,31 @@ no fix the button is disabled.
 delete `latest/location` in the Console.
 
 - **Track:** the marker **stays where it was** and the overlay reads *"No
-  location fix yet"*, while *Last seen* still updates. The band is talking but
+  location fix yet"*. The band is talking but
   cannot see the sky, and throwing away the last known position in that moment
   would discard the most useful thing on screen.
+
+### H · A check-in (FR-10)
+
+The band's double-press, standing in. The Check-in pill is the one part of
+the Track tab that reads **history** rather than `latest`, so it survives the
+tracking pings that follow.
+
+1. Fresh state: the pill reads *"No recent check-ins"* (or *"Loading
+   check-ins…"* for a moment). If an older check-in is already in the newest
+   100 history rows, it shows that one instead.
+2. Phone A: **Simulate Check-in**. Within a second or two the pill on Phone B
+   reads *"Last check-in: just now"*, and the Alert tab gains a green
+   *Check-in* row.
+3. Wait a minute or two without sending: the pill ages to *"Last check-in: 1
+   minute ago"*, *"2 minutes ago"*, ... on the 30 s ticker, with no new data.
+4. Phone A: **Start walk**. Tracking updates overwrite `latest` every 5 s; the
+   marker moves, but the pill keeps the check-in's time. (Reading `latest`
+   would have lost it on the first ping.)
+5. Tap the pill: nothing happens, by design. With TalkBack on it is read as
+   text, not as a button.
+6. Phone A: **Simulate Panic**. The Alert tab's Current status becomes the
+   panic exactly as before; the pill still shows the check-in.
 
 ---
 
@@ -289,6 +322,9 @@ payloads, missing fields and unknown types — see §9.
 | `✗ Failed: HTTP 401 …` | Deployed rules are tighter than the draft. The sender writes unauthenticated; it would need an `?auth=` token. |
 | `✗ Failed: HTTP 400 …` | A `.validate` rejected the payload — check the enum name, `percent` 0–100, and all six required children. |
 | `✗ Failed:` a network error | No connectivity, or the database URL from `google-services.json` is wrong. |
+| **GPS badge stuck on "Acquiring…"** | Indoors or no satellite view. Sends fall back to Cebu City automatically — there is nothing to fix. |
+| **No location permission dialog on first launch** | Already denied once. Go to App Settings → Permissions → Location and grant it manually. |
+| **Sends show `(simulated)` even though permission is granted** | No fix has arrived yet — the badge will show "Acquiring…". Walk until outdoors or use the network provider fix. |
 | **Every tile reads "access blocked"** | The user agent. OSM blocks shared identifiers — `osmdroid` and the `com.example.*` prefix that is still this app's `applicationId`. The block is an **HTTP 200 PNG** with the text drawn in, so osmdroid caches and draws it and the log stays clean. `OsmdroidConfig.USER_AGENT` and `GuardBandTileSource` are the two halves of the fix; neither works alone — [`osmdroid.md`](osmdroid.md). |
 | **Map is blank/grey, everything else works** | `OsmdroidConfig` did not run before the `MapView` was built. It must be applied in `onCreate`, ahead of inflation. |
 | Marker never appears, panel does | Reporting without a fix (§G), or the payload has no `location`. |
@@ -307,7 +343,7 @@ payloads, missing fields and unknown types — see §9.
 |---|---|
 | **Real hardware** | No firmware. Everything above is the stand-in. |
 | **SMS to contacts (FR-05)** | The band sends it, not the app. Nothing here exercises it. |
-| **A real check-in (FR-10)** | A band double-press. The pill is a UI stub; the harness can send a `CHECKIN` payload, which is what the receiver would see. |
+| **A real check-in (FR-10)** | A band double-press. **Simulate Check-in** sends the same `CHECKIN` payload, which is what the receiver would see (walkthrough H). |
 | **Pairing** | One hardcoded device id, so every account watches the same band. |
 | **Malformed payloads, unknown types, missing fields** | Console only. The harness always writes a valid payload. |
 | **Map layers** | UI stub. |

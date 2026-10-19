@@ -5,7 +5,7 @@ data class SignUpConsentUiState(
     /** True while a repository call is in flight: buttons disabled, progress visible. */
     val isLoading: Boolean = false,
 
-    /** The checkbox. Create account stays disabled until this is true. */
+    /** The checkbox. Get started stays disabled until this is true. */
     val consentGiven: Boolean = false,
 
     /**

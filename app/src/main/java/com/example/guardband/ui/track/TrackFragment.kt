@@ -10,6 +10,8 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -18,8 +20,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.data.model.Alert
+import com.example.guardband.ui.avatar.AvatarImage
 import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.imageview.ShapeableImageView
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
@@ -28,35 +34,39 @@ import org.osmdroid.views.overlay.Marker
 
 /**
  * Track tab (the default tab): the band's last known position on an
- * OpenStreetMap map, its status panel, and the bottom actions.
+ * OpenStreetMap map and the bottom actions. The check-in pill is the
+ * screen's one status line; the band status panel (reporting badge, last
+ * seen, battery) was removed on 2026-10-14.
  *
  * View IDs, so the layout can be restyled without touching this file:
- * `track_map_view`, `track_online_badge`, `track_last_seen`, `track_battery`,
- * `track_empty_view`, `track_recenter_button`, `track_navigate_button`,
- * `track_layers_button`, `track_checkin_pill`, plus the top bar's
- * `tv_track_user_name`, `ib_track_notifications` and `ib_track_settings` and
- * the `ll_track_status` panel.
+ * `track_map_view`, `track_empty_view`, `track_recenter_button`,
+ * `track_navigate_button`, `track_layers_button`, `track_checkin_pill` (a
+ * read-only status, not a button), plus the top bar's `iv_track_avatar`,
+ * `ib_track_notifications` and `ib_track_settings`.
  *
  * Gear and bell forward to the shared [HomeViewModel], which asks the host to
- * show Settings or Notifications.
+ * show Settings or Notifications. The avatar does the same for the Profile
+ * tab.
  *
  * **Recentring lives here, not in the ViewModel.** Where the camera is pointing
  * is view state, like a scroll offset: it survives nothing, means nothing to
  * the rest of the app, and [TrackViewModel] would have to model it only to hand
  * it straight back.
  *
+ * **The avatar** is the Google profile photo when [TrackUiState.avatarUrl] has
+ * one, and the default icon otherwise; [AvatarImage] does the loading, the
+ * same way as on the Profile tab.
+ *
  * Nothing here logs. The state carries the wearer's coordinates.
  */
 class TrackFragment : Fragment(R.layout.fragment_track) {
 
     private lateinit var mapView: MapView
-    private lateinit var tvUserName: TextView
-    private lateinit var statusPanel: View
-    private lateinit var tvOnlineBadge: TextView
-    private lateinit var tvLastSeen: TextView
-    private lateinit var tvBattery: TextView
+    private lateinit var ivAvatar: ShapeableImageView
+    private lateinit var avatarImage: AvatarImage
     private lateinit var tvEmpty: TextView
     private lateinit var btnNavigate: Button
+    private lateinit var tvCheckIn: TextView
 
     private val viewModel: TrackViewModel by viewModels { TrackViewModel.Factory }
     private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
@@ -86,22 +96,25 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         super.onViewCreated(view, savedInstanceState)
 
         mapView        = view.findViewById(R.id.track_map_view)
-        tvUserName     = view.findViewById(R.id.tv_track_user_name)
-        statusPanel    = view.findViewById(R.id.ll_track_status)
-        tvOnlineBadge  = view.findViewById(R.id.track_online_badge)
-        tvLastSeen     = view.findViewById(R.id.track_last_seen)
-        tvBattery      = view.findViewById(R.id.track_battery)
+        ivAvatar       = view.findViewById(R.id.iv_track_avatar)
         tvEmpty        = view.findViewById(R.id.track_empty_view)
         btnNavigate    = view.findViewById(R.id.track_navigate_button)
+        tvCheckIn      = view.findViewById(R.id.track_checkin_pill)
+
+        avatarImage    = AvatarImage(ivAvatar)
 
         setUpMap()
 
+        ivAvatar.setOnClickListener { homeViewModel.onProfileClicked() }
+        // TalkBack: "double-tap to open profile" rather than "to activate".
+        ViewCompat.replaceAccessibilityAction(
+            ivAvatar, AccessibilityActionCompat.ACTION_CLICK,
+            getString(R.string.action_open_profile), null
+        )
         view.findViewById<ImageButton>(R.id.ib_track_notifications)
             .setOnClickListener { homeViewModel.onNotificationsClicked() }
         view.findViewById<ImageButton>(R.id.ib_track_settings)
             .setOnClickListener { homeViewModel.onSettingsClicked() }
-        view.findViewById<Button>(R.id.track_checkin_pill)
-            .setOnClickListener { viewModel.onCheckInClicked() }
         view.findViewById<FloatingActionButton>(R.id.track_layers_button)
             .setOnClickListener { viewModel.onLayersClicked() }
         view.findViewById<FloatingActionButton>(R.id.track_recenter_button)
@@ -116,6 +129,14 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.events.collect(::handleEvent)
+            }
+        }
+        // Its own collector, so the 30 s staleness tick does not re-request
+        // the photo: only a different URL reaches the avatar.
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.map { it.avatarUrl }.distinctUntilChanged()
+                    .collect(avatarImage::show)
             }
         }
     }
@@ -135,6 +156,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
      * MapView has to be detached by hand or the Fragment's view leaks with it.
      */
     override fun onDestroyView() {
+        avatarImage.dispose()
         mapView.onDetach()
         marker = null
         super.onDestroyView()
@@ -206,10 +228,11 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     // ── Rendering ─────────────────────────────────────────────────────────────
 
     private fun render(state: TrackUiState) {
-        tvUserName.text = state.userName
+        // No visible name: TalkBack still says whose app this is.
+        ivAvatar.contentDescription = getString(R.string.cd_track_avatar, state.userName)
 
-        renderStatusPanel(state)
         renderEmptyView(state)
+        tvCheckIn.text = checkInText(state.checkIn)
 
         btnNavigate.isEnabled = state.navigateEnabled
 
@@ -217,43 +240,26 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         if (location != null) showFix(location) else removeMarker()
     }
 
-    private fun renderStatusPanel(state: TrackUiState) {
-        statusPanel.visibility = if (state.hasReported) View.VISIBLE else View.GONE
-        if (!state.hasReported) return
-
-        tvOnlineBadge.setText(
-            if (state.isOnline) R.string.label_track_reporting
-            else R.string.label_track_not_reporting
-        )
-        // DESIGN: Jul — the dot should take the reporting/not-reporting colour.
-
-        val elapsed = state.elapsed
-        tvLastSeen.visibility = if (elapsed == null) View.GONE else View.VISIBLE
-        if (elapsed != null) tvLastSeen.text = lastSeenText(elapsed)
-
-        tvBattery.text = batteryText(state.battery)
-    }
-
     /**
-     * [Elapsed] turned into text here rather than in the ViewModel, which holds
-     * no Context and so cannot reach a `plurals`.
+     * The pill's text; a status, so there is no click to wire. [Elapsed] is
+     * turned into text here rather than in the ViewModel, which holds no
+     * Context and so cannot reach a `plurals`.
      */
-    private fun lastSeenText(elapsed: Elapsed): String = when (elapsed) {
-        is Elapsed.Seconds -> getString(R.string.label_track_last_seen_just_now)
-        is Elapsed.Minutes -> quantity(R.plurals.label_track_last_seen_minutes, elapsed.value)
-        is Elapsed.Hours -> quantity(R.plurals.label_track_last_seen_hours, elapsed.value)
-        is Elapsed.Days -> quantity(R.plurals.label_track_last_seen_days, elapsed.value)
+    private fun checkInText(status: CheckInStatus): String = when (status) {
+        CheckInStatus.Loading -> getString(R.string.label_track_checkin_loading)
+        CheckInStatus.None -> getString(R.string.label_track_checkin_none)
+        CheckInStatus.Unavailable -> getString(R.string.label_track_checkin_unavailable)
+        is CheckInStatus.Received -> when (val elapsed = status.elapsed) {
+            null -> getString(R.string.label_track_checkin_time_unknown)
+            is Elapsed.Seconds -> getString(R.string.label_track_checkin_just_now)
+            is Elapsed.Minutes -> quantity(R.plurals.label_track_checkin_minutes, elapsed.value)
+            is Elapsed.Hours -> quantity(R.plurals.label_track_checkin_hours, elapsed.value)
+            is Elapsed.Days -> quantity(R.plurals.label_track_checkin_days, elapsed.value)
+        }
     }
 
     private fun quantity(resId: Int, value: Long): String =
         resources.getQuantityString(resId, value.toInt(), value.toInt())
-
-    private fun batteryText(battery: Alert.Battery?): String = when {
-        battery == null -> getString(R.string.label_track_battery_unknown)
-        battery.isCharging ->
-            getString(R.string.label_track_battery_charging, battery.percent)
-        else -> getString(R.string.label_track_battery, battery.percent)
-    }
 
     /**
      * Three different reasons there is no marker, which all look like an empty

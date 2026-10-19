@@ -9,4 +9,13 @@
     <string name="mock_sender_walk_stop">Stop walk</string>
     <string name="mock_sender_walk_stopped">Walk stopped</string>
     <string name="mock_sender_walk_paused">Walk stopped (harness left the foreground)</string>
+
+    <!-- GPS location status, shown in the status line and as a location badge -->
+    <string name="mock_sender_gps_fix" formatted="false">GPS fix: %.4f, %.4f (±%.0f m)</string>
+    <string name="mock_sender_gps_no_fix">No GPS fix — using simulated Cebu City location</string>
+    <string name="mock_sender_gps_denied">Location permission denied — using simulated Cebu City location</string>
+    <string name="mock_sender_gps_acquiring">Acquiring GPS fix\u2026</string>
+
+    <!-- Runtime permission rationale shown before the system dialog -->
+    <string name="mock_sender_permission_rationale">The mock sender can report Phone A\'s real GPS position instead of a hardcoded Cebu City point, the same way the band\'s NEO-6M GPS will. Allow location access to use real coordinates.</string>
 </resources>
