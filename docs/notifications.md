@@ -157,7 +157,8 @@ phone offers it. Then check §7, step 4, both before and after.
 ## 7. Device checklist
 
 Use the mock sender as the band. Results go in the table below; a check that
-was not run says so.
+was not run says so. The full step-by-step cases, with expected results and
+a column to fill in, are [`notifications-test-cases.md`](notifications-test-cases.md).
 
 1. Fresh install, Android 13+: no prompt at launch. Settings → Alert
    notifications → the prompt. Refuse: the switch stays off and shows "Open
