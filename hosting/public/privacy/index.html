@@ -317,6 +317,24 @@
           OpenStreetMap.
         </td>
       </tr>
+      <!-- DRAFT row, 2026-10-19 (feature/track-profile-marker): the Track
+           map's marker shows the signed-in user's Google profile picture,
+           which the Profile tab already showed. Not deployed. DECISION: Jul -
+           whether this needs the notice's version (and CONSENT_VERSION)
+           bumped. -->
+      <tr>
+        <td><strong>Google</strong> (profile picture)</td>
+        <td>
+          <strong>[DRAFT, pending review]</strong> If you sign in with Google,
+          the app shows your Google profile picture on the Profile tab and on
+          the map, as the marker for the band's position. The picture is loaded
+          from Google's image servers, which receive <strong>your phone's IP
+          address</strong> when it is fetched. The app keeps a copy only in its
+          own image cache on the phone; it is never stored in the project's
+          database or uploaded anywhere. Accounts that sign in with an email
+          and password show their initials instead, and nothing is fetched.
+        </td>
+      </tr>
       <tr>
         <td><strong>Google Maps</strong></td>
         <td>

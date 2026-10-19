@@ -82,6 +82,16 @@ export-then-delete for that reason.
 | Notice, "Questions" | A contact to escalate to | **None**, so the line was removed. |
 | Notice, "Children" | A minimum age for the **account holder** | **18, or a guardian's permission** - the same as the consent checkbox, so no version bump. An account found to break that is deleted. |
 | Delete page, "If you cannot open the app" | Whether a manual deletion process exists | **Yes.** Requests to the contact address, acted on only when sent from the account's own email, within 30 days, with a confirming reply. The deletion is done by hand in the Console: `users/{uid}` first, then the Authentication user, the same order as the app. |
+| Notice, sharing table, MapTiler row (DRAFT, 2026-10-19) | Whether a different company now receiving the IP address (MapTiler instead of OpenStreetMap) needs the notice's version and `CONSENT_VERSION` bumped | **Open** - Jul + adviser |
+| Notice, sharing table, Google profile picture row (DRAFT, 2026-10-19) | Whether showing the Google profile picture on the map, loaded from Google's image servers (which see the IP address), needs the notice's version and `CONSENT_VERSION` bumped. The Profile tab has shown the same picture since 2026-10-14 without a line in the notice. | **Open** - Jul + adviser. `CONSENT_VERSION` left at `1.1` |
+
+**DRAFT, 2026-10-19: the Google profile picture.** The Track map's marker now
+shows the signed-in user's Google profile picture (initials for an email
+account), as the Profile tab already did. It is loaded from Google's image
+servers, which see the phone's IP address; it is kept only in the app's own
+image cache on the phone, never written to the database or uploaded. The
+notice has a DRAFT row saying so (not deployed); whether that needs a version
+bump is the second open row above.
 
 ---
 

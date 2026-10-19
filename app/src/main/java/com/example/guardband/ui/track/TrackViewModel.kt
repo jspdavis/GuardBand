@@ -10,6 +10,7 @@ import com.example.guardband.data.model.Alert
 import com.example.guardband.data.model.CheckIn
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.data.repository.AlertRepository
+import com.example.guardband.data.repository.AuthRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -47,7 +48,12 @@ import kotlinx.coroutines.launch
  * status, not an action: nothing here can send a check-in, because only the
  * band does.
  *
- * Nothing here logs. The state holds the wearer's coordinates.
+ * The marker's face, [TrackUiState.markerFace], is worked out once, from the
+ * session, in [markerFace]: the one place that decides whose picture marks
+ * the band.
+ *
+ * Nothing here logs. The state holds the wearer's coordinates, and the face a
+ * photo link.
  *
  * @param staleTicks fires the staleness recompute. Injected so a test can
  *   drive it by hand, or pass an empty flow and be sure nothing is ticking in
@@ -55,11 +61,12 @@ import kotlinx.coroutines.launch
  */
 class TrackViewModel(
     private val alertRepository: AlertRepository,
+    private val authRepository: AuthRepository,
     private val clock: Clock = Clock.SYSTEM,
     private val staleTicks: Flow<Unit> = defaultStaleTicks()
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TrackUiState())
+    private val _uiState = MutableStateFlow(TrackUiState(markerFace = markerFace()))
     val uiState: StateFlow<TrackUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<TrackEvent>(Channel.BUFFERED)
@@ -127,6 +134,20 @@ class TrackViewModel(
     fun onLayersClicked() {
         _events.trySend(TrackEvent.ShowMessage(MSG_MAP_LAYERS_UNAVAILABLE))
     }
+
+    /**
+     * **Whose face marks the band. The one place that decides it.**
+     *
+     * Today it is the signed-in user's own, because there is no wearer or
+     * guardian yet: whoever is looking is the only person the app knows. Once
+     * roles or pairing exist, the wearer's photo and name belong here instead,
+     * and nothing else has to change. The session is read synchronously, so
+     * the first state already carries it.
+     */
+    private fun markerFace(): BandMarkerFace = BandMarkerFace.of(
+        person = authRepository.currentUser(),
+        providers = authRepository.currentUserProviders()
+    )
 
     private fun observeLatest() {
         observeJob?.cancel()
@@ -305,7 +326,7 @@ class TrackViewModel(
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                TrackViewModel(RepositoryProvider.alertRepository)
+                TrackViewModel(RepositoryProvider.alertRepository, RepositoryProvider.authRepository)
             }
         }
     }

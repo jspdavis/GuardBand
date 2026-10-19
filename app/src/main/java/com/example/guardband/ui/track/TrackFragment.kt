@@ -2,6 +2,7 @@ package com.example.guardband.ui.track
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -54,6 +55,11 @@ import org.osmdroid.views.overlay.Marker
  * [AlertViewModel], the same instance the history screen reads. Track has no
  * avatar since 2026-10-19; the Profile tab is reached from the bar.
  *
+ * **The band's marker is a face** (2026-10-19): a round photo or initials in
+ * a white ring with a pointer, drawn by [BandMarkerIcon] from
+ * [TrackUiState.markerFace]. It is drawn when the face changes, not on every
+ * position; a new position only moves the marker, as before.
+ *
  * **Navigate is the round arrow button** (2026-10-19; the white Navigate pill
  * is gone). A tap opens a maps app on the band's position (D6); a long-press
  * re-centres the map and resumes following (D4), and TalkBack offers that as
@@ -75,6 +81,10 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     private lateinit var tvCheckIn: TextView
     private lateinit var recentAlerts: RecentAlertsPanel
     private lateinit var attribution: MapAttribution
+    private lateinit var markerIcon: BandMarkerIcon
+
+    /** The marker's current picture, kept for a marker created after it arrives. */
+    private var bandIcon: Drawable? = null
 
     private val viewModel: TrackViewModel by viewModels { TrackViewModel.Factory }
     private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
@@ -128,6 +138,14 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             view.findViewById(R.id.track_map_logo)
         )
         attribution.expand()
+
+        markerIcon = BandMarkerIcon(requireContext(), viewLifecycleOwner) { icon ->
+            bandIcon = icon
+            marker?.let {
+                it.icon = icon
+                mapView.invalidate()
+            }
+        }
 
         setUpMap()
 
@@ -190,7 +208,9 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     override fun onDestroyView() {
         mapView.onDetach()
         attribution.release()
+        markerIcon.release()
         marker = null
+        bandIcon = null
         super.onDestroyView()
     }
 
@@ -253,10 +273,15 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         }
     }
 
-    /** One marker, moved rather than re-added (D4). */
+    /**
+     * One marker, moved rather than re-added (D4). Its picture is set when it
+     * is created and again only when [BandMarkerIcon] draws a new one; the
+     * anchor is the pointer's tip, so the tip is on the band's position.
+     */
     private fun showFix(location: Alert.Location) {
         val bandMarker = marker ?: Marker(mapView).also {
-            it.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+            bandIcon?.let { icon -> it.icon = icon }
+            it.setAnchor(markerIcon.anchorU, markerIcon.anchorV)
             it.title = getString(R.string.label_track_marker_title)
             mapView.overlays.add(it)
             marker = it
@@ -277,6 +302,9 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
     private fun render(state: TrackUiState) {
         renderEmptyView(state)
+        // Before showFix, so a marker created now gets the face. Draws nothing
+        // when the face is the same as last time.
+        markerIcon.bind(state.markerFace)
         tvCheckIn.text = checkInText(state.checkIn)
 
         btnNavigate.isEnabled = state.navigateEnabled

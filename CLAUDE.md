@@ -81,6 +81,7 @@ com/example/guardband/
 │   ├── track/          Track tab (default): gear + bell (as on Contacts/Profile), osmdroid map, round Navigate button,
 │   │                 Check-in pill, and the recent-alerts bottom sheet (RecentAlertsPanel; See all → Alert history)
 │   │                 BandStatus + NavigationUrl + OsmdroidConfig (pure helpers; see "Track and map")
+│   │                 BandMarkerFace (pure: photo or initials) + BandMarkerIcon (draws the band's marker)
 │   ├── contacts/       Contacts tab: list + delete
 │   ├── alert/          AlertHistoryFragment (pushed from Track's See all): latest status + incident history;
 │   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel
@@ -315,7 +316,7 @@ The signed-in user's own record, separate from the band's `devices/` tree:
 - **Consent is recorded, not just collected.** `finalizeSignUp` writes `accepted`, a server `acceptedAt` and `UserProfileRepository.CONSENT_VERSION` in the same atomic commit as the profile and contacts, so a profile can never exist without one. Bump the version whenever `label_signup_consent_statement` changes what is being agreed to.
 - **Sign-up finalization is one atomic write.** `UserProfileRepository.finalizeSignUp` puts the profile and every contact into a single multi-path `updateChildren`, so sign-up cannot half-succeed. That is what makes the Retry safe: there is no partial state to reconcile. Registration is deliberately **two** calls — `AuthRepository.createAccount` then `finalizeSignUp` — and the `accountCreated` guard in `SignUpContactsViewModel` means a retry resumes at the write. When they were one call, a failed write left the account created and the only retry went back through account creation, which then failed as "email already in use", so that address could never finish registering.
 - **`saveProfile` merges, never replaces.** It `updateChildren`s its three fields. A `setValue` on `users/{uid}` would delete every emergency contact under it.
-- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all, and has no avatar since 2026-10-19. RTDB disk persistence is **not** enabled.
+- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all and has had no avatar since 2026-10-19; its band marker shows the session's Google photo or initials ("Track and map"). RTDB disk persistence is **not** enabled.
 - **Failures are typed and mapped by code.** `ContactError` + `FirebaseDatabaseErrorMapper`, on `DatabaseError.getCode()`, never on a message. That code is only reachable through the SDK's completion-listener and `ValueEventListener` callbacks — an awaited `Task` fails with a bare `DatabaseException` carrying localised prose — which is why these repositories wrap the listener forms in `suspendCancellableCoroutine` instead of using `.await()`.
 - **Contact phone numbers are never logged**, and neither are contact names. They are a third party's personal data, not the user's own. Nothing in `data/` logs at all.
 
@@ -765,6 +766,14 @@ on purpose. The card is `clickable` so a tap on it never reaches the
 `MapView`; drags are the behavior's. The CoordinatorLayout has an id
 (`track_root`), which is what saves the sheet's state across a restore.
 Don't remove either.
+
+**The band's marker is a face (2026-10-19).** `ui/track/BandMarkerIcon` draws
+a round photo or initials in a white ring with a pointer whose tip is the
+anchor; `BandMarkerFace` decides photo or initials, reusing
+`ui/avatar/AvatarPhoto` and Coil. **`TrackViewModel.markerFace()` is the one
+place that decides whose face it is** (the signed-in user's until roles
+exist). It is drawn only when the face changes, never per position; never log
+the photo link. Details: `docs/osmdroid.md` §5.4.
 
 **The `MapView` is detached by hand** in `onDestroyView` (plus `onResume` /
 `onPause`). osmdroid holds a tile cache, a worker and overlay references, so

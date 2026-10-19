@@ -2,8 +2,11 @@ package com.example.guardband.ui.track
 
 import com.example.guardband.data.model.Alert
 import com.example.guardband.data.model.CheckIn
+import com.example.guardband.data.model.SignInProvider
+import com.example.guardband.data.model.User
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.testing.FakeAlertRepository
+import com.example.guardband.testing.FakeAuthRepository
 import com.example.guardband.testing.MainDispatcherRule
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -18,6 +21,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -67,8 +71,63 @@ class TrackViewModelTest {
     private fun viewModel(
         repository: FakeAlertRepository = FakeAlertRepository(),
         clock: Clock = FakeClock(t0),
-        ticks: Flow<Unit> = emptyFlow()
-    ) = TrackViewModel(repository, clock, ticks)
+        ticks: Flow<Unit> = emptyFlow(),
+        auth: FakeAuthRepository = FakeAuthRepository(signedIn = true)
+    ) = TrackViewModel(repository, auth, clock, ticks)
+
+    // ── The marker's face ─────────────────────────────────────────────────────
+
+    private val photo = "https://lh3.googleusercontent.com/a/abc=s96-c"
+
+    @Test
+    fun `the marker shows the signed-in Google user's photo, resized, and their initials`() {
+        val auth = FakeAuthRepository(
+            signedIn = true,
+            providers = setOf(SignInProvider.GOOGLE),
+            user = User(id = "u", name = "Ana Reyes", email = "ana@example.com", photoUrl = photo)
+        )
+
+        val face = viewModel(auth = auth).uiState.value.markerFace
+
+        assertEquals("https://lh3.googleusercontent.com/a/abc=s288-c", face.photoUrl)
+        assertEquals("AR", face.initials)
+    }
+
+    @Test
+    fun `an email account gets initials and no photo request`() {
+        val auth = FakeAuthRepository(
+            signedIn = true,
+            providers = setOf(SignInProvider.PASSWORD),
+            user = User(id = "u", name = "Ana Reyes", email = "ana@example.com", photoUrl = photo)
+        )
+
+        val face = viewModel(auth = auth).uiState.value.markerFace
+
+        assertNull(face.photoUrl)
+        assertEquals("AR", face.initials)
+    }
+
+    @Test
+    fun `with no session the face is blank, never a crash`() {
+        val face = viewModel(auth = FakeAuthRepository(signedIn = false)).uiState.value.markerFace
+
+        assertEquals(BandMarkerFace(photoUrl = null, initials = ""), face)
+    }
+
+    @Test
+    fun `a new position carries the same face, so the marker is not redrawn`() = runTest {
+        val repository = FakeAlertRepository()
+        val vm = viewModel(repository)
+        val before = vm.uiState.value.markerFace
+
+        repository.emitLatest(reportAt(t0, location = Alert.Location(1.0, 2.0, 3.0)))
+        advanceUntilIdle()
+        repository.emitLatest(reportAt(t0 + 60_000L, location = Alert.Location(1.1, 2.1, 3.0)))
+        advanceUntilIdle()
+
+        assertEquals(Alert.Location(1.1, 2.1, 3.0), vm.uiState.value.location)
+        assertSame(before, vm.uiState.value.markerFace)
+    }
 
     // ── The no-fix state ──────────────────────────────────────────────────────
 
