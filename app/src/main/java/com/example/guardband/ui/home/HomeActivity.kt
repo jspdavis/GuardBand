@@ -14,6 +14,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.ui.account.AccountActivity
 import com.example.guardband.ui.alert.AlertFragment
+import com.example.guardband.ui.alert.AlertHistoryFragment
 import com.example.guardband.ui.consent.ConsentRequiredActivity
 import com.example.guardband.ui.contacts.ContactsFragment
 import com.example.guardband.ui.login.LoginActivity
@@ -152,8 +153,7 @@ class HomeActivity : AppCompatActivity() {
             // Through the bar rather than show(TAG_PROFILE), so the Profile item
             // is highlighted too: selecting it runs the same listener a tap does.
             HomeEvent.ShowProfile -> bottomNav.selectedItemId = R.id.nav_profile
-            // The full history is still the Alert tab for now.
-            HomeEvent.ShowAlertHistory -> bottomNav.selectedItemId = R.id.nav_alert
+            HomeEvent.ShowAlertHistory -> show(TAG_ALERT_HISTORY)
 
             // The task is cleared so the tabs cannot be reached with Back:
             // there is no account behind them any more, only a sign-in to
@@ -218,6 +218,7 @@ class HomeActivity : AppCompatActivity() {
             TAG_PROFILE -> ProfileFragment()
             TAG_SETTINGS -> SettingsFragment()
             TAG_NOTIFICATIONS -> NotificationsFragment()
+            TAG_ALERT_HISTORY -> AlertHistoryFragment()
             else -> throw IllegalArgumentException("Unknown Home destination: $tag")
         }
 
@@ -236,6 +237,7 @@ class HomeActivity : AppCompatActivity() {
         const val TAG_PROFILE = "home_profile"
         const val TAG_SETTINGS = "home_settings"
         const val TAG_NOTIFICATIONS = "home_notifications"
+        const val TAG_ALERT_HISTORY = "home_alert_history"
 
         val TAB_TAGS = setOf(TAG_TRACK, TAG_CONTACTS, TAG_ALERT, TAG_PROFILE)
 

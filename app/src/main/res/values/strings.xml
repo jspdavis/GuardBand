@@ -176,7 +176,7 @@
     <string name="dialog_contact_edit_title">Edit contact</string>
 
     <!-- Alert -->
-    <string name="label_alert_title">Alerts</string>
+    <string name="label_alert_title">Alert history</string>
     <string name="label_alert_latest">Current status</string>
     <string name="label_alert_history">History</string>
     <string name="label_alert_none">No alerts from your band yet.</string>
