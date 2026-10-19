@@ -65,7 +65,7 @@ object Changelog {
                 "Tapping an alert notification opens Alert history, after the usual sign-in checks.",
                 "668 unit tests, up from 576 (the Track avatar's tests went with it)."
             ),
-            commit = "464f874"
+            commit = "e87755a"
         ),
         ChangelogEntry(
             date = "2026-10-15",
