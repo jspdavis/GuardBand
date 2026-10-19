@@ -534,10 +534,10 @@ no permission. A phone with nothing registered for `https` throws
 wording stays with every other `MSG_*`, the same shape as Track's Navigate
 button.
 
-**Settings has two privacy rows on purpose.** "Privacy & security" is a
-placeholder for a screen nobody has built; "Privacy Notice" opens the hosted
-document. Pointing the placeholder at the notice would make the row mean
-something other than its label.
+**Settings has one privacy row, "Privacy Notice",** which opens the hosted
+document. A "Privacy & security" placeholder beside it only said "Coming
+soon" and was removed on 2026-10-19. If a privacy settings screen is ever
+built, give it its own row rather than pointing the notice row at it.
 
 **The draft rules' `phone` `.validate` and `InputValidator` must stay in
 step.** The app normalises to E.164 **before** writing

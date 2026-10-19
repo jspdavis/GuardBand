@@ -199,9 +199,10 @@ Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC 
 - The rest of the tab's content is **not yet defined**. (An inert "Account information" card sat at the bottom until 2026-10-14; it was removed, so that screen has one entry point, in Settings.)
 
 ### Settings (pushed), `ui/settings/`
-- Grey background (`surface_muted`) with a white top bar: back arrow + "Settings".
+- White background, the same as the rows and the top bar (back arrow + "Settings"), so the rows sit on the screen rather than in a raised card (2026-10-19; it was grey `surface_muted` with a shadowed card). Contacts, Profile, Notifications and Alert history went white the same day.
+- **Every top bar** (Settings, Notifications, Alert history, Account information, Changelog) has a 1dp `divider` line along its bottom edge, from the shared `@drawable/bg_top_bar`, so a white bar stays distinct on a white screen. Change the line there, not per layout.
 - ✅ **Account information** opens `ui/account/AccountActivity` (below).
-- 🟡 **Rows:** Change password, Notifications, Privacy & security. Each shows "Coming soon."
+- 🟡 **Rows:** Change password, Notifications. Each shows "Coming soon." (A "Privacy & security" placeholder was removed on 2026-10-19; Privacy Notice is the one privacy row.)
 - ✅ **Privacy Notice** opens the hosted page; **Changelog** opens `ChangelogActivity`.
 - ✅ **Log Out** (outlined button) signs out and goes to Login with the task cleared.
 
