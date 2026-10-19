@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Round map-control icon: brand green, greyed out while disabled (Navigate
+     with no fix). A plain colour would leave a disabled button looking live. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/text_hint" android:state_enabled="false" />
+    <item android:color="@color/brand_green" />
+</selector>

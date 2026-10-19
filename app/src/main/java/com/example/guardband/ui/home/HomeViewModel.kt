@@ -22,8 +22,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Host-level logic for [HomeActivity]: the second auth gate, requests to
- * open the pushed screens (Settings, Notifications), and the Track avatar's
- * shortcut to the Profile tab. No UiState beyond [gate] — which
+ * open the pushed screens (Settings, Notifications, Alert history). No
+ * UiState beyond [gate] — which
  * fragment is on screen is navigation, owned by the Activity.
  *
  * Scoped to the Activity, so tab Fragments share this instance through
@@ -166,10 +166,6 @@ class HomeViewModel(
 
     fun onNotificationsClicked() {
         _events.trySend(HomeEvent.ShowNotifications)
-    }
-
-    fun onProfileClicked() {
-        _events.trySend(HomeEvent.ShowProfile)
     }
 
     /** "See all" on Track's recent-alerts panel. */

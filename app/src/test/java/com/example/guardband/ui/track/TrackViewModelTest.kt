@@ -2,12 +2,9 @@ package com.example.guardband.ui.track
 
 import com.example.guardband.data.model.Alert
 import com.example.guardband.data.model.CheckIn
-import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.testing.FakeAlertRepository
-import com.example.guardband.testing.FakeAuthRepository
 import com.example.guardband.testing.MainDispatcherRule
-import com.example.guardband.ui.avatar.AvatarPhoto
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -26,8 +23,8 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * Track tab: the user chip, the band's last known position, and the staleness
- * rules.
+ * Track tab: the band's last known position, the staleness rules and the
+ * check-in pill. (The avatar left Track on 2026-10-19, and its tests with it.)
  *
  * The clock and the staleness ticker are both injected. The ticker defaults to
  * [emptyFlow] here so nothing fires in the background and each test drives the
@@ -38,9 +35,6 @@ class TrackViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
-
-    /** A Google photo link with the size suffix Google normally sends. */
-    private val googlePhoto = "https://lh3.googleusercontent.com/a/ACg8ocK=s96-c"
 
     /** 2025-10-09T08:53:20Z. Only the differences from it matter. */
     private val t0 = 1_760_000_000_000L
@@ -73,62 +67,8 @@ class TrackViewModelTest {
     private fun viewModel(
         repository: FakeAlertRepository = FakeAlertRepository(),
         clock: Clock = FakeClock(t0),
-        ticks: Flow<Unit> = emptyFlow(),
-        signedIn: Boolean = true,
-        auth: FakeAuthRepository = FakeAuthRepository(signedIn = signedIn)
-    ) = TrackViewModel(auth, repository, clock, ticks)
-
-    // ── The user chip ─────────────────────────────────────────────────────────
-
-    @Test
-    fun `the chip shows the session's name`() {
-        val vm = viewModel()
-
-        assertEquals(FakeAuthRepository.DEFAULT_USER.name, vm.uiState.value.userName)
-    }
-
-    @Test
-    fun `no session falls back to the default name`() {
-        val vm = viewModel(signedIn = false)
-
-        assertEquals(TrackViewModel.DEFAULT_USER_NAME, vm.uiState.value.userName)
-    }
-
-    @Test
-    fun `a Google session's photo becomes the avatar, resized`() {
-        val vm = viewModel(
-            auth = FakeAuthRepository(
-                signedIn = true,
-                providers = setOf(SignInProvider.GOOGLE),
-                user = FakeAuthRepository.DEFAULT_USER.copy(photoUrl = googlePhoto)
-            )
-        )
-
-        assertEquals(
-            "https://lh3.googleusercontent.com/a/ACg8ocK=s${AvatarPhoto.SIZE_PX}-c",
-            vm.uiState.value.avatarUrl
-        )
-    }
-
-    @Test
-    fun `an email session keeps the default avatar even with a photo link`() {
-        val vm = viewModel(
-            auth = FakeAuthRepository(
-                signedIn = true,
-                providers = setOf(SignInProvider.PASSWORD),
-                user = FakeAuthRepository.DEFAULT_USER.copy(photoUrl = googlePhoto)
-            )
-        )
-
-        assertNull(vm.uiState.value.avatarUrl)
-    }
-
-    @Test
-    fun `no session keeps the default avatar`() {
-        val vm = viewModel(signedIn = false)
-
-        assertNull(vm.uiState.value.avatarUrl)
-    }
+        ticks: Flow<Unit> = emptyFlow()
+    ) = TrackViewModel(repository, clock, ticks)
 
     // ── The no-fix state ──────────────────────────────────────────────────────
 

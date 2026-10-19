@@ -238,7 +238,7 @@ as contact phone numbers — see `CLAUDE.md`.
 | Tiles still blocked **after** fixing the agent | The cache. Expected only if the tile source is still named `Mapnik` (§4.1). Otherwise clear app storage. |
 | **Blank or grey** map, everything else fine | `OsmdroidConfig.apply` ran *after* the `MapView` was built. It must be in `onCreate` (§2.3). Or: no connectivity, or a typo in `BASE_URL`. |
 | Map works, **marker never appears** | Not an osmdroid problem. The band is reporting without a fix, or the payload has no `location`. |
-| Camera will not follow the band | Expected after any pan — `ACTION_MOVE` switches following off. Tap recenter. |
+| Camera will not follow the band | Expected after any pan — `ACTION_MOVE` switches following off. Long-press the round Navigate button. |
 | Tiles load, then stop at high zoom | `MAX_ZOOM` is 19, OSM's limit. |
 
 Because a blocked tile is an HTTP 200, **logcat will not tell you any of

@@ -362,8 +362,9 @@ rows only now.
 `track_recent_alerts_error_view` (with `track_recent_alerts_retry_button`),
 `track_recent_alerts_empty_view` and `track_recent_alerts_list`, driven by the
 same `isLoading` / `errorMessage` / `emptyMessage` fields. Tapping a row does
-nothing, as on the old tab. The header (`ll_track_recent_alerts_header`)
-collapses it; `btn_track_recent_alerts_see_all` opens Alert history.
+nothing, as on the old tab. It is a draggable bottom sheet
+(`BottomSheetBehavior`) with a drag handle (`track_recent_alerts_drag_handle`);
+`btn_track_recent_alerts_see_all` opens Alert history.
 
 Type colours and timestamp formatting are unchanged — see
 [§5 of the bottom-nav doc](home-host-and-bottom-nav.md#5-screens).

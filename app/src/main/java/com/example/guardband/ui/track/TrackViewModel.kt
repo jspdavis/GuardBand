@@ -10,8 +10,6 @@ import com.example.guardband.data.model.Alert
 import com.example.guardband.data.model.CheckIn
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.data.repository.AlertRepository
-import com.example.guardband.data.repository.AuthRepository
-import com.example.guardband.ui.avatar.AvatarPhoto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -56,15 +54,12 @@ import kotlinx.coroutines.launch
  *   the background.
  */
 class TrackViewModel(
-    private val authRepository: AuthRepository,
     private val alertRepository: AlertRepository,
     private val clock: Clock = Clock.SYSTEM,
     private val staleTicks: Flow<Unit> = defaultStaleTicks()
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(
-        TrackUiState(userName = sessionName(), avatarUrl = sessionAvatarUrl())
-    )
+    private val _uiState = MutableStateFlow(TrackUiState())
     val uiState: StateFlow<TrackUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<TrackEvent>(Channel.BUFFERED)
@@ -112,7 +107,10 @@ class TrackViewModel(
         observeCheckIns()
     }
 
-    /** D6. Does nothing without a fix; the button is disabled in that state. */
+    /**
+     * D6, from a tap on the round Navigate button. Does nothing without a fix;
+     * the button is disabled in that state.
+     */
     fun onNavigateClicked() {
         val location = _uiState.value.location ?: return
         _events.trySend(
@@ -279,20 +277,7 @@ class TrackViewModel(
         else -> MSG_LOAD_FAILED
     }
 
-    /** The avatar's spoken name, straight from the session. */
-    private fun sessionName(): String =
-        authRepository.currentUser()?.name?.takeUnless { it.isBlank() } ?: DEFAULT_USER_NAME
-
-    /**
-     * Read once, like the name: signing in as someone else goes back through
-     * Login, which builds a new host and so a new ViewModel.
-     */
-    private fun sessionAvatarUrl(): String? =
-        AvatarPhoto.urlFor(authRepository.currentUser(), authRepository.currentUserProviders())
-
     companion object {
-        const val DEFAULT_USER_NAME = "User"
-
         /**
          * How often staleness is recomputed. Well under
          * [BandStatus.ONLINE_THRESHOLD_MS] so the badge turns over promptly,
@@ -320,10 +305,7 @@ class TrackViewModel(
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                TrackViewModel(
-                    RepositoryProvider.authRepository,
-                    RepositoryProvider.alertRepository
-                )
+                TrackViewModel(RepositoryProvider.alertRepository)
             }
         }
     }

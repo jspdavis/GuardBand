@@ -13,16 +13,6 @@ import com.example.guardband.data.model.Alert
  * an error.
  */
 data class TrackUiState(
-    /** The avatar's spoken name; not shown as text (already falls back to "User"). */
-    val userName: String = "",
-
-    /**
-     * The Google profile photo to load into the avatar, already vetted by
-     * [AvatarPhoto][com.example.guardband.ui.avatar.AvatarPhoto]. Null keeps
-     * the default icon and makes no request.
-     */
-    val avatarUrl: String? = null,
-
     /** True until the first read of `devices/{id}/latest` completes. */
     val isLoading: Boolean = true,
 

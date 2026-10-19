@@ -38,15 +38,19 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-19",
-            title = "Alerts move onto the Track tab",
+            title = "Alerts move onto the Track tab; Track's controls tidied",
             changes = listOf(
                 "The bottom bar has three icons: Track, Contacts and Profile. The Alert tab is gone.",
                 "Track shows the newest three alerts in a panel over the bottom of the map, which can be collapsed.",
                 "See all on that panel opens Alert history, the full list that used to be the Alert tab. Back returns to Track.",
                 "The panel and Alert history share one alerts reader, so they always agree and the database is read once.",
-                "593 unit tests, up from 576."
+                "The recent-alerts panel is a bottom sheet you drag up and down; collapsed it shows only its header.",
+                "The white Navigate pill is gone. The round arrow button navigates on a tap and re-centres the map on a long-press.",
+                "Track's top bar is Settings on the left and Notifications on the right, like the other tabs; its profile picture is gone.",
+                "The Contacts tab's icon is a phone.",
+                "588 unit tests, up from 576 (the Track avatar's tests went with it)."
             ),
-            commit = "f55f7ac"
+            commit = "277cd31"
         ),
         ChangelogEntry(
             date = "2026-10-15",
