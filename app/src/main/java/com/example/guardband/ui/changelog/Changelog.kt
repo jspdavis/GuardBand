@@ -62,7 +62,7 @@ object Changelog {
                 "Track's four round buttons are the same smaller size, and the notifications bell lines up with the map buttons below it.",
                 "616 unit tests, up from 576 (the Track avatar's tests went with it)."
             ),
-            commit = "eb3571b"
+            commit = "464f874"
         ),
         ChangelogEntry(
             date = "2026-10-15",
