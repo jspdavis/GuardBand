@@ -10,7 +10,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -52,7 +51,8 @@ class AlertFragment : Fragment(R.layout.fragment_alert) {
 
     private val historyAdapter = AlertHistoryAdapter()
 
-    private val viewModel: AlertViewModel by viewModels { AlertViewModel.Factory }
+    // Host-scoped: the one instance the Track tab shares. See AlertViewModel.
+    private val viewModel: AlertViewModel by activityViewModels { AlertViewModel.Factory }
     private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

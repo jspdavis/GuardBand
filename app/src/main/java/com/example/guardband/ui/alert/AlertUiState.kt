@@ -29,6 +29,14 @@ data class AlertUiState(
     val history: List<Alert> = emptyList(),
 
     /**
+     * The newest [AlertViewModel.RECENT_ALERTS_LIMIT] entries of [history], for
+     * the Track tab's recent-alerts panel. A slice of the same list rather
+     * than a second read, so the panel and the history screen can never
+     * disagree.
+     */
+    val recent: List<Alert> = emptyList(),
+
+    /**
      * Non-null when the last read failed **and** there is nothing on screen to
      * fall back to. Shows the error view and its Retry button.
      *
