@@ -1,10 +1,12 @@
 # Handoff
 
-**As of 2026-10-14 · `mvvm-main` @ the merge of `feature/consent-gate`
-(`git log -1 --oneline`) · 572 unit tests, 0 failures · **not pushed**: run
-`git status -sb` for how far ahead of `origin/mvvm-main` it is. The progress video is done and development has resumed;
-pick up from §4, starting with the phone pass, which now covers several days
-of unseen changes. Every branch written on 2026-10-14 is merged (§3).**
+**As of 2026-10-19 · `mvvm-main` (`git log -1 --oneline`), also merged into
+`main` · 576 unit tests, 0 failures · run `git status -sb` to see whether
+anything is unpushed. Pick up from §4. Every branch written on 2026-10-14 is
+merged (§3), and the avatar and profile fixes landed as `0b8db04`. The
+developer checks every change on their own phone during each session
+(CLAUDE.md, "Working agreements"), so the device checklists below are a
+reference, not a queue to chase.**
 
 The core build is in place for now, and its backend is live: Hosting, the
 Security Rules and the password-reset App Link were all deployed and checked on
@@ -163,8 +165,6 @@ branches should be listed.
 
 - `item_contact.xml`'s pencil (`ic_edit`) is a stand-in; the real icon comes
   from Figma.
-- CLAUDE.md still says "OkHttp stays `debugImplementation`" and leaves Coil out
-  of the dependency list; release now ships OkHttp through Coil.
 - Coil's disk cache (the Google photo) is not cleared on Log Out or Delete
   account.
 - **Optional**: give the mock sender its own launcher icon; today it inherits

@@ -37,6 +37,17 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-10-15",
+            title = "Avatar and profile fixes",
+            changes = listOf(
+                "The Profile tab shows the same Google photo as the Track avatar; both share one avatar binder in ui/avatar.",
+                "The photo is clipped to a circle and no longer flashes as a square on a new Google account.",
+                "The band status panel (Reporting, Last seen, battery) was removed from the Track screen; the Check-in pill is its one status line.",
+                "576 unit tests, up from 572."
+            ),
+            commit = "0b8db04"
+        ),
+        ChangelogEntry(
             date = "2026-10-14",
             title = "Google photo, check-in status, account safety, consent gate",
             changes = listOf(
