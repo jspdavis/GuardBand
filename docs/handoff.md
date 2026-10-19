@@ -271,6 +271,12 @@ has published it ([`database-rules.md`](database-rules.md) §7).
   long as the Home host, in `viewModelScope`, so **backgrounding alone does
   not stop it**; Log Out does ([`alert-data.md`](alert-data.md) §9). A code
   read does not replace this.
+- **Remove the sample inbox row** (2026-10-20, testing only): the
+  Notifications inbox shows a static "Welcome to GuardBand" card
+  (`cv_notifications_welcome` in `fragment_notifications.xml`, two
+  `label_notifications_welcome_*` strings) and hides the empty text. Delete
+  the card and the strings and make `tv_notifications_empty` visible again
+  when the inbox gets real data.
 - Refresh this file after each merge: commit hash, test count, and the lines
   the "In flight" table says to remove.
 

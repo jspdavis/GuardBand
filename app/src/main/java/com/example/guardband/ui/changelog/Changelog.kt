@@ -37,6 +37,14 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-10-20",
+            title = "A sample notification in the inbox",
+            changes = listOf(
+                "For testing, the Notifications screen (the bell) shows one sample message, \"Welcome to GuardBand\", instead of \"No notifications yet.\" It is fixed text, not real data."
+            ),
+            commit = "0000000"
+        ),
+        ChangelogEntry(
             date = "2026-10-19",
             title = "Alerts move onto the Track tab; Track's controls tidied; MapTiler map tiles and logo; Settings tidied; alert notifications",
             changes = listOf(
