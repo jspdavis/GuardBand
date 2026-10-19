@@ -196,7 +196,6 @@
     <string name="label_settings_account">Account information</string>
     <string name="label_settings_change_password">Change password</string>
     <string name="label_settings_notifications">Notifications</string>
-    <string name="label_settings_privacy">Privacy &amp; security</string>
     <string name="label_settings_privacy_notice">Privacy Notice</string>
     <string name="btn_logout">Log Out</string>
 

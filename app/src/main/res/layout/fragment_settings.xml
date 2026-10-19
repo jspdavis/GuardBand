@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface_muted"
+    android:background="@color/white"
     android:clickable="true"
     android:focusable="true"
     tools:context=".ui.settings.SettingsFragment">
@@ -17,7 +17,7 @@
         android:id="@+id/ll_settings_top_bar"
         android:layout_width="0dp"
         android:layout_height="56dp"
-        android:background="@color/white"
+        android:background="@drawable/bg_top_bar"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="4dp"
@@ -63,7 +63,9 @@
             android:paddingTop="16dp"
             android:paddingBottom="24dp">
 
-            <!-- ── Rows (Card with Figma Green Icon Badges) ───────────────────────── -->
+            <!-- ── Rows (Figma Green Icon Badges) ───────────────────────── -->
+            <!-- Flat and the same white as the screen, so the rows read as part
+                 of it rather than as a separate card. DESIGN: Jul -->
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -73,8 +75,7 @@
                 android:layout_marginEnd="16dp"
                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="3dp"
-                app:cardMaxElevation="6dp"
+                app:cardElevation="0dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
@@ -164,34 +165,6 @@
                             android:layout_weight="1"
                             android:fontFamily="@font/poppins_extralight"
                             android:text="@string/label_settings_notifications" />
-                    </LinearLayout>
-
-                    <View style="@style/Widget.GuardBand.SettingsDivider" />
-
-                    <!-- Privacy Row -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:layout_marginEnd="12dp"
-                            android:background="@drawable/bg_settings_icon_badge"
-                            android:padding="8dp"
-                            android:src="@drawable/ic_warning"
-                            app:tint="@color/white" />
-
-                        <TextView
-                            android:id="@+id/tv_settings_privacy"
-                            style="@style/Widget.GuardBand.SettingsRow"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/poppins_extralight"
-                            android:text="@string/label_settings_privacy" />
                     </LinearLayout>
 
                     <View style="@style/Widget.GuardBand.SettingsDivider" />

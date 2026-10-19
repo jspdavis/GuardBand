@@ -19,7 +19,7 @@
         android:id="@+id/ll_changelog_top_bar"
         android:layout_width="0dp"
         android:layout_height="56dp"
-        android:background="@color/white"
+        android:background="@drawable/bg_top_bar"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="4dp"
