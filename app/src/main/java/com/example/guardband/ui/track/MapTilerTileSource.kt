@@ -37,8 +37,8 @@ import org.osmdroid.util.MapTileIndex
  * the OpenStreetMap ones cached under the old `GuardBandOsm` source.
  *
  * The credits are [attribution]: MapTiler requires both, each linked, on
- * every map. A Free account must also show the MapTiler logo; that is still
- * open (see `docs/osmdroid.md`).
+ * every map. A Free account must also show the MapTiler logo, linked to
+ * [LOGO_URL]; `MapAttribution` binds it (see `docs/osmdroid.md`).
  */
 internal class MapTilerTileSource private constructor(
     private val apiKey: String,
@@ -86,6 +86,9 @@ internal class MapTilerTileSource private constructor(
             "© MapTiler" to "https://www.maptiler.com/copyright/",
             "© OpenStreetMap contributors" to "https://www.openstreetmap.org/copyright",
         )
+
+        /** Where the MapTiler logo on the map links to, as the Free plan requires. */
+        const val LOGO_URL = "https://www.maptiler.com/"
 
         private val COPYRIGHT = CREDITS.joinToString(" ") { it.first }
 

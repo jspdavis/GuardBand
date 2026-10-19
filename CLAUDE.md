@@ -665,9 +665,11 @@ the Fragment sets this source even without a key.
   view creation and collapses them to an ⓘ (`track_map_attribution_info`)
   after 5 s or the first pan: the OSMF attribution guidelines' rule, which
   MapTiler has not confirmed (ask before a public release). Never hide them
-  by default, and keep them readable (10 sp is the floor). MapTiler's Free
-  plan also requires its logo bottom left; that is not done and waits on Jul
-  (it needs an asset).
+  by default, and keep them readable (10 sp is the floor).
+- **The MapTiler logo** (the Free plan requires it) is `track_map_logo`,
+  bottom left in the same row, linked to `MapTilerTileSource.LOGO_URL` by
+  `MapAttribution`. **It never collapses**; only the text goes to the ⓘ.
+  Keep the row's fixed height and the ⓘ's 48 dp touch target.
 
 **Its policy drops `FLAG_USER_AGENT_NORMALIZED`, and must keep dropping it.**
 `MAPNIK` is built with `TileSourcePolicy(2, 15)`, and 15 is all four flags

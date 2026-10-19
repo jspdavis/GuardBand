@@ -127,6 +127,8 @@
     <string name="action_track_recenter">center on band</string>
     <string name="cd_map_layers">Map layers</string>
     <string name="cd_track_map_credits">Show map credits</string>
+    <!-- The MapTiler logo on the Track map; a link to maptiler.com. -->
+    <string name="cd_track_map_logo">MapTiler</string>
     <string name="label_track_marker_title">Your band</string>
 
     <string name="label_track_never_reported">Your band hasn\'t reported yet.</string>

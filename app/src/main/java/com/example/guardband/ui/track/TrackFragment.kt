@@ -41,7 +41,8 @@ import org.osmdroid.views.overlay.Marker
  * `track_root`, `track_map_view`, `track_empty_view`, `track_navigate_button`,
  * `track_layers_button`, `track_checkin_pill` (a read-only status, not a
  * button), `track_map_attribution` and `track_map_attribution_info` (the map
- * credits and their ⓘ; see [MapAttribution]), `space_track_sheet_peek`,
+ * credits and their ⓘ; see [MapAttribution]), `track_map_logo` (MapTiler's
+ * logo, bottom left, never collapsed), `space_track_sheet_peek`,
  * `track_recent_alerts_panel` (its own ids
  * are listed on [RecentAlertsPanel]), plus the top bar's `ib_track_settings`
  * (top-left) and `ib_track_notifications` (top-right), placed as on the
@@ -120,9 +121,11 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         )
 
         // MapTiler's required credits: shown now, then collapsed to an ⓘ.
+        // The logo beside them stays.
         attribution = MapAttribution(
             view.findViewById(R.id.track_map_attribution),
-            view.findViewById(R.id.track_map_attribution_info)
+            view.findViewById(R.id.track_map_attribution_info),
+            view.findViewById(R.id.track_map_logo)
         )
         attribution.expand()
 
