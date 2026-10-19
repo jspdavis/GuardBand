@@ -2,8 +2,9 @@
 
 **As of 2026-10-19 · `mvvm-main` with
 `feature/alerts-into-track`, `feature/track-bottom-sheet`,
-`feature/maptiler-tiles` and `feature/rules-and-logo` merged (last code commit
-`2ed649b`; the last merge was **not pushed** when this was written); `main` is
+`feature/maptiler-tiles`, `feature/rules-and-logo` and
+`feature/credit-overlap-fix` merged (last code commit `7deff47`; the last two
+merges were **not pushed** when this was written); `main` is
 behind it again · 588 unit tests, 0
 failures · run `git status -sb` to see
 whether anything is unpushed. Pick up from §4, starting with the MapTiler
@@ -156,8 +157,11 @@ table now includes `main`.
   the Track map, in the credits' row, 20 dp tall, linked to maptiler.com,
   and it **never collapses**. The row grew from 18 to 24 dp and the ⓘ from
   40 to 48 dp; the check-in pill and the buttons above it sit 14 dp higher.
-  Open: on a narrow screen or with a large system font the expanded credit
-  can overlap the logo (DECISION: Jul, [`osmdroid.md`](osmdroid.md) §4.6).
+- **Credit and logo on narrow screens** (`feature/credit-overlap-fix`,
+  2026-10-19). When the credit does not fit beside the logo, it moves onto
+  its own line above it (wrapping at the largest font sizes); the pill rises
+  only for a wrapped credit. Checked on a phone at five width and font-scale
+  combinations ([`osmdroid.md`](osmdroid.md) §4.6).
 
 ### In flight
 
@@ -180,7 +184,6 @@ with a real key, which is still open (§4). The logo followed in
 |---|---|---|
 | **Phone pass of everything since 2026-10-13** | anyone with the phone | Section A of [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md): tab layouts, back arrows, gear/bell on every tab, the shorter icon-only bar, the Track avatar, the consent step, Welcome (once only), the reset success screen and the launcher icon. **Plus the 2026-10-14 changes:** every button label (capitals), the Welcome and reset-success images, the Check-in pill (starts empty, updates from the mock sender, not tappable), the contact pencil icon, the Google photo on the avatar (Google account: round photo; email account: default icon; airplane mode: default icon; switching accounts: no stale photo), the avatar opening Profile (the Track avatar was removed on 2026-10-19, so check the photo on Profile only), the Changelog. **And account safety** ([`email-verification.md`](email-verification.md) §7 for the email half): Delete account gone from Settings' own list and at the bottom of Account information, with the confirmation dialog; a new email/password sign-up gets a verification email and reads "Not verified"; the link opens the app (or the browser fallback) and the status turns "Verified" on return; Resend works once, then counts down; a Google account reads "Verified" with no Resend; the reset link still works; and a pending deletion resumes on the next sign-in instead of making a blank profile. **That last one is hard to produce with airplane mode** (the window between the two calls is milliseconds): set `users/{uid}/deletion_pending: true` on a throwaway account in the Console, then sign in. **And the consent gate:** [`privacy-and-consent.md`](privacy-and-consent.md) §6, steps 9 to 16. |
 | **MapTiler key** | Jul | **Blocks the map on every machine.** Create a dedicated GuardBand key in the MapTiler dashboard, restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), and give it to each developer privately for their own `local.properties` (`MAPTILER_API_KEY=…`, never committed; then Sync and rebuild). The logo is done (§3). [`osmdroid.md`](osmdroid.md) §4.4. |
-| **Credit and logo on narrow screens** | Jul | The expanded credit and the logo need about 319 dp side by side at the default font size, so they touch on a 320 dp phone and overlap on a 360 dp one at a 1.3× system font. Decide whether the credit should wrap onto its own row above the logo when they do not fit. [`osmdroid.md`](osmdroid.md) §4.6. |
 | **Phone check of the MapTiler map** | whoever has the key first | Merged without one. With the key: tiles render; the credit shows, collapses to the ⓘ after 5 s or a pan, and its links open; the MapTiler logo shows bottom left, stays when the credit collapses, and opens maptiler.com; pan, zoom, follow and markers behave as before; logcat shows tile requests to `api.maptiler.com` only. Then confirm the zoom limit (22) against the style's `tiles.json`. [`osmdroid.md`](osmdroid.md) §8. Without a key it was checked on a phone on 2026-10-19: "Map unavailable", no crash. |
 | **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. Their guide says only that the text "must appear on every map"; the ⓘ collapse follows the OSMF guidelines, not a MapTiler statement. If they refuse, keep the credit always expanded ([`osmdroid.md`](osmdroid.md) §4.6 says how). |
 | **Decide `devices/` and publish the rules** | Jul | Pick A, A+ (recommended), B or C ([`database-rules.md`](database-rules.md) §4); B breaks the mock sender and C breaks every receiver until pairing. Then follow §7 there: save the live rules, strip, run the §5 Playground tests, publish, check the app and the mock sender. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |

@@ -669,7 +669,12 @@ the Fragment sets this source even without a key.
 - **The MapTiler logo** (the Free plan requires it) is `track_map_logo`,
   bottom left in the same row, linked to `MapTilerTileSource.LOGO_URL` by
   `MapAttribution`. **It never collapses**; only the text goes to the ⓘ.
-  Keep the row's fixed height and the ⓘ's 48 dp touch target.
+  Keep the row's fixed height and the ⓘ's 48 dp touch target. When the
+  credit does not fit beside the logo (narrow screen, large font),
+  `MapAttribution` moves it onto its own line above the logo, measured from
+  its real width; the pill stacks on `barrier_track_credits`, so it moves
+  only for a credit that wraps. Never shrink the credit below 10 sp to fit
+  (`docs/osmdroid.md` §4.6).
 
 **Its policy drops `FLAG_USER_AGENT_NORMALIZED`, and must keep dropping it.**
 `MAPNIK` is built with `TileSourcePolicy(2, 15)`, and 15 is all four flags
