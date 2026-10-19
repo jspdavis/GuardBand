@@ -30,7 +30,8 @@ import kotlinx.coroutines.launch
  * **It reads `devices/{id}/latest`,** which is the one screen that should.
  * `latest` is overwritten by every payload including a TRACKING_UPDATE, which
  * is exactly what this tab wants - the newest ping, whatever kind it was - and
- * exactly why the Alert tab derives its card from history instead (D2).
+ * exactly why the Alert history screen derives its card from history
+ * instead (D2).
  *
  * Two things here are less obvious than they look:
  *
@@ -246,7 +247,7 @@ class TrackViewModel(
     /**
      * A failure with a position on screen is a notice; a failure with nothing
      * on screen is the error state, because there the user has no other signal
-     * that anything went wrong. Same split as the Alert tab.
+     * that anything went wrong. Same split as the alert screens.
      */
     private suspend fun reportFailure(error: Throwable) {
         val message = messageFor(error)
@@ -263,7 +264,7 @@ class TrackViewModel(
     }
 
     /**
-     * Wording for each [AlertError], reusing the Alert tab's typed errors and
+     * Wording for each [AlertError], reusing the alert screens' typed errors and
      * mapping them here rather than in the repository.
      *
      * Kept in Kotlin rather than `strings.xml` for the reason every other

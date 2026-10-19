@@ -113,7 +113,6 @@
     <!-- Home host: bottom-nav tabs -->
     <string name="tab_track">Track</string>
     <string name="tab_contacts">Contacts</string>
-    <string name="tab_alert">Alert</string>
     <string name="tab_profile">Profile</string>
 
     <!-- Track -->
@@ -152,6 +151,14 @@
         <item quantity="other">Last check-in: %d days ago</item>
     </plurals>
 
+    <!-- Recent alerts panel over the map; See all opens the Alert history screen. -->
+    <string name="label_track_recent_alerts">Recent alerts</string>
+    <string name="btn_track_recent_alerts_see_all">See all</string>
+    <string name="cd_track_recent_alerts_see_all">See all alerts</string>
+    <string name="cd_track_recent_alerts_loading">Loading recent alerts</string>
+    <string name="action_track_recent_alerts_collapse">collapse recent alerts</string>
+    <string name="action_track_recent_alerts_expand">expand recent alerts</string>
+
     <!-- Contacts -->
     <string name="label_contacts_title">Emergency Contacts</string>
     <string name="label_contacts_empty">No emergency contacts added yet.</string>
@@ -167,12 +174,10 @@
     <string name="dialog_contact_add_title">Add contact</string>
     <string name="dialog_contact_edit_title">Edit contact</string>
 
-    <!-- Alert -->
-    <string name="label_alert_title">Alerts</string>
+    <!-- Alert history, and the rows Track's recent-alerts panel shares -->
+    <string name="label_alert_title">Alert history</string>
     <string name="label_alert_latest">Current status</string>
     <string name="label_alert_history">History</string>
-    <string name="label_alert_none">No alerts from your band yet.</string>
-    <string name="label_alert_history_empty">No past alerts.</string>
     <string name="btn_alert_retry">Try again</string>
     <string name="label_alert_battery">Battery %1$d%%</string>
     <string name="label_alert_battery_charging">Battery %1$d%% · charging</string>

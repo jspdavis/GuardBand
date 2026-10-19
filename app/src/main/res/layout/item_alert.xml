@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    One alert (Alert tab): a history row, and also the latest-alert card via <include>.
+    One alert: a row of the Alert history list and of Track's recent-alerts panel.
     Adapted from the checkpoint's item_alert_history.xml.
 -->
 <com.google.android.material.card.MaterialCardView

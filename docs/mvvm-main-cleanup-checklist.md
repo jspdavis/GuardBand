@@ -44,6 +44,9 @@ Welcome and reset-success images).
 - [x] **Gear and bell on every tab** (Track, Contacts, Alert, Profile) open
       Settings and Notifications, with **no** bottom bar on either; Back
       brings the bar back with the tab you left still highlighted.
+      *(Since 2026-10-19 there is no Alert tab: the bar is Track, Contacts,
+      Profile, and Alert history is a pushed screen with a back arrow in
+      place of the gear and bell. See `home-host-and-bottom-nav.md` §12.)*
 - [x] **Bottom bar:** icons only, noticeably shorter, icons centred. Long-press
       an icon to see its label; TalkBack reads the tab names.
 - [x] **Track avatar:** just the profile icon in its circle, no name. TalkBack

@@ -46,7 +46,7 @@
         android:visibility="gone"
         app:drawableTint="@color/text_hint"
         app:drawableTopCompat="@drawable/ic_map"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/track_recent_alerts_panel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -194,6 +194,23 @@
         android:textColor="@color/text_primary"
         app:drawableStartCompat="@drawable/ic_check_circle"
         app:drawableTint="@color/alert_checkin"
+        app:layout_constraintBottom_toTopOf="@id/track_recent_alerts_panel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- ── Recent alerts: a collapsible panel over the bottom of the map ──
+         The newest few alerts, with See all opening the full history. The
+         controls above stack on its top edge, so collapsing it gives the map
+         back its lower part. Bound by ui/track/RecentAlertsPanel.
+         DESIGN: Jul -->
+    <include
+        android:id="@+id/track_recent_alerts_panel"
+        layout="@layout/view_track_recent_alerts"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

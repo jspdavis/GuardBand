@@ -36,7 +36,7 @@
     <color name="error_red">#D32F2F</color>
     <color name="success_green">#4E8B38</color>
 
-    <!-- Alert types (Alert tab) -->
+    <!-- Alert types (alert rows, Alert history) -->
     <color name="alert_panic">#D32F2F</color>
     <color name="alert_checkin">#4E8B38</color>
     <color name="alert_low_battery">#F57C00</color>

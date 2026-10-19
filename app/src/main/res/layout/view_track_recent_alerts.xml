@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Track tab's recent-alerts panel, included by fragment_track.xml over the
+     lower part of the map and bound by ui/track/RecentAlertsPanel. The rows
+     are item_alert.xml, the same rows the Alert history screen shows.
+
+     Clickable so a drag that starts on the panel stays on the panel: the map
+     underneath turns following off on any ACTION_MOVE it receives. Not
+     important for accessibility itself, so TalkBack reads its children rather
+     than announcing a control with no action.
+     DESIGN: Jul (white card over the map, as a placeholder) -->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:focusable="false"
+    android:importantForAccessibility="no"
+    app:cardBackgroundColor="@color/surface_bg"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:rippleColor="@android:color/transparent"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="4dp">
+
+        <!-- Header: tapping it collapses or expands the body. -->
+        <LinearLayout
+            android:id="@+id/ll_track_recent_alerts_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal">
+
+            <!-- Rotated in code: down while expanded, up while collapsed. -->
+            <ImageView
+                android:id="@+id/iv_track_recent_alerts_toggle"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:importantForAccessibility="no"
+                android:rotation="90"
+                android:src="@drawable/ic_chevron_right"
+                app:tint="@color/text_secondary" />
+
+            <TextView
+                android:id="@+id/tv_track_recent_alerts_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="@string/label_track_recent_alerts"
+                android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
+                android:textColor="@color/text_primary" />
+
+            <Button
+                android:id="@+id/btn_track_recent_alerts_see_all"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/cd_track_recent_alerts_see_all"
+                android:text="@string/btn_track_recent_alerts_see_all"
+                android:textColor="@color/brand_green" />
+        </LinearLayout>
+
+        <!-- Body: one of spinner, error, empty or the rows. -->
+        <LinearLayout
+            android:id="@+id/ll_track_recent_alerts_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <ProgressBar
+                android:id="@+id/track_recent_alerts_progress"
+                style="@style/Widget.AppCompat.ProgressBar"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="8dp"
+                android:contentDescription="@string/cd_track_recent_alerts_loading"
+                android:indeterminateDrawable="@drawable/bg_spinner_gradient"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/track_recent_alerts_error_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:id="@+id/track_recent_alerts_error_message"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                    android:textColor="@color/error_red"
+                    tools:text="Couldn't reach your band. Check your connection." />
+
+                <Button
+                    android:id="@+id/track_recent_alerts_retry_button"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_alert_retry"
+                    android:textColor="@color/brand_green" />
+            </LinearLayout>
+
+            <!-- Nothing to show, and why: the Alert ViewModel's own wording. -->
+            <TextView
+                android:id="@+id/track_recent_alerts_empty_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone"
+                tools:text="No alerts from your band yet."
+                tools:visibility="visible" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/track_recent_alerts_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                tools:itemCount="3"
+                tools:listitem="@layout/item_alert" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

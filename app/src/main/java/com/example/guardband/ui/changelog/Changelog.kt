@@ -37,6 +37,18 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-10-19",
+            title = "Alerts move onto the Track tab",
+            changes = listOf(
+                "The bottom bar has three icons: Track, Contacts and Profile. The Alert tab is gone.",
+                "Track shows the newest three alerts in a panel over the bottom of the map, which can be collapsed.",
+                "See all on that panel opens Alert history, the full list that used to be the Alert tab. Back returns to Track.",
+                "The panel and Alert history share one alerts reader, so they always agree and the database is read once.",
+                "593 unit tests, up from 576."
+            ),
+            commit = "f55f7ac"
+        ),
+        ChangelogEntry(
             date = "2026-10-15",
             title = "Avatar and profile fixes",
             changes = listOf(

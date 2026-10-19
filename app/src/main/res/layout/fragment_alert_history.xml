@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Alert tab: current status card above the incident history.
+<!-- Alert history: current status card above the full incident history.
+     A pushed screen in the Home host, opened from See all on Track's
+     recent-alerts panel; it was the Alert tab until 2026-10-19.
      Spacing, type and colour are placeholders on theme tokens. -->
 <!-- DESIGN: Jul -->
 <androidx.constraintlayout.widget.ConstraintLayout
@@ -9,41 +11,43 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/surface_muted"
-    tools:context=".ui.alert.AlertFragment">
+    android:clickable="true"
+    android:focusable="true"
+    tools:context=".ui.alert.AlertHistoryFragment">
 
-    <!-- ── Top Action Buttons (Settings & Notifications) ────────────────── -->
+    <!-- ── Top bar: back arrow + title (a pushed screen, not a tab) ────────── -->
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/ib_alert_settings"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
-        android:contentDescription="@string/cd_open_settings"
-        android:src="@drawable/ic_settings"
-        app:backgroundTint="@color/white"
-        app:elevation="4dp"
-        app:fabCustomSize="40dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="@color/brand_green" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/ib_alert_notifications"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="24dp"
-        android:contentDescription="@string/cd_open_notifications"
-        android:src="@drawable/ic_notifications"
-        app:backgroundTint="@color/white"
-        app:elevation="4dp"
-        app:fabCustomSize="40dp"
+    <LinearLayout
+        android:id="@+id/ll_alert_history_top_bar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:background="@color/white"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="@color/brand_green" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/ib_alert_history_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cd_back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/tv_alert_history_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/label_alert_title"
+            android:textAppearance="@style/TextAppearance.GuardBand.TitleLarge"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
 
     <!-- ── Non-Scrollable Header Container (Progress & Errors) ──────────── -->
 
@@ -56,7 +60,7 @@
         android:paddingEnd="24dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ib_alert_settings">
+        app:layout_constraintTop_toBottomOf="@id/ll_alert_history_top_bar">
 
         <ProgressBar
             android:id="@+id/alert_progress"

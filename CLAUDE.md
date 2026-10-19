@@ -79,9 +79,11 @@ com/example/guardband/
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate and the account gate (HomeViewModel)
 │   ├── track/          Track tab (default): avatar, bell, gear, osmdroid map, Navigate + Check-in (the status panel is gone)
+│   │                 and the recent-alerts panel over the map (RecentAlertsPanel; See all → Alert history)
 │   │                 BandStatus + NavigationUrl + OsmdroidConfig (pure helpers; see "Track and map")
 │   ├── contacts/       Contacts tab: list + delete
-│   ├── alert/          Alert tab: latest status + incident history
+│   ├── alert/          AlertHistoryFragment (pushed from Track's See all): latest status + incident history;
+│   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel
 │   ├── profile/        Profile tab: welcome header + user info
 │   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row
 │   ├── account/        AccountActivity (Account information), opened from Settings;
@@ -110,13 +112,13 @@ Conventions (copy `ui/login/*` as the reference):
 
 ### Home host (Fragments)
 
-- **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph.
-- **Tabs:** Track (default), Contacts, Alert, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), opened from any tab's top bar. While one is showing, the bottom bar is hidden, and Back (or the screen's back arrow) returns to the last tab and brings the bar back. Back on a tab exits.
-- **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings and Notifications are inside the host, so they're covered too. Since 2026-10-14 the host also keeps the tabs covered until the account's record has been read (see "Consent gate").
+- **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph. The tags, and how a saved one is read back, are `HomeDestinations`.
+- **Tabs (three, icon-only):** Track (default), Contacts, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), opened from any tab's top bar, and **Alert history**, opened from "See all" on Track's recent-alerts panel. While one is showing, the bottom bar is hidden, and Back (or the screen's back arrow) returns to the last tab and brings the bar back. Back on a tab exits. There is no Alert tab (removed 2026-10-19): Track shows the newest alerts, and the full history is the pushed screen. A restored tag the host no longer has (the old `home_alert`) falls back to Track.
+- **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings, Notifications and Alert history are inside the host, so they're covered too. Since 2026-10-14 the host also keeps the tabs covered until the account's record has been read (see "Consent gate").
 - **Fragments follow the Activity conventions,** with these differences:
   - Use `Fragment(R.layout.x)`, and bind views in `onViewCreated` with `view.findViewById`.
   - Collect flows with `viewLifecycleOwner.lifecycleScope.launch { viewLifecycleOwner.repeatOnLifecycle(STARTED) { … } }`.
-  - Get the screen's own ViewModel with `by viewModels { XViewModel.Factory }`.
+  - Get the screen's own ViewModel with `by viewModels { XViewModel.Factory }`. The one exception is `AlertViewModel`, which Track's panel and Alert history both get with `by activityViewModels { AlertViewModel.Factory }`, so the two screens share one instance and one history subscription.
   - Host navigation goes through the shared `HomeViewModel` via `by activityViewModels { HomeViewModel.Factory }` (e.g. Track's gear calls `homeViewModel.onSettingsClicked()`). The Activity executes the resulting `HomeEvent`; Fragments never cast `requireActivity()` to `HomeActivity`.
   - A pushed screen's back arrow calls `requireActivity().onBackPressedDispatcher.onBackPressed()`.
 - **Lists** use `ListAdapter` + `DiffUtil` with `findViewById` in the ViewHolder (`ContactAdapter`, `AlertHistoryAdapter`).
@@ -134,7 +136,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 - **Password reset happens in the app, not in a browser.** `sendPasswordResetEmail` still sends Firebase's own email, but the link in it is an Android App Link onto `ResetPasswordActivity`, so the new password is set inside GuardBand. Nothing like `otpPlain` or `pendingPassword` is ever written, and there is still **no typed verification code** — see "Forgot password" below.
 - **No PII in logs.** Never log a uid, an email, a token or Firebase error text.
 - **Never overwrite `app/google-services.json` from another branch,** and don't touch it, `.firebaserc` or any signing config as a side effect of other work.
-- **The Security Rules are deployed (2026-10-11), and `RTDBS-RULES.md` is the source of truth.** That file with every `"//"` key stripped *is* the live ruleset; the Console rejects the `"//"` keys. Change the file first, then paste the whole stripped file and publish, so the two cannot drift. It carries nine Rules Playground tests, the only test suite rules get (the project has no emulator suite). Its `devices/` block is deliberately world-readable and world-writable; closing it needs device pairing. **`history` needs its own `.read`**, not just `$sequenceId`'s: a child's read never grants the parent, and the Alert tab and the mock sender both read the list. Before the deploy that line was missing and both got 401.
+- **The Security Rules are deployed (2026-10-11), and `RTDBS-RULES.md` is the source of truth.** That file with every `"//"` key stripped *is* the live ruleset; the Console rejects the `"//"` keys. Change the file first, then paste the whole stripped file and publish, so the two cannot drift. It carries nine Rules Playground tests, the only test suite rules get (the project has no emulator suite). Its `devices/` block is deliberately world-readable and world-writable; closing it needs device pairing. **`history` needs its own `.read`**, not just `$sequenceId`'s: a child's read never grants the parent, and the alert screens and the mock sender both read the list. Before the deploy that line was missing and both got 401.
 
 ## Google sign-in
 
@@ -588,9 +590,9 @@ The band (or the mock sender) PUTs to the RTDB REST API, and Security Rules vali
 
 ## Alert data
 
-The Alert tab reads `devices/{deviceId}` live. `SCHEMA.md` is the authority for the payload — if code, this file and `SCHEMA.md` disagree, `SCHEMA.md` wins and the disagreement gets reported rather than silently resolved.
+Track's recent-alerts panel and the Alert history screen read `devices/{deviceId}/history` live, through **one** host-scoped `AlertViewModel`: the panel shows `AlertUiState.recent` (the newest `RECENT_ALERTS_LIMIT`, 3), the history screen `AlertUiState.history`, both cut from the same emission. `SCHEMA.md` is the authority for the payload — if code, this file and `SCHEMA.md` disagree, `SCHEMA.md` wins and the disagreement gets reported rather than silently resolved.
 
-**The locked decisions behind the tab:**
+**The locked decisions behind the alert screens:**
 - **D1** — `PANIC`, `CHECKIN` and `LOW_BATTERY` are shown and colour-coded. `TRACKING_UPDATE` is hidden from the Alert list. An **unrecognised** type is *not* hidden: it is shown as "Unknown alert", so a type a future firmware adds still appears.
 - **D2** — the latest-alert card is the newest **non-tracking** entry derived from history. It deliberately does **not** read `devices/{id}/latest`, because every payload overwrites that node, tracking updates included, so the card would read "Location update" while a panic sat one row below it. `observeLatestAlert` still exists, unsubscribed, for the Track tab.
 - **D3** — read a window of 100 raw entries, drop tracking updates, show at most 50. The window is over *raw* entries, so a chatty band yields fewer than 50 displayable alerts. `AlertHistory` therefore carries `rawCount` and `malformedCount`, which is what lets the empty state say *which* kind of empty it is instead of implying the band is silent.
@@ -603,7 +605,7 @@ The Alert tab reads `devices/{deviceId}` live. `SCHEMA.md` is the authority for 
 
 **Parsing is a pure `Map` → `Alert` step in `AlertParser`,** not a method on the repository. A `DataSnapshot` cannot be built in a JVM test and the project declares no mocking library, so putting the logic behind one would have made all of it untestable. `sequenceId`, `type` and `timestamp` are required; a missing `schemaVersion`, `deviceId`, `battery` or `location` is salvaged rather than dropped, which is deliberately more forgiving than `SCHEMA.md`'s receiver-validation list — this is a *reader*, and refusing to show a panic because its battery node was missing would be the wrong failure. **A malformed history entry is skipped and counted, never fatal:** one bad row from a firmware bug must not hide every good row behind it. Only `latest` can fail as `AlertError.ParseFailure`.
 
-**Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and the Alert tab logs nothing either. Same rule as contact phone numbers — see "Contacts and profile data".
+**Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and neither alert screen logs anything either. Same rule as contact phone numbers — see "Contacts and profile data".
 
 **Still in-memory:** `InMemoryStore`'s four seeded alerts, which only `InMemoryAlertRepository` reads, and only in tests.
 
@@ -712,6 +714,15 @@ user's pan from the camera moves the screen makes itself, and a tap gives only
 DOWN and UP, so tapping the map keeps following. Recenter turns it back on; with
 no fix it returns to the default Cebu City view rather than refusing.
 
+**The recent-alerts panel sits over the bottom of the map (2026-10-19).**
+`view_track_recent_alerts.xml`, bound by `ui/track/RecentAlertsPanel`: the
+newest three alerts in `item_alert` rows, "See all" to Alert history, and a
+header that collapses it. The pill, Navigate and the round controls stack on
+its top edge, so collapsing it gives the map back its lower part. The card is
+`clickable` so a drag that starts on it never reaches the `MapView`, where an
+`ACTION_MOVE` would switch following off; don't make it non-clickable. Its
+expanded state is view state, saved by the Fragment.
+
 **The `MapView` is detached by hand** in `onDestroyView` (plus `onResume` /
 `onPause`). osmdroid holds a tile cache, a worker and overlay references, so
 without it the Fragment's view leaks.
@@ -743,8 +754,8 @@ has no click, no ripple and TalkBack reads it as text. The app never sends a
 check-in; only the band does (see "Firebase data contract").
 
 - **Read from history, not `latest`.** `AlertRepository.observeLatestCheckIn()`
-  is the newest `CHECKIN` in the same 100-entry history window the Alert tab
-  reads, picked by `CheckInSelector` from what `AlertParser` already parsed.
+  is the newest `CHECKIN` in the same 100-entry history window the alert
+  screens read, picked by `CheckInSelector` from what `AlertParser` already parsed.
   `AlertParser` stays the one reader of the payload; there is no second
   check-in parser, because there is no second payload.
 - **"None" means none recently.** A check-in older than the window drops out,
@@ -765,7 +776,7 @@ For demos without hardware, Phone A runs `MockSenderActivity` and Phone B runs t
 
 **`AlertSender` writes straight to the RTDB REST API,** as the band will: one `PUT` to `/devices/{id}/history/{sequenceId}.json`, then one to `/devices/{id}/latest.json`. There is no Cloud Function in the path — the Spark plan cannot host one, and the `devices` Security Rules already do the validation `ingestAlert` was going to do. (`SCHEMA.md`'s "Receiver validation requirements" still describes that Function; the payload shape it specifies is unchanged.)
 
-- **History is written first, then `latest`.** The Alert tab derives everything from history, so a send that got as far as history is still visible there and only leaves the Track-facing `latest` stale. The reverse would show the alert nowhere in the Alert tab and leave a permanent hole in the history. The sequence id is consumed as soon as its history row lands, so a retry cannot overwrite a good row.
+- **History is written first, then `latest`.** The alert screens (Track's recent-alerts panel and Alert history) derive everything from history, so a send that got as far as history is still visible there and only leaves the Track-facing `latest` stale. The reverse would show the alert on neither and leave a permanent hole in the history. The sequence id is consumed as soon as its history row lands, so a retry cannot overwrite a good row.
 - **The sequence id is seeded from the server,** by reading the history keys with `?shallow=true` once per harness instance and taking the highest integer-parseable one, so a relaunched harness appends instead of overwriting the rows it wrote last run. `shallow` rather than an ordered `limitToLast(1)`: RTDB sorts integer-like keys *ahead* of string keys, so taking the last one would return a string key if the node ever picked one up from the Console — the one case this read exists to survive. A missing node reads as `null` (not an error) and starts at 1; a genuine read failure fails the send, because the `PUT` was about to fail the same way.
 - **Walk mode** sends a `TRACKING_UPDATE` every 5 s around a ~165 m loop at Cebu City, which is what makes the Track marker move. The interval is deliberately far below FR-09's real 60 s so a demo shows movement in seconds and the band keeps reading as online. It stops in `onPause` — a walk still writing under a backgrounded harness would make a dead band look alive — and a failed step stops the walk rather than rewriting the same error every few seconds.
 - **The database URL comes from `FirebaseProvider`,** not a constant, so the harness follows `google-services.json`. That is a Firebase import outside a repository, which the app's layering forbids — the harness sits outside that layering, and the alternative was a hardcoded URL, which is forbidden everywhere.

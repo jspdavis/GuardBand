@@ -1,27 +1,36 @@
 package com.example.guardband.ui.alert
 
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.data.repository.AlertHistory
 import com.example.guardband.data.repository.AlertRepository
 import com.example.guardband.testing.FakeAlertRepository
 import com.example.guardband.testing.FakeAlertRepository.Companion.alert
 import com.example.guardband.testing.MainDispatcherRule
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
 /**
- * Alert tab logic: D1 (tracking hidden), D2 (latest card from history) and D3
- * (window and cap), plus the error and retry paths.
+ * Alert logic: D1 (tracking hidden), D2 (latest card from history) and D3
+ * (window and cap), the error and retry paths, and the recent slice the Track
+ * tab's panel shows from the same instance the history screen reads.
  *
  * No Robolectric: nothing here reaches `android.util.Patterns`, and the
  * timestamp formatting that would need a device lives in [AlertFormatting],
  * not in the ViewModel.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class AlertViewModelTest {
 
     @get:Rule
@@ -160,6 +169,102 @@ class AlertViewModelTest {
         val state = viewModel(repository).uiState.first { !it.isLoading }
 
         assertEquals(30, state.history.size)
+    }
+
+    // ── The recent slice (Track's panel) ──────────────────────────────────────
+
+    @Test
+    fun `the recent slice is the newest alerts, newest first`() = runTest {
+        val many = (1..10L).map { alert(it, "PANIC") }.toTypedArray()
+        val state = viewModel(FakeAlertRepository(history(*many))).uiState.first { !it.isLoading }
+
+        assertEquals(AlertViewModel.RECENT_ALERTS_LIMIT, state.recent.size)
+        assertEquals(listOf(10L, 9L, 8L), state.recent.map { it.sequenceId })
+    }
+
+    @Test
+    fun `fewer alerts than the limit are all in the recent slice`() = runTest {
+        val repository = FakeAlertRepository(history(alert(1, "PANIC"), alert(2, "CHECKIN")))
+        val state = viewModel(repository).uiState.first { !it.isLoading }
+
+        assertEquals(listOf(2L, 1L), state.recent.map { it.sequenceId })
+    }
+
+    @Test
+    fun `no alerts leaves the recent slice empty, with the plain empty message`() = runTest {
+        val state = viewModel(FakeAlertRepository()).uiState.first { !it.isLoading }
+
+        assertTrue(state.recent.isEmpty())
+        assertEquals(AlertViewModel.MSG_EMPTY_NO_ALERTS, state.emptyMessage)
+    }
+
+    @Test
+    fun `the recent slice hides tracking updates like the history does`() = runTest {
+        val repository = FakeAlertRepository(
+            history(
+                alert(1, "PANIC"),
+                alert(2, "CHECKIN"),
+                alert(3, "TRACKING_UPDATE"),
+                alert(4, "LOW_BATTERY"),
+                alert(5, "TRACKING_UPDATE")
+            )
+        )
+        val state = viewModel(repository).uiState.first { !it.isLoading }
+
+        assertEquals(listOf(4L, 2L, 1L), state.recent.map { it.sequenceId })
+    }
+
+    @Test
+    fun `the recent slice is the head of the same history list`() = runTest {
+        val many = (1..80L).map { alert(it, "PANIC") }.toTypedArray()
+        val state = viewModel(FakeAlertRepository(history(*many))).uiState.first { !it.isLoading }
+
+        assertEquals(state.history.take(AlertViewModel.RECENT_ALERTS_LIMIT), state.recent)
+    }
+
+    @Test
+    fun `a new alert arriving while collecting goes to the top of the recent slice`() = runTest {
+        val repository = FakeAlertRepository(
+            history(alert(1, "PANIC"), alert(2, "CHECKIN"), alert(3, "LOW_BATTERY"))
+        )
+        val vm = viewModel(repository)
+        vm.uiState.first { !it.isLoading }
+
+        repository.emitHistory(
+            history(alert(1, "PANIC"), alert(2, "CHECKIN"), alert(3, "LOW_BATTERY"), alert(4, "PANIC"))
+        )
+
+        val state = vm.uiState.first { it.recent.firstOrNull()?.sequenceId == 4L }
+        // The oldest drops off the slice, but stays in the full history.
+        assertEquals(listOf(4L, 3L, 2L), state.recent.map { it.sequenceId })
+        assertEquals(listOf(4L, 3L, 2L, 1L), state.history.map { it.sequenceId })
+        // Still the one subscription: the new alert came down the same listener.
+        assertEquals(1, repository.historySubscriptions)
+    }
+
+    // ── One instance for both screens ─────────────────────────────────────────
+
+    @Test
+    fun `both screens get the same instance from the host's store, with one subscription`() = runTest {
+        val repository = FakeAlertRepository(history(alert(1, "PANIC"), alert(2, "CHECKIN")))
+        val factory = viewModelFactory { initializer { AlertViewModel(repository) } }
+        val hostStore = ViewModelStore()
+
+        // What activityViewModels resolves to from Track and from the history screen.
+        val forTrack = ViewModelProvider(hostStore, factory)[AlertViewModel::class.java]
+        val forHistory = ViewModelProvider(hostStore, factory)[AlertViewModel::class.java]
+
+        assertSame(forTrack, forHistory)
+        val state = forTrack.uiState.first { !it.isLoading }
+        assertEquals(state, forHistory.uiState.value)
+        assertEquals(1, repository.historySubscriptions)
+        assertEquals(1, repository.activeHistoryCollectors)
+
+        // The host going away ends the one subscription, which is what lets
+        // the repository's awaitClose remove the RTDB listener.
+        hostStore.clear()
+        advanceUntilIdle()
+        assertEquals(0, repository.activeHistoryCollectors)
     }
 
     // ── Empty states say which kind of empty ──────────────────────────────────
