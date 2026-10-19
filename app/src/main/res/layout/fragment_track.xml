@@ -73,20 +73,22 @@
             tools:visibility="visible" />
 
         <!-- ── Top bar: settings · notifications ──────────────────────────
-             The same pair, in the same places, as the Contacts and Profile
-             tabs: gear top-left, bell top-right. -->
+             The same pair as the Contacts and Profile tabs: gear top-left,
+             bell top-right. Here they are 36dp like the map controls, and
+             16dp from the sides so the bell lines up with Layers and
+             Navigate below it (24dp and 40dp on those tabs). DESIGN: Jul -->
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/ib_track_settings"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="24dp"
+            android:layout_marginStart="16dp"
             android:layout_marginTop="24dp"
             android:contentDescription="@string/cd_open_settings"
             android:src="@drawable/ic_settings"
             app:backgroundTint="@color/white"
             app:elevation="4dp"
-            app:fabCustomSize="40dp"
+            app:fabCustomSize="36dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
@@ -97,12 +99,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:layout_marginEnd="24dp"
+            android:layout_marginEnd="16dp"
             android:contentDescription="@string/cd_open_notifications"
             android:src="@drawable/ic_notifications"
             app:backgroundTint="@color/white"
             app:elevation="4dp"
-            app:fabCustomSize="40dp"
+            app:fabCustomSize="36dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
@@ -119,7 +121,7 @@
             android:contentDescription="@string/cd_map_layers"
             android:src="@drawable/ic_layers"
             app:backgroundTint="@color/white"
-            app:fabSize="mini"
+            app:fabCustomSize="36dp"
             app:layout_constraintBottom_toTopOf="@id/track_navigate_button"
             app:layout_constraintEnd_toEndOf="parent"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
@@ -138,7 +140,7 @@
             android:enabled="false"
             android:src="@drawable/ic_navigation"
             app:backgroundTint="@color/white"
-            app:fabSize="mini"
+            app:fabCustomSize="36dp"
             app:layout_constraintBottom_toTopOf="@id/track_checkin_pill"
             app:layout_constraintEnd_toEndOf="parent"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
