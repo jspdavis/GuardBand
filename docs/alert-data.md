@@ -1,7 +1,15 @@
-# Alert Data and the Alert Tab
+# Alert Data and the Alert Screens
 
 How the app reads the band's alerts out of Realtime Database and puts them on
 screen.
+
+> **2026-10-19: there is no Alert tab any more.** The same data now has two
+> consumers: a **recent-alerts panel** on the Track tab (the newest three) and
+> the **Alert history** screen (the whole list), a pushed screen opened from
+> the panel's See all. Both read **one** host-scoped `AlertViewModel`, so there
+> is still one history listener. See §8. Where this file says "the Alert tab"
+> below, it describes the screen as it was first built; its content now lives
+> on Alert history unchanged.
 
 Branch `feature/alert-tab`, commits `fb69971`, `ec5ccb3`, `919f815`, `7fa3328`.
 
@@ -55,11 +63,16 @@ AlertViewModel                   D1 drop TRACKING_UPDATE
         │                        D3 take(50)
         │                        D2 latest = first survivor
         ▼
-AlertUiState                     isLoading / latest / history
+AlertUiState                     isLoading / latest / history / recent
         │                        errorMessage / emptyMessage
-        ▼
-AlertFragment                    latest card + RecyclerView
+        ├──────────────────────────────┐
+        ▼                              ▼
+RecentAlertsPanel (Track tab)    AlertHistoryFragment (pushed)
+  recent: newest 3 rows            latest card + every row
 ```
+
+`AlertViewModel` is scoped to the Home host (`activityViewModels`), so the two
+screens at the bottom are two views of one emission, not two reads.
 
 Nothing on this path logs. An alert carries the wearer's coordinates.
 
@@ -79,8 +92,8 @@ list instead of silently vanishing from it.
 included. Reading it would mean the card said "Location update" while a panic
 sat one row below it in the same screen. The card is instead the newest
 surviving entry of the filtered history. `observeLatestAlert()` still exists
-and is correct — the Track tab wants exactly that node — but the Alert tab
-never subscribes to it, which also saves a second live listener.
+and is correct — the Track tab's map wants exactly that node — but the alert
+screens never subscribe to it, which also saves a second live listener.
 
 **D3 — read 100 raw, show at most 50.**
 The window is over **raw** entries, before filtering. A chatty band therefore
@@ -286,11 +299,42 @@ User-facing strings are `MSG_*` constants on the ViewModel, not in
 `strings.xml` — the project convention, because a ViewModel holds no `Context`.
 `strings.xml` holds only what the layout references.
 
+### Two consumers, one stream (2026-10-19)
+
+```kotlin
+history = displayable                                  // Alert history
+recent  = displayable.take(RECENT_ALERTS_LIMIT)        // Track's panel, 3
+```
+
+- **One instance.** Track's panel and Alert history both get the ViewModel
+  with `by activityViewModels { AlertViewModel.Factory }`. The Home host's
+  `ViewModelStore` holds it, so there is one `observeHistory` collection and
+  one RTDB listener for both screens. A test resolves it twice from one store
+  and checks it is the same object with one subscription.
+- **Same emission.** `recent` is cut from the same `displayable` list as
+  `history` in the same state update, so the panel can never show an alert
+  the history lacks, or the other way round. D1 applies to both.
+- **Lifecycle unchanged.** Collection is still in `viewModelScope`, started
+  in `init`. The listener is removed when the host's store is cleared (Log
+  Out, account switch, the host finishing), which cancels the `callbackFlow`
+  so `awaitClose` runs. It starts earlier than it used to: with Track, the
+  default tab, instead of when the Alert tab was first opened.
+- **Events reach one collector.** `AlertEvent.ShowMessage` comes out of a
+  `Channel`, and both screens collect it, so each notice is shown once, by
+  whichever collector takes it. Track collects it too so a notice never waits
+  in the channel until Alert history is first opened.
+- **Retry** from either screen re-subscribes the one instance, so both
+  screens leave the error state together.
+
 ---
 
-## 8. The Alert tab
+## 8. Alert history and Track's panel
 
-View ids (`fragment_alert.xml`):
+**Alert history** (`ui/alert/AlertHistoryFragment`, `fragment_alert_history.xml`)
+is the old Alert tab's screen as a pushed screen in the Home host: Track →
+**See all** opens it, the bar is hidden while it shows, and Back or its back
+arrow (`ib_alert_history_back`) returns to Track. Its title is
+`tv_alert_history_title`. Everything under the top bar kept its ids:
 
 | Id | What |
 |---|---|
@@ -310,6 +354,16 @@ View ids (`fragment_alert.xml`):
 RecyclerView. An `<include>` can't rename its children, so the card and a
 history row both answered to `tv_item_alert_*`. `item_alert.xml` is history
 rows only now.
+
+**Track's recent-alerts panel** (`view_track_recent_alerts.xml`, included as
+`track_recent_alerts_panel`, bound by `ui/track/RecentAlertsPanel`) shows
+`recent` in the same `item_alert.xml` rows through the same
+`AlertHistoryAdapter`. It has its own `track_recent_alerts_progress`,
+`track_recent_alerts_error_view` (with `track_recent_alerts_retry_button`),
+`track_recent_alerts_empty_view` and `track_recent_alerts_list`, driven by the
+same `isLoading` / `errorMessage` / `emptyMessage` fields. Tapping a row does
+nothing, as on the old tab. The header (`ll_track_recent_alerts_header`)
+collapses it; `btn_track_recent_alerts_see_all` opens Alert history.
 
 Type colours and timestamp formatting are unchanged — see
 [§5 of the bottom-nav doc](home-host-and-bottom-nav.md#5-screens).
@@ -339,7 +393,14 @@ Firebase class: parsing and ordering into `AlertParser`, the error table into
 *subscription*, not a stacked listener).
 
 **Listener cleanup is verified by reading the code only.** Worth one manual
-check: open the Alert tab, background the app, confirm RTDB traffic stops.
+check. Note what the code does: the collection lives in `viewModelScope`, so
+the listener lasts as long as the Home host, and **backgrounding the app
+alone does not remove it**. It is removed when the host's ViewModels are
+cleared (Log Out, or the host finishing). So the check is: open Track, Log
+Out, confirm RTDB traffic stops. Since 2026-10-19 one test resolves the
+shared ViewModel from a `ViewModelStore`, clears the store, and checks the
+fake's history flow has no collectors left: the closest a JVM test gets to
+`awaitClose`.
 
 `FakeAlertRepository` is backed by a replaying `MutableSharedFlow`, not a
 `StateFlow` — a StateFlow drops an emission equal to the previous one, which
@@ -400,17 +461,17 @@ both are valid ISO 8601 and the app parses both.
 
 ## 11. Known limitations
 
-- **A tracking-heavy band can empty the tab.** D3 reads 100 *raw* entries. At
+- **A tracking-heavy band can empty the alert screens.** D3 reads 100 *raw* entries. At
   FR-09's one-per-minute, 100 entries is about 100 minutes, which may hold zero
-  incidents — and then both the list and the card are empty. The empty state
+  incidents — and then the panel, the list and the card are all empty. The empty state
   says so rather than implying the band is silent, but it is a workaround, not
   a fix. The real fix is server-side exclusion, which RTDB can't do without
   either `.indexOn` on `type` plus one query per type, or a separate
   `/devices/{id}/incidents` path written by the firmware. **Firmware decision,
   worth making before December.**
 - **No pagination.** 50 rows is the end of the list; there is no "load older".
-- **`latest` is unread by this tab** (by design, D2) — Track picks it up in the
-  next pass.
+- **`latest` is unread by the alert screens** (by design, D2); Track's map
+  reads it.
 - **RTDB disk persistence is off,** so there is no offline cache. A cold start
   with no connection shows the error state, not stale alerts.
 - **PH landlines are now rejected** as emergency contacts, a side effect of
@@ -423,35 +484,47 @@ both are valid ISO 8601 and the app parses both.
 
 ## 12. Manual test checklist
 
-Needs a real device and the Console (the mock sender can't write — §10).
+Needs a real device, and the mock sender or the Console. (§10's "the mock
+sender can't write" is out of date: it PUTs to RTDB now, see
+[mock-sender-and-receiver.md](mock-sender-and-receiver.md).) "The panel" is
+Track's recent-alerts panel; "history" is Alert history, opened with **See
+all**.
 
 **Happy path**
 - [ ] Console → add `devices/guardband-001/history/5` with a full `SCHEMA.md`
-      payload, `type: "PANIC"`. The card and a new top row appear within a
-      second or so, without reopening the tab.
+      payload, `type: "PANIC"`. On Track, a new top row appears in the panel
+      within a second or so. **See all**: the card and the same top row are
+      there too.
 - [ ] The card shows type, local time, coordinates and battery; the dot is red.
+      The panel's row reads the same.
 - [ ] Add `6` with `type: "CHECKIN"`. The card becomes the check-in; the panic
-      stays in history.
+      stays in history and moves down a row in the panel.
+- [ ] With four or more alerts, the panel shows three and history shows them
+      all.
 
 **D1 and D2**
 - [ ] Add `7` with `type: "TRACKING_UPDATE"`. **Nothing visible changes** — not
-      in the card, not in the list.
+      in the card, not in the list, not in the panel (the map marker may move).
 - [ ] Confirm `devices/guardband-001/latest` now holds the tracking update
       while the card still shows the check-in. That's D2 doing its job.
 - [ ] Add `8` with `type: "FALL_DETECTED"`. It **does** appear, as "Unknown
       alert" in grey.
 
 **Empty states**
-- [ ] Delete all of `history`. → "No alerts from your band yet."
+- [ ] Delete all of `history`. → "No alerts from your band yet." in the panel
+      and in history.
 - [ ] Add only tracking updates. → the "only location updates" wording.
 - [ ] Add a row missing `sequenceId`. → it is skipped; the others still show.
 
 **Errors and retry**
-- [ ] Airplane mode, then open the tab cold. → error view + **Retry**.
-- [ ] Restore the connection, tap **Retry**. → the list loads.
+- [ ] Airplane mode, then open the app cold. → since 2026-10-14 the Home gate's
+      Retry cover comes first. An RTDB read made offline waits rather than
+      failing (HomeViewModel's KDoc relies on this), so the panel's error +
+      **Try again** is mostly reached by a refused read, not by being offline.
+- [ ] Restore the connection, tap **Try again** on either. → both load.
 - [ ] With the list already on screen, turn the connection off. → the list
       **stays** and a toast appears, no error view.
 
 **Listeners**
-- [ ] Open the tab, background the app, confirm RTDB traffic stops
-      (§9 — this is the untested path).
+- [ ] Open Track, then Log Out, and confirm RTDB traffic stops (§9 — this is
+      the untested path; backgrounding alone keeps the listener).
