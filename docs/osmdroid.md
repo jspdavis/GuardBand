@@ -283,21 +283,59 @@ asset, keep the five buckets and crop to the visible bounds first.
 **The shared row is 24 dp** (`track_map_attribution_height`, 18 dp before the
 logo), so the logo fits inside its 2 dp padding. The **ⓘ is 48 dp**, the
 minimum touch target, around the same 24 dp disc as before (its inset went
-from 8 to 12 dp). Being taller than the row, it would reach into the check-in
-pill above on a narrow screen, so the pill's bottom margin went from 16 to
-24 dp. The pill and the round buttons above it therefore sit 14 dp higher than
-before; they still never move when the credit collapses.
+from 8 to 12 dp), anchored to the logo's row. Being taller than the row, it
+needs 24 dp above it, which `space_track_credit_clearance` holds; the check-in
+pill stacks on top of that (below). The pill and the round buttons above it
+sit 14 dp higher than before the logo; they never move when the credit
+collapses.
 
-**On narrow screens the expanded credit and the logo can overlap.** At the
-default font size the row needs about 319 dp (logo and margins 94 dp, the
-credit line 210 dp at 10 sp plus 16 dp of padding and margin): a 360 dp phone
-has about 40 dp to spare and a 320 dp one none. The credit is in `sp` and the
-logo in `dp`, so a larger system font closes the gap: on a 360 dp phone they
-touch at about 1.2× (Android's "Large" is 1.3×). Nothing was shortened. **Not
-fixed yet (DECISION: Jul):** the proposal is to let the credit wrap onto a row
-of its own above the logo when the two do not fit, for example with a
-ConstraintLayout `Flow` in `wrap_mode="chain"`, which keeps an `INVISIBLE`
-credit's space so the collapse still does not move anything.
+**Beside the logo, or above it (resolved 2026-10-19,
+`feature/credit-overlap-fix`).** The logo and the expanded credit need about
+319 dp side by side at the default font size (logo and margins 94 dp, the
+line 210 dp at 10 sp plus padding, margins and an 8 dp gap). The credit is in
+`sp` and the logo in `dp`, so a narrow screen or a large system font ran them
+into each other. Now, **when the line does not fit beside the logo, it moves
+onto a line of its own directly above the logo**, right-aligned; if even that
+line is too narrow (the largest font sizes) it wraps. It is never made
+smaller than 10 sp.
+
+- **How it decides.** `MapAttribution` measures the line's real width
+  (`Layout.getDesiredWidth`, with the TextView's own paint, so the font scale
+  counts) against the room right of the logo, once, before the first draw
+  after Track is laid out, and skips the draw that would show it in the wrong
+  place. The XML holds the side-by-side position; stacking rewrites the
+  credit's constraints. **Why not layout alone:** ConstraintLayout's `Flow`
+  and chains wrap downwards, which would lift the logo off its row, and an
+  upward wrap needs Flexbox (`wrap_reverse`), a new dependency. Once per view
+  is enough: a change of width, density or font scale recreates the Activity.
+  It waits for a non-zero width because a restore can rebuild Track while it
+  is a hidden tab, with no width, which would always read as "does not fit".
+- **What moves.** Nothing, as long as the credit is one line, beside or
+  above: the pill stacks on `barrier_track_credits`, the higher of the ⓘ's
+  24 dp clearance and the credit's top, and a one-line credit above the logo
+  exactly fills that clearance. Only a wrapped credit lifts the pill, and the
+  round buttons stacked on it, by its extra height (36 dp at 411 dp and the
+  largest font). The collapsed credit is `INVISIBLE`, so the barrier, and so
+  the pill, do not move when it collapses.
+- **What does not change:** the 5 s / first-pan collapse, the 10 s reopen,
+  the links, the logo, the 48 dp ⓘ, and the collapsed sheet never covering
+  the row.
+
+**Checked on a phone on 2026-10-19** (a Realme RMX5111, 360 dp wide, with
+`wm density` and `font_scale` overridden for the other cells and then
+restored), from `uiautomator` view bounds, collapsed and expanded:
+
+| Width, font scale | Credit, expanded | Overlaps | Pill moved? |
+|---|---|---|---|
+| 320 dp, 1.0 | **above** the logo, one line (236 × 24 dp) | none; meets the pill's bottom edge | no |
+| 360 dp, 1.0 | **beside** the logo (233 × 24 dp) | none | no |
+| 360 dp, 1.3 | **above** the logo, one line (301 × 24 dp) | none; meets the pill's bottom edge | no |
+| 411 dp, 1.0 | **beside** the logo (233 × 24 dp) | none | no |
+| 411 dp, 2.0 (largest) | **above** the logo, two lines (395 × 60 dp) | none | up 36 dp, with the buttons above it |
+
+Collapsed, every cell showed the logo and the ⓘ with no overlaps, and in
+every cell the collapsed sheet covered nothing in the row. Not exercised on
+the device: tapping the two credit links (their code did not change).
 
 Before 2026-10-19 the map showed **no** attribution at all: the OSM source had
 a copyright string, but nothing drew it (osmdroid only does with a

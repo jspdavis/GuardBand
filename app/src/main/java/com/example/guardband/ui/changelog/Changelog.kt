@@ -52,6 +52,7 @@ object Changelog {
                 "The map shows its credits (© MapTiler © OpenStreetMap contributors, each a link), which shrink to an ⓘ button after 5 seconds or the first pan.",
                 "The MapTiler logo, which MapTiler's free plan requires, sits bottom left of the map and links to maptiler.com. Unlike the credits it never shrinks away.",
                 "The ⓘ button is a full 48dp touch target; the check-in pill above it moved up slightly to make room.",
+                "On a narrow screen or with a large system font, the map credits move onto their own line above the MapTiler logo instead of running into it; the check-in pill only moves up if the credits need two lines.",
                 "Settings has one privacy row, Privacy Notice; the \"Privacy & security\" placeholder, which only said \"Coming soon\", is gone.",
                 "Settings, Contacts, Profile, Notifications and Alert history have a white background, and the Settings rows no longer sit in a raised card.",
                 "Every screen with a top bar (Settings, Notifications, Alert history, Account information, Changelog) has a thin line under it.",

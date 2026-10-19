@@ -9,6 +9,8 @@
 
     <!-- The map credits' row, fixed so the check-in pill stacked on it stays
          put when the credits collapse to the ⓘ. 24dp so the MapTiler logo
-         beside them is 20dp tall inside 2dp of padding. DESIGN: Jul -->
+         beside them is 20dp tall inside 2dp of padding. The logo is exactly
+         this tall; the credits are at least this tall, taller only if a
+         large system font needs it. DESIGN: Jul -->
     <dimen name="track_map_attribution_height">24dp</dimen>
 </resources>
