@@ -19,4 +19,19 @@ sealed interface SettingsEvent {
 
     /** Open the in-app Changelog. */
     object OpenChangelog : SettingsEvent
+
+    /** Show the system's notification permission prompt (API 33+). */
+    object RequestNotificationPermission : SettingsEvent
+
+    /** Start the alert watch service. */
+    object StartAlertWatch : SettingsEvent
+
+    /** Stop the alert watch service. */
+    object StopAlertWatch : SettingsEvent
+
+    /** Open the system page for this app's notifications. */
+    object OpenNotificationSettings : SettingsEvent
+
+    /** Open the system's battery optimisation list. */
+    object OpenBatterySettings : SettingsEvent
 }

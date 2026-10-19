@@ -90,7 +90,9 @@ com/example/guardband/
 │   ├── account/        AccountActivity (Account information), opened from Settings;
 │   │                 Delete account sits in its danger zone (DeleteAccountViewModel)
 │   ├── changelog/      ChangelogActivity, opened from Settings; Changelog.entries is the progress log
-│   └── notifications/  pushed from Track's bell; placeholder inbox
+│   └── notifications/  pushed from Track's bell; placeholder inbox. Also the opt-in alert watch:
+│                     AlertWatchService (foreground service) + AlertWatch (start/stop), AlertNotifier
+│                     (channels, wording), AlertNotificationDecider (pure) + AlertNotificationPrefs
 └── utils/
     ├── InputValidator.kt       shared input predicates (no messages)
     ├── PasswordCriteria.kt     which password rules the typed pair satisfies
@@ -694,10 +696,13 @@ restriction **except** normalization. Two consequences worth knowing:
   blocked images) cached under `GuardBandOsm` and `Mapnik`.
 
 **No phone-location permission in the main app, ever.** The band supplies the
-location, not the handset. The merged manifest adds only four *optional*
-`uses-feature` entries from osmdroid (`location.network`, `location.gps`,
+location, not the handset. osmdroid adds only four *optional*
+`uses-feature` entries to the merged manifest (`location.network`, `location.gps`,
 `telephony`, `wifi`, all `required="false"`) and **no** `uses-permission` at
-all; `ACCESS_NETWORK_STATE` was already there via Firebase. Never add
+all; `ACCESS_NETWORK_STATE` was already there via Firebase. (The release
+permissions are `INTERNET`, `ACCESS_NETWORK_STATE`, `READ_GSERVICES`, the
+app's own receiver permission, and since 2026-10-19 the three for alert
+notifications; see "Alert notifications".) Never add
 `ACCESS_FINE_LOCATION` or `ACCESS_COARSE_LOCATION` to the main manifest, and
 never use osmdroid's `MyLocationNewOverlay` — that is the class that would drag
 them back in.
@@ -819,6 +824,45 @@ check-in; only the band does (see "Firebase data contract").
   and a failed `latest` read never touches the pill. A failure keeps whatever
   the pill already says; only a pill with nothing yet becomes "Check-ins
   unavailable".
+
+## Alert notifications
+
+> The design, the rules, the channels, the permissions and the device
+> checklist: [docs/notifications.md](docs/notifications.md).
+
+**Opt-in, from Settings → Alert notifications (2026-10-19).** The switch
+starts `ui/notifications/AlertWatchService`, a `specialUse` foreground
+service that keeps the band's history listener open and posts each new
+alert as a system notification on this phone. **No server, no FCM, no paid
+plan:** sending FCM needs a service-account key or Blaze, so it waits for
+pairing and roles.
+
+- **`AlertNotificationDecider` decides what is new** (pure, tested): a stored
+  high-water `sequenceId` per device, a baseline with no posts the first
+  time, a 30-minute window on the first emission after a restart, a
+  re-baseline when history is reset, never `TRACKING_UPDATE`, at most 3 per
+  emission plus a summary.
+- **The wording never carries a location, a name, the photo or the device
+  id.** Every alert is `VISIBILITY_PRIVATE` with an empty public version and
+  one shared status-bar icon (`ic_stat_alert`). **The panic channel is
+  silent** (one short vibration, no heads-up), because the wearer may be next
+  to the person they fear. Channels cannot be changed after creation; a
+  change means a new channel id.
+- **Started only from foreground code** (`AlertWatch.start`): the switch, and
+  `HomeActivity` once its gate opens. **Stopped** by the switch and every
+  sign-out (`LoginNavigation`). No boot receiver: after a restart it resumes
+  when the app is opened.
+- **A tap goes through the Home gate.** `HomeActivity.launchIntent` carries a
+  `HomeLaunchTarget`; `HomeViewModel` holds it until the gate is `OPEN` and
+  drops it on every other outcome.
+- **Three release permissions came with it:** `POST_NOTIFICATIONS` (asked
+  from the switch, never at launch), `FOREGROUND_SERVICE`,
+  `FOREGROUND_SERVICE_SPECIAL_USE`. Don't add `RECEIVE_BOOT_COMPLETED`,
+  `WAKE_LOCK`, `USE_FULL_SCREEN_INTENT` or
+  `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` without the owner's approval of the
+  release manifest.
+- **The notice has a DRAFT paragraph** for it (not deployed);
+  `CONSENT_VERSION` is unchanged.
 
 ## Mock sender
 

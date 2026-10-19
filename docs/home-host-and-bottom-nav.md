@@ -216,6 +216,7 @@ Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC 
 ### Notifications (pushed), `ui/notifications/`
 - 🟡 Static empty inbox: "No notifications yet."
 - It has **no ViewModel**, like `ResetSuccessActivity`, the other static navigation-only screen. Add one when the inbox gets data.
+- **System notifications are separate** (2026-10-19): Settings' **Alert notifications** switch, the alert watch service in the same package, and a tapped notification opening Alert history (or Settings, from the watch's own notification) through the Home gate (`HomeLaunchTarget`). The inbox still shows nothing. See [`notifications.md`](notifications.md).
 
 ---
 

@@ -3,6 +3,7 @@ package com.example.guardband.ui.auth
 import android.content.Context
 import android.content.Intent
 import com.example.guardband.ui.login.LoginActivity
+import com.example.guardband.ui.notifications.AlertWatch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
@@ -24,11 +25,16 @@ object LoginNavigation {
      * of Firebase by this point - and after a delete the account does not
      * exist at all - so nothing here may keep them on the screen. Worst case
      * the chooser remembers the account, which is a nuisance, not a lock-in.
+     *
+     * The alert watch stops first: nothing keeps watching the band for a
+     * session that has ended. The switch itself stays as it was, so it
+     * resumes on the next sign-in on this phone.
      */
     suspend fun clearCredentialsThenGoToLogin(
         context: Context,
         googleIdTokenProvider: GoogleIdTokenProvider
     ) {
+        AlertWatch.stop(context)
         withTimeoutOrNull(CLEAR_CREDENTIALS_TIMEOUT_MS) {
             googleIdTokenProvider.clearCredentialState()
         }

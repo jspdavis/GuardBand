@@ -38,7 +38,7 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-19",
-            title = "Alerts move onto the Track tab; Track's controls tidied; MapTiler map tiles and logo; Settings tidied",
+            title = "Alerts move onto the Track tab; Track's controls tidied; MapTiler map tiles and logo; Settings tidied; alert notifications",
             changes = listOf(
                 "The bottom bar has three icons: Track, Contacts and Profile. The Alert tab is gone.",
                 "Track shows the newest three alerts in a panel over the bottom of the map, which can be collapsed.",
@@ -60,7 +60,10 @@ object Changelog {
                 "The band's marker on the Track map is a round picture with a white ring and a pointer: your Google photo, or your initials if you signed up with email. The tip of the pointer is the band's position.",
                 "Alerts show a symbol in their colour instead of a dot: a red octagon for a panic, an orange warning triangle for low battery, a green tick for a check-in, and a grey question mark for a type the app does not know.",
                 "Track's four round buttons are the same smaller size, and the notifications bell lines up with the map buttons below it.",
-                "616 unit tests, up from 576 (the Track avatar's tests went with it)."
+                "Settings has an Alert notifications switch, off by default. Turned on, the phone shows the band's panics, low-battery warnings and check-ins as notifications, even with the app closed and the phone locked. No server and nothing paid: the app keeps watching the database itself, with a small \"Watching your band\" notification while it does.",
+                "The phone asks for the notification permission only when the switch is turned on. Panic notifications are silent (one short buzz), so the phone does not draw attention to the wearer; no notification shows a location or a name, and a lock screen set to hide sensitive content shows only \"New alert from your band\".",
+                "Tapping an alert notification opens Alert history, after the usual sign-in checks.",
+                "668 unit tests, up from 576 (the Track avatar's tests went with it)."
             ),
             commit = "464f874"
         ),
