@@ -42,7 +42,7 @@ object Changelog {
             changes = listOf(
                 "For testing, the Notifications screen (the bell) shows one sample message, \"Welcome to GuardBand\", instead of \"No notifications yet.\" It is fixed text, not real data."
             ),
-            commit = "0000000"
+            commit = "0de5ae6"
         ),
         ChangelogEntry(
             date = "2026-10-19",
