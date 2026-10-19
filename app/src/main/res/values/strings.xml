@@ -126,10 +126,12 @@
     <string name="cd_track_navigate">Navigate to band</string>
     <string name="action_track_recenter">center on band</string>
     <string name="cd_map_layers">Map layers</string>
+    <string name="cd_track_map_credits">Show map credits</string>
     <string name="label_track_marker_title">Your band</string>
 
     <string name="label_track_never_reported">Your band hasn\'t reported yet.</string>
     <string name="label_track_no_fix">No location fix yet</string>
+    <string name="label_track_map_unavailable">Map unavailable</string>
 
     <!-- Check-in pill (FR-10): a status, never an action. -->
     <string name="label_track_checkin_loading">Loading check-ins…</string>

@@ -166,9 +166,55 @@
             android:textColor="@color/text_primary"
             app:drawableStartCompat="@drawable/ic_check_circle"
             app:drawableTint="@color/alert_checkin"
-            app:layout_constraintBottom_toTopOf="@id/space_track_sheet_peek"
+            app:layout_constraintBottom_toTopOf="@id/track_map_attribution"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- Map credits (MapTiler's terms): "© MapTiler © OpenStreetMap
+             contributors", each a link, bottom right, just above the strip
+             the collapsed sheet covers so it stays visible. Bound by
+             ui/track/MapAttribution: shown when the map opens, then
+             collapsed to the ⓘ below after 5 s or the first pan (the OSMF
+             attribution guidelines' rule); the ⓘ brings it back. Collapsed
+             it is INVISIBLE, not GONE, so its fixed-height row keeps the
+             check-in pill in place. MapTiler's Free plan also wants its logo
+             bottom left; not added yet (docs/osmdroid.md).
+             DESIGN: Jul (size and background are placeholders) -->
+        <TextView
+            android:id="@+id/track_map_attribution"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/track_map_attribution_height"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="4dp"
+            android:background="@color/map_attribution_bg"
+            android:gravity="center_vertical"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.MapAttribution"
+            android:textColor="@color/text_secondary"
+            android:textColorLink="@color/text_secondary"
+            app:layout_constraintBottom_toTopOf="@id/space_track_sheet_peek"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="© MapTiler © OpenStreetMap contributors" />
+
+        <!-- The collapsed credits: a small ⓘ on a see-through disc, in the
+             same corner. The button is 40dp so it is easier to hit than the
+             24dp disc it draws. Hidden while the credits show.
+             DESIGN: Jul -->
+        <ImageButton
+            android:id="@+id/track_map_attribution_info"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/bg_map_attribution_info"
+            android:contentDescription="@string/cd_track_map_credits"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_info"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/track_map_attribution"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:tint="@color/text_secondary" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

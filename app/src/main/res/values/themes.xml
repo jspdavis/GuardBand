@@ -104,6 +104,12 @@
         <item name="fontFamily">@font/poppins</item>
         <item name="android:fontFamily">@font/poppins</item>
     </style>
+    <!-- The Track map's credits: one step under LabelSmall's 11sp. Not
+         smaller: the licence asks for a credit that is easily readable.
+         DESIGN: Jul -->
+    <style name="TextAppearance.GuardBand.MapAttribution" parent="TextAppearance.GuardBand.LabelSmall">
+        <item name="android:textSize">10sp</item>
+    </style>
 
     <!-- Buttons -->
     <style name="Widget.GuardBand.Button" parent="Widget.Material3.Button">

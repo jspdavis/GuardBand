@@ -9,15 +9,17 @@ import java.io.File
  *
  * Two things have to be right before a single tile is requested:
  *
- *  - **The user agent must be unique to this app.** OpenStreetMap's usage
- *    policy requires a "proper, unique and identifiable" User-Agent, and their
- *    tile servers block identifiers that thousands of apps share - notably
- *    `osmdroid` (the library default) and the `com.example.*` package prefix
- *    the Android project template generates, which is still this app's
- *    `applicationId`. So [USER_AGENT] is a fixed string naming the app and
- *    where to find it, **not** `context.packageName`. See
- *    [GuardBandTileSource] for the other half of this - the tile source must
- *    also be one that does not override this value.
+ *  - **The user agent must be unique to this app.** It was first fixed for
+ *    OpenStreetMap's usage policy, which requires a "proper, unique and
+ *    identifiable" User-Agent and blocks identifiers that thousands of apps
+ *    share - notably `osmdroid` (the library default) and the `com.example.*`
+ *    package prefix the Android project template generates, which is still
+ *    this app's `applicationId`. The tiles now come from MapTiler, whose key
+ *    is restricted to this exact agent, so it matters more, not less. So
+ *    [USER_AGENT] is a fixed string naming the app and where to find it,
+ *    **not** `context.packageName`. See [MapTilerTileSource] for the other
+ *    half of this - the tile source must also be one that does not override
+ *    this value.
  *  - **The cache path.** Pointing both the base path and the tile cache at
  *    [Context.getCacheDir] keeps everything in app-specific storage, which
  *    needs **no storage permission** on any API level and is removed with the
@@ -30,24 +32,24 @@ import java.io.File
  * the only thing that computes osmdroid's "normalized" user agent
  * (`packageName/versionCode`), which a tile source carrying
  * `FLAG_USER_AGENT_NORMALIZED` would then send instead of [USER_AGENT] -
- * putting `com.example.guardband/1` back on the wire. [GuardBandTileSource]
- * drops that flag, so the two guards are independent.
+ * putting `com.example.guardband/1` back on the wire, which the MapTiler key
+ * would refuse. [MapTilerTileSource] drops that flag, so the two guards are
+ * independent.
  *
- * Note for anything beyond this academic build: OpenStreetMap's public tile
- * servers are a volunteer-funded service with a usage policy intended for
- * light use. A production app would need its own tile source or a commercial
- * provider - being correctly identified is not the same as being entitled to
- * the traffic.
+ * **Never turn on `isDebugMode` or `isDebugMapTileDownloader`.** osmdroid then
+ * logs every tile URL, and each one carries the MapTiler key.
  */
 internal object OsmdroidConfig {
 
     /**
-     * Identifies this app to the tile server, per OSM's usage policy: unique,
-     * and it leads somewhere a server operator can reach us.
+     * Identifies this app to the tile server: unique, and it leads somewhere
+     * a server operator can reach us.
      *
      * Deliberately **not** derived from the package name or the version, so
-     * that a rename or a version bump cannot change what a server that blocks
-     * by string sees.
+     * that a rename or a version bump cannot change what a server that
+     * filters by string sees. **The MapTiler key's "Allowed user-agent
+     * header" restriction is set to this value:** change it in the MapTiler
+     * dashboard first, or every tile is refused.
      */
     const val USER_AGENT = "GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)"
 

@@ -38,8 +38,8 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragment" }
 androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 
-# osmdroid - OpenStreetMap map views for the Track tab. No API key and no
-# billing, unlike the Maps SDK. Safe on compileSdk 34: its POM declares zero
+# osmdroid - the map view for the Track tab, drawing MapTiler raster tiles.
+# No billing account, unlike the Maps SDK. Safe on compileSdk 34: its POM declares zero
 # dependencies and it publishes no Gradle module metadata, so there is no
 # minCompileSdk constraint of the kind that pins androidx-credentials below.
 # Its own manifest declares no uses-permission at all - in particular no

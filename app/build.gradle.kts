@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsKotlinAndroid)
@@ -40,6 +42,17 @@ val hostingHost = "guardband-aae65.web.app"
 val privacyPath = "/privacy"
 val deleteAccountPath = "/delete-account"
 
+// The Track map's MapTiler Cloud key, from local.properties (gitignored), so
+// it is never in a tracked file. A machine without the line still builds,
+// with an empty key, and the map then says it is unavailable instead of
+// falling back to OpenStreetMap's public servers. The key ships inside the
+// APK, so its protection is the user-agent restriction on MapTiler's side
+// plus the plan's monthly cap. See docs/osmdroid.md.
+val mapTilerApiKey: String = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}.getProperty("MAPTILER_API_KEY", "").trim()
+
 android {
     namespace = "com.example.guardband"
     compileSdk = 34
@@ -66,6 +79,9 @@ android {
         buildConfigField("String", "HOSTING_HOST", "\"$hostingHost\"")
         buildConfigField("String", "PRIVACY_PATH", "\"$privacyPath\"")
         buildConfigField("String", "DELETE_ACCOUNT_PATH", "\"$deleteAccountPath\"")
+
+        // Read only by ui/track/MapTilerTileSource.
+        buildConfigField("String", "MAPTILER_API_KEY", "\"$mapTilerApiKey\"")
     }
 
     // buildConfigField needs this explicitly from AGP 8 onwards.
@@ -112,8 +128,9 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.recyclerview)
 
-    // Track tab map — OpenStreetMap tiles, no API key. Configured in one place
-    // by ui/track/OsmdroidConfig (user agent + app-specific tile cache).
+    // Track tab map — MapTiler raster tiles (ui/track/MapTilerTileSource).
+    // Configured in one place by ui/track/OsmdroidConfig (user agent +
+    // app-specific tile cache).
     implementation(libs.osmdroid.android)
 
     // Track avatar - the Google profile photo, circle-cropped. Coil's own

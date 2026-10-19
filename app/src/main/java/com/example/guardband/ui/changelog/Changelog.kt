@@ -38,7 +38,7 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-19",
-            title = "Alerts move onto the Track tab; Track's controls tidied",
+            title = "Alerts move onto the Track tab; Track's controls tidied; MapTiler map tiles",
             changes = listOf(
                 "The bottom bar has three icons: Track, Contacts and Profile. The Alert tab is gone.",
                 "Track shows the newest three alerts in a panel over the bottom of the map, which can be collapsed.",
@@ -48,9 +48,11 @@ object Changelog {
                 "The white Navigate pill is gone. The round arrow button navigates on a tap and re-centres the map on a long-press.",
                 "Track's top bar is Settings on the left and Notifications on the right, like the other tabs; its profile picture is gone.",
                 "The Contacts tab's icon is a phone.",
+                "The Track map's tiles come from MapTiler instead of OpenStreetMap's public servers. Each developer keeps the key in local.properties; without one the map says \"Map unavailable\" and loads nothing.",
+                "The map shows its credits (© MapTiler © OpenStreetMap contributors, each a link), which shrink to an ⓘ button after 5 seconds or the first pan.",
                 "588 unit tests, up from 576 (the Track avatar's tests went with it)."
             ),
-            commit = "277cd31"
+            commit = "1ca8177"
         ),
         ChangelogEntry(
             date = "2026-10-15",

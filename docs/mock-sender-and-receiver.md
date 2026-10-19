@@ -178,7 +178,7 @@ status line. Battery is still on each alert row.
 
 | Element | Shows |
 |---|---|
-| Map + one marker | Last known position. OpenStreetMap tiles via osmdroid. |
+| Map + one marker | Last known position. MapTiler tiles via osmdroid; "Map unavailable" if the build has no `MAPTILER_API_KEY`. |
 | Empty overlay | *"Your band hasn't reported yet."* / *"No location fix yet"* / a read error. |
 | **Navigate** (round arrow) | **Tap:** opens a maps app on the position. **Long-press:** re-centres and resumes following. Disabled with no fix. (Since 2026-10-19; the white Navigate pill is gone.) |
 | **Check-in pill** | Read-only status of the latest check-in: *"Last check-in: 5 minutes ago"*, or *"No recent check-ins"*. Read from **history**, not `latest` (see below). Not tappable; the app never sends a check-in. |
@@ -339,7 +339,8 @@ payloads, missing fields and unknown types — see §9.
 | **GPS badge stuck on "Acquiring…"** | Indoors or no satellite view. Sends fall back to Cebu City automatically — there is nothing to fix. |
 | **No location permission dialog on first launch** | Already denied once. Go to App Settings → Permissions → Location and grant it manually. |
 | **Sends show `(simulated)` even though permission is granted** | No fix has arrived yet — the badge will show "Acquiring…". Walk until outdoors or use the network provider fix. |
-| **Every tile reads "access blocked"** | The user agent. OSM blocks shared identifiers — `osmdroid` and the `com.example.*` prefix that is still this app's `applicationId`. The block is an **HTTP 200 PNG** with the text drawn in, so osmdroid caches and draws it and the log stays clean. `OsmdroidConfig.USER_AGENT` and `GuardBandTileSource` are the two halves of the fix; neither works alone — [`osmdroid.md`](osmdroid.md). |
+| **"Map unavailable", grey map** | The build has no MapTiler key. Add `MAPTILER_API_KEY` to `local.properties` and rebuild — [`osmdroid.md`](osmdroid.md) §4.4. |
+| **Grey map, tiles refused** | The MapTiler key, or its user-agent restriction not matching `OsmdroidConfig.USER_AGENT`, or the Free plan's monthly limit — [`osmdroid.md`](osmdroid.md) §6. |
 | **Map is blank/grey, everything else works** | `OsmdroidConfig` did not run before the `MapView` was built. It must be applied in `onCreate`, ahead of inflation. |
 | Marker never appears, panel does | Reporting without a fix (§G), or the payload has no `location`. |
 | Badge stuck on **Reporting** after the band goes quiet | The 30 s staleness ticker (§D). |
@@ -361,4 +362,4 @@ payloads, missing fields and unknown types — see §9.
 | **Pairing** | One hardcoded device id, so every account watches the same band. |
 | **Malformed payloads, unknown types, missing fields** | Console only. The harness always writes a valid payload. |
 | **Map layers** | UI stub. |
-| **A public demo** | The draft rules leave the wearer's coordinates **world-readable**, and the map runs on OpenStreetMap's volunteer tile servers, whose usage policy is written for light use. Close both first. |
+| **A public demo** | The draft rules leave the wearer's coordinates **world-readable**. Close that first. The map runs on MapTiler's Free plan, which is non-commercial and pauses at its monthly limit. |
