@@ -51,7 +51,7 @@ object Changelog {
                 "In Settings a chevron now means the row opens another screen of the app; a row that opens a web page has none.",
                 "718 unit tests, up from 668."
             ),
-            commit = "c28c3bb"
+            commit = "7ce81b1"
         ),
         ChangelogEntry(
             date = "2026-10-19",
