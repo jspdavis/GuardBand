@@ -81,6 +81,12 @@ import kotlinx.coroutines.withTimeoutOrNull
  * any more, because "could not tell" must not open the app to an account that
  * may have no consent. The timeout matters: with no disk persistence, an
  * RTDB read made offline does not fail, it waits for a connection forever.
+ *
+ * **A tapped notification waits for the gate too.** Its target (Alert history,
+ * or Settings from the watch's own notification) is held until the gate is
+ * [HomeGateState.OPEN] and then opened; any other outcome drops it, so a
+ * notification is never a way past Login, verification, consent or a pending
+ * deletion. A failed read keeps it for the Retry.
  */
 class HomeViewModel(
     private val authRepository: AuthRepository,
@@ -94,6 +100,9 @@ class HomeViewModel(
 
     /** Whether the tabs may show yet. See the class KDoc. */
     val gate: StateFlow<HomeGateState> = _gate.asStateFlow()
+
+    /** A notification's target, held until the gate opens. */
+    private var pendingTarget: HomeLaunchTarget? = null
 
     init {
         runGate()
@@ -113,8 +122,8 @@ class HomeViewModel(
     private fun runGate() {
         val uid = authRepository.currentUser()?.id
         when {
-            uid == null -> _events.trySend(HomeEvent.NavigateToLogin)
-            mustVerifyEmail() -> _events.trySend(HomeEvent.RequireEmailVerification)
+            uid == null -> leave(HomeEvent.NavigateToLogin)
+            mustVerifyEmail() -> leave(HomeEvent.RequireEmailVerification)
             else -> checkRecord(uid)
         }
     }
@@ -128,9 +137,13 @@ class HomeViewModel(
     private fun checkRecord(uid: String) {
         viewModelScope.launch {
             when (withTimeoutOrNull(GATE_READ_TIMEOUT_MS) { readRecord(uid) }) {
-                RecordOutcome.DELETION_PENDING -> _events.send(HomeEvent.ResumeDeletion)
-                RecordOutcome.NEEDS_CONSENT -> _events.send(HomeEvent.RequireConsent)
-                RecordOutcome.OPEN -> _gate.value = HomeGateState.OPEN
+                RecordOutcome.DELETION_PENDING -> leave(HomeEvent.ResumeDeletion)
+                RecordOutcome.NEEDS_CONSENT -> leave(HomeEvent.RequireConsent)
+                RecordOutcome.OPEN -> {
+                    _gate.value = HomeGateState.OPEN
+                    pendingTarget?.let(::openTarget)
+                    pendingTarget = null
+                }
                 // Null is the timeout: the same as a failed read.
                 RecordOutcome.FAILED, null -> _gate.value = HomeGateState.FAILED
             }
@@ -159,6 +172,29 @@ class HomeViewModel(
     }
 
     private enum class RecordOutcome { DELETION_PENDING, NEEDS_CONSENT, OPEN, FAILED }
+
+    /** Leaving the tabs: a held notification target goes with them. */
+    private fun leave(event: HomeEvent) {
+        pendingTarget = null
+        _events.trySend(event)
+    }
+
+    /**
+     * A notification was tapped. Opens [target] now if the gate is open,
+     * otherwise once it opens; dropped if the gate sends the user elsewhere.
+     */
+    fun onLaunchTargetRequested(target: HomeLaunchTarget) {
+        if (_gate.value == HomeGateState.OPEN) openTarget(target) else pendingTarget = target
+    }
+
+    private fun openTarget(target: HomeLaunchTarget) {
+        _events.trySend(
+            when (target) {
+                HomeLaunchTarget.ALERT_HISTORY -> HomeEvent.ShowAlertHistory
+                HomeLaunchTarget.ALERT_NOTIFICATIONS -> HomeEvent.ShowAlertNotifications
+            }
+        )
+    }
 
     fun onSettingsClicked() {
         _events.trySend(HomeEvent.ShowSettings)

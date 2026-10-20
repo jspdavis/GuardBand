@@ -14,8 +14,12 @@ import com.example.guardband.R
  * screens (`ResetSuccessActivity`, `WelcomeActivity`): a placeholder whose
  * only action is Back. Give it one when the inbox gets data.
  *
+ * For testing, the inbox shows one static sample row (cv_notifications_welcome)
+ * and hides the empty text; both live only in the layout.
+ *
  * View ids: ib_notifications_back, tv_notifications_title,
- * tv_notifications_empty.
+ * cv_notifications_welcome, tv_notifications_welcome_title,
+ * tv_notifications_welcome_body, tv_notifications_empty.
  */
 class NotificationsFragment : Fragment(R.layout.fragment_notifications) {
 

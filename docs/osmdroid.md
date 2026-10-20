@@ -182,6 +182,9 @@ under `Mapnik`. **No cache clearing or reinstall is needed** after the swap.
 The API key is **not** part of the cache key, so a new key reuses tiles
 already cached.
 
+The dark style (§4.8) is **`MapTilerStreetsDark`**, for the same reason: a
+theme switch must never serve the light tiles from the cache, or the reverse.
+
 ### 4.2 Constants are declared first, on purpose
 
 `MapTilerTileSource`'s companion puts its constants **above** `POLICY` and
@@ -387,6 +390,27 @@ reference gives no per-style limit. To confirm it for this style, read
 `maxzoom` from `https://api.maptiler.com/maps/streets-v2/tiles.json?key=YOUR_MAPTILER_API_KEY`.
 
 ---
+
+### 4.8 Dark mode (2026-10-20)
+
+In dark mode the map is MapTiler's **Streets Dark**,
+`https://api.maptiler.com/maps/streets-v2-dark/256/{z}/{x}/{y}.png`, from
+`MapTilerTileSource.STREETS_DARK`; `forNightMode(night)` is the only
+chooser, and `TrackFragment.setUpMap` asks it from the configuration's
+`uiMode`. Same key, same plan, same credits, same policy; only the style
+and the cache name differ. On 2026-10-20 one tile of each style was fetched
+with the project's key and the app's user agent: both `200 image/png`.
+
+- **A theme change recreates the Fragment**, so the new source is set from
+  scratch; nothing swaps the source on a live `MapView`.
+- **The loading grid is dark too.** osmdroid draws a light grey grid behind
+  a tile still loading; in dark mode `setUpMap` sets the tiles overlay's
+  loading colours to `surface_card` and `divider`.
+- **The credits and the logo stay light.** `logo_maptiler.png` has dark
+  lettering, so both keep `map_attribution_bg` (70% white) in dark mode,
+  with `map_attribution_text` rather than `text_secondary`, which turns
+  light. MapTiler offers a white logo for dark maps; swapping it in is Jul's
+  call, and the credits would then follow it.
 
 ## 5. Permissions, the manifest, and the lifecycle
 

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A pushed screen's top bar: white, with a 1dp divider-coloured line along
-     its bottom edge, so the bar stays distinct on a white screen.
+<!-- A pushed screen's top bar: the screen's surface (white, or dark in dark
+     mode), with a 1dp divider-coloured line along its bottom edge, so the
+     bar stays distinct on a screen of the same colour.
      Shared by every top bar; change the line here, not per layout.
      DESIGN: Jul -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
@@ -13,7 +14,7 @@
 
     <item android:bottom="1dp">
         <shape android:shape="rectangle">
-            <solid android:color="@color/white" />
+            <solid android:color="@color/surface_bg" />
         </shape>
     </item>
 

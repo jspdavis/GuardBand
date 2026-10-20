@@ -331,6 +331,42 @@ recent  = displayable.take(RECENT_ALERTS_LIMIT)        // Track's panel, 3
 - **Retry** from either screen re-subscribes the one instance, so both
   screens leave the error state together.
 
+### Place names (2026-10-20)
+
+Every alert row, Track's panel and the latest card show **where** as a place
+name ("Osmeña Blvd, Kamputhaw, Cebu City") instead of coordinates. The
+coordinates show only while the name loads, and for good when none is found.
+
+- **`PlaceRepository` → `GeocoderPlaceRepository`**, on Android's own
+  `Geocoder`: free, no key, no dependency, **no permission** (it geocodes
+  the coordinates it is handed and never reads the phone's location). On
+  Play-services phones the answers are Google's. It answers `Found(Place)`,
+  `NotFound` (no name exists: never asked again) or `Unavailable` (offline,
+  timed out after 10 s: asked again later). A phone with no geocoder answers
+  `NotFound` for everything. API 33+ uses the non-blocking listener form;
+  older phones the blocking call on `Dispatchers.IO`.
+- **`AlertViewModel` asks, once per point.** After each render it looks up the
+  shown alerts' points not yet known, newest first, one at a time, and puts
+  the answers in `AlertUiState.placeNames`. A point is `AlertPlaces.keyOf`
+  the coordinates **rounded to 4 decimals (about 11 m)**, and the geocoder is
+  sent the rounded values, never more. An `Unavailable` point waits
+  `PLACE_RETRY_MS` (60 s) before it is asked again, so a walking band that
+  emits every few seconds does not cause a lookup per emission while offline.
+  Tracking updates are hidden, so they are never looked up.
+- **Memory only.** Names live as long as the host-scoped ViewModel. Nothing
+  about a location is written to the phone or the database.
+- **`AlertPlaces.label`** reads a `Place` as "Street, Area, City": the parts it
+  has, in that order, without repeats; the province only when there is no
+  city; Google's "Unnamed Road" dropped. Nothing usable → coordinates.
+- **The adapter binds `AlertRow`s** (alert + name), so a name arriving later
+  rebinds just that row. `AlertFormatting.locationText` is the one place
+  that picks name or coordinates.
+- **Privacy:** this is a new flow. The band's positions used to go only to
+  Firebase (and to a maps app on Navigate); now the geocoder's service
+  receives each shown alert's rounded position and the phone's IP address.
+  The notice has a DRAFT row ([`privacy-and-consent.md`](privacy-and-consent.md) §4).
+  Never log a place name: it is a location.
+
 ---
 
 ## 8. Alert history and Track's panel
@@ -348,8 +384,9 @@ arrow (`ib_alert_history_back`) returns to Track. Its title is
 | `alert_error_message` | the error text |
 | `alert_retry_button` | → `onRetryClicked()` |
 | `alert_latest_card` | current status card (D2) |
-| `alert_latest_icon` | type symbol, tinted in the type colour (`typeIcon` / `typeColor`) |
+| `alert_latest_icon` | type symbol on its badge, both tinted in the type colour (`typeIcon` / `typeColor`) |
 | `alert_latest_type` / `_time` / `_location` / `_battery` | card fields |
+| `alert_latest_place_row` / `_battery_row` / `_battery_icon` | the pin and battery lines, and the battery's symbol |
 | `alert_empty_view` | the "which kind of empty" text |
 | `alert_history_list` | `RecyclerView`, `ListAdapter` + `DiffUtil` on `sequenceId` |
 
@@ -370,6 +407,33 @@ same `isLoading` / `errorMessage` / `emptyMessage` fields. Tapping a row does
 nothing, as on the old tab. It is a draggable bottom sheet
 (`BottomSheetBehavior`) with a drag handle (`track_recent_alerts_drag_handle`);
 `btn_track_recent_alerts_see_all` opens Alert history.
+
+**How a row looks (2026-10-20).** `ui/alert/AlertCardViews` binds every
+alert card, the rows and the latest card alike, so they cannot drift:
+
+- **The type's symbol sits on a 40 dp circle** (`bg_alert_type_badge`) of a
+  pale shade of the type's colour (about 16%); the latest card's is 44 dp.
+- **A panic's card is pale red with a 1 dp red outline**
+  (`alert_panic_container`, `alert_panic_outline`); every other card stays
+  grey. Recycled cards are reset on every bind.
+- **The place is the row's main text** (body size, primary colour, up to two
+  lines) beside a pin (`ic_map_pin`). The battery is small and grey beside a
+  symbol for its level: `ic_battery_full` (above 80%), `_mid` (51-80),
+  `_low` (21-50), `_critical` (20% and below, FR-11's low-battery level,
+  orange) and `_charging` (a bolt, green). The text says "64%"; TalkBack
+  reads "Battery 64%".
+- **Times.** The panel's rows and the latest card say "Just now", "5 min ago"
+  or "3 hr ago", and the date and time from a day on. Alert history's rows
+  sit under a heading for each day (Today, Yesterday, "Sun, Oct 18", or
+  "Dec 31, 2025" in another year; `item_alert_day_header.xml`) and show only
+  the clock time. The day is the phone's, not UTC's. Headings follow the
+  list's sequenceId order rather than sorting it, so a band whose clock
+  jumped shows a day twice.
+- **They age by themselves.** `AlertUiState.nowMillis` is set on every read
+  and every 30 s (`AlertViewModel.TICK_INTERVAL_MS`, the same injected-ticker
+  pattern as Track's), so "5 min ago" and "Today" move on while the band is
+  quiet. The ticker is empty by default and real only in the `Factory`, so a
+  test never holds an endless `delay`.
 
 Type colours and timestamp formatting are unchanged — see
 [§5 of the bottom-nav doc](home-host-and-bottom-nav.md#5-screens).
@@ -503,10 +567,24 @@ all**.
       there too.
 - [ ] The card shows type, local time, coordinates and battery; the symbol is the red octagon.
       The panel's row reads the same.
+- [ ] **Place names (2026-10-20):** a moment after the row appears, its
+      coordinates turn into a place name (e.g. "…, Cebu City"); the card and
+      the panel show the same name. In airplane mode on a fresh launch the
+      rows keep their coordinates and don't crash; turn it off and, within a
+      minute of the next alert arriving, the names fill in. Rows at the same
+      spot get the same name.
 - [ ] Add `6` with `type: "CHECKIN"`. The card becomes the check-in; the panic
       stays in history and moves down a row in the panel.
 - [ ] With four or more alerts, the panel shows three and history shows them
       all.
+- [ ] **Row design (2026-10-20):** each symbol sits on a pale circle of its
+      colour; a panic's card is pale red with a red outline, the others grey.
+      The place is the darkest text, with a pin; the battery has its symbol
+      (set the mock sender to 15%: nearly empty and orange; charging: a green
+      bolt). The panel and the latest card say "Just now", then "1 min ago"
+      a minute later without a new alert; Alert history has a "Today"
+      heading and clock times. Scroll a long history: no panic outline
+      leaks onto a non-panic row.
 
 **D1 and D2**
 - [ ] Add `7` with `type: "TRACKING_UPDATE"`. **Nothing visible changes** — not

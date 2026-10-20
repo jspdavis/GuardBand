@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The dark palette: every colour in values/colors.xml that changes in dark
+    mode, under the same name. Anything not listed here (white, black, the
+    map credits) is the same in both modes.
+
+    Placeholders on Material's dark-theme guidance (a near-black surface,
+    lighter raised surfaces, off-white text, the brand and alert colours a
+    step lighter so they keep their contrast on dark), not a Figma palette.
+    DESIGN: Jul
+-->
+<resources>
+    <!-- Brand palette: a step lighter, so green text and icons stay
+         readable on a dark surface. White on them is still legible. -->
+    <color name="brand_primary">#5E9E46</color>
+    <color name="brand_primary_dark">#4E8B38</color>
+    <color name="brand_green">#5E9E46</color>
+    <color name="brand_green_dark">#4E8B38</color>
+    <color name="brand_accent">#E6E6E6</color>
+
+    <!-- Splash -->
+    <color name="splash_bg">#121212</color>
+    <color name="splash_text">#ECECEC</color>
+
+    <!-- Surface / background -->
+    <color name="surface_bg">#121212</color>
+    <color name="surface_card">#1E1F1E</color>
+    <color name="surface_muted">#2C2D2C</color>
+    <color name="surface_elevated">#2A2B2A</color>
+    <color name="input_bg">#1E1F1E</color>
+
+    <!-- Strokes / dividers -->
+    <color name="stroke_default">#E6E6E6</color>
+    <color name="stroke_muted">#8E8E93</color>
+    <color name="divider">#2E302E</color>
+
+    <!-- Text -->
+    <color name="text_primary">#ECECEC</color>
+    <color name="text_secondary">#B3B3B8</color>
+    <color name="text_hint">#8E8E93</color>
+    <color name="text_link">#64B5F6</color>
+
+    <!-- Status / feedback -->
+    <color name="error_red">#EF5350</color>
+    <color name="success_green">#66BB6A</color>
+
+    <!-- Alert types -->
+    <color name="alert_panic">#EF5350</color>
+    <color name="alert_checkin">#66BB6A</color>
+    <color name="alert_low_battery">#FFA726</color>
+    <color name="alert_tracking">#42A5F5</color>
+    <color name="alert_panic_container">#3A1E1E</color>
+    <color name="alert_panic_outline">#7A3434</color>
+
+    <!-- Password rules -->
+    <color name="rule_met">#66BB6A</color>
+    <color name="rule_unmet">#EF5350</color>
+    <color name="rule_neutral">#8E8E93</color>
+
+    <!-- The dark buttons, lifted off the near-black screen. -->
+    <color name="retry_gradient_start">#3A3B3A</color>
+    <color name="retry_gradient_end">#5A5C5A</color>
+</resources>

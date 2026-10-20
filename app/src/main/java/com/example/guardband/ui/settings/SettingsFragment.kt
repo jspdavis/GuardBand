@@ -1,8 +1,6 @@
 package com.example.guardband.ui.settings
 
-import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -15,10 +13,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
+import com.example.guardband.ui.about.AboutActivity
 import com.example.guardband.ui.account.AccountActivity
 import com.example.guardband.ui.auth.GoogleIdTokenProvider
 import com.example.guardband.ui.auth.LoginNavigation
 import com.example.guardband.ui.changelog.ChangelogActivity
+import com.example.guardband.ui.display.DisplayActivity
+import com.example.guardband.ui.notifications.AlertNotificationsActivity
 import kotlinx.coroutines.launch
 
 /**
@@ -26,13 +27,21 @@ import kotlinx.coroutines.launch
  * it shows). The back arrow goes through the Activity's Back handling, which
  * returns to the last tab.
  *
- * Static: [SettingsViewModel] holds no state. Account information opens
- * [AccountActivity], which is where Delete account lives now - one level
- * deeper than this list, so the destructive action is not a stray tap away.
+ * Account information opens [AccountActivity], which is where Delete account
+ * lives now - one level deeper than this list, so the destructive action is
+ * not a stray tap away.
+ *
+ * **A chevron means another screen of the app**, so every row here has
+ * one; a row that opens a web or system page uses `SettingsRow.Action`
+ * instead (About's Privacy Notice). Alert notifications' switch lives on its
+ * own screen, [AlertNotificationsActivity], and the Privacy Notice inside
+ * [AboutActivity], since 2026-10-20. Display opens [DisplayActivity], the
+ * theme; Device information is a placeholder.
  *
  * View ids: ib_settings_back, tv_settings_title, tv_settings_account,
- * tv_settings_change_password, tv_settings_notifications,
- * tv_settings_privacy_notice, tv_settings_changelog, btn_settings_logout.
+ * tv_settings_change_password, tv_settings_alert_notifications,
+ * tv_settings_display, tv_settings_device_info, tv_settings_changelog,
+ * tv_settings_about, btn_settings_logout.
  */
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
@@ -49,16 +58,20 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         view.findViewById<TextView>(R.id.tv_settings_account)
             .setOnClickListener { viewModel.onAccountClicked() }
 
-        listOf(
-            R.id.tv_settings_change_password,
-            R.id.tv_settings_notifications
-        ).forEach { id ->
-            view.findViewById<TextView>(id)
-                .setOnClickListener { viewModel.onPlaceholderRowClicked() }
-        }
+        view.findViewById<TextView>(R.id.tv_settings_change_password)
+            .setOnClickListener { viewModel.onPlaceholderRowClicked() }
 
-        view.findViewById<TextView>(R.id.tv_settings_privacy_notice)
-            .setOnClickListener { viewModel.onPrivacyNoticeClicked() }
+        view.findViewById<TextView>(R.id.tv_settings_alert_notifications)
+            .setOnClickListener { viewModel.onAlertNotificationsClicked() }
+
+        view.findViewById<TextView>(R.id.tv_settings_display)
+            .setOnClickListener { viewModel.onDisplayClicked() }
+
+        view.findViewById<TextView>(R.id.tv_settings_device_info)
+            .setOnClickListener { viewModel.onPlaceholderRowClicked() }
+
+        view.findViewById<TextView>(R.id.tv_settings_about)
+            .setOnClickListener { viewModel.onAboutClicked() }
 
         view.findViewById<TextView>(R.id.tv_settings_changelog)
             .setOnClickListener { viewModel.onChangelogClicked() }
@@ -82,29 +95,20 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 LoginNavigation.clearCredentialsThenGoToLogin(requireContext(), googleIdTokenProvider)
             }
 
-            is SettingsEvent.OpenUrl -> openUrl(event.url)
-
             SettingsEvent.OpenAccount ->
                 startActivity(Intent(requireContext(), AccountActivity::class.java))
 
             SettingsEvent.OpenChangelog ->
                 startActivity(Intent(requireContext(), ChangelogActivity::class.java))
-        }
-    }
 
-    /**
-     * Opens a hosted page in whatever browser the phone has.
-     *
-     * A plain `ACTION_VIEW`, so it needs no permission and no extra
-     * dependency. A phone with nothing registered for `https` throws
-     * [ActivityNotFoundException], which goes back through the ViewModel so
-     * the wording stays with every other user-facing message.
-     */
-    private fun openUrl(url: String) {
-        try {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-        } catch (e: ActivityNotFoundException) {
-            viewModel.onBrowserUnavailable()
+            SettingsEvent.OpenAlertNotifications ->
+                startActivity(Intent(requireContext(), AlertNotificationsActivity::class.java))
+
+            SettingsEvent.OpenDisplay ->
+                startActivity(Intent(requireContext(), DisplayActivity::class.java))
+
+            SettingsEvent.OpenAbout ->
+                startActivity(Intent(requireContext(), AboutActivity::class.java))
         }
     }
 }

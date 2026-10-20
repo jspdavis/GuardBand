@@ -2,6 +2,7 @@ package com.example.guardband.ui.alert
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -11,12 +12,19 @@ import com.example.guardband.data.model.AlertType
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.data.repository.AlertHistory
 import com.example.guardband.data.repository.AlertRepository
+import com.example.guardband.data.repository.GeocoderPlaceRepository
+import com.example.guardband.data.repository.PlaceLookup
+import com.example.guardband.data.repository.PlaceRepository
+import com.example.guardband.ui.track.Clock
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -47,9 +55,28 @@ import kotlinx.coroutines.launch
  *
  * A failed read keeps the last good data on screen and reports it as an event;
  * only a failure with nothing to fall back to becomes the error state.
+ *
+ * **Place names fill in after the list** ([AlertUiState.placeNames]). Each
+ * shown alert's location is looked up once per rounded point
+ * ([AlertPlaces.keyOf], about 11 m), newest first, one at a time, and kept
+ * for the life of this ViewModel (memory only: nothing about a location is
+ * written to the phone). A point with no name is not asked again; one the
+ * service could not answer (offline) is asked again on a later emission, but
+ * not within [PLACE_RETRY_MS]. Rows show coordinates until then.
+ *
+ * **"5 min ago" moves on by itself.** [AlertUiState.nowMillis] is set on
+ * every read and on every one of [ticks], so the rows' times and the day
+ * headings age while the band is quiet, as Track's check-in pill does.
+ *
+ * @param ticks fires the time recompute. Empty by default, so a test never
+ * holds an endless `delay`; [Factory] passes the real one, every
+ * [TICK_INTERVAL_MS].
  */
 class AlertViewModel(
-    private val alertRepository: AlertRepository
+    private val alertRepository: AlertRepository,
+    private val placeRepository: PlaceRepository = PlaceRepository.NONE,
+    private val clock: Clock = Clock.SYSTEM,
+    private val ticks: Flow<Unit> = emptyFlow()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AlertUiState())
@@ -61,8 +88,17 @@ class AlertViewModel(
     /** The live subscription, cancelled and replaced on retry. */
     private var observeJob: Job? = null
 
+    /** Place keys asked about, or being asked about; never asked twice. */
+    private val placesRequested = mutableSetOf<String>()
+
+    /** When a point the service could not answer may be asked again. */
+    private val placeRetryAt = mutableMapOf<String, Long>()
+
     init {
         observeHistory()
+        viewModelScope.launch {
+            ticks.collect { _uiState.update { it.copy(nowMillis = clock.nowMillis()) } }
+        }
     }
 
     /**
@@ -103,8 +139,42 @@ class AlertViewModel(
                 history = displayable,
                 recent = displayable.take(RECENT_ALERTS_LIMIT),
                 errorMessage = null,
-                emptyMessage = emptyMessageFor(history, displayable)
+                emptyMessage = emptyMessageFor(history, displayable),
+                nowMillis = clock.nowMillis()
             )
+        }
+        lookUpPlaces(displayable)
+    }
+
+    /** Asks for the names of [alerts]' points not yet known or asked about, newest first. */
+    private fun lookUpPlaces(alerts: List<Alert>) {
+        val now = clock.nowMillis()
+        val wanted = alerts
+            .mapNotNull { it.location }
+            .map { AlertPlaces.keyOf(it) to it }
+            .distinctBy { it.first }
+            .filter { (key, _) -> key !in placesRequested && (placeRetryAt[key] ?: 0L) <= now }
+        if (wanted.isEmpty()) return
+        wanted.forEach { (key, _) -> placesRequested += key }
+
+        viewModelScope.launch {
+            for ((key, location) in wanted) {
+                val lookup = placeRepository.placeAt(
+                    AlertPlaces.rounded(location.lat),
+                    AlertPlaces.rounded(location.lng)
+                )
+                when (lookup) {
+                    is PlaceLookup.Found -> AlertPlaces.label(lookup.place)?.let { name ->
+                        _uiState.update { it.copy(placeNames = it.placeNames + (key to name)) }
+                    }
+                    // No name will come: the row keeps its coordinates for good.
+                    PlaceLookup.NotFound -> Unit
+                    PlaceLookup.Unavailable -> {
+                        placesRequested -= key
+                        placeRetryAt[key] = clock.nowMillis() + PLACE_RETRY_MS
+                    }
+                }
+            }
         }
     }
 
@@ -168,6 +238,19 @@ class AlertViewModel(
          */
         const val RECENT_ALERTS_LIMIT = 3
 
+        /**
+         * How long a point the geocoder could not answer waits before it is
+         * asked again. A walking band emits every few seconds; offline, that
+         * would otherwise be a lookup per emission.
+         */
+        const val PLACE_RETRY_MS = 60_000L
+
+        /**
+         * How often the rows' times are recomputed. "5 min ago" is shown to
+         * the minute, and this only reads the clock and copies the state.
+         */
+        const val TICK_INTERVAL_MS = 30_000L
+
         const val MSG_LOAD_FAILED = "Couldn't load alerts from your band."
         const val MSG_NETWORK = "Couldn't reach your band. Check your connection."
         const val MSG_PERMISSION_DENIED = "You don't have access to this band's alerts."
@@ -180,7 +263,21 @@ class AlertViewModel(
         const val MSG_EMPTY_UNREADABLE = "Your band's recent alerts couldn't be read."
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer { AlertViewModel(RepositoryProvider.alertRepository) }
+            initializer {
+                AlertViewModel(
+                    RepositoryProvider.alertRepository,
+                    GeocoderPlaceRepository(checkNotNull(this[APPLICATION_KEY])),
+                    ticks = everyTick()
+                )
+            }
+        }
+
+        /** The real ticker. A plain loop, so nothing schedules work when unused. */
+        private fun everyTick(): Flow<Unit> = flow {
+            while (true) {
+                delay(TICK_INTERVAL_MS)
+                emit(Unit)
+            }
         }
     }
 }

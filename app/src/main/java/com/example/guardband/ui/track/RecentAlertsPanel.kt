@@ -6,6 +6,8 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
 import com.example.guardband.ui.alert.AlertHistoryAdapter
+import com.example.guardband.ui.alert.AlertListItem
+import com.example.guardband.ui.alert.AlertTimeStyle
 import com.example.guardband.ui.alert.AlertUiState
 
 /**
@@ -16,8 +18,9 @@ import com.example.guardband.ui.alert.AlertUiState
  * It renders the host-scoped [AlertUiState] - [AlertUiState.recent] for the
  * rows, and the same loading, error and empty fields the Alert history screen
  * shows - so the sheet and the history can never disagree. Rows are
- * [AlertHistoryAdapter]'s `item_alert.xml`, unchanged. Tapping a row does
- * nothing, as it did on the old Alert tab.
+ * [AlertHistoryAdapter]'s `item_alert.xml`, with no day headings and the
+ * time as "5 min ago". Tapping a row does nothing, as it did on the old
+ * Alert tab.
  *
  * **Dragging is not this class's job.** The sheet is a `BottomSheetBehavior`
  * child of `fragment_track.xml`'s CoordinatorLayout: the behavior handles the
@@ -42,7 +45,7 @@ class RecentAlertsPanel(
     private val tvError: TextView = root.findViewById(R.id.track_recent_alerts_error_message)
     private val tvEmpty: TextView = root.findViewById(R.id.track_recent_alerts_empty_view)
 
-    private val adapter = AlertHistoryAdapter()
+    private val adapter = AlertHistoryAdapter(AlertTimeStyle.RELATIVE)
 
     init {
         root.findViewById<RecyclerView>(R.id.track_recent_alerts_list).adapter = adapter
@@ -63,6 +66,6 @@ class RecentAlertsPanel(
         tvEmpty.isVisible = empty != null
         if (empty != null) tvEmpty.text = empty
 
-        adapter.submitList(state.recent)
+        adapter.submitList(state.rowsOf(state.recent).map(AlertListItem::Row))
     }
 }

@@ -1,5 +1,6 @@
 package com.example.guardband.ui.home
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -17,6 +18,8 @@ import com.example.guardband.ui.alert.AlertHistoryFragment
 import com.example.guardband.ui.consent.ConsentRequiredActivity
 import com.example.guardband.ui.contacts.ContactsFragment
 import com.example.guardband.ui.login.LoginActivity
+import com.example.guardband.ui.notifications.AlertNotificationsActivity
+import com.example.guardband.ui.notifications.AlertWatch
 import com.example.guardband.ui.notifications.NotificationsFragment
 import com.example.guardband.ui.profile.ProfileFragment
 import com.example.guardband.ui.settings.SettingsFragment
@@ -44,6 +47,12 @@ import kotlinx.coroutines.launch
  * and Retry if the read failed, and no tab Fragment is added. On a restore
  * the FragmentManager re-adds the old ones by itself; the cover hides them
  * until the gate opens again.
+ *
+ * **Notifications land here** ([launchIntent]): an alert opens Alert history,
+ * the watch's ongoing notification opens Alert notifications over Settings,
+ * both through the gate
+ * ([HomeViewModel.onLaunchTargetRequested]). Once the gate opens, the alert
+ * watch is started if the user turned it on ([AlertWatch.startIfEnabled]).
  *
  * View ids: fragment_container_home, view_home_nav_divider, bottom_nav_home,
  * fl_home_gate, progress_home_gate, ll_home_gate_failed, tv_home_gate_failed,
@@ -116,6 +125,24 @@ class HomeActivity : AppCompatActivity() {
                 viewModel.events.collect(::handleEvent)
             }
         }
+
+        // Not on a restore: the Intent still carries the extra, and the
+        // screen the user was on is restored instead.
+        if (savedInstanceState == null) handleLaunchTarget(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleLaunchTarget(intent)
+    }
+
+    /** Forwards a notification's target once, then forgets it. */
+    private fun handleLaunchTarget(intent: Intent) {
+        val name = intent.getStringExtra(EXTRA_LAUNCH_TARGET) ?: return
+        intent.removeExtra(EXTRA_LAUNCH_TARGET)
+        val target = HomeLaunchTarget.entries.find { it.name == name } ?: return
+        viewModel.onLaunchTargetRequested(target)
     }
 
     /**
@@ -134,6 +161,7 @@ class HomeActivity : AppCompatActivity() {
         if (open && !tabsShown) {
             tabsShown = true
             show(currentTag)
+            AlertWatch.startIfEnabled(this)
         } else if (!open) {
             bottomNav.isVisible = false
             navDivider.isVisible = false
@@ -148,14 +176,21 @@ class HomeActivity : AppCompatActivity() {
 
     private fun handleEvent(event: HomeEvent) {
         when (event) {
-            HomeEvent.NavigateToLogin ->
+            HomeEvent.NavigateToLogin -> {
+                // A session that ended elsewhere: nothing may keep watching for it.
+                AlertWatch.stop(this)
                 startActivity(
                     Intent(this, LoginActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
                 )
+            }
 
             HomeEvent.ShowSettings -> show(HomeDestinations.SETTINGS)
+            HomeEvent.ShowAlertNotifications -> {
+                show(HomeDestinations.SETTINGS)
+                startActivity(Intent(this, AlertNotificationsActivity::class.java))
+            }
             HomeEvent.ShowNotifications -> show(HomeDestinations.NOTIFICATIONS)
             HomeEvent.ShowAlertHistory -> show(HomeDestinations.ALERT_HISTORY)
 
@@ -244,8 +279,23 @@ class HomeActivity : AppCompatActivity() {
             else -> R.id.nav_track
         }
 
-    private companion object {
-        const val STATE_CURRENT_TAG = "state_current_tag"
-        const val STATE_LAST_TAB_TAG = "state_last_tab_tag"
+    companion object {
+        private const val STATE_CURRENT_TAG = "state_current_tag"
+        private const val STATE_LAST_TAB_TAG = "state_last_tab_tag"
+        private const val EXTRA_LAUNCH_TARGET = "com.example.guardband.extra.LAUNCH_TARGET"
+
+        /**
+         * Opens the host at [target], for a notification's tap. Brings an
+         * existing host forward (clearing anything above it) rather than
+         * stacking a second one; a fresh one still meets the gate first.
+         */
+        fun launchIntent(context: Context, target: HomeLaunchTarget): Intent =
+            Intent(context, HomeActivity::class.java)
+                .putExtra(EXTRA_LAUNCH_TARGET, target.name)
+                .addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
     }
 }

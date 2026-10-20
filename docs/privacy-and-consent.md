@@ -84,6 +84,8 @@ export-then-delete for that reason.
 | Delete page, "If you cannot open the app" | Whether a manual deletion process exists | **Yes.** Requests to the contact address, acted on only when sent from the account's own email, within 30 days, with a confirming reply. The deletion is done by hand in the Console: `users/{uid}` first, then the Authentication user, the same order as the app. |
 | Notice, sharing table, MapTiler row (DRAFT, 2026-10-19) | Whether a different company now receiving the IP address (MapTiler instead of OpenStreetMap) needs the notice's version and `CONSENT_VERSION` bumped | **Open** - Jul + adviser |
 | Notice, sharing table, Google profile picture row (DRAFT, 2026-10-19) | Whether showing the Google profile picture on the map, loaded from Google's image servers (which see the IP address), needs the notice's version and `CONSENT_VERSION` bumped. The Profile tab has shown the same picture since 2026-10-14 without a line in the notice. | **Open** - Jul + adviser. `CONSENT_VERSION` left at `1.1` |
+| Notice, "Where it is stored, and on your phone", alert notifications paragraph (DRAFT, 2026-10-19) | Whether the opt-in alert notifications need the notice's version and `CONSENT_VERSION` bumped. Nothing new is collected and no new company receives anything; the new things are a background connection to the same database and alert text (type, time, battery; never a location) in the phone's notification shade. | **Open** - Jul + adviser. **Recommended: no bump**; review the wording together with the MapTiler and Google picture rows. `CONSENT_VERSION` left at `1.1` |
+| Notice, sharing table, Google place names row (DRAFT, 2026-10-20) | Whether sending each shown alert's position (rounded to about 11 m) to the phone's geocoder, Google's on Play-services phones, needs the notice's version and `CONSENT_VERSION` bumped. This one is a real new flow: until now the band's positions went only to Firebase (and to a maps app on Navigate). | **Open** - Jul + adviser. **Recommended: bump** with the next notice version, together with the MapTiler and Google picture rows if those are bumped too. `CONSENT_VERSION` left at `1.1` |
 
 **DRAFT, 2026-10-19: the Google profile picture.** The Track map's marker now
 shows the signed-in user's Google profile picture (initials for an email
@@ -92,6 +94,12 @@ servers, which see the phone's IP address; it is kept only in the app's own
 image cache on the phone, never written to the database or uploaded. The
 notice has a DRAFT row saying so (not deployed); whether that needs a version
 bump is the second open row above.
+
+**DRAFT, 2026-10-19: alert notifications.** An opt-in switch in Settings
+starts a foreground service that keeps the band's history listener open and
+posts new alerts as notifications ([`notifications.md`](notifications.md)).
+The phone stores only the switch and the last alert number it handled. The
+notice has a DRAFT paragraph saying so (not deployed).
 
 ---
 
@@ -142,7 +150,7 @@ Needs §1 steps 1–3 done.
    control**, and the link reads as a separate button after it.
 4. Finish sign-up. In the Console, the new `users/{uid}/consent` shows
    **`version: "1.1"`**, `accepted: true` and a server `acceptedAt`.
-5. **Settings → Privacy Notice** opens the same page.
+5. **Settings → About → Privacy Notice** opens the same page.
 6. The notice's displayed version reads **1.1**, matching step 4.
 7. Open `/delete-account` and follow its in-app steps exactly as written —
    Track → gear → Settings → Account information → Delete account (moved

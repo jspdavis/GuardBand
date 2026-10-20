@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="@color/surface_bg"
     android:clickable="true"
     android:focusable="true"
     tools:context=".ui.notifications.NotificationsFragment">
@@ -45,7 +45,68 @@
             android:textColor="@color/text_primary" />
     </LinearLayout>
 
-    <!-- ── Empty inbox (placeholder) ────────────────────────────────────── -->
+    <!-- ── Sample row (TESTING ONLY) ───────────────────────────────────────
+         One static welcome message so the inbox has a row to look at. Not
+         from any data: remove this card and set tv_notifications_empty back
+         to visible when the inbox gets real notifications. DESIGN: Jul -->
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cv_notifications_welcome"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="24dp"
+        app:cardBackgroundColor="@color/surface_card"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ll_notifications_top_bar"
+        app:strokeWidth="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginTop="2dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_notifications"
+                app:tint="@color/text_secondary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_notifications_welcome_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_notifications_welcome_title"
+                    android:textAppearance="@style/TextAppearance.GuardBand.TitleSmall"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    android:id="@+id/tv_notifications_welcome_body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/label_notifications_welcome_body"
+                    android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ── Empty inbox (placeholder; hidden while the sample row shows) ──── -->
 
     <TextView
         android:id="@+id/tv_notifications_empty"
@@ -58,6 +119,7 @@
         android:text="@string/label_notifications_empty"
         android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
         android:textColor="@color/text_secondary"
+        android:visibility="gone"
         app:drawableTint="@color/text_hint"
         app:drawableTopCompat="@drawable/ic_notifications"
         app:layout_constraintBottom_toBottomOf="parent"

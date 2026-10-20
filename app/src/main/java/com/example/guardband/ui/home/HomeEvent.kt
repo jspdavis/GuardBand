@@ -4,6 +4,13 @@ package com.example.guardband.ui.home
 sealed interface HomeEvent {
     object NavigateToLogin : HomeEvent
     object ShowSettings : HomeEvent
+
+    /**
+     * Open Alert notifications over Settings, from the watch's ongoing
+     * notification, so Back from it lands on Settings as it does when the
+     * row is tapped.
+     */
+    object ShowAlertNotifications : HomeEvent
     object ShowNotifications : HomeEvent
 
     /** Open the full alert history, from the Track tab's recent-alerts panel. */

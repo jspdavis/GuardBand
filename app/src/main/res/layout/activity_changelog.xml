@@ -9,7 +9,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface_muted"
+    android:background="@color/surface_bg"
     tools:context=".ui.changelog.ChangelogActivity">
 
     <!-- Top bar: back arrow + title. Matches fragment_settings.xml's. -->

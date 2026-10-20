@@ -2,6 +2,7 @@ package com.example.guardband.ui.track
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
@@ -217,10 +218,22 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     // ── Map ───────────────────────────────────────────────────────────────────
 
     private fun setUpMap() {
-        // The one tile source; see MapTilerTileSource. Set even without a key,
-        // so the MapView's default (OSM's public server) is never used.
-        val tileSource = MapTilerTileSource.STREETS
+        // MapTiler's Streets, dark in dark mode; see MapTilerTileSource. Set
+        // even without a key, so the MapView's default (OSM's public server)
+        // is never used. A theme change recreates the Fragment, which picks
+        // again.
+        val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+        val tileSource = MapTilerTileSource.forNightMode(night)
         mapView.setTileSource(tileSource)
+        if (night) {
+            // osmdroid's grid behind a tile still loading is light grey; on
+            // the dark map it would flash. DESIGN: Jul
+            mapView.overlayManager.tilesOverlay.apply {
+                loadingBackgroundColor = requireContext().getColor(R.color.surface_card)
+                loadingLineColor = requireContext().getColor(R.color.divider)
+            }
+        }
         mapView.setMinZoomLevel(tileSource.minimumZoomLevel.toDouble())
         mapView.setMaxZoomLevel(tileSource.maximumZoomLevel.toDouble())
         if (!MapTilerTileSource.hasApiKey) {

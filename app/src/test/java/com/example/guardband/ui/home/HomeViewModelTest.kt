@@ -423,4 +423,108 @@ class HomeViewModelTest {
         // Navigation, not a gate change: the gate stays where it was.
         assertEquals(HomeGateState.OPEN, opened.gate)
     }
+
+    // ── A tapped notification ─────────────────────────────────────────────────
+
+    @Test
+    fun `an alert notification opens alert history once the gate is open`() = runTest {
+        agreed("1.1")
+        val opened = open()
+
+        opened.vm.onLaunchTargetRequested(HomeLaunchTarget.ALERT_HISTORY)
+        advanceUntilIdle()
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.ShowAlertHistory), opened.events)
+    }
+
+    @Test
+    fun `the watch notification opens alert notifications`() = runTest {
+        agreed("1.1")
+        val opened = open()
+
+        opened.vm.onLaunchTargetRequested(HomeLaunchTarget.ALERT_NOTIFICATIONS)
+        advanceUntilIdle()
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.ShowAlertNotifications), opened.events)
+    }
+
+    /** Tapped on a cold start: held while the record is read, then opened. */
+    @Test
+    fun `a target requested while the gate checks waits for it to open`() = runTest {
+        agreed("1.1")
+        val held = CompletableDeferred<Unit>()
+        profiles.readsHeldUntil = held
+        val opened = open(settle = false)
+
+        opened.vm.onLaunchTargetRequested(HomeLaunchTarget.ALERT_HISTORY)
+        runCurrent()
+        assertTrue(opened.events.isEmpty())
+
+        held.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(HomeGateState.OPEN, opened.gate)
+        assertEquals(listOf<HomeEvent>(HomeEvent.ShowAlertHistory), opened.events)
+    }
+
+    @Test
+    fun `a held target is dropped when there is no session`() = runTest {
+        val opened = open(signedIn = false, settle = false)
+        opened.vm.onLaunchTargetRequested(HomeLaunchTarget.ALERT_HISTORY)
+        advanceUntilIdle()
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.NavigateToLogin), opened.events)
+    }
+
+    @Test
+    fun `a held target is dropped for the consent screen`() = runTest {
+        val held = CompletableDeferred<Unit>()
+        profiles.readsHeldUntil = held
+        val opened = open(settle = false)
+        opened.vm.onLaunchTargetRequested(HomeLaunchTarget.ALERT_HISTORY)
+
+        held.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.RequireConsent), opened.events)
+    }
+
+    @Test
+    fun `a held target is dropped for a pending deletion`() = runTest {
+        profiles.pendingDeletion += uid
+        val held = CompletableDeferred<Unit>()
+        profiles.readsHeldUntil = held
+        val opened = open(settle = false)
+        opened.vm.onLaunchTargetRequested(HomeLaunchTarget.ALERT_HISTORY)
+
+        held.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.ResumeDeletion), opened.events)
+    }
+
+    @Test
+    fun `a target is never a way past the verification gate`() = runTest {
+        val opened = open(verified = false)
+        opened.vm.onLaunchTargetRequested(HomeLaunchTarget.ALERT_HISTORY)
+        advanceUntilIdle()
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.RequireEmailVerification), opened.events)
+    }
+
+    /** "Could not tell" is not "no": the target survives for the Retry. */
+    @Test
+    fun `a held target survives a failed read and opens after retry`() = runTest {
+        agreed("1.1")
+        profiles.consentRecordResult = Result.failure(AuthError.Network)
+        val opened = open()
+        opened.vm.onLaunchTargetRequested(HomeLaunchTarget.ALERT_HISTORY)
+        assertEquals(HomeGateState.FAILED, opened.gate)
+        assertTrue(opened.events.isEmpty())
+
+        profiles.consentRecordResult = null
+        opened.vm.onRetryClicked()
+        advanceUntilIdle()
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.ShowAlertHistory), opened.events)
+    }
 }

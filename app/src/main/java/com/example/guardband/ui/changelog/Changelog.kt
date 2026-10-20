@@ -37,8 +37,26 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-10-20",
+            title = "A sample notification in the inbox; place names on alerts; matching top buttons; alert rows redesigned; Settings reorganised; dark mode",
+            changes = listOf(
+                "For testing, the Notifications screen (the bell) shows one sample message, \"Welcome to GuardBand\", instead of \"No notifications yet.\" It is fixed text, not real data.",
+                "Alerts say where they happened as a place (street, barangay, city) instead of latitude and longitude, on Track's panel, Alert history and its latest card. The coordinates show only while the name loads or if none can be found.",
+                "Contacts and Profile have the same smaller settings and notifications buttons as Track, in the same place, so they no longer jump when you switch tabs.",
+                "Alert rows are redesigned: the type's symbol on a pale circle of its colour, a pale red card for a panic, the place with a pin, and the battery with its own symbol (orange at 20%, a bolt while charging).",
+                "Track's panel and the latest card say \"5 min ago\"; Alert history groups its rows under Today, Yesterday or a date. The times move on by themselves.",
+                "Account information and Changelog have the white background the other screens already had.",
+                "Alert notifications has its own screen, opened from its Settings row; the watch's notification opens it too.",
+                "The Privacy Notice moved into a new About screen, with the app's version. Display (for dark mode, to come) and Device information are placeholder rows.",
+                "In Settings a chevron now means the row opens another screen of the app; a row that opens a web page has none.",
+                "Dark mode: Settings → Display offers Use phone setting, Light or Dark. Every screen has a dark look (placeholder colours for Jul to tune), and the Track map switches to MapTiler's dark style.",
+                "727 unit tests, up from 668."
+            ),
+            commit = "f85523a"
+        ),
+        ChangelogEntry(
             date = "2026-10-19",
-            title = "Alerts move onto the Track tab; Track's controls tidied; MapTiler map tiles and logo; Settings tidied",
+            title = "Alerts move onto the Track tab; Track's controls tidied; MapTiler map tiles and logo; Settings tidied; alert notifications",
             changes = listOf(
                 "The bottom bar has three icons: Track, Contacts and Profile. The Alert tab is gone.",
                 "Track shows the newest three alerts in a panel over the bottom of the map, which can be collapsed.",
@@ -60,9 +78,12 @@ object Changelog {
                 "The band's marker on the Track map is a round picture with a white ring and a pointer: your Google photo, or your initials if you signed up with email. The tip of the pointer is the band's position.",
                 "Alerts show a symbol in their colour instead of a dot: a red octagon for a panic, an orange warning triangle for low battery, a green tick for a check-in, and a grey question mark for a type the app does not know.",
                 "Track's four round buttons are the same smaller size, and the notifications bell lines up with the map buttons below it.",
-                "616 unit tests, up from 576 (the Track avatar's tests went with it)."
+                "Settings has an Alert notifications switch, off by default. Turned on, the phone shows the band's panics, low-battery warnings and check-ins as notifications, even with the app closed and the phone locked. No server and nothing paid: the app keeps watching the database itself, with a small \"Watching your band\" notification while it does.",
+                "The phone asks for the notification permission only when the switch is turned on. Panic notifications are silent (one short buzz), so the phone does not draw attention to the wearer; no notification shows a location or a name, and a lock screen set to hide sensitive content shows only \"New alert from your band\".",
+                "Tapping an alert notification opens Alert history, after the usual sign-in checks.",
+                "668 unit tests, up from 576 (the Track avatar's tests went with it)."
             ),
-            commit = "464f874"
+            commit = "e87755a"
         ),
         ChangelogEntry(
             date = "2026-10-15",

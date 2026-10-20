@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark status-bar icons over the light status bar; values-night turns
+         them light over the dark one. -->
+    <bool name="theme_light_status_bar">true</bool>
+</resources>

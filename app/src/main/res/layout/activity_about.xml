@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    About (opened from its row in Settings): the app's logo, name and version,
+    then its documents. The Privacy Notice row opens a web page, not a screen
+    of the app, so it has no chevron. White, with the shared top bar.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface_bg"
+    tools:context=".ui.about.AboutActivity">
+
+    <!-- Top bar: back arrow + title. Matches fragment_settings.xml's. -->
+    <!-- DESIGN: Jul -->
+
+    <LinearLayout
+        android:id="@+id/ll_about_top_bar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_top_bar"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/ib_about_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cd_back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/tv_about_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/label_settings_about"
+            android:textAppearance="@style/TextAppearance.GuardBand.TitleLarge"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ll_about_top_bar">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="32dp"
+            android:paddingBottom="24dp">
+
+            <!-- The app: logo, name, version. DESIGN: Jul -->
+            <ImageView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:layout_gravity="center_horizontal"
+                android:importantForAccessibility="no"
+                android:src="@drawable/logo_mark" />
+
+            <TextView
+                android:id="@+id/tv_about_app_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:gravity="center_horizontal"
+                android:text="@string/app_name"
+                android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
+                android:textColor="@color/text_primary" />
+
+            <TextView
+                android:id="@+id/tv_about_version"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:gravity="center_horizontal"
+                android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                android:textColor="@color/text_secondary"
+                tools:text="Version 1.0" />
+
+            <TextView
+                android:id="@+id/tv_about_tagline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="32dp"
+                android:gravity="center_horizontal"
+                android:text="@string/label_about_tagline"
+                android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                android:textColor="@color/text_secondary" />
+
+            <!-- Documents: the same rows as Settings', flat on the white
+                 screen. DESIGN: Jul -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginEnd="16dp"
+                android:orientation="vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <View
+                    style="@style/Widget.GuardBand.SettingsDivider"
+                    android:layout_marginStart="0dp" />
+
+                <!-- Privacy Notice Row: opens the hosted page. -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:layout_marginEnd="12dp"
+                        android:background="@drawable/bg_settings_icon_badge"
+                        android:importantForAccessibility="no"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_warning"
+                        app:tint="@color/white" />
+
+                    <TextView
+                        android:id="@+id/tv_about_privacy_notice"
+                        style="@style/Widget.GuardBand.SettingsRow.Action"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="@font/poppins_extralight"
+                        android:text="@string/label_settings_privacy_notice" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

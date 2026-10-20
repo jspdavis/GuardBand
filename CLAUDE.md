@@ -46,7 +46,7 @@ View ↔ ViewModel ↔ Repository. Pre-auth screens are Activities. After login,
 ```
 com/example/guardband/
 ├── data/
-│   ├── model/            User, EmergencyContact, Alert (+ AlertType), GoogleSignInOutcome (plain data classes; no passwords)
+│   ├── model/            User, EmergencyContact, Alert (+ AlertType), GoogleSignInOutcome, Place (plain data classes; no passwords)
 │   ├── repository/       AuthRepository (suspend, Result<T>)
 │   │                     ContactRepository (observe = Flow<Result<T>>; CRUD = suspend)
 │   │                     AlertRepository (Flow<Result<T>>, live reads)
@@ -56,6 +56,7 @@ com/example/guardband/
 │   │                     AlertParser (wire map → Alert; pure, so it is unit-testable)
 │   │                     ContactFields (the one on-disk shape of a contact)
 │   │                     ProfileProvisioning (when a sign-in may write users/{uid}; both paths)
+│   │                     PlaceRepository → GeocoderPlaceRepository (alert coordinates → place names)
 │   │                     Firebase* = live; InMemory* + InMemoryStore = test doubles
 │   ├── DeviceConstants.kt      DEFAULT_DEVICE_ID = "guardband-001" (until pairing exists)
 │   ├── FirebaseProvider.kt     the one FirebaseAuth / FirebaseDatabase instance
@@ -86,11 +87,18 @@ com/example/guardband/
 │   ├── alert/          AlertHistoryFragment (pushed from Track's See all): latest status + incident history;
 │   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel
 │   ├── profile/        Profile tab: welcome header + user info
-│   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row
+│   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row.
+│   │                 A chevron means another screen of the app; Device information is a placeholder
+│   ├── display/        DisplayActivity, opened from Settings: the theme (ThemeChoice, DisplayPrefs)
+│   ├── about/          AboutActivity, opened from Settings: version and the Privacy Notice row
+│   │                 (a web page, so no chevron)
 │   ├── account/        AccountActivity (Account information), opened from Settings;
 │   │                 Delete account sits in its danger zone (DeleteAccountViewModel)
 │   ├── changelog/      ChangelogActivity, opened from Settings; Changelog.entries is the progress log
-│   └── notifications/  pushed from Track's bell; placeholder inbox
+│   └── notifications/  pushed from Track's bell; placeholder inbox. Also the opt-in alert watch:
+│                     AlertNotificationsActivity (the switch, opened from Settings),
+│                     AlertWatchService (foreground service) + AlertWatch (start/stop), AlertNotifier
+│                     (channels, wording), AlertNotificationDecider (pure) + AlertNotificationPrefs
 └── utils/
     ├── InputValidator.kt       shared input predicates (no messages)
     ├── PasswordCriteria.kt     which password rules the typed pair satisfies
@@ -535,10 +543,12 @@ no permission. A phone with nothing registered for `https` throws
 wording stays with every other `MSG_*`, the same shape as Track's Navigate
 button.
 
-**Settings has one privacy row, "Privacy Notice",** which opens the hosted
-document. A "Privacy & security" placeholder beside it only said "Coming
-soon" and was removed on 2026-10-19. If a privacy settings screen is ever
-built, give it its own row rather than pointing the notice row at it.
+**The Privacy Notice is a row of About** (Settings → About,
+`ui/about/AboutActivity`, since 2026-10-20), which opens the hosted
+document; it was a row of Settings itself before that. A "Privacy &
+security" placeholder only said "Coming soon" and was removed on
+2026-10-19. If a privacy settings screen is ever built, give it its own row
+rather than pointing the notice row at it.
 
 **The draft rules' `phone` `.validate` and `InputValidator` must stay in
 step.** The app normalises to E.164 **before** writing
@@ -607,7 +617,17 @@ Track's recent-alerts panel and the Alert history screen read `devices/{deviceId
 
 **Parsing is a pure `Map` → `Alert` step in `AlertParser`,** not a method on the repository. A `DataSnapshot` cannot be built in a JVM test and the project declares no mocking library, so putting the logic behind one would have made all of it untestable. `sequenceId`, `type` and `timestamp` are required; a missing `schemaVersion`, `deviceId`, `battery` or `location` is salvaged rather than dropped, which is deliberately more forgiving than `SCHEMA.md`'s receiver-validation list — this is a *reader*, and refusing to show a panic because its battery node was missing would be the wrong failure. **A malformed history entry is skipped and counted, never fatal:** one bad row from a firmware bug must not hide every good row behind it. Only `latest` can fail as `AlertError.ParseFailure`.
 
-**Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and neither alert screen logs anything either. Same rule as contact phone numbers — see "Contacts and profile data".
+**Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and neither alert screen logs anything either. Same rule as contact phone numbers — see "Contacts and profile data". A place name is a location too.
+
+**Rows show place names, not coordinates (2026-10-20).** `AlertViewModel` looks up each shown alert's point through `PlaceRepository` (Android's `Geocoder`: no key, no dependency, no permission; Google's service on Play-services phones), once per point rounded to 4 decimals, and keeps the names in memory only (`AlertUiState.placeNames`). Coordinates show until a name arrives, and for good when none exists. This sends the band's rounded positions to the geocoder's service, which the notice discloses in a DRAFT row. Details: [docs/alert-data.md](docs/alert-data.md) §7, "Place names".
+
+**Every alert card is bound by `ui/alert/AlertCardViews` (2026-10-20)**, the
+rows and Alert history's latest card alike: the type's symbol on a pale badge,
+a panic's card pale red, a pin and a battery symbol (`AlertFormatting.batteryIcon`,
+orange at FR-11's 20%). The panel and the card say "5 min ago"; Alert history
+lists `AlertListItem`s, day headings (`AlertDays`, the phone's zone) over
+clock times. `AlertUiState.nowMillis` ages them on a 30 s injected ticker,
+empty by default so tests never hold a `delay`. [docs/alert-data.md](docs/alert-data.md) §8.
 
 **Still in-memory:** `InMemoryStore`'s four seeded alerts, which only `InMemoryAlertRepository` reads, and only in tests.
 
@@ -694,10 +714,13 @@ restriction **except** normalization. Two consequences worth knowing:
   blocked images) cached under `GuardBandOsm` and `Mapnik`.
 
 **No phone-location permission in the main app, ever.** The band supplies the
-location, not the handset. The merged manifest adds only four *optional*
-`uses-feature` entries from osmdroid (`location.network`, `location.gps`,
+location, not the handset. osmdroid adds only four *optional*
+`uses-feature` entries to the merged manifest (`location.network`, `location.gps`,
 `telephony`, `wifi`, all `required="false"`) and **no** `uses-permission` at
-all; `ACCESS_NETWORK_STATE` was already there via Firebase. Never add
+all; `ACCESS_NETWORK_STATE` was already there via Firebase. (The release
+permissions are `INTERNET`, `ACCESS_NETWORK_STATE`, `READ_GSERVICES`, the
+app's own receiver permission, and since 2026-10-19 the three for alert
+notifications; see "Alert notifications".) Never add
 `ACCESS_FINE_LOCATION` or `ACCESS_COARSE_LOCATION` to the main manifest, and
 never use osmdroid's `MyLocationNewOverlay` — that is the class that would drag
 them back in.
@@ -820,6 +843,46 @@ check-in; only the band does (see "Firebase data contract").
   the pill already says; only a pill with nothing yet becomes "Check-ins
   unavailable".
 
+## Alert notifications
+
+> The design, the rules, the channels, the permissions and the device
+> checklist: [docs/notifications.md](docs/notifications.md).
+
+**Opt-in, from Settings → Alert notifications (2026-10-19).** The switch,
+on its own screen since 2026-10-20 (`AlertNotificationsActivity`, an
+Activity like Account information so Back returns to Settings), starts `ui/notifications/AlertWatchService`, a `specialUse` foreground
+service that keeps the band's history listener open and posts each new
+alert as a system notification on this phone. **No server, no FCM, no paid
+plan:** sending FCM needs a service-account key or Blaze, so it waits for
+pairing and roles.
+
+- **`AlertNotificationDecider` decides what is new** (pure, tested): a stored
+  high-water `sequenceId` per device, a baseline with no posts the first
+  time, a 30-minute window on the first emission after a restart, a
+  re-baseline when history is reset, never `TRACKING_UPDATE`, at most 3 per
+  emission plus a summary.
+- **The wording never carries a location, a name, the photo or the device
+  id.** Every alert is `VISIBILITY_PRIVATE` with an empty public version and
+  one shared status-bar icon (`ic_stat_alert`). **The panic channel is
+  silent** (one short vibration, no heads-up), because the wearer may be next
+  to the person they fear. Channels cannot be changed after creation; a
+  change means a new channel id.
+- **Started only from foreground code** (`AlertWatch.start`): the switch, and
+  `HomeActivity` once its gate opens. **Stopped** by the switch and every
+  sign-out (`LoginNavigation`). No boot receiver: after a restart it resumes
+  when the app is opened.
+- **A tap goes through the Home gate.** `HomeActivity.launchIntent` carries a
+  `HomeLaunchTarget`; `HomeViewModel` holds it until the gate is `OPEN` and
+  drops it on every other outcome.
+- **Three release permissions came with it:** `POST_NOTIFICATIONS` (asked
+  from the switch, never at launch), `FOREGROUND_SERVICE`,
+  `FOREGROUND_SERVICE_SPECIAL_USE`. Don't add `RECEIVE_BOOT_COMPLETED`,
+  `WAKE_LOCK`, `USE_FULL_SCREEN_INTENT` or
+  `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` without the owner's approval of the
+  release manifest.
+- **The notice has a DRAFT paragraph** for it (not deployed);
+  `CONSENT_VERSION` is unchanged.
+
 ## Mock sender
 
 > Operating manual for both launchers, end to end: [docs/mock-sender-and-receiver.md](docs/mock-sender-and-receiver.md).
@@ -836,6 +899,34 @@ For demos without hardware, Phone A runs `MockSenderActivity` and Phone B runs t
 - **Writes are unauthenticated.** They rely on `".write": true` under `devices/{id}` in the draft rules. If that is ever tightened to require auth, the harness needs an `?auth=` token.
 
 The payload itself follows `SCHEMA.md` and satisfies the `devices` validation: all six required children, `type` one of the four enum names, `percent` 0–100, `isCharging` boolean, `sequenceId` numeric. Its timestamps carry milliseconds (`...SSS'Z'`) where `SCHEMA.md`'s example does not; both are valid ISO 8601 and `AlertFormatting` parses both. **The harness no longer duplicates anything.** `ui/mocksender/AlertType` used to be a second private copy of the enum, on the reasoning that de-duplicating it would mean editing `app/src/debug/`. That rationale did not hold — the debug source set imports from `main` freely — and a drifting enum or device id would have the harness writing alerts the app never reads. It now uses `data/model/AlertType` and `DeviceConstants.DEFAULT_DEVICE_ID` directly. The dependency only ever points one way: nothing in `main` knows the harness exists.
+
+## Dark mode
+
+**The theme is DayNight (2026-10-20)**, chosen in **Settings → Display**
+(`ui/display/DisplayActivity`): Use phone setting (the default), Light or
+Dark. `ThemeChoice` maps each to AppCompat's night mode; `DisplayPrefs`
+saves it (SharedPreferences `display`, per phone), and
+`GuardBandApplication`, the app's one Application class, re-applies it on
+every start, because AppCompat keeps it in memory only.
+
+- **Colours are names, and `values-night/colors.xml` gives each its dark
+  value.** A layout never picks a mode. A screen, a card, a top bar or the
+  bottom bar is `surface_bg`; a control floating over the map (the round
+  buttons, the pills) and the tabs' top buttons are `surface_elevated`.
+  **`white` and `black` are literal in both modes**: only for text and icons
+  on a green or dark button, and a badge's icon. A new `@color/white`
+  background is a dark-mode bug.
+- **The dark palette is a placeholder** on Material's dark guidance, marked
+  `DESIGN: Jul`; retune it in `values-night/colors.xml` alone. The brand and
+  alert colours are a step lighter there so they keep their contrast.
+- **The map goes dark too:** `MapTilerTileSource.forNightMode` picks
+  MapTiler's `streets-v2-dark` (checked on this key and plan, 2026-10-20),
+  cached apart as `MapTilerStreetsDark`. A theme change recreates the
+  Fragment, which picks again. **The credits and the MapTiler logo stay
+  light chips** in dark mode (`map_attribution_bg`, `map_attribution_text`),
+  because the logo's lettering is dark. See [docs/osmdroid.md](docs/osmdroid.md) §4.8.
+- The status bar follows: `surface_bg`, with `@bool/theme_light_status_bar`
+  for its icons. The green sign-up screens are the brand in both modes.
 
 ## UI workflow (agent vs. designer)
 - Figma is the visual source of truth and is owned by Jul. The agent does not need the wireframes pasted in.

@@ -182,7 +182,23 @@
     <string name="btn_alert_retry">Try again</string>
     <string name="label_alert_battery">Battery %1$d%%</string>
     <string name="label_alert_battery_charging">Battery %1$d%% · charging</string>
+    <!-- Beside the battery symbol, which says "battery"; the full wording
+         above is what TalkBack reads. -->
+    <string name="label_alert_battery_level">%1$d%%</string>
+    <string name="label_alert_battery_level_charging">%1$d%% · charging</string>
     <string name="label_alert_location">%1$.5f, %2$.5f</string>
+    <string name="label_alert_just_now">Just now</string>
+    <plurals name="label_alert_minutes_ago">
+        <item quantity="one">%1$d min ago</item>
+        <item quantity="other">%1$d min ago</item>
+    </plurals>
+    <plurals name="label_alert_hours_ago">
+        <item quantity="one">%1$d hr ago</item>
+        <item quantity="other">%1$d hr ago</item>
+    </plurals>
+    <string name="label_alert_day_today">Today</string>
+    <string name="label_alert_day_yesterday">Yesterday</string>
+    <string name="label_alert_day_unknown">Date unknown</string>
     <string name="label_alert_type_panic">Panic</string>
     <string name="label_alert_type_checkin">Check-in</string>
     <string name="label_alert_type_low_battery">Low battery</string>
@@ -197,9 +213,28 @@
     <string name="label_settings_title">Settings</string>
     <string name="label_settings_account">Account information</string>
     <string name="label_settings_change_password">Change password</string>
-    <string name="label_settings_notifications">Notifications</string>
+    <string name="label_settings_alert_notifications">Alert notifications</string>
+    <string name="label_settings_alert_notifications_help">Shows your band\'s alerts on this phone, even when GuardBand is closed. Keeps a small notification while it\'s on. After the phone restarts, open GuardBand once to start watching again.</string>
+    <string name="label_settings_alert_notifications_blocked">Notifications are blocked for GuardBand on this phone. Allow them in the phone\'s settings to use alert notifications.</string>
+    <string name="btn_settings_notification_settings">Open notification settings</string>
+    <string name="label_settings_alert_battery">Keep watching while the phone sleeps</string>
+    <string name="label_alert_notifications_switch">Show alerts on this phone</string>
     <string name="label_settings_privacy_notice">Privacy Notice</string>
+    <string name="label_settings_display">Display</string>
+    <string name="label_settings_device_info">Device information</string>
+    <string name="label_settings_about">About</string>
     <string name="btn_logout">Log Out</string>
+
+    <!-- Display (opened from Settings) -->
+    <string name="label_display_theme">Theme</string>
+    <string name="label_display_theme_system">Use phone setting</string>
+    <string name="label_display_theme_light">Light</string>
+    <string name="label_display_theme_dark">Dark</string>
+    <string name="label_display_theme_help">Use phone setting follows your phone\'s dark mode, including any schedule it has. The Track map turns dark too.</string>
+
+    <!-- About (opened from Settings) -->
+    <string name="label_about_version">Version %1$s</string>
+    <string name="label_about_tagline">The companion app for the GuardBand safety band.</string>
 
     <!-- Account information (opened from Settings) -->
     <string name="label_account_name">Name</string>
@@ -251,6 +286,34 @@
     <!-- Notifications -->
     <string name="label_notifications_title">Notifications</string>
     <string name="label_notifications_empty">No notifications yet.</string>
+    <!-- Sample inbox row, for testing only (fragment_notifications.xml). -->
+    <string name="label_notifications_welcome_title">Welcome to GuardBand</string>
+    <string name="label_notifications_welcome_body">This is where your band\'s updates will appear. This message was generated automatically as a sample.</string>
+
+    <!-- Alert notifications (the system shade). Never a location, a name or
+         a contact: the type, the time and the battery only. -->
+    <string name="notif_channel_panic">Panic alerts</string>
+    <string name="notif_channel_battery">Band battery</string>
+    <string name="notif_channel_checkin">Check-ins</string>
+    <string name="notif_channel_other">Other band alerts</string>
+    <string name="notif_channel_watch">Alert watch</string>
+    <string name="notif_panic_title">Panic alert sent</string>
+    <string name="notif_panic_text">Your band sent a panic alert at %1$s.</string>
+    <string name="notif_battery_title">Band battery low</string>
+    <string name="notif_battery_text">Your band is at %1$d%%. Charge it soon.</string>
+    <string name="notif_battery_text_unknown">Your band\'s battery is low.</string>
+    <string name="notif_checkin_title">Check-in received</string>
+    <string name="notif_checkin_text">Your check-in at %1$s reached GuardBand.</string>
+    <string name="notif_other_title">New band alert</string>
+    <string name="notif_other_text">Your band sent an alert at %1$s. Open GuardBand to see it.</string>
+    <string name="notif_public_title">GuardBand</string>
+    <string name="notif_public_text">New alert from your band. Unlock to see it.</string>
+    <plurals name="notif_summary_text">
+        <item quantity="one">%d more alert from your band.</item>
+        <item quantity="other">%d more alerts from your band.</item>
+    </plurals>
+    <string name="notif_watch_title">GuardBand</string>
+    <string name="notif_watch_text">Watching your band for alerts</string>
 
     <string name="cd_back">Back</string>
 

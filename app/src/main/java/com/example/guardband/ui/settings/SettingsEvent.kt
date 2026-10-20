@@ -5,18 +5,18 @@ sealed interface SettingsEvent {
     data class ShowMessage(val text: String) : SettingsEvent
     object NavigateToLogin : SettingsEvent
 
-    /**
-     * Open a hosted page in the browser.
-     *
-     * Carries the URL rather than letting the Fragment build one, so
-     * [com.example.guardband.utils.HostedPages] stays the only place a URL on
-     * the Hosting domain is spelled out.
-     */
-    data class OpenUrl(val url: String) : SettingsEvent
-
     /** Open Account information, which holds Delete account. */
     object OpenAccount : SettingsEvent
 
     /** Open the in-app Changelog. */
     object OpenChangelog : SettingsEvent
+
+    /** Open Alert notifications, which holds the switch for the alert watch. */
+    object OpenAlertNotifications : SettingsEvent
+
+    /** Open Display, which holds the theme. */
+    object OpenDisplay : SettingsEvent
+
+    /** Open About, which holds the version and the Privacy Notice. */
+    object OpenAbout : SettingsEvent
 }

@@ -13,4 +13,8 @@
          this tall; the credits are at least this tall, taller only if a
          large system font needs it. DESIGN: Jul -->
     <dimen name="track_map_attribution_height">24dp</dimen>
+
+    <!-- The outline round a panic's card (alert_panic_outline); other cards
+         have none. DESIGN: Jul -->
+    <dimen name="alert_card_panic_stroke">1dp</dimen>
 </resources>

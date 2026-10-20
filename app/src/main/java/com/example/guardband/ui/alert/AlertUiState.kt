@@ -1,6 +1,8 @@
 package com.example.guardband.ui.alert
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.ui.track.BandStatus
+import java.util.TimeZone
 
 /**
  * Render state for [AlertHistoryFragment] and Track's recent-alerts panel
@@ -52,5 +54,37 @@ data class AlertUiState(
      * says *why* - the band has sent nothing, the window held only tracking
      * updates, or nothing in it could be read.
      */
-    val emptyMessage: String? = null
-)
+    val emptyMessage: String? = null,
+
+    /**
+     * Place names found so far, by [AlertPlaces.keyOf] the alert's location.
+     * Fills in after the list shows; an alert with no entry yet (or none to
+     * be found) shows its coordinates.
+     */
+    val placeNames: Map<String, String> = emptyMap(),
+
+    /**
+     * The clock when the list was last read or last ticked
+     * ([AlertViewModel.TICK_INTERVAL_MS]): what "5 min ago" and "Today" are
+     * measured from, so both move on while the list stays the same.
+     */
+    val nowMillis: Long = 0L
+) {
+    /** [alert]'s place name, once known. */
+    fun placeNameFor(alert: Alert): String? =
+        alert.location?.let { placeNames[AlertPlaces.keyOf(it)] }
+
+    /** [alerts] as rows, each with its place name if known and how long ago it was. */
+    fun rowsOf(alerts: List<Alert>): List<AlertRow> = alerts.map { alert ->
+        AlertRow(
+            alert,
+            placeNameFor(alert),
+            BandStatus.parseIsoUtcMillis(alert.timestamp)
+                ?.let { BandStatus.elapsedSince(it, nowMillis) }
+        )
+    }
+
+    /** [history] under a heading for each day, as the Alert history screen lists it. */
+    fun historyItems(zone: TimeZone = TimeZone.getDefault()): List<AlertListItem> =
+        AlertDays.group(rowsOf(history), nowMillis, zone)
+}

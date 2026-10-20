@@ -10,8 +10,10 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * Settings: a static list. What each row asks the Fragment to do, now that
- * Account information is a real screen and Delete account lives inside it.
+ * Settings: what each row asks the Fragment to do, now that Account
+ * information is a real screen and Delete account lives inside it. The
+ * Alert notifications switch moved to its own screen on 2026-10-20
+ * ([com.example.guardband.ui.notifications.AlertNotificationsViewModelTest]).
  */
 class SettingsViewModelTest {
 
@@ -28,6 +30,28 @@ class SettingsViewModelTest {
         assertEquals(SettingsEvent.OpenAccount, viewModel.events.first())
     }
 
+    @Test
+    fun `the Alert notifications row opens its own screen`() = runTest {
+        viewModel.onAlertNotificationsClicked()
+
+        assertEquals(SettingsEvent.OpenAlertNotifications, viewModel.events.first())
+    }
+
+    @Test
+    fun `the About row opens About`() = runTest {
+        viewModel.onAboutClicked()
+
+        assertEquals(SettingsEvent.OpenAbout, viewModel.events.first())
+    }
+
+    @Test
+    fun `the Display row opens Display`() = runTest {
+        viewModel.onDisplayClicked()
+
+        assertEquals(SettingsEvent.OpenDisplay, viewModel.events.first())
+    }
+
+    /** Change password and Device information. */
     @Test
     fun `the remaining placeholder rows still say coming soon`() = runTest {
         viewModel.onPlaceholderRowClicked()
