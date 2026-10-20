@@ -191,7 +191,7 @@ class HomeViewModel(
         _events.trySend(
             when (target) {
                 HomeLaunchTarget.ALERT_HISTORY -> HomeEvent.ShowAlertHistory
-                HomeLaunchTarget.SETTINGS -> HomeEvent.ShowSettings
+                HomeLaunchTarget.ALERT_NOTIFICATIONS -> HomeEvent.ShowAlertNotifications
             }
         )
     }

@@ -1,11 +1,9 @@
 package com.example.guardband.ui.alert
 
-import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
-import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -16,7 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
-import com.example.guardband.data.model.Alert
+import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.launch
 
 /**
@@ -36,13 +34,16 @@ import kotlinx.coroutines.launch
  * View ids: ib_alert_history_back, tv_alert_history_title, alert_progress,
  * alert_error_view, alert_error_message, alert_retry_button,
  * alert_latest_card, alert_latest_icon, alert_latest_type, alert_latest_time,
- * alert_latest_location, alert_latest_battery, alert_empty_view,
+ * alert_latest_place_row, alert_latest_location, alert_latest_battery_row,
+ * alert_latest_battery_icon, alert_latest_battery, alert_empty_view,
  * alert_history_list, tv_alert_latest_label, tv_alert_history_label.
  *
  * The latest card is its own block rather than an `<include>` of
  * `item_alert.xml`: an include cannot rename its children, so sharing the
  * layout would have meant the card and a history row answering to the same
- * ids.
+ * ids. It is the same shape, though, and [AlertCardViews] binds both. The
+ * card says "5 min ago"; the history's rows sit under a heading for each day
+ * and show the clock time.
  */
 class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
 
@@ -50,15 +51,11 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
     private lateinit var errorView: View
     private lateinit var tvErrorMessage: TextView
     private lateinit var btnRetry: Button
-    private lateinit var latestCard: View
-    private lateinit var latestIcon: ImageView
-    private lateinit var tvLatestType: TextView
-    private lateinit var tvLatestTime: TextView
-    private lateinit var tvLatestLocation: TextView
-    private lateinit var tvLatestBattery: TextView
+    private lateinit var latestCard: MaterialCardView
+    private lateinit var latestViews: AlertCardViews
     private lateinit var tvEmpty: TextView
 
-    private val historyAdapter = AlertHistoryAdapter()
+    private val historyAdapter = AlertHistoryAdapter(AlertTimeStyle.CLOCK)
 
     // Host-scoped: the one instance the Track tab shares. See AlertViewModel.
     private val viewModel: AlertViewModel by activityViewModels { AlertViewModel.Factory }
@@ -75,12 +72,18 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
         tvErrorMessage    = view.findViewById(R.id.alert_error_message)
         btnRetry          = view.findViewById(R.id.alert_retry_button)
         latestCard        = view.findViewById(R.id.alert_latest_card)
-        latestIcon        = view.findViewById(R.id.alert_latest_icon)
-        tvLatestType      = view.findViewById(R.id.alert_latest_type)
-        tvLatestTime      = view.findViewById(R.id.alert_latest_time)
-        tvLatestLocation  = view.findViewById(R.id.alert_latest_location)
-        tvLatestBattery   = view.findViewById(R.id.alert_latest_battery)
         tvEmpty           = view.findViewById(R.id.alert_empty_view)
+        latestViews = AlertCardViews(
+            card = latestCard,
+            icon = view.findViewById(R.id.alert_latest_icon),
+            type = view.findViewById(R.id.alert_latest_type),
+            time = view.findViewById(R.id.alert_latest_time),
+            placeRow = view.findViewById(R.id.alert_latest_place_row),
+            place = view.findViewById(R.id.alert_latest_location),
+            batteryRow = view.findViewById(R.id.alert_latest_battery_row),
+            batteryIcon = view.findViewById(R.id.alert_latest_battery_icon),
+            battery = view.findViewById(R.id.alert_latest_battery)
+        )
 
         view.findViewById<RecyclerView>(R.id.alert_history_list).adapter = historyAdapter
 
@@ -107,40 +110,15 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
 
         val latest = state.latest
         latestCard.visibility = if (latest == null) View.GONE else View.VISIBLE
-        if (latest != null) bindLatest(latest, state.placeNameFor(latest))
+        if (latest != null) {
+            latestViews.bind(state.rowsOf(listOf(latest)).single(), AlertTimeStyle.RELATIVE)
+        }
 
         val empty = state.emptyMessage
         tvEmpty.visibility = if (empty == null) View.GONE else View.VISIBLE
         if (empty != null) tvEmpty.text = empty
 
-        historyAdapter.submitList(state.rowsOf(state.history))
-    }
-
-    private fun bindLatest(alert: Alert, placeName: String?) {
-        val type = alert.alertType()
-
-        tvLatestType.setText(AlertFormatting.typeLabel(type))
-        latestIcon.setImageResource(AlertFormatting.typeIcon(type))
-        latestIcon.imageTintList =
-            ColorStateList.valueOf(requireContext().getColor(AlertFormatting.typeColor(type)))
-        tvLatestTime.text = AlertFormatting.formatTimestamp(alert.timestamp)
-
-        val location = alert.location
-        tvLatestLocation.visibility = if (location == null) View.GONE else View.VISIBLE
-        if (location != null) {
-            tvLatestLocation.text =
-                AlertFormatting.locationText(requireContext(), location, placeName)
-        }
-
-        val battery = alert.battery
-        tvLatestBattery.visibility = if (battery == null) View.GONE else View.VISIBLE
-        if (battery != null) {
-            tvLatestBattery.text = getString(
-                if (battery.isCharging) R.string.label_alert_battery_charging
-                else R.string.label_alert_battery,
-                battery.percent
-            )
-        }
+        historyAdapter.submitList(state.historyItems())
     }
 
     private fun handleEvent(event: AlertEvent) {

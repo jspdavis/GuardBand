@@ -202,8 +202,10 @@ Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC 
 - White background, the same as the rows and the top bar (back arrow + "Settings"), so the rows sit on the screen rather than in a raised card (2026-10-19; it was grey `surface_muted` with a shadowed card). Contacts, Profile, Notifications and Alert history went white the same day.
 - **Every top bar** (Settings, Notifications, Alert history, Account information, Changelog) has a 1dp `divider` line along its bottom edge, from the shared `@drawable/bg_top_bar`, so a white bar stays distinct on a white screen. Change the line there, not per layout.
 - ✅ **Account information** opens `ui/account/AccountActivity` (below).
-- 🟡 **Rows:** Change password, Notifications. Each shows "Coming soon." (A "Privacy & security" placeholder was removed on 2026-10-19; Privacy Notice is the one privacy row.)
-- ✅ **Privacy Notice** opens the hosted page; **Changelog** opens `ChangelogActivity`.
+- 🟡 **Placeholder rows:** Change password, Display (will hold dark mode) and Device information. Each shows "Coming soon." (A "Privacy & security" placeholder was removed on 2026-10-19.)
+- ✅ **Alert notifications** opens `ui/notifications/AlertNotificationsActivity`, which holds the switch (2026-10-20).
+- ✅ **Changelog** opens `ChangelogActivity`; **About** opens `ui/about/AboutActivity`: the version, and the **Privacy Notice** row, which opens the hosted page (it was a Settings row until 2026-10-20).
+- **A chevron means another screen of the app.** Every Settings row has one; a row that opens a web or system page (About's Privacy Notice, the battery row) uses `Widget.GuardBand.SettingsRow.Action`, which has none.
 - ✅ **Log Out** (outlined button) signs out and goes to Login with the task cleared.
 
 ### Account information, `ui/account/` (an Activity, opened from Settings)

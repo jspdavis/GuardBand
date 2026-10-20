@@ -87,11 +87,16 @@ com/example/guardband/
 │   ├── alert/          AlertHistoryFragment (pushed from Track's See all): latest status + incident history;
 │   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel
 │   ├── profile/        Profile tab: welcome header + user info
-│   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row
+│   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row.
+│   │                 A chevron means another screen of the app; Display and Device information
+│   │                 are placeholders (Display will hold dark mode)
+│   ├── about/          AboutActivity, opened from Settings: version and the Privacy Notice row
+│   │                 (a web page, so no chevron)
 │   ├── account/        AccountActivity (Account information), opened from Settings;
 │   │                 Delete account sits in its danger zone (DeleteAccountViewModel)
 │   ├── changelog/      ChangelogActivity, opened from Settings; Changelog.entries is the progress log
 │   └── notifications/  pushed from Track's bell; placeholder inbox. Also the opt-in alert watch:
+│                     AlertNotificationsActivity (the switch, opened from Settings),
 │                     AlertWatchService (foreground service) + AlertWatch (start/stop), AlertNotifier
 │                     (channels, wording), AlertNotificationDecider (pure) + AlertNotificationPrefs
 └── utils/
@@ -538,10 +543,12 @@ no permission. A phone with nothing registered for `https` throws
 wording stays with every other `MSG_*`, the same shape as Track's Navigate
 button.
 
-**Settings has one privacy row, "Privacy Notice",** which opens the hosted
-document. A "Privacy & security" placeholder beside it only said "Coming
-soon" and was removed on 2026-10-19. If a privacy settings screen is ever
-built, give it its own row rather than pointing the notice row at it.
+**The Privacy Notice is a row of About** (Settings → About,
+`ui/about/AboutActivity`, since 2026-10-20), which opens the hosted
+document; it was a row of Settings itself before that. A "Privacy &
+security" placeholder only said "Coming soon" and was removed on
+2026-10-19. If a privacy settings screen is ever built, give it its own row
+rather than pointing the notice row at it.
 
 **The draft rules' `phone` `.validate` and `InputValidator` must stay in
 step.** The app normalises to E.164 **before** writing
@@ -613,6 +620,14 @@ Track's recent-alerts panel and the Alert history screen read `devices/{deviceId
 **Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and neither alert screen logs anything either. Same rule as contact phone numbers — see "Contacts and profile data". A place name is a location too.
 
 **Rows show place names, not coordinates (2026-10-20).** `AlertViewModel` looks up each shown alert's point through `PlaceRepository` (Android's `Geocoder`: no key, no dependency, no permission; Google's service on Play-services phones), once per point rounded to 4 decimals, and keeps the names in memory only (`AlertUiState.placeNames`). Coordinates show until a name arrives, and for good when none exists. This sends the band's rounded positions to the geocoder's service, which the notice discloses in a DRAFT row. Details: [docs/alert-data.md](docs/alert-data.md) §7, "Place names".
+
+**Every alert card is bound by `ui/alert/AlertCardViews` (2026-10-20)**, the
+rows and Alert history's latest card alike: the type's symbol on a pale badge,
+a panic's card pale red, a pin and a battery symbol (`AlertFormatting.batteryIcon`,
+orange at FR-11's 20%). The panel and the card say "5 min ago"; Alert history
+lists `AlertListItem`s, day headings (`AlertDays`, the phone's zone) over
+clock times. `AlertUiState.nowMillis` ages them on a 30 s injected ticker,
+empty by default so tests never hold a `delay`. [docs/alert-data.md](docs/alert-data.md) §8.
 
 **Still in-memory:** `InMemoryStore`'s four seeded alerts, which only `InMemoryAlertRepository` reads, and only in tests.
 
@@ -833,8 +848,9 @@ check-in; only the band does (see "Firebase data contract").
 > The design, the rules, the channels, the permissions and the device
 > checklist: [docs/notifications.md](docs/notifications.md).
 
-**Opt-in, from Settings → Alert notifications (2026-10-19).** The switch
-starts `ui/notifications/AlertWatchService`, a `specialUse` foreground
+**Opt-in, from Settings → Alert notifications (2026-10-19).** The switch,
+on its own screen since 2026-10-20 (`AlertNotificationsActivity`, an
+Activity like Account information so Back returns to Settings), starts `ui/notifications/AlertWatchService`, a `specialUse` foreground
 service that keeps the band's history listener open and posts each new
 alert as a system notification on this phone. **No server, no FCM, no paid
 plan:** sending FCM needs a service-account key or Blaze, so it waits for

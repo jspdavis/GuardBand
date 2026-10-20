@@ -2,6 +2,7 @@ package com.example.guardband.ui.alert
 
 import com.example.guardband.data.model.Alert
 import com.example.guardband.data.model.Place
+import com.example.guardband.ui.track.Elapsed
 import java.util.Locale
 import kotlin.math.roundToLong
 
@@ -45,7 +46,13 @@ internal object AlertPlaces {
 }
 
 /**
- * One alert row as the adapter binds it: the alert, and its place name once
- * it is known. A row whose name is still null shows its coordinates.
+ * One alert row as the adapter binds it: the alert, its place name once it
+ * is known, and how long ago it was ([AlertUiState.nowMillis]). A row whose
+ * name is still null shows its coordinates; one whose time could not be read
+ * has no [elapsed] and shows the raw timestamp.
  */
-data class AlertRow(val alert: Alert, val placeName: String? = null)
+data class AlertRow(
+    val alert: Alert,
+    val placeName: String? = null,
+    val elapsed: Elapsed? = null
+)

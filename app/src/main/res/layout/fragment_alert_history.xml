@@ -163,64 +163,114 @@
                 app:strokeWidth="0dp"
                 tools:visibility="visible">
 
+                <!-- The same shape as an item_alert.xml row, bound by the same
+                     AlertCardViews, with its own ids and a slightly larger
+                     badge. DESIGN: Jul -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
+                    android:orientation="horizontal"
                     android:padding="16dp">
 
+                    <ImageView
+                        android:id="@+id/alert_latest_icon"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_alert_type_badge"
+                        android:importantForAccessibility="no"
+                        android:padding="10dp"
+                        tools:backgroundTint="#29D32F2F"
+                        tools:src="@drawable/ic_alert_panic"
+                        tools:tint="@color/alert_panic" />
+
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                        <!-- The type's symbol, as on the rows below, a
-                             little larger. Decorative. DESIGN: Jul -->
-                        <ImageView
-                            android:id="@+id/alert_latest_icon"
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:importantForAccessibility="no"
-                            tools:src="@drawable/ic_alert_panic"
-                            tools:tint="@color/alert_panic" />
-
-                        <TextView
-                            android:id="@+id/alert_latest_type"
-                            android:layout_width="0dp"
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:layout_weight="1"
-                            android:textAppearance="@style/TextAppearance.GuardBand.TitleSmall"
-                            android:textColor="@color/text_primary"
-                            tools:text="Panic" />
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
 
-                        <TextView
-                            android:id="@+id/alert_latest_time"
-                            android:layout_width="wrap_content"
+                            <TextView
+                                android:id="@+id/alert_latest_type"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="@font/poppins_semibold"
+                                android:textAppearance="@style/TextAppearance.GuardBand.TitleSmall"
+                                android:textColor="@color/text_primary"
+                                tools:text="Panic" />
+
+                            <TextView
+                                android:id="@+id/alert_latest_time"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="8dp"
+                                android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                                android:textColor="@color/text_secondary"
+                                tools:text="5 min ago" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/alert_latest_place_row"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
-                            android:textColor="@color/text_secondary"
-                            tools:text="Oct 3, 9:05 PM" />
+                            android:layout_marginTop="4dp"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:layout_marginTop="2dp"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_map_pin"
+                                app:tint="@color/text_secondary" />
+
+                            <TextView
+                                android:id="@+id/alert_latest_location"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:layout_weight="1"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                                android:textColor="@color/text_primary"
+                                tools:text="Osmeña Boulevard, Capitol Site, Cebu City" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/alert_latest_battery_row"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:id="@+id/alert_latest_battery_icon"
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:importantForAccessibility="no"
+                                tools:src="@drawable/ic_battery_mid"
+                                tools:tint="@color/text_secondary" />
+
+                            <TextView
+                                android:id="@+id/alert_latest_battery"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:layout_weight="1"
+                                android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                                android:textColor="@color/text_secondary"
+                                tools:text="64%" />
+                        </LinearLayout>
                     </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/alert_latest_location"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
-                        android:textColor="@color/text_secondary"
-                        tools:text="10.31570, 123.88540" />
-
-                    <TextView
-                        android:id="@+id/alert_latest_battery"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
-                        android:textColor="@color/text_secondary"
-                        tools:text="Battery 64%" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

@@ -212,6 +212,25 @@ table now includes `main`.
   until a name arrives or when none exists. A new flow of the band's
   positions to Google's geocoder, so the notice has a DRAFT row.
   [`alert-data.md`](alert-data.md) §7.
+- **Alert rows redesigned** (2026-10-20). One binder, `AlertCardViews`, for
+  the rows and the latest card: the type's symbol on a pale circle of its
+  colour, a pale red card with a red outline for a panic, the place as the
+  main text with a pin, and the battery with one of five new battery
+  symbols (orange at FR-11's 20%, a bolt while charging). The panel and
+  the latest card say "5 min ago"; Alert history has day headings (Today,
+  Yesterday, a date) over clock times. Times age on a 30 s ticker.
+  [`alert-data.md`](alert-data.md) §8.
+- **Settings tidy-up** (2026-10-20). Account information and Changelog got
+  the white background the other screens already had (Account's details card
+  lost its shadow, as Settings' did). On Settings a chevron now means
+  "another screen of the app". Alert notifications became a chevron row
+  opening its own screen, `ui/notifications/AlertNotificationsActivity`,
+  which holds the switch, the blocked text and the battery row; the watch's
+  ongoing notification opens that screen over Settings. The Privacy Notice
+  moved into a new **About** screen (`ui/about/AboutActivity`: logo,
+  version, and the notice as a row without a chevron, `SettingsRow.Action`).
+  **Display** (for dark mode) and **Device information** (for the band, once
+  pairing exists) are placeholder rows that say "Coming soon".
 
 ### In flight
 
@@ -248,7 +267,8 @@ has published it ([`database-rules.md`](database-rules.md) §7).
 | **Approve the release manifest for alert notifications** | owner | `feature/alert-notifications` added `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_SPECIAL_USE` to the release build (§1's manifest row has the full list). Approve before any build is handed out; [`notifications.md`](notifications.md) §5 says why each one is there and what was left out. |
 | **Device checks: alert notifications** | whoever has the phone | **None run yet.** The twelve steps in [`notifications.md`](notifications.md) §7: the prompt only from the switch, each type's wording and sound (the panic silent), background and locked delivery, Doze forced with `adb shell dumpsys deviceidle force-idle`, the lock screen with "hide sensitive content", the tap through the gate, swipe-from-recents and reboot on the Realme, Log Out stopping it, and logcat clean. Record the Realme's battery setting (§6 there) alongside step 4's result. [`notifications-test-cases.md`](notifications-test-cases.md) has the full 47 cases. |
 | **Device check: place names on alerts** | whoever has the phone | From `feature/alert-place-names`. Send a panic from the mock sender: its row's coordinates turn into a place name in a moment, the same on the panel, Alert history and the latest card. Airplane mode on a fresh launch: coordinates, no crash; back online, names fill in within a minute of the next alert. Is the name right for the spot, and is it too long for a row? ([`alert-data.md`](alert-data.md) §12). |
-| **One small design question** | Jul | Low battery uses the generic warning triangle; a battery-with-"!" icon would say what the warning is about. `DESIGN: Jul`. (The other question, matching Contacts' and Profile's top buttons to Track's, was answered yes and done on 2026-10-20: all three tabs are 36 dp at 16 dp from the sides and 24 dp from the top. Check on the phone that the gear and bell no longer jump when switching tabs.) |
+| **Device check: alert row design** | whoever has the phone | The badges, the panic card's red, the pin and battery symbols, "Just now" turning into "1 min ago" with no new alert, Alert history's day headings, and no red outline leaking onto other rows while scrolling ([`alert-data.md`](alert-data.md) §12). |
+| **One small design question** | Jul | Low battery uses the generic warning triangle; a battery-with-"!" icon would say what the warning is about. `DESIGN: Jul`. The rows now have battery symbols of their own (`ic_battery_*`, 2026-10-20); `ic_battery_critical` could stand in for the triangle, though the triangle's shape is what keeps the types apart without colour. Every new row size, shade and symbol is a placeholder marked `DESIGN: Jul`. (The other question, matching Contacts' and Profile's top buttons to Track's, was answered yes and done on 2026-10-20: all three tabs are 36 dp at 16 dp from the sides and 24 dp from the top. Check on the phone that the gear and bell no longer jump when switching tabs.) |
 | **Device checks of the face marker** | whoever has the phone | From `feature/track-profile-marker`. **Seen:** a Google account's photo on the marker after a cold launch, above the collapsed sheet. **Still to check:** an email/password account shows initials; airplane mode on a fresh launch shows initials (or the cached photo) and does not crash; the pointer's tip on the same spot as the old pin's at the same coordinate and zoom (use the mock sender's fixed point, follow on); pan, zoom and follow unchanged with no stutter. [`osmdroid.md`](osmdroid.md) §5.4. |
 | **Two app-wide theme changes** | Jehan + Jul | Confirm they are intended: outlined buttons went from 8 dp to 28 dp corners, and every sign-up screen's top padding from 96 dp to 24 dp (`themes.xml`, `f34487b`). |
 | **Test Track (map and recent-alerts panel), Alert history and the mock sender** | teammate | Never had a full human pass. Checklists: [`mock-sender-and-receiver.md` §6](mock-sender-and-receiver.md), [`alert-data.md` §12](alert-data.md) and the 2026-10-19 block in [`home-host-and-bottom-nav.md` §12](home-host-and-bottom-nav.md). Pan-and-follow matters most, now with the panel over the bottom of the map: a drag that starts on the panel must not stop the map following. (The staleness badge is no longer on screen: the Track status panel was removed on 2026-10-14.) Before 2026-10-11 every history read was denied by the rules, so this has effectively never worked end to end until now. |

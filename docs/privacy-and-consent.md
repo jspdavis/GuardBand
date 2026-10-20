@@ -150,7 +150,7 @@ Needs §1 steps 1–3 done.
    control**, and the link reads as a separate button after it.
 4. Finish sign-up. In the Console, the new `users/{uid}/consent` shows
    **`version: "1.1"`**, `accepted: true` and a server `acceptedAt`.
-5. **Settings → Privacy Notice** opens the same page.
+5. **Settings → About → Privacy Notice** opens the same page.
 6. The notice's displayed version reads **1.1**, matching step 4.
 7. Open `/delete-account` and follow its in-app steps exactly as written —
    Track → gear → Settings → Account information → Delete account (moved

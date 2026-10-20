@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The circle behind an alert's type symbol. White here; tinted a pale
+     shade of the type's colour in code (AlertCardViews). DESIGN: Jul -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@android:color/white" />
+</shape>

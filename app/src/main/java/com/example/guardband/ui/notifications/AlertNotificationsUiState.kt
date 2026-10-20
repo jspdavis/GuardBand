@@ -1,7 +1,7 @@
-package com.example.guardband.ui.settings
+package com.example.guardband.ui.notifications
 
 /**
- * The one piece of Settings that is state: the Alert notifications switch.
+ * The Alert notifications screen's state: its switch.
  *
  * @param alertNotificationsOn the switch, and whether the battery row shows.
  *   On only while the user wants it **and** the phone lets the app post: a
@@ -10,7 +10,7 @@ package com.example.guardband.ui.settings
  *   (the prompt was refused, or they were turned off in system settings), so
  *   the help text says so and offers the system page.
  */
-data class SettingsUiState(
+data class AlertNotificationsUiState(
     val alertNotificationsOn: Boolean = false,
     val notificationsBlocked: Boolean = false
 )

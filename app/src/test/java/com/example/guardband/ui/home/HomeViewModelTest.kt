@@ -438,14 +438,14 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `the watch notification opens settings`() = runTest {
+    fun `the watch notification opens alert notifications`() = runTest {
         agreed("1.1")
         val opened = open()
 
-        opened.vm.onLaunchTargetRequested(HomeLaunchTarget.SETTINGS)
+        opened.vm.onLaunchTargetRequested(HomeLaunchTarget.ALERT_NOTIFICATIONS)
         advanceUntilIdle()
 
-        assertEquals(listOf<HomeEvent>(HomeEvent.ShowSettings), opened.events)
+        assertEquals(listOf<HomeEvent>(HomeEvent.ShowAlertNotifications), opened.events)
     }
 
     /** Tapped on a cold start: held while the record is read, then opened. */

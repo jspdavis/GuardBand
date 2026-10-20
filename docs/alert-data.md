@@ -384,8 +384,9 @@ arrow (`ib_alert_history_back`) returns to Track. Its title is
 | `alert_error_message` | the error text |
 | `alert_retry_button` | → `onRetryClicked()` |
 | `alert_latest_card` | current status card (D2) |
-| `alert_latest_icon` | type symbol, tinted in the type colour (`typeIcon` / `typeColor`) |
+| `alert_latest_icon` | type symbol on its badge, both tinted in the type colour (`typeIcon` / `typeColor`) |
 | `alert_latest_type` / `_time` / `_location` / `_battery` | card fields |
+| `alert_latest_place_row` / `_battery_row` / `_battery_icon` | the pin and battery lines, and the battery's symbol |
 | `alert_empty_view` | the "which kind of empty" text |
 | `alert_history_list` | `RecyclerView`, `ListAdapter` + `DiffUtil` on `sequenceId` |
 
@@ -406,6 +407,33 @@ same `isLoading` / `errorMessage` / `emptyMessage` fields. Tapping a row does
 nothing, as on the old tab. It is a draggable bottom sheet
 (`BottomSheetBehavior`) with a drag handle (`track_recent_alerts_drag_handle`);
 `btn_track_recent_alerts_see_all` opens Alert history.
+
+**How a row looks (2026-10-20).** `ui/alert/AlertCardViews` binds every
+alert card, the rows and the latest card alike, so they cannot drift:
+
+- **The type's symbol sits on a 40 dp circle** (`bg_alert_type_badge`) of a
+  pale shade of the type's colour (about 16%); the latest card's is 44 dp.
+- **A panic's card is pale red with a 1 dp red outline**
+  (`alert_panic_container`, `alert_panic_outline`); every other card stays
+  grey. Recycled cards are reset on every bind.
+- **The place is the row's main text** (body size, primary colour, up to two
+  lines) beside a pin (`ic_map_pin`). The battery is small and grey beside a
+  symbol for its level: `ic_battery_full` (above 80%), `_mid` (51-80),
+  `_low` (21-50), `_critical` (20% and below, FR-11's low-battery level,
+  orange) and `_charging` (a bolt, green). The text says "64%"; TalkBack
+  reads "Battery 64%".
+- **Times.** The panel's rows and the latest card say "Just now", "5 min ago"
+  or "3 hr ago", and the date and time from a day on. Alert history's rows
+  sit under a heading for each day (Today, Yesterday, "Sun, Oct 18", or
+  "Dec 31, 2025" in another year; `item_alert_day_header.xml`) and show only
+  the clock time. The day is the phone's, not UTC's. Headings follow the
+  list's sequenceId order rather than sorting it, so a band whose clock
+  jumped shows a day twice.
+- **They age by themselves.** `AlertUiState.nowMillis` is set on every read
+  and every 30 s (`AlertViewModel.TICK_INTERVAL_MS`, the same injected-ticker
+  pattern as Track's), so "5 min ago" and "Today" move on while the band is
+  quiet. The ticker is empty by default and real only in the `Factory`, so a
+  test never holds an endless `delay`.
 
 Type colours and timestamp formatting are unchanged — see
 [§5 of the bottom-nav doc](home-host-and-bottom-nav.md#5-screens).
@@ -549,6 +577,14 @@ all**.
       stays in history and moves down a row in the panel.
 - [ ] With four or more alerts, the panel shows three and history shows them
       all.
+- [ ] **Row design (2026-10-20):** each symbol sits on a pale circle of its
+      colour; a panic's card is pale red with a red outline, the others grey.
+      The place is the darkest text, with a pin; the battery has its symbol
+      (set the mock sender to 15%: nearly empty and orange; charging: a green
+      bolt). The panel and the latest card say "Just now", then "1 min ago"
+      a minute later without a new alert; Alert history has a "Today"
+      heading and clock times. Scroll a long history: no panic outline
+      leaks onto a non-panic row.
 
 **D1 and D2**
 - [ ] Add `7` with `type: "TRACKING_UPDATE"`. **Nothing visible changes** — not

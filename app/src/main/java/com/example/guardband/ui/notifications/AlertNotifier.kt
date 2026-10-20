@@ -113,7 +113,7 @@ class AlertNotifier(context: Context) {
         notify(TAG_SUMMARY, SUMMARY_ID, notification)
     }
 
-    /** The watch service's ongoing notification. Tapping it opens Settings, where it is turned off. */
+    /** The watch service's ongoing notification. Tapping it opens Alert notifications, where it is turned off. */
     fun watchNotification(): Notification =
         NotificationCompat.Builder(context, CHANNEL_WATCH)
             .setSmallIcon(R.drawable.ic_stat_alert)
@@ -123,7 +123,7 @@ class AlertNotifier(context: Context) {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setContentIntent(openHome(HomeLaunchTarget.SETTINGS, REQUEST_SETTINGS))
+            .setContentIntent(openHome(HomeLaunchTarget.ALERT_NOTIFICATIONS, REQUEST_ALERT_NOTIFICATIONS))
             .build()
 
     private fun alertBuilder(channelId: String): NotificationCompat.Builder =
@@ -212,7 +212,7 @@ class AlertNotifier(context: Context) {
         const val WATCH_ID = 1001
 
         private const val REQUEST_ALERT_HISTORY = 1
-        private const val REQUEST_SETTINGS = 2
+        private const val REQUEST_ALERT_NOTIFICATIONS = 2
 
         /** One short buzz. */
         private val PANIC_VIBRATION = longArrayOf(0L, 200L)

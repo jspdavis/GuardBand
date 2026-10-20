@@ -11,7 +11,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface_muted"
+    android:background="@color/white"
     tools:context=".ui.account.AccountActivity">
 
     <!-- Top bar: back arrow + title. Matches fragment_settings.xml's. -->
@@ -68,7 +68,8 @@
             android:paddingEnd="16dp"
             android:paddingBottom="24dp">
 
-            <!-- Details: label over value, one row each -->
+            <!-- Details: label over value, one row each. Flat and the same
+                 white as the screen, like Settings' rows. -->
             <!-- DESIGN: Jul -->
 
             <com.google.android.material.card.MaterialCardView
@@ -78,8 +79,7 @@
                 android:layout_marginTop="8dp"
                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="3dp"
-                app:cardMaxElevation="6dp"
+                app:cardElevation="0dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout

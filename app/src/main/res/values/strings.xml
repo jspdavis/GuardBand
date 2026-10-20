@@ -182,7 +182,23 @@
     <string name="btn_alert_retry">Try again</string>
     <string name="label_alert_battery">Battery %1$d%%</string>
     <string name="label_alert_battery_charging">Battery %1$d%% · charging</string>
+    <!-- Beside the battery symbol, which says "battery"; the full wording
+         above is what TalkBack reads. -->
+    <string name="label_alert_battery_level">%1$d%%</string>
+    <string name="label_alert_battery_level_charging">%1$d%% · charging</string>
     <string name="label_alert_location">%1$.5f, %2$.5f</string>
+    <string name="label_alert_just_now">Just now</string>
+    <plurals name="label_alert_minutes_ago">
+        <item quantity="one">%1$d min ago</item>
+        <item quantity="other">%1$d min ago</item>
+    </plurals>
+    <plurals name="label_alert_hours_ago">
+        <item quantity="one">%1$d hr ago</item>
+        <item quantity="other">%1$d hr ago</item>
+    </plurals>
+    <string name="label_alert_day_today">Today</string>
+    <string name="label_alert_day_yesterday">Yesterday</string>
+    <string name="label_alert_day_unknown">Date unknown</string>
     <string name="label_alert_type_panic">Panic</string>
     <string name="label_alert_type_checkin">Check-in</string>
     <string name="label_alert_type_low_battery">Low battery</string>
@@ -202,8 +218,16 @@
     <string name="label_settings_alert_notifications_blocked">Notifications are blocked for GuardBand on this phone. Allow them in the phone\'s settings to use alert notifications.</string>
     <string name="btn_settings_notification_settings">Open notification settings</string>
     <string name="label_settings_alert_battery">Keep watching while the phone sleeps</string>
+    <string name="label_alert_notifications_switch">Show alerts on this phone</string>
     <string name="label_settings_privacy_notice">Privacy Notice</string>
+    <string name="label_settings_display">Display</string>
+    <string name="label_settings_device_info">Device information</string>
+    <string name="label_settings_about">About</string>
     <string name="btn_logout">Log Out</string>
+
+    <!-- About (opened from Settings) -->
+    <string name="label_about_version">Version %1$s</string>
+    <string name="label_about_tagline">The companion app for the GuardBand safety band.</string>
 
     <!-- Account information (opened from Settings) -->
     <string name="label_account_name">Name</string>

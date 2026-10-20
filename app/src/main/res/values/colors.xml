@@ -41,6 +41,10 @@
     <color name="alert_checkin">#4E8B38</color>
     <color name="alert_low_battery">#F57C00</color>
     <color name="alert_tracking">#1976D2</color>
+    <!-- A panic's card: a pale red fill and a soft red outline, so a panic
+         stands out from the grey cards around it. DESIGN: Jul -->
+    <color name="alert_panic_container">#FDECEC</color>
+    <color name="alert_panic_outline">#F2BDBD</color>
 
     <!-- Password rules -->
     <color name="rule_met">#4E8B38</color>

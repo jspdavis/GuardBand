@@ -18,6 +18,7 @@ import com.example.guardband.ui.alert.AlertHistoryFragment
 import com.example.guardband.ui.consent.ConsentRequiredActivity
 import com.example.guardband.ui.contacts.ContactsFragment
 import com.example.guardband.ui.login.LoginActivity
+import com.example.guardband.ui.notifications.AlertNotificationsActivity
 import com.example.guardband.ui.notifications.AlertWatch
 import com.example.guardband.ui.notifications.NotificationsFragment
 import com.example.guardband.ui.profile.ProfileFragment
@@ -48,7 +49,8 @@ import kotlinx.coroutines.launch
  * until the gate opens again.
  *
  * **Notifications land here** ([launchIntent]): an alert opens Alert history,
- * the watch's ongoing notification opens Settings, both through the gate
+ * the watch's ongoing notification opens Alert notifications over Settings,
+ * both through the gate
  * ([HomeViewModel.onLaunchTargetRequested]). Once the gate opens, the alert
  * watch is started if the user turned it on ([AlertWatch.startIfEnabled]).
  *
@@ -185,6 +187,10 @@ class HomeActivity : AppCompatActivity() {
             }
 
             HomeEvent.ShowSettings -> show(HomeDestinations.SETTINGS)
+            HomeEvent.ShowAlertNotifications -> {
+                show(HomeDestinations.SETTINGS)
+                startActivity(Intent(this, AlertNotificationsActivity::class.java))
+            }
             HomeEvent.ShowNotifications -> show(HomeDestinations.NOTIFICATIONS)
             HomeEvent.ShowAlertHistory -> show(HomeDestinations.ALERT_HISTORY)
 

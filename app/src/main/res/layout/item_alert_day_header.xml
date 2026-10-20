@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A day's heading in the Alert history list: Today, Yesterday, or a date
+     (AlertFormatting.dayLabel). The rows under it show only the time.
+     A heading for TalkBack, so it can jump from day to day. DESIGN: Jul -->
+<TextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/tv_item_alert_day"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="4dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
+    android:accessibilityHeading="true"
+    android:textAppearance="@style/TextAppearance.GuardBand.LabelMedium"
+    android:textColor="@color/text_secondary"
+    tools:ignore="UnusedAttribute"
+    tools:text="Today" />

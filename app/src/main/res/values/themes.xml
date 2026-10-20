@@ -157,7 +157,9 @@
         <item name="itemPaddingBottom">0dp</item>
     </style>
 
-    <!-- Settings rows: tappable label with a chevron, and the hairline between rows -->
+    <!-- Settings rows: tappable label with a chevron, and the hairline between rows.
+         The chevron means "opens another GuardBand screen"; a row that does
+         something else (opens a web page or a system page) is SettingsRow.Action. -->
     <style name="Widget.GuardBand.SettingsRow" parent="">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
@@ -172,6 +174,13 @@
         <item name="android:textColor">@color/text_primary</item>
         <item name="drawableEndCompat">@drawable/ic_chevron_right</item>
         <item name="drawableTint">@color/text_hint</item>
+    </style>
+
+    <!-- A settings row that acts rather than navigates: the same row with no
+         chevron, since it does not lead to another screen of the app. -->
+    <!-- DESIGN: Jul -->
+    <style name="Widget.GuardBand.SettingsRow.Action" parent="Widget.GuardBand.SettingsRow">
+        <item name="drawableEndCompat">@null</item>
     </style>
 
     <!-- A settings row for an irreversible action. Colour only: the geometry

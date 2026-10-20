@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 51% to 80%: two thirds full.
+     A horizontal battery, drawn for GuardBand: an outline, the terminal on
+     the right, and the charge inside. One of the five battery symbols on an
+     alert row (AlertFormatting.batteryIcon); tinted in code, so the fill
+     colour here is only a placeholder. DESIGN: Jul -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
+        android:pathData="M4,7H17A2,2 0,0 1,19 9V15A2,2 0,0 1,17 17H4A2,2 0,0 1,2 15V9A2,2 0,0 1,4 7ZM4,9V15H17V9Z" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M20,10H21A1,1 0,0 1,22 11V13A1,1 0,0 1,21 14H20Z" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M5,10H12V14H5Z" />
+</vector>

@@ -50,7 +50,7 @@ class AlertPlaceNamesTest {
 
         val state = vm.uiState.value
         assertEquals(CEBU_LABEL, state.placeNameFor(state.history.single()))
-        assertEquals(listOf(AlertRow(state.history.single(), CEBU_LABEL)), state.rowsOf(state.history))
+        assertEquals(listOf(CEBU_LABEL), state.rowsOf(state.history).map { it.placeName })
     }
 
     @Test

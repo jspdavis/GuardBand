@@ -38,12 +38,18 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-20",
-            title = "A sample notification in the inbox; place names on alerts; matching top buttons",
+            title = "A sample notification in the inbox; place names on alerts; matching top buttons; alert rows redesigned; Settings reorganised",
             changes = listOf(
                 "For testing, the Notifications screen (the bell) shows one sample message, \"Welcome to GuardBand\", instead of \"No notifications yet.\" It is fixed text, not real data.",
                 "Alerts say where they happened as a place (street, barangay, city) instead of latitude and longitude, on Track's panel, Alert history and its latest card. The coordinates show only while the name loads or if none can be found.",
                 "Contacts and Profile have the same smaller settings and notifications buttons as Track, in the same place, so they no longer jump when you switch tabs.",
-                "691 unit tests, up from 668."
+                "Alert rows are redesigned: the type's symbol on a pale circle of its colour, a pale red card for a panic, the place with a pin, and the battery with its own symbol (orange at 20%, a bolt while charging).",
+                "Track's panel and the latest card say \"5 min ago\"; Alert history groups its rows under Today, Yesterday or a date. The times move on by themselves.",
+                "Account information and Changelog have the white background the other screens already had.",
+                "Alert notifications has its own screen, opened from its Settings row; the watch's notification opens it too.",
+                "The Privacy Notice moved into a new About screen, with the app's version. Display (for dark mode, to come) and Device information are placeholder rows.",
+                "In Settings a chevron now means the row opens another screen of the app; a row that opens a web page has none.",
+                "718 unit tests, up from 668."
             ),
             commit = "c28c3bb"
         ),

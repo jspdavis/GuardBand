@@ -39,7 +39,7 @@ on which phone, how long it took).
 
 | What | Where |
 |---|---|
-| The switch | Track → gear → Settings → **Alert notifications** |
+| The switch | Track → gear → Settings → **Alert notifications** (its own screen) |
 | The channels | Phone settings → Apps → GuardBand → Notifications |
 | The lock-screen setting | Phone settings → Notifications (or Lock screen) → "Hide sensitive content" / "Show all content" |
 | Battery setting on Realme | Phone settings → Apps → GuardBand → Battery usage → **Allow background activity** (and **Allow auto launch** if shown) |
@@ -64,14 +64,14 @@ the profile photo or the device id.
 | ID | Steps | Expected | Result | Notes |
 |---|---|---|---|---|
 | TC-01 | Fresh install, Android 13+. Sign in and wait on Track for 10 s. | **No** notification permission prompt at launch or on any tab. | | |
-| TC-02 | Settings. Look at the Alert notifications row. | Switch **off**. Help text: "Shows your band's alerts on this phone, even when GuardBand is closed…". No "Keep watching while the phone sleeps" row. | | |
+| TC-02 | Settings → **Alert notifications**. | Its own screen opens, with a chevron on the row that led there. Switch **off**. Help text: "Shows your band's alerts on this phone, even when GuardBand is closed…". No "Keep watching while the phone sleeps" row. | | |
 | TC-03 | Turn the switch on. At the prompt, tap **Don't allow**. | Switch goes back to **off**. Help text changes to "Notifications are blocked for GuardBand on this phone…" and an **Open notification settings** button appears. No watch notification. | | |
 | TC-04 | Turn the switch on again (after TC-03). | No prompt loop. Either the prompt appears once more (Android allows one retry) or the switch stays off with the blocked text. Never two prompts in a row from one tap. | | |
-| TC-05 | Tap **Open notification settings**. Allow notifications there, then press Back. | The phone's notification page for GuardBand opens. Back in Settings, the blocked text is gone and the help text is back. The switch is still **off** (turning it on is your choice). | | |
+| TC-05 | Tap **Open notification settings**. Allow notifications there, then press Back. | The phone's notification page for GuardBand opens. Back on Alert notifications, the blocked text is gone and the help text is back. The switch is still **off** (turning it on is your choice). | | |
 | TC-06 | Turn the switch on (permission now allowed, or a fresh install where you tap **Allow**). | Switch **on**. The ongoing "Watching your band for alerts" notification appears. "Keep watching while the phone sleeps" row appears. | | |
 | TC-07 | Phone settings → Apps → GuardBand → Notifications. | Five channels: **Panic alerts**, **Band battery**, **Check-ins**, **Other band alerts**, **Alert watch**. Panic alerts has no sound set. | | |
 | TC-08 | Tap **Keep watching while the phone sleeps**. | The phone's battery optimisation list (or the closest page this phone has) opens. No crash. If the phone has no such page, a message says so. | | |
-| TC-09 | Pull down the shade and tap the "Watching your band" notification. | GuardBand opens on **Settings**. Try to swipe it away: it stays. | | |
+| TC-09 | Pull down the shade and tap the "Watching your band" notification. | GuardBand opens on **Alert notifications**; Back goes to Settings. Try to swipe it away: it stays. | | |
 | TC-10 | Android 12 or older phone, if one is available. Turn the switch on. | No prompt (older Android has none); the switch turns on and the watch notification appears. | | |
 
 ## B. Each alert type, app on screen

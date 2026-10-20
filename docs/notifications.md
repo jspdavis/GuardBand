@@ -7,7 +7,9 @@ locked. Opt-in, from **Settings → Alert notifications**. Added 2026-10-19 on
 
 The code is `ui/notifications/` (`AlertWatchService`, `AlertWatch`,
 `AlertNotifier`, `AlertNotificationDecider`, `AlertNotificationPrefs`), the
-Settings switch (`ui/settings/`), and the tap route through the Home host
+switch on its own screen (`AlertNotificationsActivity` + `AlertNotificationsViewModel`,
+opened from the Settings row; it was a switch on the Settings list until
+2026-10-20), and the tap route through the Home host
 (`HomeLaunchTarget`, `HomeViewModel.onLaunchTargetRequested`).
 
 ## 1. Why a foreground service, and not push
@@ -68,7 +70,8 @@ appears when the phone's lock screen is set to **hide sensitive content**; on
 is kept free of anything sensitive.
 
 **Tap.** Opens `HomeActivity` at Alert history (the watch's own notification
-opens Settings). The target waits for the Home gate: a signed-out,
+opens the Alert notifications screen over Settings, so Back lands on
+Settings). The target waits for the Home gate: a signed-out,
 unverified, consent-less or deletion-pending account meets its gate as
 usual, and the target is dropped. A failed gate read keeps it for Retry.
 
@@ -100,7 +103,7 @@ high-water mark, the newest `sequenceId` it has handled, per device id.
   a 6-hour daily limit once the app targets API 35.
 - Subscribes with `AlertRepository.DEFAULT_HISTORY_WINDOW`, the alert
   screens' own window, so while both run the SDK serves them from one listen.
-- **Started only from foreground code** (`AlertWatch.start`): the Settings
+- **Started only from foreground code** (`AlertWatch.start`): the
   switch, and `HomeActivity` once its gate opens, if the switch is on, the
   user is signed in and the phone allows the app's notifications
   (`AlertWatch.shouldRun`). Android 12+ refuses a foreground-service start
@@ -161,7 +164,7 @@ was not run says so. The full step-by-step cases, with expected results and
 a column to fill in, are [`notifications-test-cases.md`](notifications-test-cases.md).
 
 1. Fresh install, Android 13+: no prompt at launch. Settings → Alert
-   notifications → the prompt. Refuse: the switch stays off and shows "Open
+   notifications → the switch → the prompt. Refuse: the switch stays off and shows "Open
    notification settings". Allow: the watch notification appears.
 2. App on screen: PANIC, LOW_BATTERY, CHECKIN each post one notification
    (wording, channel and sound as in §2). The panic makes no sound and no
@@ -193,7 +196,7 @@ a column to fill in, are [`notifications-test-cases.md`](notifications-test-case
 (Robolectric: channels and their importance, the silent panic, content per
 type, no coordinates, the private/public split, no large icon, the immutable
 tap intent, summary and watch notifications, nothing posted while blocked),
-`AlertWatchTest` (`shouldRun`), `SettingsViewModelTest` (the switch: off by
+`AlertWatchTest` (`shouldRun`), `AlertNotificationsViewModelTest` (the switch: off by
 default, the prompt, a refusal, blocked in settings, off) and
 `HomeViewModelTest` (a tapped target waits for the gate and is dropped by
 every other outcome).

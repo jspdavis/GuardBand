@@ -166,6 +166,18 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <!-- ── About (opened from Settings) ───────────────────────────────── -->
+        <activity
+            android:name=".ui.about.AboutActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- ── Alert notifications (opened from Settings) ───────────────────── -->
+        <activity
+            android:name=".ui.notifications.AlertNotificationsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!-- ── Loading ────────────────────────────────────────────────────── -->
 
         <activity
