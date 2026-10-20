@@ -225,6 +225,13 @@
     <string name="label_settings_about">About</string>
     <string name="btn_logout">Log Out</string>
 
+    <!-- Display (opened from Settings) -->
+    <string name="label_display_theme">Theme</string>
+    <string name="label_display_theme_system">Use phone setting</string>
+    <string name="label_display_theme_light">Light</string>
+    <string name="label_display_theme_dark">Dark</string>
+    <string name="label_display_theme_help">Use phone setting follows your phone\'s dark mode, including any schedule it has. The Track map turns dark too.</string>
+
     <!-- About (opened from Settings) -->
     <string name="label_about_version">Version %1$s</string>
     <string name="label_about_tagline">The companion app for the GuardBand safety band.</string>

@@ -14,6 +14,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
     <application
+        android:name=".GuardBandApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -163,6 +164,12 @@
 
         <activity
             android:name=".ui.changelog.ChangelogActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <!-- ── Display (opened from Settings) ─────────────────────────────── -->
+        <activity
+            android:name=".ui.display.DisplayActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 

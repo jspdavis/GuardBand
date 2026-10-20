@@ -14,6 +14,9 @@ sealed interface SettingsEvent {
     /** Open Alert notifications, which holds the switch for the alert watch. */
     object OpenAlertNotifications : SettingsEvent
 
+    /** Open Display, which holds the theme. */
+    object OpenDisplay : SettingsEvent
+
     /** Open About, which holds the version and the Privacy Notice. */
     object OpenAbout : SettingsEvent
 }

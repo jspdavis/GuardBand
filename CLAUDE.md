@@ -88,8 +88,8 @@ com/example/guardband/
 │   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel
 │   ├── profile/        Profile tab: welcome header + user info
 │   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row.
-│   │                 A chevron means another screen of the app; Display and Device information
-│   │                 are placeholders (Display will hold dark mode)
+│   │                 A chevron means another screen of the app; Device information is a placeholder
+│   ├── display/        DisplayActivity, opened from Settings: the theme (ThemeChoice, DisplayPrefs)
 │   ├── about/          AboutActivity, opened from Settings: version and the Privacy Notice row
 │   │                 (a web page, so no chevron)
 │   ├── account/        AccountActivity (Account information), opened from Settings;
@@ -899,6 +899,34 @@ For demos without hardware, Phone A runs `MockSenderActivity` and Phone B runs t
 - **Writes are unauthenticated.** They rely on `".write": true` under `devices/{id}` in the draft rules. If that is ever tightened to require auth, the harness needs an `?auth=` token.
 
 The payload itself follows `SCHEMA.md` and satisfies the `devices` validation: all six required children, `type` one of the four enum names, `percent` 0–100, `isCharging` boolean, `sequenceId` numeric. Its timestamps carry milliseconds (`...SSS'Z'`) where `SCHEMA.md`'s example does not; both are valid ISO 8601 and `AlertFormatting` parses both. **The harness no longer duplicates anything.** `ui/mocksender/AlertType` used to be a second private copy of the enum, on the reasoning that de-duplicating it would mean editing `app/src/debug/`. That rationale did not hold — the debug source set imports from `main` freely — and a drifting enum or device id would have the harness writing alerts the app never reads. It now uses `data/model/AlertType` and `DeviceConstants.DEFAULT_DEVICE_ID` directly. The dependency only ever points one way: nothing in `main` knows the harness exists.
+
+## Dark mode
+
+**The theme is DayNight (2026-10-20)**, chosen in **Settings → Display**
+(`ui/display/DisplayActivity`): Use phone setting (the default), Light or
+Dark. `ThemeChoice` maps each to AppCompat's night mode; `DisplayPrefs`
+saves it (SharedPreferences `display`, per phone), and
+`GuardBandApplication`, the app's one Application class, re-applies it on
+every start, because AppCompat keeps it in memory only.
+
+- **Colours are names, and `values-night/colors.xml` gives each its dark
+  value.** A layout never picks a mode. A screen, a card, a top bar or the
+  bottom bar is `surface_bg`; a control floating over the map (the round
+  buttons, the pills) and the tabs' top buttons are `surface_elevated`.
+  **`white` and `black` are literal in both modes**: only for text and icons
+  on a green or dark button, and a badge's icon. A new `@color/white`
+  background is a dark-mode bug.
+- **The dark palette is a placeholder** on Material's dark guidance, marked
+  `DESIGN: Jul`; retune it in `values-night/colors.xml` alone. The brand and
+  alert colours are a step lighter there so they keep their contrast.
+- **The map goes dark too:** `MapTilerTileSource.forNightMode` picks
+  MapTiler's `streets-v2-dark` (checked on this key and plan, 2026-10-20),
+  cached apart as `MapTilerStreetsDark`. A theme change recreates the
+  Fragment, which picks again. **The credits and the MapTiler logo stay
+  light chips** in dark mode (`map_attribution_bg`, `map_attribution_text`),
+  because the logo's lettering is dark. See [docs/osmdroid.md](docs/osmdroid.md) §4.8.
+- The status bar follows: `surface_bg`, with `@bool/theme_light_status_bar`
+  for its icons. The green sign-up screens are the brand in both modes.
 
 ## UI workflow (agent vs. designer)
 - Figma is the visual source of truth and is owned by Jul. The agent does not need the wireframes pasted in.

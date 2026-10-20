@@ -10,7 +10,8 @@ import org.osmdroid.util.MapTileIndex
 
 /**
  * The Track tab's tile source: MapTiler Cloud's **Streets** style as 256 px
- * raster tiles. It replaced OpenStreetMap's public tile server, whose usage
+ * raster tiles, [STREETS] in light mode and [STREETS_DARK] in dark mode
+ * ([forNightMode]; same key, same plan, same credits). It replaced OpenStreetMap's public tile server, whose usage
  * policy is written for light use, and it is the **only** place a MapTiler
  * URL, key, zoom range or credit is spelled out. See `docs/osmdroid.md`.
  *
@@ -33,22 +34,25 @@ import org.osmdroid.util.MapTileIndex
  * map downloads what is on screen and nothing else.
  *
  * **The name is the cache key.** osmdroid's tile cache keys rows by
- * `(key, provider)`, where `provider` is [NAME], so these tiles never mix with
- * the OpenStreetMap ones cached under the old `GuardBandOsm` source.
+ * `(key, provider)`, where `provider` is the source's name, so these tiles
+ * never mix with the OpenStreetMap ones cached under the old `GuardBandOsm`
+ * source, and the dark tiles never mix with the light ones.
  *
  * The credits are [attribution]: MapTiler requires both, each linked, on
  * every map. A Free account must also show the MapTiler logo, linked to
  * [LOGO_URL]; `MapAttribution` binds it (see `docs/osmdroid.md`).
  */
 internal class MapTilerTileSource private constructor(
+    name: String,
+    baseUrl: String,
     private val apiKey: String,
 ) : OnlineTileSourceBase(
-    NAME,
+    name,
     MIN_ZOOM,
     MAX_ZOOM,
     TILE_SIZE,
     FILE_EXTENSION,
-    arrayOf(BASE_URL),
+    arrayOf(baseUrl),
     COPYRIGHT,
     POLICY,
 ) {
@@ -71,6 +75,10 @@ internal class MapTilerTileSource private constructor(
         /** Not "Mapnik" or "GuardBandOsm": the tile cache is keyed by this. */
         private const val NAME = "MapTilerStreets"
         private const val BASE_URL = "https://api.maptiler.com/maps/streets-v2/256/"
+
+        /** The dark style's own cache rows, so a theme switch never shows stale light tiles. */
+        private const val DARK_NAME = "MapTilerStreetsDark"
+        private const val DARK_BASE_URL = "https://api.maptiler.com/maps/streets-v2-dark/256/"
         private const val FILE_EXTENSION = ".png"
         private const val TILE_SIZE = 256
 
@@ -105,7 +113,13 @@ internal class MapTilerTileSource private constructor(
         /** False in a build made without `MAPTILER_API_KEY`. */
         val hasApiKey: Boolean = API_KEY.isNotEmpty()
 
-        val STREETS = MapTilerTileSource(API_KEY)
+        val STREETS = MapTilerTileSource(NAME, BASE_URL, API_KEY)
+
+        /** MapTiler's Streets Dark (checked 2026-10-20: served on this key and plan). */
+        val STREETS_DARK = MapTilerTileSource(DARK_NAME, DARK_BASE_URL, API_KEY)
+
+        /** The style for the theme the screen is drawn in. */
+        fun forNightMode(night: Boolean): MapTilerTileSource = if (night) STREETS_DARK else STREETS
 
         /** The credits as text, each one a link to its copyright page. */
         fun attribution(): CharSequence {

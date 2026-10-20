@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The dark "Retry"/"Cancel" buttons: near black in light mode, a raised
+     grey in dark mode so they still stand off the screen. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     <gradient
         android:angle="0"
-        android:startColor="#000000"
-        android:endColor="#4C4444"
+        android:startColor="@color/retry_gradient_start"
+        android:endColor="@color/retry_gradient_end"
         android:type="linear" />
     <corners android:radius="28dp" />
 </shape>

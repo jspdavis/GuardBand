@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- White pill with a hairline border: Track status chip and user chip. -->
+<!-- A pill over the map with a hairline border: Track's check-in pill and
+     empty-map message. White, or a raised grey in dark mode. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/white" />
+    <solid android:color="@color/surface_elevated" />
     <stroke
         android:width="1dp"
         android:color="@color/divider" />

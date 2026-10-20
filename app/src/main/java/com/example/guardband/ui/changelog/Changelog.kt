@@ -38,7 +38,7 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-20",
-            title = "A sample notification in the inbox; place names on alerts; matching top buttons; alert rows redesigned; Settings reorganised",
+            title = "A sample notification in the inbox; place names on alerts; matching top buttons; alert rows redesigned; Settings reorganised; dark mode",
             changes = listOf(
                 "For testing, the Notifications screen (the bell) shows one sample message, \"Welcome to GuardBand\", instead of \"No notifications yet.\" It is fixed text, not real data.",
                 "Alerts say where they happened as a place (street, barangay, city) instead of latitude and longitude, on Track's panel, Alert history and its latest card. The coordinates show only while the name loads or if none can be found.",
@@ -49,7 +49,8 @@ object Changelog {
                 "Alert notifications has its own screen, opened from its Settings row; the watch's notification opens it too.",
                 "The Privacy Notice moved into a new About screen, with the app's version. Display (for dark mode, to come) and Device information are placeholder rows.",
                 "In Settings a chevron now means the row opens another screen of the app; a row that opens a web page has none.",
-                "718 unit tests, up from 668."
+                "Dark mode: Settings → Display offers Use phone setting, Light or Dark. Every screen has a dark look (placeholder colours for Jul to tune), and the Track map switches to MapTiler's dark style.",
+                "727 unit tests, up from 668."
             ),
             commit = "7ce81b1"
         ),

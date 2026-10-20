@@ -14,9 +14,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * Settings (pushed over the Home host from Track's gear).
  *
  * Log Out lives here (moved from the old Dashboard, per the Figma). Account
- * information opens its own screen, which holds Delete account; Change
- * password, Display (dark mode, to come) and Device information (the band,
- * once pairing exists) are placeholders until their screens exist; About
+ * information opens its own screen, which holds Delete account; Display
+ * holds the theme (light, dark, or the phone's); Change password and Device
+ * information (the band, once pairing exists) are placeholders until their
+ * screens exist; About
  * holds the version and the Privacy Notice, which was a row here until
  * 2026-10-20.
  *
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * Flow: Settings → (Log Out) → LoginActivity (back-stack cleared)
  *       Settings → (Account information) → AccountActivity
  *       Settings → (Alert notifications) → AlertNotificationsActivity
+ *       Settings → (Display) → DisplayActivity
  *       Settings → (About) → AboutActivity
  */
 class SettingsViewModel(
@@ -52,9 +54,9 @@ class SettingsViewModel(
         _events.trySend(SettingsEvent.ShowMessage(MSG_COMING_SOON))
     }
 
-    /** Display: a placeholder that will hold dark mode. */
+    /** Display: the app's theme. */
     fun onDisplayClicked() {
-        _events.trySend(SettingsEvent.ShowMessage(MSG_DISPLAY_COMING_SOON))
+        _events.trySend(SettingsEvent.OpenDisplay)
     }
 
     /** About: the app's version and the Privacy Notice. */
@@ -74,7 +76,6 @@ class SettingsViewModel(
 
     companion object {
         const val MSG_COMING_SOON = "Coming soon."
-        const val MSG_DISPLAY_COMING_SOON = "Display settings, including dark mode, are coming soon."
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

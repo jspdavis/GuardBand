@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
+    android:background="@color/surface_bg"
     android:clickable="true"
     android:focusable="true"
     tools:context=".ui.settings.SettingsFragment">
@@ -73,7 +73,7 @@
                 android:layout_marginStart="16dp"
                 android:layout_marginTop="8dp"
                 android:layout_marginEnd="16dp"
-                app:cardBackgroundColor="@color/white"
+                app:cardBackgroundColor="@color/surface_bg"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="0dp">
@@ -171,7 +171,7 @@
 
                     <View style="@style/Widget.GuardBand.SettingsDivider" />
 
-                    <!-- Display Row: a placeholder, for dark mode. -->
+                    <!-- Display Row: the theme (DisplayActivity). -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

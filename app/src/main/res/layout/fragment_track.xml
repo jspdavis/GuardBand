@@ -86,7 +86,7 @@
             android:layout_marginTop="24dp"
             android:contentDescription="@string/cd_open_settings"
             android:src="@drawable/ic_settings"
-            app:backgroundTint="@color/white"
+            app:backgroundTint="@color/surface_elevated"
             app:elevation="4dp"
             app:fabCustomSize="36dp"
             app:layout_constraintStart_toStartOf="parent"
@@ -102,7 +102,7 @@
             android:layout_marginEnd="16dp"
             android:contentDescription="@string/cd_open_notifications"
             android:src="@drawable/ic_notifications"
-            app:backgroundTint="@color/white"
+            app:backgroundTint="@color/surface_elevated"
             app:elevation="4dp"
             app:fabCustomSize="36dp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -120,7 +120,7 @@
             android:layout_marginBottom="12dp"
             android:contentDescription="@string/cd_map_layers"
             android:src="@drawable/ic_layers"
-            app:backgroundTint="@color/white"
+            app:backgroundTint="@color/surface_elevated"
             app:fabCustomSize="36dp"
             app:layout_constraintBottom_toTopOf="@id/track_navigate_button"
             app:layout_constraintEnd_toEndOf="parent"
@@ -139,7 +139,7 @@
             android:contentDescription="@string/cd_track_navigate"
             android:enabled="false"
             android:src="@drawable/ic_navigation"
-            app:backgroundTint="@color/white"
+            app:backgroundTint="@color/surface_elevated"
             app:fabCustomSize="36dp"
             app:layout_constraintBottom_toTopOf="@id/track_checkin_pill"
             app:layout_constraintEnd_toEndOf="parent"
@@ -222,8 +222,8 @@
             android:paddingStart="4dp"
             android:paddingEnd="4dp"
             android:textAppearance="@style/TextAppearance.GuardBand.MapAttribution"
-            android:textColor="@color/text_secondary"
-            android:textColorLink="@color/text_secondary"
+            android:textColor="@color/map_attribution_text"
+            android:textColorLink="@color/map_attribution_text"
             app:layout_constraintBottom_toTopOf="@id/space_track_sheet_peek"
             app:layout_constraintEnd_toEndOf="parent"
             tools:text="© MapTiler © OpenStreetMap contributors" />
@@ -268,7 +268,7 @@
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="@id/track_map_logo"
             app:layout_constraintEnd_toEndOf="parent"
-            app:tint="@color/text_secondary" />
+            app:tint="@color/map_attribution_text" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

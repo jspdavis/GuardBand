@@ -1,6 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. Light only; dark palette is backlog. -->
-    <style name="Base.Theme.GuardBand" parent="Theme.Material3.Light.NoActionBar">
+    <!-- Base application theme. DayNight: light or dark by the phone, or by
+         Settings → Display (ui/display/ThemeChoice). The colours below are
+         names; values-night/colors.xml gives each its dark value. -->
+    <style name="Base.Theme.GuardBand" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Colors -->
         <item name="colorPrimary">@color/brand_primary</item>
         <item name="colorPrimaryDark">@color/brand_primary_dark</item>
@@ -11,8 +13,8 @@
         <item name="colorControlActivated">@color/brand_primary</item>
 
         <!-- Window (navigationBarColor deliberately left at the system default) -->
-        <item name="android:statusBarColor">@color/white</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/surface_bg</item>
+        <item name="android:windowLightStatusBar">@bool/theme_light_status_bar</item>
         <item name="android:windowBackground">@color/surface_bg</item>
 
         <!-- Font -->
@@ -140,9 +142,10 @@
 
     <!-- Bottom navigation: checkpoint look (tint only, no M3 active-indicator pill) -->
     <style name="Widget.GuardBand.BottomNavigation" parent="Widget.Material3.BottomNavigationView">
-        <item name="android:background">@color/white</item>
-        <!-- M3 tints the background with colorSurfaceContainer; keep it plain white -->
-        <item name="backgroundTint">@color/white</item>
+        <item name="android:background">@color/surface_bg</item>
+        <!-- M3 tints the background with colorSurfaceContainer; keep it the
+             plain screen surface (white, or dark in dark mode) -->
+        <item name="backgroundTint">@color/surface_bg</item>
         <item name="elevation">0dp</item>
         <item name="itemIconTint">@color/bottom_nav_item</item>
         <item name="itemTextColor">@color/bottom_nav_item</item>

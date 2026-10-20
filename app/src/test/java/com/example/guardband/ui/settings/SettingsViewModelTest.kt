@@ -45,13 +45,10 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `Display says dark mode is on its way`() = runTest {
+    fun `the Display row opens Display`() = runTest {
         viewModel.onDisplayClicked()
 
-        assertEquals(
-            SettingsEvent.ShowMessage(SettingsViewModel.MSG_DISPLAY_COMING_SOON),
-            viewModel.events.first()
-        )
+        assertEquals(SettingsEvent.OpenDisplay, viewModel.events.first())
     }
 
     /** Change password and Device information. */

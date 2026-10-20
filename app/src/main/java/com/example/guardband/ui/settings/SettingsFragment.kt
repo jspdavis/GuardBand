@@ -18,6 +18,7 @@ import com.example.guardband.ui.account.AccountActivity
 import com.example.guardband.ui.auth.GoogleIdTokenProvider
 import com.example.guardband.ui.auth.LoginNavigation
 import com.example.guardband.ui.changelog.ChangelogActivity
+import com.example.guardband.ui.display.DisplayActivity
 import com.example.guardband.ui.notifications.AlertNotificationsActivity
 import kotlinx.coroutines.launch
 
@@ -34,8 +35,8 @@ import kotlinx.coroutines.launch
  * one; a row that opens a web or system page uses `SettingsRow.Action`
  * instead (About's Privacy Notice). Alert notifications' switch lives on its
  * own screen, [AlertNotificationsActivity], and the Privacy Notice inside
- * [AboutActivity], since 2026-10-20. Display and Device information are
- * placeholders.
+ * [AboutActivity], since 2026-10-20. Display opens [DisplayActivity], the
+ * theme; Device information is a placeholder.
  *
  * View ids: ib_settings_back, tv_settings_title, tv_settings_account,
  * tv_settings_change_password, tv_settings_alert_notifications,
@@ -102,6 +103,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
             SettingsEvent.OpenAlertNotifications ->
                 startActivity(Intent(requireContext(), AlertNotificationsActivity::class.java))
+
+            SettingsEvent.OpenDisplay ->
+                startActivity(Intent(requireContext(), DisplayActivity::class.java))
 
             SettingsEvent.OpenAbout ->
                 startActivity(Intent(requireContext(), AboutActivity::class.java))

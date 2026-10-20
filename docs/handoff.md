@@ -229,8 +229,16 @@ table now includes `main`.
   ongoing notification opens that screen over Settings. The Privacy Notice
   moved into a new **About** screen (`ui/about/AboutActivity`: logo,
   version, and the notice as a row without a chevron, `SettingsRow.Action`).
-  **Display** (for dark mode) and **Device information** (for the band, once
-  pairing exists) are placeholder rows that say "Coming soon".
+  **Device information** (for the band, once pairing exists) is a
+  placeholder row that says "Coming soon".
+- **Dark mode** (2026-10-20). The theme is DayNight, chosen in Settings →
+  **Display** (`ui/display/`): Use phone setting (default), Light or Dark,
+  saved per phone and re-applied at every start by `GuardBandApplication`.
+  `values-night/colors.xml` holds a placeholder dark palette (`DESIGN: Jul`);
+  layouts use `surface_bg` / `surface_elevated` instead of `@color/white`.
+  The Track map switches to MapTiler's Streets Dark, cached apart; the map
+  credits and logo stay light chips. CLAUDE.md "Dark mode",
+  [`osmdroid.md`](osmdroid.md) §4.8.
 
 ### In flight
 
@@ -267,6 +275,8 @@ has published it ([`database-rules.md`](database-rules.md) §7).
 | **Approve the release manifest for alert notifications** | owner | `feature/alert-notifications` added `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_SPECIAL_USE` to the release build (§1's manifest row has the full list). Approve before any build is handed out; [`notifications.md`](notifications.md) §5 says why each one is there and what was left out. |
 | **Device checks: alert notifications** | whoever has the phone | **None run yet.** The twelve steps in [`notifications.md`](notifications.md) §7: the prompt only from the switch, each type's wording and sound (the panic silent), background and locked delivery, Doze forced with `adb shell dumpsys deviceidle force-idle`, the lock screen with "hide sensitive content", the tap through the gate, swipe-from-recents and reboot on the Realme, Log Out stopping it, and logcat clean. Record the Realme's battery setting (§6 there) alongside step 4's result. [`notifications-test-cases.md`](notifications-test-cases.md) has the full 47 cases. |
 | **Device check: place names on alerts** | whoever has the phone | From `feature/alert-place-names`. Send a panic from the mock sender: its row's coordinates turn into a place name in a moment, the same on the panel, Alert history and the latest card. Airplane mode on a fresh launch: coordinates, no crash; back online, names fill in within a minute of the next alert. Is the name right for the spot, and is it too long for a row? ([`alert-data.md`](alert-data.md) §12). |
+| **Device check: dark mode** | whoever has the phone | Settings → Display → Dark: every screen turns dark at once, including the status bar icons (light) and the bottom bar; Back still lands on Settings. Walk every screen, sign-up and login included, for white patches, unreadable text, and badges or buttons that vanish. The Track map turns dark with no light grid flashing while tiles load, the credits and MapTiler logo stay readable, the pill and round buttons are grey. Use phone setting follows the phone's own switch while the app is open. Kill the app with Dark chosen on a light phone: it reopens dark, with no white flash on Splash. |
+| **Design: the dark palette** | Jul | `values-night/colors.xml` is a placeholder on Material's dark guidance. Retune it there; also whether to use MapTiler's white logo on the dark map. |
 | **Device check: alert row design** | whoever has the phone | The badges, the panic card's red, the pin and battery symbols, "Just now" turning into "1 min ago" with no new alert, Alert history's day headings, and no red outline leaking onto other rows while scrolling ([`alert-data.md`](alert-data.md) §12). |
 | **One small design question** | Jul | Low battery uses the generic warning triangle; a battery-with-"!" icon would say what the warning is about. `DESIGN: Jul`. The rows now have battery symbols of their own (`ic_battery_*`, 2026-10-20); `ic_battery_critical` could stand in for the triangle, though the triangle's shape is what keeps the types apart without colour. Every new row size, shade and symbol is a placeholder marked `DESIGN: Jul`. (The other question, matching Contacts' and Profile's top buttons to Track's, was answered yes and done on 2026-10-20: all three tabs are 36 dp at 16 dp from the sides and 24 dp from the top. Check on the phone that the gear and bell no longer jump when switching tabs.) |
 | **Device checks of the face marker** | whoever has the phone | From `feature/track-profile-marker`. **Seen:** a Google account's photo on the marker after a cold launch, above the collapsed sheet. **Still to check:** an email/password account shows initials; airplane mode on a fresh launch shows initials (or the cached photo) and does not crash; the pointer's tip on the same spot as the old pin's at the same coordinate and zoom (use the mock sender's fixed point, follow on); pan, zoom and follow unchanged with no stutter. [`osmdroid.md`](osmdroid.md) §5.4. |
