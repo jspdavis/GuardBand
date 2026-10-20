@@ -52,7 +52,7 @@ object Changelog {
                 "Dark mode: Settings → Display offers Use phone setting, Light or Dark. Every screen has a dark look (placeholder colours for Jul to tune), and the Track map switches to MapTiler's dark style.",
                 "727 unit tests, up from 668."
             ),
-            commit = "7ce81b1"
+            commit = "f85523a"
         ),
         ChangelogEntry(
             date = "2026-10-19",
