@@ -56,6 +56,7 @@ class MockSenderActivity : AppCompatActivity() {
 
     private lateinit var btnSimulatePanic: Button
     private lateinit var btnSimulateCheckin: Button
+    private lateinit var btnDoubleCheckin: Button
     private lateinit var btnSimulateLowBattery: Button
     private lateinit var btnSimulateTracking: Button
     private lateinit var btnWalk: Button
@@ -66,6 +67,18 @@ class MockSenderActivity : AppCompatActivity() {
 
     /** Non-null only while the walk is running; see [onPause]. */
     private var walkJob: Job? = null
+
+    // ── Double-press check-in (FR-10) ─────────────────────────────────────────
+
+    /**
+     * Timestamp of the first tap of a double-press sequence, or null when no
+     * press is pending. Set on the first tap; cleared when the second tap
+     * fires or the 2-second window expires.
+     */
+    private var firstPressTime: Long? = null
+
+    /** Coroutine that resets [firstPressTime] after [DOUBLE_PRESS_WINDOW_MS]. */
+    private var doublePressCancelJob: Job? = null
 
     // ── Location ──────────────────────────────────────────────────────────────
 
@@ -171,6 +184,7 @@ class MockSenderActivity : AppCompatActivity() {
     private fun initViews() {
         btnSimulatePanic = findViewById(R.id.btnSimulatePanic)
         btnSimulateCheckin = findViewById(R.id.btnSimulateCheckin)
+        btnDoubleCheckin = findViewById(R.id.btnDoubleCheckin)
         btnSimulateLowBattery = findViewById(R.id.btnSimulateLowBattery)
         btnSimulateTracking = findViewById(R.id.btnSimulateTracking)
         btnWalk = findViewById(R.id.btnWalk)
@@ -183,6 +197,7 @@ class MockSenderActivity : AppCompatActivity() {
         btnSimulateCheckin.setOnClickListener { sendAlert(AlertType.CHECKIN) }
         btnSimulateLowBattery.setOnClickListener { sendAlert(AlertType.LOW_BATTERY) }
         btnSimulateTracking.setOnClickListener { sendAlert(AlertType.TRACKING_UPDATE) }
+        btnDoubleCheckin.setOnClickListener { onDoubleCheckinPressed() }
 
         btnWalk.setOnClickListener {
             if (walkJob == null) startWalk() else {
@@ -316,6 +331,46 @@ class MockSenderActivity : AppCompatActivity() {
         }
     }
 
+    // ── Double-press check-in (FR-10) ─────────────────────────────────────────
+
+    /**
+     * Models the band's FR-10 double-press behaviour: two presses within
+     * [DOUBLE_PRESS_WINDOW_MS] (2 s) fire a CHECKIN. A single press that is
+     * not followed by a second press within the window resets and shows a
+     * "missed" message.
+     *
+     * State machine:
+     *   Idle → first tap → armed (shows countdown prompt, starts timeout)
+     *   Armed → second tap within 2 s → send CHECKIN → idle
+     *   Armed → timeout after 2 s → missed → idle
+     */
+    private fun onDoubleCheckinPressed() {
+        val now = System.currentTimeMillis()
+        val firstTime = firstPressTime
+
+        if (firstTime != null && now - firstTime <= DOUBLE_PRESS_WINDOW_MS) {
+            // Second press within the window — fire the CHECKIN.
+            doublePressCancelJob?.cancel()
+            doublePressCancelJob = null
+            firstPressTime = null
+            sendAlert(AlertType.CHECKIN)
+        } else {
+            // First press (or a stale first press just expired) — arm the window.
+            doublePressCancelJob?.cancel()
+            firstPressTime = now
+            tvStatus.text = getString(R.string.mock_sender_checkin_armed)
+
+            // Schedule a reset if the second press doesn't arrive in time.
+            doublePressCancelJob = lifecycleScope.launch {
+                delay(DOUBLE_PRESS_WINDOW_MS)
+                if (firstPressTime != null) {
+                    firstPressTime = null
+                    tvStatus.text = getString(R.string.mock_sender_checkin_missed)
+                }
+            }
+        }
+    }
+
     // ── Sending ───────────────────────────────────────────────────────────────
 
     private fun sendAlert(type: AlertType) {
@@ -403,6 +458,13 @@ class MockSenderActivity : AppCompatActivity() {
         const val GPS_MIN_DISTANCE_M = 0f
 
         const val REQUEST_LOCATION = 1001
+
+        /**
+         * FR-10: the band sends CHECKIN on a double-press within this window.
+         * Two taps on [btnDoubleCheckin] within 2 s fire the alert; a single
+         * tap that times out resets and shows a missed message.
+         */
+        const val DOUBLE_PRESS_WINDOW_MS = 2_000L
 
         /**
          * A new fix must be this much more accurate to replace a good GPS fix.

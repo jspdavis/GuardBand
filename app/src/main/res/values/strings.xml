@@ -286,9 +286,6 @@
     <!-- Notifications -->
     <string name="label_notifications_title">Notifications</string>
     <string name="label_notifications_empty">No notifications yet.</string>
-    <!-- Sample inbox row, for testing only (fragment_notifications.xml). -->
-    <string name="label_notifications_welcome_title">Welcome to GuardBand</string>
-    <string name="label_notifications_welcome_body">This is where your band\'s updates will appear. This message was generated automatically as a sample.</string>
 
     <!-- Alert notifications (the system shade). Never a location, a name or
          a contact: the type, the time and the battery only. -->

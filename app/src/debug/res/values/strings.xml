@@ -10,7 +10,11 @@
     <string name="mock_sender_walk_stopped">Walk stopped</string>
     <string name="mock_sender_walk_paused">Walk stopped (harness left the foreground)</string>
 
-    <!-- GPS location status, shown in the status line and as a location badge -->
+    <!-- Double-press check-in simulation (FR-10): two taps within 2 s fires
+         a CHECKIN, matching the band's physical double-press behaviour. -->
+    <string name="mock_sender_checkin_double_press">Double-press Check-in (FR-10)</string>
+    <string name="mock_sender_checkin_armed">Press again within 2 s to check in…</string>
+    <string name="mock_sender_checkin_missed">Missed — double-press too slow, try again</string>
     <string name="mock_sender_gps_fix" formatted="false">GPS fix: %.4f, %.4f (±%.0f m)</string>
     <string name="mock_sender_gps_no_fix">No GPS fix — using simulated Cebu City location</string>
     <string name="mock_sender_gps_denied">Location permission denied — using simulated Cebu City location</string>
