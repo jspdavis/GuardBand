@@ -125,7 +125,7 @@ class FirebaseAuthRepository(
 
     override fun currentUser(): User? = auth.currentUser?.toUser()
 
-    // -- Re-authentication and deletion ----------------------------------------
+    // -- Re-authentication, password change and deletion -------------------------
 
     /**
      * Reads the providers off `providerData`, not off
@@ -161,6 +161,16 @@ class FirebaseAuthRepository(
     override suspend fun reauthenticateWithGoogle(idToken: String): Result<Unit> = authResult {
         val user = auth.currentUser ?: throw AuthError.NotSignedIn
         user.reauthenticate(GoogleAuthProvider.getCredential(idToken, null)).await()
+    }
+
+    /**
+     * Sets a new password on the signed-in user. Callers re-authenticate first;
+     * Firebase answers `ERROR_REQUIRES_RECENT_LOGIN` on a stale session, which
+     * the mapper turns into [AuthError.RequiresRecentLogin].
+     */
+    override suspend fun updatePassword(newPassword: String): Result<Unit> = authResult {
+        val user = auth.currentUser ?: throw AuthError.NotSignedIn
+        user.updatePassword(newPassword).await()
     }
 
     /**

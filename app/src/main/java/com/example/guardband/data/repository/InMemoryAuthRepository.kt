@@ -116,6 +116,24 @@ class InMemoryAuthRepository : AuthRepository {
     }
 
     /**
+     * Replaces the signed-in user's password. Like [deleteAccount], it does not
+     * check for a recent login: there is no token to go stale, so
+     * [AuthError.RequiresRecentLogin] is a Firebase-only outcome and a test
+     * that wants it uses
+     * [FakeAuthRepository][com.example.guardband.testing.FakeAuthRepository].
+     *
+     * Refuses under Firebase's own minimum of 6, so [AuthError.WeakPassword]
+     * is reachable in tests.
+     */
+    override suspend fun updatePassword(newPassword: String): Result<Unit> {
+        delay(InMemoryStore.SIMULATED_DELAY_MS)
+        val user = currentUser() ?: return Result.failure(AuthError.NotSignedIn)
+        if (newPassword.length < 6) return Result.failure(AuthError.WeakPassword)
+        InMemoryStore.setPassword(user.id, newPassword)
+        return Result.success(Unit)
+    }
+
+    /**
      * Removes the user and the session, so the double ends in the same state
      * Firebase leaves behind.
      *

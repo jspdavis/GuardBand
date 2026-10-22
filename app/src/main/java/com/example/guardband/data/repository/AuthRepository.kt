@@ -160,6 +160,18 @@ interface AuthRepository {
     suspend fun reauthenticateWithGoogle(idToken: String): Result<Unit>
 
     /**
+     * Sets a new password on the signed-in password account (Change password).
+     *
+     * Callers re-authenticate first with [reauthenticateWithPassword]; Firebase
+     * refuses this on a stale session with [AuthError.RequiresRecentLogin].
+     * Also fails with [AuthError.WeakPassword] below Firebase's own minimum and
+     * [AuthError.NotSignedIn] when the session has gone.
+     *
+     * Does not sign the user out. [newPassword] is never logged or stored.
+     */
+    suspend fun updatePassword(newPassword: String): Result<Unit>
+
+    /**
      * Deletes the Firebase Auth user, ending the account.
      *
      * **Deletes nothing from the database.** The `users/{uid}` subtree is

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
+import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.repository.AuthRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -44,6 +45,16 @@ class SettingsViewModel(
         _events.trySend(SettingsEvent.OpenAccount)
     }
 
+    /** Account information: the account's details, and Delete account. */
+    /** Change password: password accounts only. A Google account has no password. */
+    fun onChangePasswordClicked() {
+        if (SignInProvider.PASSWORD in authRepository.currentUserProviders()) {
+            _events.trySend(SettingsEvent.OpenChangePassword)
+        } else {
+            _events.trySend(SettingsEvent.ShowMessage(MSG_NO_PASSWORD))
+        }
+    }
+
     /** Alert notifications: its own screen, with the switch. */
     fun onAlertNotificationsClicked() {
         _events.trySend(SettingsEvent.OpenAlertNotifications)
@@ -76,6 +87,9 @@ class SettingsViewModel(
 
     companion object {
         const val MSG_COMING_SOON = "Coming soon."
+        const val MSG_NO_PASSWORD =
+            "You sign in with Google, so there is no password to change."
+
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

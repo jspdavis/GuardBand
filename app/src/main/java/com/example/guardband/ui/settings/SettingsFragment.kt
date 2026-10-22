@@ -15,6 +15,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.ui.about.AboutActivity
 import com.example.guardband.ui.account.AccountActivity
+import com.example.guardband.ui.account.ChangePasswordActivity
 import com.example.guardband.ui.auth.GoogleIdTokenProvider
 import com.example.guardband.ui.auth.LoginNavigation
 import com.example.guardband.ui.changelog.ChangelogActivity
@@ -36,7 +37,8 @@ import kotlinx.coroutines.launch
  * instead (About's Privacy Notice). Alert notifications' switch lives on its
  * own screen, [AlertNotificationsActivity], and the Privacy Notice inside
  * [AboutActivity], since 2026-10-20. Display opens [DisplayActivity], the
- * theme; Device information is a placeholder.
+ * theme; Change password opens [ChangePasswordActivity] (password accounts
+ * only); Device information is a placeholder.
  *
  * View ids: ib_settings_back, tv_settings_title, tv_settings_account,
  * tv_settings_change_password, tv_settings_alert_notifications,
@@ -59,7 +61,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             .setOnClickListener { viewModel.onAccountClicked() }
 
         view.findViewById<TextView>(R.id.tv_settings_change_password)
-            .setOnClickListener { viewModel.onPlaceholderRowClicked() }
+            .setOnClickListener { viewModel.onChangePasswordClicked() }
 
         view.findViewById<TextView>(R.id.tv_settings_alert_notifications)
             .setOnClickListener { viewModel.onAlertNotificationsClicked() }
@@ -97,6 +99,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
             SettingsEvent.OpenAccount ->
                 startActivity(Intent(requireContext(), AccountActivity::class.java))
+
+            SettingsEvent.OpenChangePassword ->
+                startActivity(Intent(requireContext(), ChangePasswordActivity::class.java))
 
             SettingsEvent.OpenChangelog ->
                 startActivity(Intent(requireContext(), ChangelogActivity::class.java))

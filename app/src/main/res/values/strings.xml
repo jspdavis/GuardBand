@@ -318,4 +318,9 @@
     <string name="error_field_required">This field is required.</string>
     <string name="error_passwords_mismatch">Passwords do not match.</string>
     <string name="error_invalid_email">Enter a valid email address.</string>
+
+    <string name="label_change_password_title">Change password</string>
+    <string name="dialog_change_password_title">Confirm it\'s you</string>
+    <string name="dialog_change_password_message">Enter your current password to set a new one.</string>
+    <string name="btn_change_password">Change password</string>
 </resources>

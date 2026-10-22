@@ -89,6 +89,19 @@ internal object InMemoryStore {
         users.find { it.user.id == userId }?.password == password
 
     /**
+     * Replaces the stored password for [userId]. Returns false if no such user.
+     *
+     * The counterpart of [passwordMatches], added so [InMemoryAuthRepository]
+     * can honour `updatePassword`. A seam for the tests, like [removeUser].
+     */
+    fun setPassword(userId: String, newPassword: String): Boolean {
+        val index = users.indexOfFirst { it.user.id == userId }
+        if (index < 0) return false
+        users[index] = users[index].copy(password = newPassword)
+        return true
+    }
+
+    /**
      * Removes the user with [userId] and clears the session if it was theirs.
      *
      * The counterpart of [addUser], added so [InMemoryAuthRepository] can

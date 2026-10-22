@@ -20,6 +20,8 @@ class FakeAuthRepository(
     var signInWithGoogleResult: Result<GoogleSignInOutcome> = Result.success(RETURNING_GOOGLE_USER),
     var reauthenticateWithPasswordResult: Result<Unit> = Result.success(Unit),
     var reauthenticateWithGoogleResult: Result<Unit> = Result.success(Unit),
+    /** What [updatePassword] returns (Change password). */
+    var updatePasswordResult: Result<Unit> = Result.success(Unit),
     var deleteAccountResult: Result<Unit> = Result.success(Unit),
     var verifyPasswordResetCodeResult: Result<String> = Result.success(RESET_EMAIL),
     var confirmPasswordResetResult: Result<Unit> = Result.success(Unit),
@@ -47,6 +49,7 @@ class FakeAuthRepository(
     var signOutCalls = 0; private set
     var reauthenticateWithPasswordCalls = 0; private set
     var reauthenticateWithGoogleCalls = 0; private set
+    var updatePasswordCalls = 0; private set
     var deleteAccountCalls = 0; private set
     var verifyPasswordResetCodeCalls = 0; private set
     var confirmPasswordResetCalls = 0; private set
@@ -72,6 +75,8 @@ class FakeAuthRepository(
     /** The token of the last [reauthenticateWithGoogle] call. */
     var lastReauthGoogleIdToken: String? = null; private set
 
+    /** The password handed to the last [updatePassword] call. */
+    var lastUpdatedPassword: String? = null; private set
 
     /** Arguments of the last [createAccount] call, so a test can assert what was forwarded. */
     var lastCreateAccountArgs: List<String> = emptyList(); private set
@@ -138,6 +143,13 @@ class FakeAuthRepository(
         reauthenticateWithGoogleCalls++
         lastReauthGoogleIdToken = idToken
         return reauthenticateWithGoogleResult
+    }
+
+    /** Records the password so a test can assert it was forwarded. Stays signed in. */
+    override suspend fun updatePassword(newPassword: String): Result<Unit> {
+        updatePasswordCalls++
+        lastUpdatedPassword = newPassword
+        return updatePasswordResult
     }
 
     /** Signs the user out on success, like Firebase's own `delete()` does. */
