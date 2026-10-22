@@ -37,6 +37,15 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-10-21",
+            title = "A real Notifications inbox; double-press check-in on the mock sender",
+            changes = listOf(
+                "The Notifications screen (the bell) lists the band's alerts, newest first under day headings, with place names and \"5 min ago\" times, instead of the sample message. Tracking updates are left out.",
+                "The mock sender has a Double-press Check-in button: two taps within 2 seconds send a check-in, as the band's double-press will (FR-10). A single tap times out and says so."
+            ),
+            commit = "3fb02d0"
+        ),
+        ChangelogEntry(
             date = "2026-10-20",
             title = "A sample notification in the inbox; place names on alerts; matching top buttons; alert rows redesigned; Settings reorganised; dark mode",
             changes = listOf(

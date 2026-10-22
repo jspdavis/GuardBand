@@ -51,6 +51,20 @@
         android:textAllCaps="false"
         android:textColor="@android:color/white" />
 
+    <!-- FR-10: two taps within 2 s fires a CHECKIN, matching the band's
+         physical double-press. First tap arms a 2-second window; second tap
+         within the window sends. A single tap that times out resets silently. -->
+    <Button
+        android:id="@+id/btnDoubleCheckin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:backgroundTint="#0D47A1"
+        android:fontFamily="@font/poppins_extralight"
+        android:text="@string/mock_sender_checkin_double_press"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white" />
+
     <Button
         android:id="@+id/btnSimulateLowBattery"
         android:layout_width="match_parent"
