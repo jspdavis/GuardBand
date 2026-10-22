@@ -1,9 +1,14 @@
 package com.example.guardband.ui.contacts
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -18,24 +23,40 @@ import com.example.guardband.R
 import com.example.guardband.data.model.EmergencyContact
 import com.example.guardband.ui.home.HomeViewModel
 import com.example.guardband.utils.InputValidator
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
 
 /**
- * Contacts tab: the emergency-contact list with add, edit and delete (FR-06).
+ * Contacts tab: emergency-contact list with search, relationship filter chips,
+ * add, edit and delete (FR-06).
  *
- * View ids: ib_contacts_settings, ib_contacts_notifications,
- * tv_contacts_title, contacts_min_notice, progress_contacts,
- * tv_contacts_empty, rv_contacts, contacts_add_button (a FAB). Rows add
- * ib_item_contact_edit beside ib_item_contact_delete, and the editor dialog
- * (`dialog_contact_editor.xml`) holds contact_name_input, contact_phone_input
- * and contact_relationship_input.
+ * **Search and filter are purely in-memory.** The full contact list arrives
+ * once from the repository and is held in [ContactsUiState.contacts].
+ * [ContactsUiState.filteredContacts] applies both the active
+ * [ContactsUiState.selectedRelationship] chip and the current
+ * [ContactsUiState.query] without any additional database reads.
+ *
+ * The relationship field in the add/edit dialog is a Material
+ * ExposedDropdownMenu with predefined options; the stored value is still a
+ * plain String so existing records (possibly with free-text values) are never
+ * broken.
+ *
+ * View ids: ib_contacts_settings, ib_contacts_notifications, tv_contacts_title,
+ * et_contacts_search, ib_contacts_search_clear, contacts_chip_group,
+ * contacts_min_notice, progress_contacts, ll_contacts_empty, tv_contacts_empty,
+ * rv_contacts, contacts_add_button.
  */
 class ContactsFragment : Fragment(R.layout.fragment_contacts) {
 
+    private lateinit var etSearch: EditText
+    private lateinit var ibSearchClear: ImageButton
+    private lateinit var chipGroup: ChipGroup
     private lateinit var progressBar: ProgressBar
+    private lateinit var llEmpty: LinearLayout
     private lateinit var tvEmpty: TextView
     private lateinit var tvMinNotice: TextView
     private lateinit var btnAdd: FloatingActionButton
@@ -43,6 +64,12 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
 
     private val viewModel: ContactsViewModel by viewModels { ContactsViewModel.Factory }
     private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
+
+    /**
+     * The chip tags and their corresponding filters, built once in
+     * [buildFilterChips] and used in [render] to sync the selected state.
+     */
+    private val chipFilters = mutableListOf<Pair<Chip, ContactRelationshipFilter>>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -52,16 +79,24 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
         view.findViewById<ImageButton>(R.id.ib_contacts_notifications)
             .setOnClickListener { homeViewModel.onNotificationsClicked() }
 
-        progressBar  = view.findViewById(R.id.progress_contacts)
-        tvEmpty      = view.findViewById(R.id.tv_contacts_empty)
-        tvMinNotice  = view.findViewById(R.id.contacts_min_notice)
-        btnAdd       = view.findViewById(R.id.contacts_add_button)
+        etSearch      = view.findViewById(R.id.et_contacts_search)
+        ibSearchClear = view.findViewById(R.id.ib_contacts_search_clear)
+        chipGroup     = view.findViewById(R.id.contacts_chip_group)
+        progressBar   = view.findViewById(R.id.progress_contacts)
+        llEmpty       = view.findViewById(R.id.ll_contacts_empty)
+        tvEmpty       = view.findViewById(R.id.tv_contacts_empty)
+        tvMinNotice   = view.findViewById(R.id.contacts_min_notice)
+        btnAdd        = view.findViewById(R.id.contacts_add_button)
 
         adapter = ContactAdapter(
-            onEditClicked = viewModel::onEditClicked,
-            onDeleteClicked = ::confirmDelete
+            onEditClicked      = viewModel::onEditClicked,
+            onDeleteClicked    = ::confirmDelete,
+            onEmergencyClicked = viewModel::onEmergencyToggled
         )
         view.findViewById<RecyclerView>(R.id.rv_contacts).adapter = adapter
+
+        buildFilterChips()
+        wireSearch()
 
         btnAdd.setOnClickListener { viewModel.onAddClicked() }
 
@@ -77,9 +112,76 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
         }
     }
 
+    // ── Filter chips ──────────────────────────────────────────────────────────
+
+    /**
+     * Inflates one [Chip] per filter category into [chipGroup] and registers
+     * click listeners. All chips use the Material FilterChip style so the
+     * selected one is visually distinguished by a checkmark and tint.
+     */
+    private fun buildFilterChips() {
+        // (label string resource, filter object)
+                val filters: List<Pair<Int, ContactRelationshipFilter>> = listOf(
+            R.string.label_contacts_filter_all       to ContactRelationshipFilter.All,
+            R.string.label_contacts_filter_emergency to ContactRelationshipFilter.Emergency,
+            R.string.label_contacts_filter_family    to ContactRelationshipFilter.Family,
+            R.string.label_contacts_filter_parent    to ContactRelationshipFilter.Specific("Parent"),
+            R.string.label_contacts_filter_sibling   to ContactRelationshipFilter.Specific("Sibling"),
+            R.string.label_contacts_filter_relative  to ContactRelationshipFilter.Specific("Relative"),
+            R.string.label_contacts_filter_friend    to ContactRelationshipFilter.Specific("Friend"),
+            R.string.label_contacts_filter_partner   to ContactRelationshipFilter.Specific("Partner"),
+            R.string.label_contacts_filter_guardian  to ContactRelationshipFilter.Specific("Guardian"),
+        )
+
+        filters.forEach { (stringRes, filter) ->
+            val chip = LayoutInflater.from(requireContext())
+                .inflate(R.layout.item_filter_chip, chipGroup, false) as Chip
+            chip.text = getString(stringRes)
+            // Start the "All" chip selected.
+            chip.isChecked = filter is ContactRelationshipFilter.All
+            chip.setOnClickListener { viewModel.onRelationshipFilterSelected(filter) }
+            chipGroup.addView(chip)
+            chipFilters += chip to filter
+        }
+    }
+
+    /**
+     * Keeps the chip selection in sync with [ContactsUiState.selectedRelationship].
+     * Called from [render] so any external state change (e.g. process death
+     * restore) also syncs correctly.
+     */
+    private fun syncChipSelection(selected: ContactRelationshipFilter) {
+        chipFilters.forEach { (chip, filter) ->
+            // Compare by label — a quick structural equality that works for
+            // both object singletons (All, Family) and Specific instances.
+            chip.isChecked = filter.label == selected.label
+        }
+    }
+
+    // ── Search bar ────────────────────────────────────────────────────────────
+
+    private fun wireSearch() {
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                val query = s?.toString().orEmpty()
+                viewModel.onSearchChanged(query)
+                ibSearchClear.visibility = if (query.isNotEmpty()) View.VISIBLE else View.GONE
+            }
+        })
+
+        ibSearchClear.setOnClickListener {
+            etSearch.setText("")
+            // onSearchChanged is triggered by the TextWatcher above.
+        }
+    }
+
+    // ── Rendering ─────────────────────────────────────────────────────────────
+
     private fun render(state: ContactsUiState) {
-        progressBar.visibility = if (state.isLoading || state.isMutating) View.VISIBLE else View.GONE
-        tvEmpty.visibility = if (state.showEmpty) View.VISIBLE else View.GONE
+        progressBar.visibility =
+            if (state.isLoading || state.isMutating) View.VISIBLE else View.GONE
         btnAdd.isEnabled = !state.isMutating
 
         tvMinNotice.visibility = if (state.showMinimumNotice) View.VISIBLE else View.GONE
@@ -91,7 +193,23 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
             )
         }
 
-        adapter.submitList(state.contacts)
+        syncChipSelection(state.selectedRelationship)
+
+        // Empty state — show the right message for the current reason.
+        val reason = state.emptyReason
+        llEmpty.visibility = if (reason != null) View.VISIBLE else View.GONE
+        if (reason != null) {
+            tvEmpty.text = when (reason) {
+                ContactsEmptyReason.NO_CONTACTS ->
+                    getString(R.string.label_contacts_empty)
+                ContactsEmptyReason.NO_SEARCH_RESULTS ->
+                    getString(R.string.label_contacts_empty_search)
+                ContactsEmptyReason.NO_FILTER_RESULTS ->
+                    getString(R.string.label_contacts_empty_filter)
+            }
+        }
+
+        adapter.submitList(state.filteredContacts)
     }
 
     private fun handleEvent(event: ContactsEvent) {
@@ -103,10 +221,17 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
         }
     }
 
+    // ── Add / edit dialog ─────────────────────────────────────────────────────
+
     /**
-     * The one add/edit dialog (D6). A null [contact] means add; otherwise the
-     * fields start on the stored values and the id rides back to the ViewModel
-     * so it knows to update rather than insert.
+     * The combined add/edit dialog (D6). A null [contact] means add; a
+     * non-null one pre-fills the fields and carries its id back to the
+     * ViewModel so it updates rather than inserts.
+     *
+     * The relationship field is a Material ExposedDropdownMenu backed by an
+     * [ArrayAdapter] of predefined options. If the stored [contact.relationship]
+     * matches one of the options it is pre-selected; otherwise the field stays
+     * empty so the user can pick the right one.
      */
     private fun showEditor(contact: EmergencyContact?) {
         val content = LayoutInflater.from(requireContext())
@@ -114,12 +239,45 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
 
         val etName = content.findViewById<TextInputEditText>(R.id.contact_name_input)
         val etPhone = content.findViewById<TextInputEditText>(R.id.contact_phone_input)
-        val etRelationship =
-            content.findViewById<TextInputEditText>(R.id.contact_relationship_input)
+        // The relationship field is an AutoCompleteTextView in the new layout.
+        val acRelationship =
+            content.findViewById<android.widget.AutoCompleteTextView>(
+                R.id.contact_relationship_input
+            )
+
+        // Build the relationship options from string resources, in the same
+        // order as the filter chips, so "Other" is always last.
+        val relationshipOptions = listOf(
+            getString(R.string.contact_relationship_parent),
+            getString(R.string.contact_relationship_sibling),
+            getString(R.string.contact_relationship_relative),
+            getString(R.string.contact_relationship_friend),
+            getString(R.string.contact_relationship_partner),
+            getString(R.string.contact_relationship_guardian),
+            getString(R.string.contact_relationship_other),
+        )
+
+        val adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_dropdown_item_1line,
+            relationshipOptions
+        )
+        acRelationship.setAdapter(adapter)
 
         etName.setText(contact?.name.orEmpty())
         etPhone.setText(contact?.phone.orEmpty())
-        etRelationship.setText(contact?.relationship.orEmpty())
+
+        // Pre-select the stored relationship if it matches one of the options
+        // (case-insensitive). This gracefully handles free-text values that
+        // were stored before the dropdown was introduced: if they don't match,
+        // the field simply starts blank.
+        val storedRelationship = contact?.relationship.orEmpty()
+        val matchedOption = relationshipOptions.find {
+            it.equals(storedRelationship, ignoreCase = true)
+        }
+        if (matchedOption != null) {
+            acRelationship.setText(matchedOption, /* filter= */ false)
+        }
 
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(
@@ -130,14 +288,16 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
             .setNegativeButton(R.string.btn_cancel, null)
             .setPositiveButton(R.string.btn_save) { _, _ ->
                 viewModel.onEditorSubmitted(
-                    contactId = contact?.id.orEmpty(),
-                    name = etName.text.toString(),
-                    phone = etPhone.text.toString(),
-                    relationship = etRelationship.text.toString()
+                    contactId    = contact?.id.orEmpty(),
+                    name         = etName.text.toString(),
+                    phone        = etPhone.text.toString(),
+                    relationship = acRelationship.text.toString()
                 )
             }
             .show()
     }
+
+    // ── Delete confirmation ───────────────────────────────────────────────────
 
     private fun confirmDelete(contact: EmergencyContact) {
         MaterialAlertDialogBuilder(requireContext())

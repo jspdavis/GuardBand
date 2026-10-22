@@ -63,22 +63,15 @@ class InputValidatorContactTest {
     // ── Counts ────────────────────────────────────────────────────────────────
 
     @Test
-    fun `the bounds are one and three`() {
+    fun `the minimum is one`() {
         assertEquals(1, InputValidator.MIN_CONTACTS)
-        assertEquals(3, InputValidator.MAX_CONTACTS)
     }
 
     @Test
-    fun `adding is allowed up to the cap and refused at it`() {
+    fun `adding is always allowed regardless of count`() {
         assertTrue(InputValidator.canAddContact(0))
-        assertTrue(InputValidator.canAddContact(InputValidator.MAX_CONTACTS - 1))
-        assertFalse(InputValidator.canAddContact(InputValidator.MAX_CONTACTS))
-    }
-
-    @Test
-    fun `adding is refused past the cap too`() {
-        // Defensive: a stale count must not reopen the gate.
-        assertFalse(InputValidator.canAddContact(InputValidator.MAX_CONTACTS + 1))
+        assertTrue(InputValidator.canAddContact(10))
+        assertTrue(InputValidator.canAddContact(100))
     }
 
     @Test
@@ -90,6 +83,6 @@ class InputValidatorContactTest {
     @Test
     fun `deleting is allowed once one above the minimum`() {
         assertTrue(InputValidator.canDeleteContact(InputValidator.MIN_CONTACTS + 1))
-        assertTrue(InputValidator.canDeleteContact(InputValidator.MAX_CONTACTS))
+        assertTrue(InputValidator.canDeleteContact(50))
     }
 }

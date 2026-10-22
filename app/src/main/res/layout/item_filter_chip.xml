@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    One filter chip for the relationship chip row in the Contacts tab.
+    Uses the Material3 Filter Chip style so the checked chip shows a leading
+    checkmark and a distinct tinted background. Text and checked state are
+    set programmatically in ContactsFragment.buildFilterChips().
+    DESIGN: Jul (colours, corner radius, text style)
+-->
+<com.google.android.material.chip.Chip
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/Widget.Material3.Chip.Filter"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:checkable="true"
+    android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+    app:chipCornerRadius="16dp" />

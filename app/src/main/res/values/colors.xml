@@ -64,6 +64,9 @@
     <color name="rule_unmet">#D32F2F</color>
     <color name="rule_neutral">#8E8E93</color>
 
+    <!-- Favourite star on a contact row: amber/gold. -->
+    <color name="contact_favorite_tint">#F59E0B</color>
+
     <!-- The dark "Retry"/"Cancel" buttons (bg_retry_gradient), white text. -->
     <color name="retry_gradient_start">#000000</color>
     <color name="retry_gradient_end">#4C4444</color>

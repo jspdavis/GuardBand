@@ -22,6 +22,8 @@ internal object ContactFields {
     const val FIELD_NAME = "name"
     const val FIELD_PHONE = "phone"
     const val FIELD_RELATIONSHIP = "relationship"
+    /** The emergency-designation flag. Stored as a boolean; absent == false. */
+    const val FIELD_EMERGENCY = "emergency"
 
     /**
      * [contact] trimmed and with its phone in E.164, ready to store.
@@ -42,28 +44,23 @@ internal object ContactFields {
             name = contact.name.trim(),
             phone = phone,
             relationship = contact.relationship.trim()
+            // isEmergency is passed through unchanged — it is managed by toggleEmergency.
         )
     }
 
-    /** The three stored fields of an already-[validated] contact. */
+    /** The stored fields of an already-[validated] contact. */
     fun toFieldMap(contact: EmergencyContact): Map<String, Any> = mapOf(
         FIELD_NAME to contact.name,
         FIELD_PHONE to contact.phone,
-        FIELD_RELATIONSHIP to contact.relationship
+        FIELD_RELATIONSHIP to contact.relationship,
+        FIELD_EMERGENCY to contact.isEmergency
     )
 
     /**
-     * Every contact under an `emergency_contacts` snapshot, sorted by name.
+     * Every contact under an `emergency_contacts` snapshot.
      *
-     * The database returns children in key order, which for push ids means
-     * oldest first. Sorting by name instead gives the list a stable order the
-     * user can predict, and keeps `DiffUtil` from animating rows around when an
-     * unrelated contact changes. The id breaks ties so the order is total.
-     *
-     * Field values are read through `toString` rather than
-     * `getValue(String::class.java)`, which throws on a value of the wrong
-     * type. A record written by hand in the Console with a numeric phone should
-     * render as text, not take down the listener.
+     * Sort order: emergency contacts first, then alphabetically by name, then
+     * by id as a tiebreaker so the order is stable.
      */
     fun fromSnapshot(snapshot: DataSnapshot): List<EmergencyContact> =
         snapshot.children
@@ -73,8 +70,10 @@ internal object ContactFields {
                     id = id,
                     name = child.child(FIELD_NAME).value?.toString().orEmpty(),
                     phone = child.child(FIELD_PHONE).value?.toString().orEmpty(),
-                    relationship = child.child(FIELD_RELATIONSHIP).value?.toString().orEmpty()
+                    relationship = child.child(FIELD_RELATIONSHIP).value?.toString().orEmpty(),
+                    isEmergency = child.child(FIELD_EMERGENCY).getValue(Boolean::class.java) ?: child.child("favorite").getValue(Boolean::class.java) ?: false
                 )
             }
-            .sortedWith(compareBy({ it.name.lowercase() }, { it.id }))
+            // Emergency contacts bubble to the top.
+            .sortedWith(compareBy({ !it.isEmergency }, { it.name.lowercase() }, { it.id }))
 }

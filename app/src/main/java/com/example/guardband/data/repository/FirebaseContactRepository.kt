@@ -79,12 +79,15 @@ class FirebaseContactRepository(
             val stored = ContactFields.validated(contact)
             val key = ref.push().key ?: throw ContactError.Unknown(null)
 
-            ref.mutate { data ->
-                if (!InputValidator.canAddContact(data.childrenCount.toInt())) {
-                    return@mutate ContactError.MaximumContacts
+            suspendCancellableCoroutine { continuation ->
+                ref.child(key).setValue(ContactFields.toFieldMap(stored)) { error, _ ->
+                    if (!continuation.isActive) return@setValue
+                    if (error != null) {
+                        continuation.resumeWithException(FirebaseDatabaseErrorMapper.map(error))
+                    } else {
+                        continuation.resume(Unit)
+                    }
                 }
-                data.child(key).value = ContactFields.toFieldMap(stored)
-                null
             }
 
             stored.copy(id = key)
@@ -130,6 +133,24 @@ class FirebaseContactRepository(
             }
         }
     }
+
+    override suspend fun toggleEmergency(contactId: String, emergency: Boolean): Result<Unit> =
+        contactResult {
+            if (contactId.isBlank()) throw ContactError.NotFound
+            val ref = contactsRef(requireUid()).child(contactId)
+
+            suspendCancellableCoroutine { continuation ->
+                ref.child(ContactFields.FIELD_EMERGENCY)
+                    .setValue(emergency) { error, _ ->
+                        if (!continuation.isActive) return@setValue
+                        if (error != null) {
+                            continuation.resumeWithException(FirebaseDatabaseErrorMapper.map(error))
+                        } else {
+                            continuation.resume(Unit)
+                        }
+                    }
+            }
+        }
 
     // ── Plumbing ──────────────────────────────────────────────────────────────
 

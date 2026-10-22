@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Contacts tab: emergency-contact list with search bar and relationship
+    filter chips (FR-06).
+
+    View ids: ib_contacts_settings, ib_contacts_notifications,
+    tv_contacts_title, et_contacts_search, ib_contacts_search_clear,
+    contacts_chip_group, contacts_min_notice, progress_contacts,
+    tv_contacts_empty, rv_contacts, contacts_add_button.
+    DESIGN: Jul (spacing, chip colours, search-bar styling)
+-->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -8,9 +18,8 @@
     android:background="@color/surface_bg"
     tools:context=".ui.contacts.ContactsFragment">
 
-    <!-- ── Top Action Buttons (Settings & Notifications) ──────────────────
-         36dp, 16dp from the sides and 24dp from the top, the same as
-         Track's, so the pair does not jump when switching tabs. DESIGN: Jul -->
+    <!-- ── Top action buttons: Settings (start) and Notifications (end) ───
+         36dp, 16dp from edges, 24dp from top — same as Track tab. -->
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/ib_contacts_settings"
@@ -44,7 +53,116 @@
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
         app:tint="@color/brand_green" />
 
-    <!-- ── Scrollable Body Content (Header, Min Notice & RecyclerView) ─── -->
+    <!-- ── Fixed header: title + search bar + chip row ────────────────────
+         Not inside the ScrollView so they stay anchored while the list
+         scrolls underneath. -->
+
+    <LinearLayout
+        android:id="@+id/ll_contacts_header"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="24dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ib_contacts_settings">
+
+        <TextView
+            android:id="@+id/tv_contacts_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="@string/label_contacts_title"
+            android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
+            android:textColor="@color/text_primary" />
+
+        <!-- Search bar: outlined card with a magnifying-glass leading icon
+             and a clear (×) trailing button that appears once text is typed. -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cv_contacts_search"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            app:cardBackgroundColor="@color/surface_card"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="4dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_search"
+                    app:tint="@color/text_hint" />
+
+                <EditText
+                    android:id="@+id/et_contacts_search"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:hint="@string/hint_contacts_search"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint" />
+
+                <!-- Clear button — shown only when the search field has text. -->
+                <ImageButton
+                    android:id="@+id/ib_contacts_search_clear"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/cd_contacts_search_clear"
+                    android:src="@drawable/ic_close"
+                    android:visibility="gone"
+                    app:tint="@color/text_hint" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Relationship filter chips — horizontally scrollable, no wrap.
+             Chips are added in ContactsFragment.buildFilterChips() so the
+             labels come from string resources and the selection state is
+             driven by ContactsUiState.selectedRelationship. -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="-24dp"
+            android:layout_marginEnd="-24dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:scrollbars="none">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/contacts_chip_group"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="10dp"
+                app:chipSpacingHorizontal="6dp"
+                app:singleSelection="true"
+                app:selectionRequired="true" />
+
+        </HorizontalScrollView>
+
+    </LinearLayout>
+
+    <!-- ── Scrollable list body ────────────────────────────────────────────
+         Constrained below the fixed header so the header stays pinned. -->
 
     <ScrollView
         android:layout_width="0dp"
@@ -53,60 +171,76 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ib_contacts_settings">
+        app:layout_constraintTop_toBottomOf="@id/ll_contacts_header">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingStart="24dp"
-            android:paddingTop="16dp"
+            android:paddingTop="4dp"
             android:paddingEnd="24dp"
             android:paddingBottom="88dp">
 
-            <TextView
-                android:id="@+id/tv_contacts_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/label_contacts_title"
-                android:textAppearance="@style/TextAppearance.GuardBand.HeadlineSmall"
-                android:textColor="@color/text_primary" />
-
-            <!-- DESIGN: Jul -->
+            <!-- "n of 1 minimum" notice, shown until the user reaches the floor. -->
             <TextView
                 android:id="@+id/contacts_min_notice"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginBottom="8dp"
                 android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
                 android:textColor="@color/text_secondary"
                 android:visibility="gone"
-                tools:text="1 of 3 minimum"
+                tools:text="1 of 1 minimum"
                 tools:visibility="visible" />
 
+            <!-- Loading spinner during the initial read or a mutation. -->
             <ProgressBar
                 android:id="@+id/progress_contacts"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
                 android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/tv_contacts_empty"
+            <!-- Empty state: message adapts to the active empty reason.
+                 The add-contact prompt only shows when there are no contacts at
+                 all, not when search/filter has narrowed the list to zero. -->
+            <LinearLayout
+                android:id="@+id/ll_contacts_empty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="@string/label_contacts_empty"
-                android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
-                android:textColor="@color/text_secondary"
-                android:visibility="gone" />
+                android:layout_marginTop="32dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
 
+                <ImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_group"
+                    app:tint="@color/text_hint" />
+
+                <TextView
+                    android:id="@+id/tv_contacts_empty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                    android:textColor="@color/text_secondary"
+                    tools:text="No emergency contacts added yet." />
+
+            </LinearLayout>
+
+            <!-- The list itself. nestedScrollingEnabled="false" lets the outer
+                 ScrollView own the scroll so the header scrolls away normally. -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_contacts"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
                 android:clipToPadding="false"
                 android:nestedScrollingEnabled="false"
                 android:paddingBottom="8dp"
@@ -116,11 +250,9 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- ── Add Contact FAB ───────────────────────────────────────────────
-         Floats over the list, which pads its bottom by 88dp so the last row
-         can scroll clear of it. -->
-
-    <!-- DESIGN: Jul -->
+    <!-- ── Add contact FAB ─────────────────────────────────────────────────
+         Floats over the list; 88dp bottom padding on the list ensures the
+         last row can scroll clear of it. DESIGN: Jul -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/contacts_add_button"
         android:layout_width="wrap_content"

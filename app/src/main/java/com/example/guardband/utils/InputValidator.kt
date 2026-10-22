@@ -91,16 +91,12 @@ object InputValidator {
     fun isValidContactRelationship(relationship: String): Boolean =
         relationship.trim().length <= MAX_RELATIONSHIP_LENGTH
 
-    /** True when another contact fits under [MAX_CONTACTS]. */
-    fun canAddContact(currentCount: Int): Boolean = currentCount < MAX_CONTACTS
+    /** Always true — there is no upper bound on the number of contacts. */
+    fun canAddContact(currentCount: Int): Boolean = true
 
     /**
      * True when deleting one of [currentCount] contacts still leaves
      * [MIN_CONTACTS].
-     *
-     * So a user holding exactly the minimum cannot delete their way below it;
-     * they have to add a replacement first. Editing is always allowed, which is
-     * the way out for a contact that is merely wrong.
      */
     fun canDeleteContact(currentCount: Int): Boolean =
         currentCount - 1 >= MIN_CONTACTS
@@ -109,10 +105,11 @@ object InputValidator {
     const val MIN_CONTACTS = 1
 
     /**
-     * Upper bound. These are the people the band texts first, so the list is
-     * kept short: every alert's SMS goes to all of them.
+     * No hard upper bound — add as many contacts as needed.
+     * Kept as a constant so existing references compile; it is no longer
+     * used as a gate.
      */
-    const val MAX_CONTACTS = 3
+    const val MAX_CONTACTS = Int.MAX_VALUE
 
     const val MAX_CONTACT_NAME_LENGTH = 100
     const val MAX_RELATIONSHIP_LENGTH = 50

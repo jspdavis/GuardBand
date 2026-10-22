@@ -109,8 +109,8 @@
           "$contactId": {
             "//": [
               "Counts cannot be enforced here: RTDB rules cannot count",
-              "children, so InputValidator.MIN_CONTACTS (1) and MAX_CONTACTS",
-              "(3) stay the repository's job. These rules only police the",
+              "children, so InputValidator.MIN_CONTACTS (1) stays the repository's",
+              "job (there is no upper cap). These rules only police the",
               "shape of one contact."
             ],
             ".read": "auth != null && auth.uid == $uid",
@@ -151,6 +151,14 @@
             "relationship": {
               "//": "Optional. Stored as an empty string when left blank, never removed.",
               ".validate": "newData.isString() && newData.val().length <= 50"
+            },
+            "emergency": {
+              "//": "Emergency designation flag. Starred contacts. Defaults to false when absent.",
+              ".validate": "newData.isBoolean()"
+            },
+            "favorite": {
+              "//": "Legacy alias for emergency designation flag.",
+              ".validate": "newData.isBoolean()"
             },
             "$other": {
               ".validate": false

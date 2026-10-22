@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -83,8 +84,13 @@ class ContactsViewModelTest {
     fun `the empty state is not shown while the first read is still running`() = runTest {
         val vm = viewModel(FakeContactRepository(emptyList()))
 
-        assertFalse(vm.uiState.value.showEmpty)
-        assertTrue(vm.uiState.first { !it.isLoading }.showEmpty)
+        // While loading, emptyReason must be null (spinner is showing, not empty state).
+        assertNull(vm.uiState.value.emptyReason)
+        // Once loading completes with no contacts, NO_CONTACTS reason is set.
+        assertEquals(
+            ContactsEmptyReason.NO_CONTACTS,
+            vm.uiState.first { !it.isLoading }.emptyReason
+        )
     }
 
     // ── Add ───────────────────────────────────────────────────────────────────
@@ -100,13 +106,13 @@ class ContactsViewModelTest {
     }
 
     @Test
-    fun `the add button refuses at the cap instead of opening the editor`() = runTest {
-        val vm = viewModel(FakeContactRepository(FakeContactRepository.atCap()))
+    fun `the add button always opens the editor regardless of list size`() = runTest {
+        val vm = viewModel(FakeContactRepository(FakeContactRepository.atMinimum()))
         vm.uiState.first { !it.isLoading }
 
         vm.onAddClicked()
 
-        assertEquals(ContactsViewModel.MSG_AT_CAP, firstMessage(vm))
+        assertEquals(ContactsEvent.ShowContactEditor(null), vm.events.first())
     }
 
     @Test
@@ -175,8 +181,7 @@ class ContactsViewModelTest {
     }
 
     @Test
-    fun `the repository's cap verdict is reported even if the screen let it through`() = runTest {
-        // The screen's own count can be stale; the repository is authoritative.
+    fun `a repository failure on add is reported with the generic message`() = runTest {
         val repository = FakeContactRepository(FakeContactRepository.atMinimum())
         repository.addResult = Result.failure(ContactError.MaximumContacts)
         val vm = viewModel(repository)
@@ -184,7 +189,7 @@ class ContactsViewModelTest {
 
         vm.onEditorSubmitted("", "Jordan Lee", "09171234567", "Friend")
 
-        assertEquals(ContactsViewModel.MSG_AT_CAP, firstMessage(vm))
+        assertEquals(ContactsViewModel.MSG_GENERIC_FAILURE, firstMessage(vm))
     }
 
     // ── Edit ──────────────────────────────────────────────────────────────────
@@ -257,7 +262,6 @@ class ContactsViewModelTest {
         assertTrue(
             ContactsViewModel.MSG_AT_MINIMUM.contains(InputValidator.MIN_CONTACTS.toString())
         )
-        assertTrue(ContactsViewModel.MSG_AT_CAP.contains(InputValidator.MAX_CONTACTS.toString()))
     }
 
     @Test
@@ -294,6 +298,22 @@ class ContactsViewModelTest {
         vm.onDeleteConfirmed("seed-0")
 
         assertEquals(ContactsViewModel.MSG_SESSION_EXPIRED, firstMessage(vm))
+    }
+
+    @Test
+    fun `emergency filter matches only designated emergency contacts`() = runTest {
+        val contact1 = EmergencyContact(id = "1", name = "Alex", phone = "09171234567", relationship = "Friend", isEmergency = true)
+        val contact2 = EmergencyContact(id = "2", name = "Sam", phone = "09181234567", relationship = "Parent", isEmergency = false)
+        val repository = FakeContactRepository(listOf(contact1, contact2))
+        val vm = viewModel(repository)
+        vm.uiState.first { !it.isLoading }
+
+        vm.onRelationshipFilterSelected(ContactRelationshipFilter.Emergency)
+
+        val filtered = vm.uiState.value.filteredContacts
+        assertEquals(1, filtered.size)
+        assertEquals("Alex", filtered.first().name)
+        assertTrue(filtered.first().isEmergency)
     }
 
     private suspend fun firstMessage(vm: ContactsViewModel): String =

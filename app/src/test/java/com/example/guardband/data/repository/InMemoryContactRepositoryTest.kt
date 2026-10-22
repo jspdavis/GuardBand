@@ -110,18 +110,16 @@ class InMemoryContactRepositoryTest {
     }
 
     @Test
-    fun `adding at the cap is refused by the repository, not only the UI`() = runTest {
-        resetStore(seed(InputValidator.MAX_CONTACTS))
+    fun `adding many contacts is allowed with no upper bound`() = runTest {
+        resetStore(seed(10))
 
-        val result = repository.addContact(valid)
-
-        assertEquals(ContactError.MaximumContacts, result.exceptionOrNull())
-        assertEquals(InputValidator.MAX_CONTACTS, InMemoryStore.getContacts().size)
+        assertTrue(repository.addContact(valid).isSuccess)
+        assertEquals(11, InMemoryStore.getContacts().size)
     }
 
     @Test
-    fun `adding one below the cap still works`() = runTest {
-        resetStore(seed(InputValidator.MAX_CONTACTS - 1))
+    fun `adding to a non-empty list still works`() = runTest {
+        resetStore(seed(5))
 
         assertTrue(repository.addContact(valid).isSuccess)
     }

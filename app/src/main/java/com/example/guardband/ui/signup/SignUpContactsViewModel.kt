@@ -149,7 +149,7 @@ class SignUpContactsViewModel : ViewModel() {
 
         const val MSG_ONE_CONTACT_REQUIRED =
             "Add at least one emergency contact so your band has someone to text."
-        const val MSG_MAXIMUM_REACHED = "You can add up to ${InputValidator.MAX_CONTACTS} contacts."
+        const val MSG_MAXIMUM_REACHED = "You have reached the contact limit."
         const val MSG_CONTACT_NAME_INVALID = "Enter the contact's name."
         const val MSG_CONTACT_PHONE_INVALID = "Enter a valid mobile number, like 09171234567."
         const val MSG_CONTACT_RELATIONSHIP_INVALID = "That relationship is too long."

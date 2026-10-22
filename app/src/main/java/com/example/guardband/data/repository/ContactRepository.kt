@@ -55,4 +55,12 @@ interface ContactRepository {
      * contact.
      */
     suspend fun deleteContact(contactId: String): Result<Unit>
+
+    /**
+     * Sets the emergency designation flag on the contact with [contactId] to [emergency].
+     *
+     * Lightweight single-field update — not subject to min/max bounds.
+     * Fails with [ContactError.NotFound] when the contact is gone.
+     */
+    suspend fun toggleEmergency(contactId: String, emergency: Boolean): Result<Unit>
 }

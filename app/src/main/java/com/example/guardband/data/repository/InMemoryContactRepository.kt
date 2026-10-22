@@ -29,9 +29,6 @@ class InMemoryContactRepository : ContactRepository {
     override suspend fun addContact(contact: EmergencyContact): Result<EmergencyContact> =
         contactResult {
             val stored = ContactFields.validated(contact)
-            if (!InputValidator.canAddContact(InMemoryStore.getContacts().size)) {
-                throw ContactError.MaximumContacts
-            }
             InMemoryStore.addContact(stored)
         }
 
@@ -53,6 +50,15 @@ class InMemoryContactRepository : ContactRepository {
         }
         if (!InMemoryStore.removeContact(contactId)) throw ContactError.NotFound
     }
+
+    override suspend fun toggleEmergency(contactId: String, emergency: Boolean): Result<Unit> =
+        contactResult {
+            if (contactId.isBlank()) throw ContactError.NotFound
+            val updated = InMemoryStore.getContacts()
+                .map { if (it.id == contactId) it.copy(isEmergency = emergency) else it }
+            if (updated.none { it.id == contactId }) throw ContactError.NotFound
+            InMemoryStore.replaceContacts(updated)
+        }
 
     /** Mirrors [FirebaseContactRepository]'s wrapper, minus the Firebase mapping. */
     private inline fun <T> contactResult(block: () -> T): Result<T> =

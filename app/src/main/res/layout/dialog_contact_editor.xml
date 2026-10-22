@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Add/edit emergency contact (D6). One dialog serves both: the title and the
-  pre-filled values are what differ, and ContactsFragment sets those.
-  Endpoints only - DESIGN: Jul owns spacing, typography and colour here.
+    Add/edit emergency contact (D6). One dialog serves both add and edit:
+    the title and the pre-filled values differ; ContactsFragment sets those.
+
+    The relationship field is a Material ExposedDropdownMenu so users pick
+    from a predefined list (Parent, Sibling, Relative, Friend, Partner,
+    Guardian, Other) rather than typing free text. The stored value is still
+    a plain String — no model change required.
+
+    View ids: til_contact_name_input / contact_name_input,
+              til_contact_phone_input / contact_phone_input,
+              til_contact_relationship_input / contact_relationship_input
+              (AutoCompleteTextView, not TextInputEditText).
+    DESIGN: Jul (spacing, typography, colours)
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -12,11 +22,14 @@
     android:orientation="vertical"
     android:paddingStart="24dp"
     android:paddingTop="8dp"
-    android:paddingEnd="24dp">
+    android:paddingEnd="24dp"
+    android:paddingBottom="8dp">
 
+    <!-- Contact name -->
     <!-- DESIGN: Jul -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_contact_name_input"
+        style="@style/Widget.GuardBand.TextInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/hint_contact_name">
@@ -29,9 +42,11 @@
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Phone number -->
     <!-- DESIGN: Jul -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_contact_phone_input"
+        style="@style/Widget.GuardBand.TextInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
@@ -45,19 +60,26 @@
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Relationship — ExposedDropdownMenu so users pick from a fixed list
+         rather than typing free text. The dropdown items are set in
+         ContactsFragment.showEditor() using an ArrayAdapter.
+         focusable=false + clickable=false on the AutoCompleteTextView stops
+         the keyboard from opening; the dropdown opens on any touch. -->
     <!-- DESIGN: Jul -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_contact_relationship_input"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:hint="@string/hint_contact_relationship">
+        android:hint="@string/hint_contact_relationship_dropdown">
 
-        <com.google.android.material.textfield.TextInputEditText
+        <AutoCompleteTextView
             android:id="@+id/contact_relationship_input"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textCapWords"
+            android:focusable="false"
+            android:inputType="none"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 

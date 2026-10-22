@@ -161,19 +161,52 @@
     <string name="cd_track_recent_alerts_loading">Loading recent alerts</string>
 
     <!-- Contacts -->
-    <string name="label_contacts_title">Emergency Contacts</string>
-    <string name="label_contacts_empty">No emergency contacts added yet.</string>
+    <string name="label_contacts_title">Contacts</string>
+    <string name="label_contacts_empty">No contacts added yet.</string>
     <string name="cd_delete_contact">Delete contact</string>
+    <string name="cd_edit_contact">Edit contact</string>
+    <string name="cd_toggle_favorite">Toggle emergency designation</string>
+    <string name="label_contact_emergency_tag">Emergency</string>
     <string name="dialog_delete_contact_title">Delete contact?</string>
     <string name="dialog_delete_contact_message">%1$s will no longer receive your alerts.</string>
     <string name="btn_delete">Delete</string>
     <string name="btn_cancel">Cancel</string>
     <string name="btn_save">Save</string>
     <string name="btn_retry">Retry</string>
-    <string name="cd_edit_contact">Edit contact</string>
     <string name="label_contacts_min_notice">%1$d of %2$d minimum</string>
     <string name="dialog_contact_add_title">Add contact</string>
     <string name="dialog_contact_edit_title">Edit contact</string>
+
+    <!-- Contacts – search and filter chips -->
+    <string name="hint_contacts_search">Search contacts…</string>
+    <string name="cd_contacts_search_clear">Clear search</string>
+    <string name="label_contacts_filter_all">All</string>
+    <string name="label_contacts_filter_family">Family</string>
+    <string name="label_contacts_filter_parent">Parent</string>
+    <string name="label_contacts_filter_sibling">Sibling</string>
+    <string name="label_contacts_filter_relative">Relative</string>
+    <string name="label_contacts_filter_friend">Friend</string>
+    <string name="label_contacts_filter_partner">Partner</string>
+    <string name="label_contacts_filter_guardian">Guardian</string>
+    <string name="label_contacts_filter_emergency">Emergency</string>
+    <string name="label_contacts_filter_other">Other</string>
+
+    <!-- Contacts – relationship options shown in the editor dropdown -->
+    <string name="contact_relationship_parent">Parent</string>
+    <string name="contact_relationship_sibling">Sibling</string>
+    <string name="contact_relationship_relative">Relative</string>
+    <string name="contact_relationship_friend">Friend</string>
+    <string name="contact_relationship_partner">Partner</string>
+    <string name="contact_relationship_guardian">Guardian</string>
+    <string name="contact_relationship_other">Other</string>
+
+    <!-- Contacts – empty states -->
+    <string name="label_contacts_empty_search">No contacts match your search.</string>
+    <string name="label_contacts_empty_filter">No contacts in this category yet.</string>
+    <string name="cd_contacts_add">Add your first contact</string>
+
+    <!-- Contacts – hint for the relationship dropdown -->
+    <string name="hint_contact_relationship_dropdown">Relationship</string>
 
     <!-- Alert history, and the rows Track's recent-alerts panel shares -->
     <string name="label_alert_title">Alert history</string>

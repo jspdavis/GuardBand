@@ -47,9 +47,6 @@ class FakeContactRepository(
         added += contact
         addResult?.let { return it }
 
-        if (!InputValidator.canAddContact(contacts.value.size)) {
-            return Result.failure(ContactError.MaximumContacts)
-        }
         val saved = contact.copy(id = "fake-${contacts.value.size + 1}")
         contacts.value = contacts.value + saved
         return Result.success(saved)
@@ -80,6 +77,16 @@ class FakeContactRepository(
         return Result.success(Unit)
     }
 
+    override suspend fun toggleEmergency(contactId: String, emergency: Boolean): Result<Unit> {
+        if (contacts.value.none { it.id == contactId }) {
+            return Result.failure(ContactError.NotFound)
+        }
+        contacts.value = contacts.value.map {
+            if (it.id == contactId) it.copy(isEmergency = emergency) else it
+        }
+        return Result.success(Unit)
+    }
+
     companion object {
         /** [MIN_CONTACTS][InputValidator.MIN_CONTACTS] stored contacts: deletes are allowed off this. */
         fun atMinimum(): List<EmergencyContact> = List(InputValidator.MIN_CONTACTS) { index ->
@@ -91,8 +98,14 @@ class FakeContactRepository(
             )
         }
 
-        /** [MAX_CONTACTS][InputValidator.MAX_CONTACTS] stored contacts: adds are refused. */
-        fun atCap(): List<EmergencyContact> = List(InputValidator.MAX_CONTACTS) { index ->
+        /**
+         * A large list of contacts for tests that need more than [atMinimum].
+         *
+         * There is no hard upper cap ([InputValidator.MAX_CONTACTS] is [Int.MAX_VALUE]),
+         * so this just returns a fixed set of 10 contacts — enough to exercise
+         * "many contacts" behaviour without allocating billions of objects.
+         */
+        fun atCap(): List<EmergencyContact> = List(10) { index ->
             EmergencyContact(
                 id = "seed-$index",
                 name = "Contact $index",

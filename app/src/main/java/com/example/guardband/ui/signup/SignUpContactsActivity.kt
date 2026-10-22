@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -88,8 +90,10 @@ class SignUpContactsActivity : AppCompatActivity() {
         btnNext     = findViewById(R.id.btn_signup_contacts_next)
 
         adapter = ContactAdapter(
-            onEditClicked = viewModel::onEditClicked,
-            onDeleteClicked = { viewModel.onDeleteClicked(it.id) }
+            onEditClicked      = viewModel::onEditClicked,
+            onDeleteClicked    = { viewModel.onDeleteClicked(it.id) },
+            // Emergency designation is not available during sign-up.
+            onEmergencyClicked = {}
         )
         findViewById<RecyclerView>(R.id.rv_signup_contacts).adapter = adapter
 
@@ -164,12 +168,38 @@ class SignUpContactsActivity : AppCompatActivity() {
 
         val etName = content.findViewById<TextInputEditText>(R.id.contact_name_input)
         val etPhone = content.findViewById<TextInputEditText>(R.id.contact_phone_input)
-        val etRelationship =
-            content.findViewById<TextInputEditText>(R.id.contact_relationship_input)
+        val acRelationship =
+            content.findViewById<AutoCompleteTextView>(R.id.contact_relationship_input)
+
+        val relationshipOptions = listOf(
+            getString(R.string.contact_relationship_parent),
+            getString(R.string.contact_relationship_sibling),
+            getString(R.string.contact_relationship_relative),
+            getString(R.string.contact_relationship_friend),
+            getString(R.string.contact_relationship_partner),
+            getString(R.string.contact_relationship_guardian),
+            getString(R.string.contact_relationship_other),
+        )
+
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_dropdown_item_1line,
+            relationshipOptions
+        )
+        acRelationship.setAdapter(adapter)
 
         etName.setText(contact?.name.orEmpty())
         etPhone.setText(contact?.phone.orEmpty())
-        etRelationship.setText(contact?.relationship.orEmpty())
+
+        val storedRelationship = contact?.relationship.orEmpty()
+        val matchedOption = relationshipOptions.find {
+            it.equals(storedRelationship, ignoreCase = true)
+        }
+        if (matchedOption != null) {
+            acRelationship.setText(matchedOption, false)
+        } else {
+            acRelationship.setText(storedRelationship, false)
+        }
 
         MaterialAlertDialogBuilder(this)
             .setTitle(
@@ -183,7 +213,7 @@ class SignUpContactsActivity : AppCompatActivity() {
                     contactId = contact?.id.orEmpty(),
                     name = etName.text.toString(),
                     phone = etPhone.text.toString(),
-                    relationship = etRelationship.text.toString()
+                    relationship = acRelationship.text.toString()
                 )
             }
             .show()

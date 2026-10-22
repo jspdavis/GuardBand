@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One emergency contact (Contacts tab). Adapted from the checkpoint's item_emergency_contact.xml. -->
+<!-- One contact row (Contacts tab). Bound by ContactAdapter. -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -19,6 +19,7 @@
         android:orientation="horizontal"
         android:padding="12dp">
 
+        <!-- Avatar circle -->
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/iv_item_contact_avatar"
             android:layout_width="48dp"
@@ -30,6 +31,7 @@
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
             app:tint="@color/text_secondary" />
 
+        <!-- Name / relationship / phone / Emergency chip -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -59,10 +61,42 @@
                 android:layout_height="wrap_content"
                 android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
                 android:textColor="@color/text_hint"
-                tools:text="+1-555-0101" />
+                tools:text="+639171234567" />
+
+            <!-- "Emergency" badge — visible only when isEmergency = true.
+                 Uses the brand green to stand out clearly. DESIGN: Jul -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_item_contact_emergency"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/label_contact_emergency_tag"
+                android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                android:textColor="@color/white"
+                android:visibility="gone"
+                app:chipBackgroundColor="@color/brand_green"
+                app:chipMinHeight="24dp"
+                app:chipStartPadding="8dp"
+                app:chipEndPadding="8dp"
+                app:chipIcon="@drawable/ic_star_filled"
+                app:chipIconTint="@color/white"
+                app:chipIconSize="14dp"
+                tools:visibility="visible" />
+
         </LinearLayout>
 
-        <!-- DESIGN: Jul - ic_edit is a stand-in pencil until the Figma icon is exported -->
+        <!-- Star / emergency toggle -->
+        <ImageButton
+            android:id="@+id/ib_item_contact_favorite"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cd_toggle_favorite"
+            android:src="@drawable/ic_star" />
+
+        <!-- Edit -->
+        <!-- DESIGN: Jul - ic_edit is a stand-in until the Figma icon is exported -->
         <ImageButton
             android:id="@+id/ib_item_contact_edit"
             android:layout_width="48dp"
@@ -72,6 +106,7 @@
             android:src="@drawable/ic_edit"
             app:tint="@color/text_secondary" />
 
+        <!-- Delete -->
         <ImageButton
             android:id="@+id/ib_item_contact_delete"
             android:layout_width="48dp"
@@ -80,5 +115,6 @@
             android:contentDescription="@string/cd_delete_contact"
             android:src="@drawable/ic_delete"
             app:tint="@color/rule_unmet" />
+
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

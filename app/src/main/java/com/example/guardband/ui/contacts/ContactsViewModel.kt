@@ -45,14 +45,28 @@ class ContactsViewModel(
         observeContacts()
     }
 
+    // ── Search and filter ─────────────────────────────────────────────────────
+
+    /**
+     * Updates the search query. Filtering is applied immediately in-memory via
+     * [ContactsUiState.filteredContacts]; no database call is made.
+     */
+    fun onSearchChanged(query: String) {
+        _uiState.update { it.copy(query = query) }
+    }
+
+    /**
+     * Selects a relationship chip filter. Combining with the active query is
+     * handled by [ContactsUiState.filteredContacts].
+     */
+    fun onRelationshipFilterSelected(filter: ContactRelationshipFilter) {
+        _uiState.update { it.copy(selectedRelationship = filter) }
+    }
+
     // ── Add and edit ──────────────────────────────────────────────────────────
 
-    /** Opens the editor for a new contact, unless the user is at the cap. */
+    /** Opens the editor for a new contact. */
     fun onAddClicked() {
-        if (!InputValidator.canAddContact(_uiState.value.contacts.size)) {
-            _events.trySend(ContactsEvent.ShowMessage(MSG_AT_CAP))
-            return
-        }
         _events.trySend(ContactsEvent.ShowContactEditor(null))
     }
 
@@ -114,6 +128,25 @@ class ContactsViewModel(
         }
     }
 
+    // ── Emergency designation ─────────────────────────────────────────────────
+
+    /**
+     * Toggles the emergency designation on [contact]. Contacts marked as
+     * emergency sort to the top of the list and show an "Emergency" badge.
+     * The action is immediately reversible by tapping the star again.
+     */
+    fun onEmergencyToggled(contact: EmergencyContact) {
+        if (_uiState.value.isMutating) return
+        val newValue = !contact.isEmergency
+
+        _uiState.update { it.copy(isMutating = true) }
+        viewModelScope.launch {
+            contactRepository.toggleEmergency(contact.id, newValue)
+                .also { _uiState.update { state -> state.copy(isMutating = false) } }
+                .onFailure { _events.send(ContactsEvent.ShowMessage(messageFor(it))) }
+        }
+    }
+
     // ── Delete ────────────────────────────────────────────────────────────────
 
     /** Called after the user confirms the delete dialog. */
@@ -160,7 +193,7 @@ class ContactsViewModel(
     /** Wording for a [ContactError]. Never shows the exception text. */
     private fun messageFor(error: Throwable): String = when (error) {
         ContactError.MinimumContacts -> MSG_AT_MINIMUM
-        ContactError.MaximumContacts -> MSG_AT_CAP
+        ContactError.MaximumContacts -> MSG_GENERIC_FAILURE
         ContactError.Validation -> MSG_PHONE_INVALID
         ContactError.NotFound -> MSG_CONTACT_GONE
         ContactError.Network -> MSG_NO_CONNECTION
@@ -178,15 +211,9 @@ class ContactsViewModel(
         const val MSG_PHONE_INVALID = "Enter a valid mobile number, like 09171234567."
         const val MSG_RELATIONSHIP_INVALID = "That relationship is too long."
 
-        /**
-         * Says what to do instead, because the rule is not obvious from the
-         * screen: the band fans an alert out to these numbers, so
-         * [MIN_CONTACTS][InputValidator.MIN_CONTACTS] is the point of the list.
-         */
         const val MSG_AT_MINIMUM =
             "The list can't go below ${InputValidator.MIN_CONTACTS}, because the band " +
                 "needs someone to text. Add another contact first."
-        const val MSG_AT_CAP = "You can only have up to ${InputValidator.MAX_CONTACTS} contacts."
 
         const val MSG_CONTACT_GONE = "That contact no longer exists."
         const val MSG_NO_CONNECTION = "No connection. Check your network and try again."

@@ -26,11 +26,17 @@ import kotlinx.parcelize.Parcelize
  *                     produced it. Never logged: it is a third party's personal
  *                     data.
  * @param relationship Optional relationship label (e.g. "Friend", "Family").
+ * @param isEmergency  Whether this contact is designated as the primary emergency
+ *                     contact (shown with an "Emergency" badge on their row). Sorted
+ *                     to the top of the list. Stored as the `emergency` boolean field
+ *                     in the RTDB record; defaults to false so existing records without
+ *                     the field deserialize correctly.
  */
 @Parcelize
 data class EmergencyContact(
     val id: String = "",
     val name: String = "",
     val phone: String = "",
-    val relationship: String = ""
+    val relationship: String = "",
+    val isEmergency: Boolean = false
 ) : Parcelable
