@@ -87,8 +87,13 @@
 
                     <!-- Account Row -->
                     <LinearLayout
+                        android:id="@+id/row_settings_account"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:contentDescription="@string/label_settings_account"
+                        android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
@@ -97,6 +102,7 @@
                             android:layout_height="36dp"
                             android:layout_marginEnd="12dp"
                             android:background="@drawable/bg_settings_icon_badge"
+                            android:importantForAccessibility="no"
                             android:padding="8dp"
                             android:src="@drawable/ic_profile"
                             app:tint="@color/white" />
@@ -107,7 +113,11 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:background="@null"
+                            android:clickable="false"
+                            android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
+                            android:importantForAccessibility="no"
                             android:text="@string/label_settings_account" />
                     </LinearLayout>
 
@@ -115,8 +125,13 @@
 
                     <!-- Change Password Row -->
                     <LinearLayout
+                        android:id="@+id/row_settings_change_password"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:contentDescription="@string/label_settings_change_password"
+                        android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
@@ -125,6 +140,7 @@
                             android:layout_height="36dp"
                             android:layout_marginEnd="12dp"
                             android:background="@drawable/bg_settings_icon_badge"
+                            android:importantForAccessibility="no"
                             android:padding="8dp"
                             android:src="@drawable/ic_settings"
                             app:tint="@color/white" />
@@ -135,7 +151,11 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:background="@null"
+                            android:clickable="false"
+                            android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
+                            android:importantForAccessibility="no"
                             android:text="@string/label_settings_change_password" />
                     </LinearLayout>
 
@@ -144,8 +164,13 @@
                     <!-- Alert notifications Row: opens its own screen
                          (AlertNotificationsActivity), which holds the switch. -->
                     <LinearLayout
+                        android:id="@+id/row_settings_alert_notifications"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:contentDescription="@string/label_settings_alert_notifications"
+                        android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
@@ -165,7 +190,11 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:background="@null"
+                            android:clickable="false"
+                            android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
+                            android:importantForAccessibility="no"
                             android:text="@string/label_settings_alert_notifications" />
                     </LinearLayout>
 
@@ -173,8 +202,13 @@
 
                     <!-- Display Row: the theme (DisplayActivity). -->
                     <LinearLayout
+                        android:id="@+id/row_settings_display"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:contentDescription="@string/label_settings_display"
+                        android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
@@ -194,7 +228,11 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:background="@null"
+                            android:clickable="false"
+                            android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
+                            android:importantForAccessibility="no"
                             android:text="@string/label_settings_display" />
                     </LinearLayout>
 
@@ -203,8 +241,13 @@
                     <!-- Device information Row: a placeholder, for the band
                          once pairing exists. -->
                     <LinearLayout
+                        android:id="@+id/row_settings_device_info"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:contentDescription="@string/label_settings_device_info"
+                        android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
@@ -224,7 +267,11 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:background="@null"
+                            android:clickable="false"
+                            android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
+                            android:importantForAccessibility="no"
                             android:text="@string/label_settings_device_info" />
                     </LinearLayout>
 
@@ -232,8 +279,13 @@
 
                     <!-- Changelog Row -->
                     <LinearLayout
+                        android:id="@+id/row_settings_changelog"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:contentDescription="@string/label_settings_changelog"
+                        android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
@@ -253,7 +305,11 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:background="@null"
+                            android:clickable="false"
+                            android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
+                            android:importantForAccessibility="no"
                             android:text="@string/label_settings_changelog" />
                     </LinearLayout>
 
@@ -262,8 +318,13 @@
                     <!-- About Row: the app's version and the Privacy Notice
                          (AboutActivity). -->
                     <LinearLayout
+                        android:id="@+id/row_settings_about"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:contentDescription="@string/label_settings_about"
+                        android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
@@ -283,7 +344,11 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:background="@null"
+                            android:clickable="false"
+                            android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
+                            android:importantForAccessibility="no"
                             android:text="@string/label_settings_about" />
                     </LinearLayout>
 

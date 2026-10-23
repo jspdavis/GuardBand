@@ -29,7 +29,7 @@
         android:layout_marginTop="24dp"
         android:contentDescription="@string/cd_open_settings"
         android:src="@drawable/ic_settings"
-        app:backgroundTint="@color/surface_elevated"
+        app:backgroundTint="@color/white"
         app:elevation="4dp"
         app:fabCustomSize="36dp"
         app:layout_constraintStart_toStartOf="parent"
@@ -45,7 +45,7 @@
         android:layout_marginEnd="16dp"
         android:contentDescription="@string/cd_open_notifications"
         android:src="@drawable/ic_notifications"
-        app:backgroundTint="@color/surface_elevated"
+        app:backgroundTint="@color/white"
         app:elevation="4dp"
         app:fabCustomSize="36dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -53,9 +53,10 @@
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
         app:tint="@color/brand_green" />
 
-    <!-- ── Fixed header: title + search bar + chip row ────────────────────
-         Not inside the ScrollView so they stay anchored while the list
-         scrolls underneath. -->
+    <!-- ── Fixed header: title + search bar ────────────────────────────────
+         Not inside the NestedScrollView so they stay anchored while the
+         list scrolls underneath. The chip row is a sibling so it can
+         run edge-to-edge. -->
 
     <LinearLayout
         android:id="@+id/ll_contacts_header"
@@ -134,44 +135,49 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Relationship filter chips — horizontally scrollable, no wrap.
-             Chips are added in ContactsFragment.buildFilterChips() so the
-             labels come from string resources and the selection state is
-             driven by ContactsUiState.selectedRelationship. -->
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:layout_marginStart="-24dp"
-            android:layout_marginEnd="-24dp"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:scrollbars="none">
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/contacts_chip_group"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="10dp"
-                app:chipSpacingHorizontal="6dp"
-                app:singleSelection="true"
-                app:selectionRequired="true" />
-
-        </HorizontalScrollView>
-
     </LinearLayout>
+
+    <!-- Relationship filter chips — edge-to-edge, horizontally scrollable.
+         Padding lives on the HorizontalScrollView (not an outer parent) with
+         clipToPadding off so chips can scroll to the screen edge instead of
+         being clipped. Chips are added in ContactsFragment.buildFilterChips(). -->
+    <HorizontalScrollView
+        android:id="@+id/hsv_contacts_filters"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:scrollbars="none"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ll_contacts_header">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/contacts_chip_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="10dp"
+            app:chipSpacingHorizontal="6dp"
+            app:singleSelection="true"
+            app:selectionRequired="true" />
+
+    </HorizontalScrollView>
 
     <!-- ── Scrollable list body ────────────────────────────────────────────
          Constrained below the fixed header so the header stays pinned. -->
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
+        android:fillViewport="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ll_contacts_header">
+        app:layout_constraintTop_toBottomOf="@id/hsv_contacts_filters">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -236,7 +242,7 @@
             </LinearLayout>
 
             <!-- The list itself. nestedScrollingEnabled="false" lets the outer
-                 ScrollView own the scroll so the header scrolls away normally. -->
+                 NestedScrollView own the scroll so the header stays pinned. -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_contacts"
                 android:layout_width="match_parent"
@@ -248,7 +254,7 @@
                 tools:listitem="@layout/item_contact" />
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
     <!-- ── Add contact FAB ─────────────────────────────────────────────────
          Floats over the list; 88dp bottom padding on the list ensures the
