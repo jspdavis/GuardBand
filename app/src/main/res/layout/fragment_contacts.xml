@@ -29,13 +29,13 @@
         android:layout_marginTop="24dp"
         android:contentDescription="@string/cd_open_settings"
         android:src="@drawable/ic_settings"
-        app:backgroundTint="@color/white"
+        app:backgroundTint="@color/brand_primary_dark"
         app:elevation="4dp"
         app:fabCustomSize="36dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="@color/brand_green" />
+        app:tint="@color/white" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/ib_contacts_notifications"
@@ -45,13 +45,13 @@
         android:layout_marginEnd="16dp"
         android:contentDescription="@string/cd_open_notifications"
         android:src="@drawable/ic_notifications"
-        app:backgroundTint="@color/white"
+        app:backgroundTint="@color/brand_primary_dark"
         app:elevation="4dp"
         app:fabCustomSize="36dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-        app:tint="@color/brand_green" />
+        app:tint="@color/white" />
 
     <!-- ── Fixed header: title + search bar ────────────────────────────────
          Not inside the NestedScrollView so they stay anchored while the
@@ -267,7 +267,7 @@
         android:layout_marginBottom="16dp"
         android:contentDescription="@string/cd_add_contact"
         android:src="@drawable/ic_add"
-        app:backgroundTint="@color/brand_green"
+        app:backgroundTint="@color/brand_primary_dark"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:tint="@color/white" />
