@@ -7,7 +7,10 @@
       "namespace": "android_app",
       "package_name": "com.example.guardband",
       "sha256_cert_fingerprints": [
-        "3F:91:96:92:1D:35:82:3D:C2:14:31:66:96:C2:1A:04:70:E7:F2:9C:CB:BA:BB:E6:5B:D6:B5:C3:C9:09:F0:1C"
+        "3F:91:96:92:1D:35:82:3D:C2:14:31:66:96:C2:1A:04:70:E7:F2:9C:CB:BA:BB:E6:5B:D6:B5:C3:C9:09:F0:1C",
+        "E8:A1:66:E2:DE:DF:95:1E:00:03:7C:76:76:F1:42:87:4E:9E:02:50:74:C0:D7:71:72:ED:0C:91:A0:BE:47:5C",
+        "41:4B:89:01:CC:9E:23:94:A7:94:83:95:4F:61:C7:99:DF:DB:11:7A:B6:F8:46:0C:CE:BC:06:CF:EB:08:35:46",
+        "FE:F4:72:9C:B3:70:B8:8F:48:E4:02:4F:59:39:6D:DE:29:0B:9E:E9:A7:EB:58:50:3A:D4:9C:B8:C4:33:7B:20"
       ]
     }
   }

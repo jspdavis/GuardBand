@@ -124,14 +124,14 @@ class SignUpContactsViewModelTest {
         assertEquals("", viewModel.uiState.value.contacts.single().relationship)
     }
 
+    // There is no upper cap (MAX_CONTACTS is Int.MAX_VALUE), so this stages
+    // well past the old caps of 3 and 10. Never repeat(MAX_CONTACTS): that is
+    // two billion adds, and the test run hangs.
     @Test
-    fun `the cap is enforced while staging`() = runTest {
-        repeat(InputValidator.MAX_CONTACTS) { add(name = "Contact $it") }
+    fun `there is no cap while staging`() {
+        repeat(25) { add(name = "Contact $it") }
 
-        add(name = "One too many")
-
-        assertEquals(SignUpContactsViewModel.MSG_MAXIMUM_REACHED, firstMessage())
-        assertEquals(InputValidator.MAX_CONTACTS, viewModel.uiState.value.contacts.size)
+        assertEquals(25, viewModel.uiState.value.contacts.size)
     }
 
     // ── The minimum, and the banner ───────────────────────────────────────────

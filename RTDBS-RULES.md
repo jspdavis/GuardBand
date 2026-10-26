@@ -192,7 +192,7 @@
           "version": {
             "//": [
               "A STRING, matching UserProfileRepository.CONSENT_VERSION,",
-              "which is \"1.1\" today. A string rather than a number so that",
+              "which is \"1.2\" today. A string rather than a number so that",
               "\"1.10\" can follow \"1.9\" instead of sorting before it.",
               "",
               "The pattern is deliberately loose about the digits: pinning it",

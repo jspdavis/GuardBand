@@ -150,9 +150,12 @@ interface UserProfileRepository {
          * for the same reason.
          *
          * Bumped to 1.1 when the consent step gained a working link to the
-         * notice. Existing records keep 1.0, and **nobody is re-prompted** -
-         * there is no re-consent flow yet.
+         * notice. Bumped to 1.2 (2026-10-24) when the notice was published
+         * without its DRAFT banner and gained MapTiler, Google's place names
+         * and the Google profile picture. Existing records keep the version
+         * they were given, and **nobody is re-prompted** - there is no
+         * re-consent flow yet.
          */
-        const val CONSENT_VERSION = "1.1"
+        const val CONSENT_VERSION = "1.2"
     }
 }
