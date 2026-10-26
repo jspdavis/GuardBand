@@ -130,9 +130,14 @@ class TrackViewModel(
         _events.trySend(TrackEvent.ShowMessage(MSG_NAVIGATION_UNAVAILABLE))
     }
 
-    /** D7: a UI-only endpoint. */
-    fun onLayersClicked() {
-        _events.trySend(TrackEvent.ShowMessage(MSG_MAP_LAYERS_UNAVAILABLE))
+    /**
+     * D7: the user picked a base map in the layer picker. View-only state goes
+     * through the Fragment (the picker is a dialog, like recentering is a
+     * long-press), so this only records the choice; the Fragment re-applies the
+     * tile source when [TrackUiState.selectedLayer] changes.
+     */
+    fun onLayerSelected(layer: MapLayer) {
+        _uiState.update { if (it.selectedLayer == layer) it else it.copy(selectedLayer = layer) }
     }
 
     /**
@@ -307,7 +312,6 @@ class TrackViewModel(
          */
         const val TICK_INTERVAL_MS = 30_000L
 
-        const val MSG_MAP_LAYERS_UNAVAILABLE = "Map layers aren't available yet."
         const val MSG_NAVIGATION_UNAVAILABLE = "No app on this phone can open maps."
 
         const val MSG_LOAD_FAILED = "Couldn't load your band's location."

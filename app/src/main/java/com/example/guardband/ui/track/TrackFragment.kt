@@ -25,6 +25,7 @@ import com.example.guardband.data.model.Alert
 import com.example.guardband.ui.alert.AlertEvent
 import com.example.guardband.ui.alert.AlertViewModel
 import com.example.guardband.ui.home.HomeViewModel
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
@@ -155,7 +156,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         view.findViewById<ImageButton>(R.id.ib_track_settings)
             .setOnClickListener { homeViewModel.onSettingsClicked() }
         view.findViewById<FloatingActionButton>(R.id.track_layers_button)
-            .setOnClickListener { viewModel.onLayersClicked() }
+            .setOnClickListener { showLayerPicker() }
         btnNavigate.setOnClickListener { viewModel.onNavigateClicked() }
         btnNavigate.setOnLongClickListener {
             onRecenter()
@@ -218,24 +219,9 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     // ── Map ───────────────────────────────────────────────────────────────────
 
     private fun setUpMap() {
-        // MapTiler's Streets, dark in dark mode; see MapTilerTileSource. Set
-        // even without a key, so the MapView's default (OSM's public server)
-        // is never used. A theme change recreates the Fragment, which picks
-        // again.
-        val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-            Configuration.UI_MODE_NIGHT_YES
-        val tileSource = MapTilerTileSource.forNightMode(night)
-        mapView.setTileSource(tileSource)
-        if (night) {
-            // osmdroid's grid behind a tile still loading is light grey; on
-            // the dark map it would flash. DESIGN: Jul
-            mapView.overlayManager.tilesOverlay.apply {
-                loadingBackgroundColor = requireContext().getColor(R.color.surface_card)
-                loadingLineColor = requireContext().getColor(R.color.divider)
-            }
-        }
-        mapView.setMinZoomLevel(tileSource.minimumZoomLevel.toDouble())
-        mapView.setMaxZoomLevel(tileSource.maximumZoomLevel.toDouble())
+        // Set even without a key, so the MapView's default (OSM's public
+        // server) is never used. A theme change recreates the Fragment, which
+        // applies the selected layer again (see [applyLayer]).
         if (!MapTilerTileSource.hasApiKey) {
             mapView.setUseDataConnection(false)
             Log.w(TAG, "MAPTILER_API_KEY is not set in local.properties; map tiles are disabled.")
@@ -247,6 +233,10 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         // D5: somewhere sensible to look before the band has ever reported.
         mapView.controller.setZoom(DEFAULT_ZOOM)
         mapView.controller.setCenter(GeoPoint(DEFAULT_LAT, DEFAULT_LNG))
+
+        // The selected base map (D7), applied now and again whenever it changes
+        // (see render). Streets darkens with the theme; the other layers stay.
+        applyLayer(viewModel.uiState.value.selectedLayer)
 
         // D4. ACTION_MOVE rather than a MapListener, because a listener cannot
         // tell the user's pan from the camera moves this screen makes itself.
@@ -261,6 +251,101 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         }
     }
 
+    /**
+     * The base map the state asks for ([TrackUiState.selectedLayer]). Streets
+     * darkens with the theme; the other layers have no dark variant and stay
+     * the same in either mode. Re-applied only when the layer changes (see
+     * [render]) so a no-op re-render does not reload the tiles.
+     *
+     * The dark loading background is set only for Streets Dark: osmdroid's
+     * loading grid is light grey, which would flash on the dark Streets style.
+     * The other layers draw on a light grid, and tinting it would colour the
+     * flash behind their loading tiles too. DESIGN: Jul
+     */
+    private var appliedLayer: MapLayer? = null
+
+    private fun applyLayer(layer: MapLayer) {
+        val tileSource = MapTilerTileSource.forLayer(layer, isNight())
+        mapView.setTileSource(tileSource)
+        mapView.setMinZoomLevel(tileSource.minimumZoomLevel.toDouble())
+        mapView.setMaxZoomLevel(tileSource.maximumZoomLevel.toDouble())
+        if (tileSource === MapTilerTileSource.STREETS_DARK) {
+            mapView.overlayManager.tilesOverlay.apply {
+                loadingBackgroundColor = requireContext().getColor(R.color.surface_card)
+                loadingLineColor = requireContext().getColor(R.color.divider)
+            }
+        }
+        appliedLayer = layer
+    }
+
+    private fun isNight(): Boolean =
+        (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+
+    /**
+     * D7: the map type picker bottom sheet dialog.
+     * Displays a bottom sheet with preview thumbnails for Auto, Street, and Satellite.
+     * Tapping an option switches the tile source immediately and highlights the card.
+     */
+    private fun showLayerPicker() {
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(
+            requireContext(),
+            R.style.ThemeOverlay_GuardBand_BottomSheetDialog
+        )
+        val dialogView = layoutInflater.inflate(R.layout.dialog_map_type, null)
+        dialog.setContentView(dialogView)
+
+        dialogView.findViewById<View>(R.id.btn_close_map_type)?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        updateMapTypeSelection(dialogView, viewModel.uiState.value.selectedLayer)
+
+        dialogView.findViewById<View>(R.id.item_layer_auto)?.setOnClickListener {
+            viewModel.onLayerSelected(MapLayer.AUTO)
+            updateMapTypeSelection(dialogView, MapLayer.AUTO)
+        }
+        dialogView.findViewById<View>(R.id.item_layer_street)?.setOnClickListener {
+            viewModel.onLayerSelected(MapLayer.STREET)
+            updateMapTypeSelection(dialogView, MapLayer.STREET)
+        }
+        dialogView.findViewById<View>(R.id.item_layer_satellite)?.setOnClickListener {
+            viewModel.onLayerSelected(MapLayer.SATELLITE)
+            updateMapTypeSelection(dialogView, MapLayer.SATELLITE)
+        }
+
+        dialog.show()
+    }
+
+    private fun updateMapTypeSelection(dialogView: View, selectedLayer: MapLayer) {
+        val brandGreen = requireContext().getColor(R.color.brand_primary)
+        val textPrimary = requireContext().getColor(R.color.text_primary)
+        val strokeWidth = (2.5f * resources.displayMetrics.density).toInt()
+
+        val items = listOf(
+            Triple(MapLayer.AUTO, R.id.card_outer_layer_auto, R.id.tv_layer_auto),
+            Triple(MapLayer.STREET, R.id.card_outer_layer_street, R.id.tv_layer_street),
+            Triple(MapLayer.SATELLITE, R.id.card_outer_layer_satellite, R.id.tv_layer_satellite),
+        )
+
+        for ((layer, cardId, textId) in items) {
+            val card = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(cardId) ?: continue
+            val text = dialogView.findViewById<TextView>(textId) ?: continue
+            val isSelected = layer == selectedLayer
+
+            if (isSelected) {
+                card.strokeWidth = strokeWidth
+                card.setStrokeColor(android.content.res.ColorStateList.valueOf(brandGreen))
+                text.setTextColor(brandGreen)
+                text.typeface = androidx.core.content.res.ResourcesCompat.getFont(requireContext(), R.font.poppins_semibold)
+            } else {
+                card.strokeWidth = 0
+                card.setStrokeColor(android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT))
+                text.setTextColor(textPrimary)
+                text.typeface = androidx.core.content.res.ResourcesCompat.getFont(requireContext(), R.font.poppins)
+            }
+        }
+    }
     /**
      * D4, from a long-press on Navigate: resume following, and move now. With
      * no fix, go back to D5's view (only reachable if the button is ever left
@@ -314,6 +399,10 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     // ── Rendering ─────────────────────────────────────────────────────────────
 
     private fun render(state: TrackUiState) {
+        // D7: a layer change swaps the tile source. Done before showFix so the
+        // marker redraws on the new base map; applied only on change so a
+        // position-only update never reloads the tiles.
+        if (state.selectedLayer != appliedLayer) applyLayer(state.selectedLayer)
         renderEmptyView(state)
         // Before showFix, so a marker created now gets the face. Draws nothing
         // when the face is the same as last time.

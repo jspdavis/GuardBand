@@ -59,6 +59,14 @@ data class TrackUiState(
     val checkIn: CheckInStatus = CheckInStatus.Loading,
 
     /**
+     * The selected base map (D7), kept here so it survives a theme change: the
+     * Fragment is recreated on a theme switch and re-applies it. Defaults to
+     * [MapLayer.STREETS], the style the map has always drawn. Satellite, Outdoor
+     * and Topo have no dark variant, so they draw the same in either mode.
+     */
+    val selectedLayer: MapLayer = MapLayer.AUTO,
+
+    /**
      * What the band's marker shows: a photo link and the initials it falls
      * back on. Set once, from the session ([TrackViewModel]'s `markerFace`),
      * and carried unchanged through every position update, so the marker is

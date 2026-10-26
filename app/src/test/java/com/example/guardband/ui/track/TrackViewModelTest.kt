@@ -469,15 +469,45 @@ class TrackViewModelTest {
     // so it lives in TrackFragment and has no ViewModel surface to test.
 
     @Test
-    fun `the layers control says it is not available yet`() = runTest {
+    fun `the selected layer defaults to Auto`() = runTest {
+        assertEquals(MapLayer.AUTO, viewModel().uiState.value.selectedLayer)
+    }
+
+    @Test
+    fun `selecting a layer records it and leaves everything else untouched`() = runTest {
+        val vm = viewModel()
+        val before = vm.uiState.value
+
+        vm.onLayerSelected(MapLayer.SATELLITE)
+
+        val after = vm.uiState.value
+        assertEquals(MapLayer.SATELLITE, after.selectedLayer)
+        // The choice is the only thing that changes: position, staleness, the
+        // check-in pill and the marker face all carry through.
+        assertEquals(before.location, after.location)
+        assertEquals(before.isOnline, after.isOnline)
+        assertEquals(before.elapsed, after.elapsed)
+        assertEquals(before.checkIn, after.checkIn)
+        assertEquals(before.markerFace, after.markerFace)
+    }
+
+    @Test
+    fun `selecting the same layer again does nothing`() = runTest {
         val vm = viewModel()
 
-        vm.onLayersClicked()
+        vm.onLayerSelected(MapLayer.AUTO)
 
-        assertEquals(
-            TrackViewModel.MSG_MAP_LAYERS_UNAVAILABLE,
-            (vm.events.first() as TrackEvent.ShowMessage).text
-        )
+        assertEquals(MapLayer.AUTO, vm.uiState.value.selectedLayer)
+    }
+
+    @Test
+    fun `each layer is selectable`() = runTest {
+        val vm = viewModel()
+
+        MapLayer.entries.forEach { layer ->
+            vm.onLayerSelected(layer)
+            assertEquals(layer, vm.uiState.value.selectedLayer)
+        }
     }
 
     // ── Failures ──────────────────────────────────────────────────────────────

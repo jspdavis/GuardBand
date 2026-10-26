@@ -254,6 +254,16 @@
         <item name="cornerSize">50%</item>
     </style>
 
+    <!-- Map type bottom sheet dialog -->
+    <style name="ThemeOverlay.GuardBand.BottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.GuardBand.BottomSheet.Modal</item>
+    </style>
+
+    <style name="Widget.GuardBand.BottomSheet.Modal" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="shapeAppearance">@style/ShapeAppearance.GuardBand.SheetTop</item>
+        <item name="backgroundTint">@color/surface_bg</item>
+    </style>
+
     <!-- A bottom sheet: top corners rounded, bottom ones square against the bar. -->
     <style name="ShapeAppearance.GuardBand.SheetTop" parent="">
         <item name="cornerFamily">rounded</item>

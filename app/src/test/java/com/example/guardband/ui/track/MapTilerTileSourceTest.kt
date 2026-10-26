@@ -34,4 +34,60 @@ class MapTilerTileSourceTest {
             assertEquals(22, source.maximumZoomLevel)
         }
     }
+
+    // ── The extra layers (Satellite, Outdoor, Topo) ────────────────────────────
+
+    @Test
+    fun `each extra layer has its own cache name, distinct from Streets and each other`() {
+        assertEquals("MapTilerSatellite", MapTilerTileSource.SATELLITE.name())
+        assertEquals("MapTilerOutdoor", MapTilerTileSource.OUTDOOR.name())
+        assertEquals("MapTilerTopo", MapTilerTileSource.TOPO.name())
+
+        val names = listOf(
+            MapTilerTileSource.STREETS,
+            MapTilerTileSource.STREETS_DARK,
+            MapTilerTileSource.SATELLITE,
+            MapTilerTileSource.OUTDOOR,
+            MapTilerTileSource.TOPO,
+        ).map { it.name() }
+
+        // A new name starts on clean cache rows rather than re-serving another
+        // style's tiles, so every name must be unique.
+        assertEquals(names.size, names.toSet().size)
+    }
+
+    @Test
+    fun `the extra layers keep MapTiler's zoom range`() {
+        for (source in listOf(
+            MapTilerTileSource.SATELLITE,
+            MapTilerTileSource.OUTDOOR,
+            MapTilerTileSource.TOPO,
+        )) {
+            assertEquals(0, source.minimumZoomLevel)
+            assertEquals(22, source.maximumZoomLevel)
+        }
+    }
+
+    @Test
+    fun `forLayer resolves Auto to theme variant, Street to light Streets, and Satellite to satellite`() {
+        assertEquals(MapTilerTileSource.STREETS, MapTilerTileSource.forLayer(MapLayer.AUTO, night = false))
+        assertEquals(MapTilerTileSource.STREETS_DARK, MapTilerTileSource.forLayer(MapLayer.AUTO, night = true))
+
+        // Street is always light Streets
+        assertEquals(MapTilerTileSource.STREETS, MapTilerTileSource.forLayer(MapLayer.STREET, night = false))
+        assertEquals(MapTilerTileSource.STREETS, MapTilerTileSource.forLayer(MapLayer.STREET, night = true))
+
+        // Satellite is the same in either mode
+        assertEquals(MapTilerTileSource.SATELLITE, MapTilerTileSource.forLayer(MapLayer.SATELLITE, night = false))
+        assertEquals(MapTilerTileSource.SATELLITE, MapTilerTileSource.forLayer(MapLayer.SATELLITE, night = true))
+    }
+
+    @Test
+    fun `forLayer covers every selectable layer`() {
+        // A guard against adding a MapLayer the resolver forgets.
+        MapLayer.entries.forEach { layer ->
+            MapTilerTileSource.forLayer(layer, night = false)
+            MapTilerTileSource.forLayer(layer, night = true)
+        }
+    }
 }

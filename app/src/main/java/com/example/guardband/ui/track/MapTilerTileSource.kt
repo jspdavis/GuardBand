@@ -9,9 +9,11 @@ import org.osmdroid.tileprovider.tilesource.TileSourcePolicy
 import org.osmdroid.util.MapTileIndex
 
 /**
- * The Track tab's tile source: MapTiler Cloud's **Streets** style as 256 px
- * raster tiles, [STREETS] in light mode and [STREETS_DARK] in dark mode
- * ([forNightMode]; same key, same plan, same credits). It replaced OpenStreetMap's public tile server, whose usage
+ * The Track tab's tile source: MapTiler Cloud's raster tiles at 256 px, one
+ * style per selectable base map ([MapLayer]; see [forLayer]). [STREETS] in
+ * light mode and [STREETS_DARK] in dark ([forNightMode]; same key, same plan,
+ * same credits), plus [SATELLITE], [OUTDOOR] and [TOPO], each under its own
+ * cache name. It replaced OpenStreetMap's public tile server, whose usage
  * policy is written for light use, and it is the **only** place a MapTiler
  * URL, key, zoom range or credit is spelled out. See `docs/osmdroid.md`.
  *
@@ -113,10 +115,57 @@ internal class MapTilerTileSource private constructor(
         /** False in a build made without `MAPTILER_API_KEY`. */
         val hasApiKey: Boolean = API_KEY.isNotEmpty()
 
-        val STREETS = MapTilerTileSource(NAME, BASE_URL, API_KEY)
+        val STREETS      = MapTilerTileSource(NAME, BASE_URL, API_KEY)
 
         /** MapTiler's Streets Dark (checked 2026-10-20: served on this key and plan). */
         val STREETS_DARK = MapTilerTileSource(DARK_NAME, DARK_BASE_URL, API_KEY)
+
+        /**
+         * MapTiler's Satellite style — high-resolution satellite imagery with no
+         * labels. (The labelled one is the separate `hybrid` style; this app
+         * does not offer it.) Style id `satellite`, served on this key and plan.
+         */
+        val SATELLITE = MapTilerTileSource(
+            "MapTilerSatellite",
+            "https://api.maptiler.com/maps/satellite/256/",
+            API_KEY,
+        )
+
+        /**
+         * MapTiler's Outdoor style (`outdoor-v2`) — a hiking and outdoor map with
+         * contour lines, terrain colouring and trail data. Verified against
+         * MapTiler's `mapstyle.ts`, 2026-10-26: a v2-generation style, deprecated
+         * in favour of `outdoor-v4` but still served (like [STREETS]).
+         */
+        val OUTDOOR = MapTilerTileSource(
+            "MapTilerOutdoor",
+            "https://api.maptiler.com/maps/outdoor-v2/256/",
+            API_KEY,
+        )
+
+        /**
+         * MapTiler's Topo style (`topo-v2`) — a topographic map with elevation
+         * contours and hill shading. Verified against MapTiler's `mapstyle.ts`,
+         * 2026-10-26: a v2-generation style, deprecated in favour of `topo-v4`
+         * but still served (like [STREETS]). Named "Topo" in the UI.
+         */
+        val TOPO = MapTilerTileSource(
+            "MapTilerTopo",
+            "https://api.maptiler.com/maps/topo-v2/256/",
+            API_KEY,
+        )
+
+        /**
+         * The tile source for [MapLayer], as drawn in [night]: [STREETS] darkens
+         * to [STREETS_DARK] in dark mode, and the other three stay the same in
+         * either mode because they have no dark variant. The one place the
+         * layers map to tile sources, so the Fragment never chooses one itself.
+         */
+        fun forLayer(layer: MapLayer, night: Boolean): MapTilerTileSource = when (layer) {
+            MapLayer.AUTO -> forNightMode(night)
+            MapLayer.STREET -> STREETS
+            MapLayer.SATELLITE -> SATELLITE
+        }
 
         /** The style for the theme the screen is drawn in. */
         fun forNightMode(night: Boolean): MapTilerTileSource = if (night) STREETS_DARK else STREETS
