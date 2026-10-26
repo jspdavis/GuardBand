@@ -6,8 +6,8 @@ rules that keep them in step with the app.
 | | |
 |---|---|
 | **Branch** | `feature/trust-gaps` |
-| **Status** | `assembleDebug` + `testDebugUnitTest` green. **Both pages are DRAFT and nothing is deployed** — see §1. |
-| **Consent version** | `1.1` (`UserProfileRepository.CONSENT_VERSION`) |
+| **Status** | **Both pages published without a DRAFT banner** on 2026-10-24 (notice 1.2), at the team's decision and without the adviser review — see §1. |
+| **Consent version** | `1.2` (`UserProfileRepository.CONSENT_VERSION`) |
 | **Notice** | [`../hosting/public/privacy/index.html`](../hosting/public/privacy/index.html) → `https://guardband-aae65.web.app/privacy` |
 | **Delete page** | [`../hosting/public/delete-account/index.html`](../hosting/public/delete-account/index.html) → `https://guardband-aae65.web.app/delete-account` |
 | **URLs built by** | [`utils/HostedPages.kt`](../app/src/main/java/com/example/guardband/utils/HostedPages.kt), from constants in [`../app/build.gradle.kts`](../app/build.gradle.kts) |
@@ -17,13 +17,14 @@ rules that keep them in step with the app.
 
 ## 1. What needs a human
 
-**The pages are drafted, linked and buildable. None of it is live, and the
-notice is not finished.**
+**Everything here is done.** The pages are live, final (notice 1.2) and
+carry no DRAFT banner. Each future change to what the app collects or who
+receives it changes the notice and bumps the version in the same commit (§2).
 
 | # | Step | Status |
 |---|---|---|
 | 1 | **Fill the placeholders.** `REPLACE_WITH_RESPONSIBLE_PARTY` and `REPLACE_WITH_CONTACT_EMAIL` appear in both pages. Then resolve every `DECISION: Jul` — the list is in §4. | **Done** 2026-10-11 |
-| 2 | **Have the notice reviewed** by the project adviser or the university's data privacy contact, then remove the `DRAFT, pending review` banner from both pages. **This text describes how real people's data is handled, including third parties who never signed up. It was drafted by an AI from the code and must not be treated as final because of that.** | Open — Jul + adviser |
+| 2 | **Have the notice reviewed** by the project adviser or the university's data privacy contact, then remove the `DRAFT, pending review` banner from both pages. **This text describes how real people's data is handled, including third parties who never signed up. It was drafted by an AI from the code and must not be treated as final because of that.** | **Done differently** 2026-10-24: the team chose to publish without the adviser review (the adviser is unavailable). Every claim was re-checked against the code that day, the banners were removed and Hosting redeployed as notice 1.2. |
 | 3 | **Deploy Hosting:** `firebase deploy --only hosting` from `hosting/`. Then open `/privacy` and `/delete-account`, and confirm `/.well-known/assetlinks.json` still returns JSON — §5 explains why that last one is the one to check. | **Done** 2026-10-11 |
 | 4 | **Back up, then delete the legacy nodes** in the Console: `password_resets`, `phone_index`, `email_index`. **Export the JSON first.** Removing a rule does not remove stored data; it makes it unreachable instead. The grep that justifies this is in §3. **Only after step 5 is published.** | **Done** 2026-10-11 |
 | 5 | **Deploy the Security Rules.** The live rules were merged with `RTDBS-RULES.md` (how is recorded at the top of that file), tested against the local emulator, and published. | **Done** 2026-10-11 |
@@ -43,6 +44,7 @@ to, which fails if the number cannot be matched to a document.
 |---|---|---|
 | `1.0` | before this pass | The original statement: agree to the Privacy Notice, confirm 18-or-older or guardian's permission, confirm the wearer knows and agrees to be tracked. **"Privacy Notice" was plain text — there was no notice to read**, which is what this pass fixes. |
 | `1.1` | 2026-10-11 | Wording changed from "I agree to the Privacy Notice" to **"I have read the Privacy Notice and agree to it"**, and the notice became a real, reachable document at `/privacy`. The claim being made is materially different: under 1.0 the user could not have read it. |
+| `1.2` | 2026-10-24 | The statement is unchanged; **the notice it points to changed**, and was published without its DRAFT banner. New recipients: **MapTiler** (map tiles, replacing OpenStreetMap; sees the IP and the area viewed), **Google's place-name service** (each shown alert's position, rounded to about 11 m), **Google's image servers** (the profile picture on Profile and the map marker). Also: the opt-in alert notifications, email verification, the Emergency mark on contacts, what the phone stores (picture cache, display setting), the Delete account path (now via Account information) and the deletion marker it leaves, and the consent gate. |
 
 **Existing users are not re-prompted.** A record written at `1.0` keeps `1.0`;
 nothing rewrites it, and there is no re-consent flow. Building one means
@@ -82,24 +84,23 @@ export-then-delete for that reason.
 | Notice, "Questions" | A contact to escalate to | **None**, so the line was removed. |
 | Notice, "Children" | A minimum age for the **account holder** | **18, or a guardian's permission** - the same as the consent checkbox, so no version bump. An account found to break that is deleted. |
 | Delete page, "If you cannot open the app" | Whether a manual deletion process exists | **Yes.** Requests to the contact address, acted on only when sent from the account's own email, within 30 days, with a confirming reply. The deletion is done by hand in the Console: `users/{uid}` first, then the Authentication user, the same order as the app. |
-| Notice, sharing table, MapTiler row (DRAFT, 2026-10-19) | Whether a different company now receiving the IP address (MapTiler instead of OpenStreetMap) needs the notice's version and `CONSENT_VERSION` bumped | **Open** - Jul + adviser |
-| Notice, sharing table, Google profile picture row (DRAFT, 2026-10-19) | Whether showing the Google profile picture on the map, loaded from Google's image servers (which see the IP address), needs the notice's version and `CONSENT_VERSION` bumped. The Profile tab has shown the same picture since 2026-10-14 without a line in the notice. | **Open** - Jul + adviser. `CONSENT_VERSION` left at `1.1` |
-| Notice, "Where it is stored, and on your phone", alert notifications paragraph (DRAFT, 2026-10-19) | Whether the opt-in alert notifications need the notice's version and `CONSENT_VERSION` bumped. Nothing new is collected and no new company receives anything; the new things are a background connection to the same database and alert text (type, time, battery; never a location) in the phone's notification shade. | **Open** - Jul + adviser. **Recommended: no bump**; review the wording together with the MapTiler and Google picture rows. `CONSENT_VERSION` left at `1.1` |
-| Notice, sharing table, Google place names row (DRAFT, 2026-10-20) | Whether sending each shown alert's position (rounded to about 11 m) to the phone's geocoder, Google's on Play-services phones, needs the notice's version and `CONSENT_VERSION` bumped. This one is a real new flow: until now the band's positions went only to Firebase (and to a maps app on Navigate). | **Open** - Jul + adviser. **Recommended: bump** with the next notice version, together with the MapTiler and Google picture rows if those are bumped too. `CONSENT_VERSION` left at `1.1` |
+| Notice, sharing table, MapTiler row (2026-10-19) | Whether a different company now receiving the IP address (MapTiler instead of OpenStreetMap) needs the notice's version and `CONSENT_VERSION` bumped | **Decided 2026-10-24: bumped.** Published in notice `1.2`. |
+| Notice, sharing table, Google profile picture row (2026-10-19) | Whether showing the Google profile picture on the map, loaded from Google's image servers (which see the IP address), needs the notice's version and `CONSENT_VERSION` bumped. The Profile tab has shown the same picture since 2026-10-14 without a line in the notice. | **Decided 2026-10-24: bumped.** Published in notice `1.2`. |
+| Notice, "Where it is stored, and on your phone", alert notifications paragraph (2026-10-19) | Whether the opt-in alert notifications need the notice's version and `CONSENT_VERSION` bumped. Nothing new is collected and no new company receives anything; the new things are a background connection to the same database and alert text (type, time, battery; never a location) in the phone's notification shade. | **Decided 2026-10-24:** published in notice `1.2`, which was bumped for the other rows anyway. |
+| Notice, sharing table, Google place names row (2026-10-20) | Whether sending each shown alert's position (rounded to about 11 m) to the phone's geocoder, Google's on Play-services phones, needs the notice's version and `CONSENT_VERSION` bumped. This one is a real new flow: until now the band's positions went only to Firebase (and to a maps app on Navigate). | **Decided 2026-10-24: bumped.** Published in notice `1.2`. |
 
-**DRAFT, 2026-10-19: the Google profile picture.** The Track map's marker now
+**2026-10-19: the Google profile picture.** The Track map's marker now
 shows the signed-in user's Google profile picture (initials for an email
 account), as the Profile tab already did. It is loaded from Google's image
 servers, which see the phone's IP address; it is kept only in the app's own
 image cache on the phone, never written to the database or uploaded. The
-notice has a DRAFT row saying so (not deployed); whether that needs a version
-bump is the second open row above.
+notice says so since 1.2 (2026-10-24).
 
-**DRAFT, 2026-10-19: alert notifications.** An opt-in switch in Settings
+**2026-10-19: alert notifications.** An opt-in switch in Settings
 starts a foreground service that keeps the band's history listener open and
 posts new alerts as notifications ([`notifications.md`](notifications.md)).
 The phone stores only the switch and the last alert number it handled. The
-notice has a DRAFT paragraph saying so (not deployed).
+notice says so since 1.2 (2026-10-24).
 
 ---
 
@@ -149,16 +150,15 @@ Needs §1 steps 1–3 done.
 3. With TalkBack on, the checkbox and its statement still read as **one
    control**, and the link reads as a separate button after it.
 4. Finish sign-up. In the Console, the new `users/{uid}/consent` shows
-   **`version: "1.1"`**, `accepted: true` and a server `acceptedAt`.
+   **`version: "1.2"`**, `accepted: true` and a server `acceptedAt`.
 5. **Settings → About → Privacy Notice** opens the same page.
-6. The notice's displayed version reads **1.1**, matching step 4.
+6. The notice's displayed version reads **1.2**, matching step 4.
 7. Open `/delete-account` and follow its in-app steps exactly as written —
-   Track → gear → Settings → Account information → Delete account (moved
-   one level down on 2026-10-14; the hosted page still names the old path
-   until a human updates it). The wording should match what the app actually
-   does.
-8. An **existing** account that accepted `1.0` still shows `1.0` in the
-   Console, and is **not** asked to agree again.
+   Track → gear → Settings → Account information → Delete account (the
+   page names this path since 2026-10-24). The wording should match what the
+   app actually does.
+8. An **existing** account that accepted `1.0` or `1.1` still shows that
+   version in the Console, and is **not** asked to agree again.
 
 **The consent gate (§8).** Use throwaway accounts.
 
@@ -167,7 +167,7 @@ Needs §1 steps 1–3 done.
    unverified, so **Verify your email** comes first: Resend, open the link,
    return. Then **Before you continue** appears before any tab, with sign-up's
    statement and "Read the Privacy Notice". Tap **Agree**: the Console shows
-   `users/{uid}/consent` with `version: "1.1"`, `accepted: true` and a server
+   `users/{uid}/consent` with `version: "1.2"`, `accepted: true` and a server
    `acceptedAt`, and the app opens.
 10. **Missing Google profile.** For a Google account, delete only
     `users/{uid}` in the Console (leave its Authentication user) and sign in

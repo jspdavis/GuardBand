@@ -28,7 +28,7 @@ notifications landed** (`feature/alert-notifications`): the release manifest
 gained three permissions and is **waiting for the owner's approval**, and
 none of its device checks has been run (§4). **On 2026-10-20** the inbox got
 a sample row (testing only, §4 small cleanups), alerts got place names
-(`feature/alert-place-names`, a new DRAFT notice row), and Contacts' and
+(`feature/alert-place-names`, a new notice row), and Contacts' and
 Profile's top buttons were matched to Track's. All pushed; `main` not
 updated.
 
@@ -46,7 +46,7 @@ the files under §2, not here.
 | Area | State |
 |---|---|
 | **Firebase Hosting** | Live at `guardband-aae65.web.app`: a root page, `/privacy`, `/delete-account`, `/.well-known/assetlinks.json`. Deploy from `hosting/` (§6). |
-| **Privacy Notice + delete page** | Every decision filled in, **still carrying the DRAFT banner**. The adviser review was parked on 2026-10-11 (§4). They will need one combined wording update after the 2026-10-14 work merges (§4). |
+| **Privacy Notice + delete page** | **Published as final** on 2026-10-24 (notice 1.2, no DRAFT banner): the team chose to publish without the adviser review. Every claim was re-checked against the code that day, including the new Delete account path and the deletion marker. [`privacy-and-consent.md`](privacy-and-consent.md) §2. |
 | **Password reset** | The App Link claims Firebase's own handler, `guardband-aae65.firebaseapp.com/__/auth/action`, because the Console action URL cannot be changed. Verified on a device; manual pass passed. |
 | **Security Rules** | Deployed 2026-10-11. **Since 2026-10-19 [`../RTDBS-RULES.md`](../RTDBS-RULES.md) is ahead of the Console**: an append-only `history` (Option A+), pending Jul's decision, not deployed; `users/` unchanged. Inventory, options, Playground tests, rollout and rollback text: [`database-rules.md`](database-rules.md). |
 | **Legacy nodes** | `password_resets`, `phone_index`, `email_index`: rules removed, data exported and deleted. |
@@ -202,15 +202,15 @@ table now includes `main`.
   (one buzz, no heads-up) for the wearer's discretion; nothing on a
   notification names a place or a person; the lock screen's public version
   says only "New alert from your band". A tap opens Alert history through
-  the Home gate. Three new release permissions; the notice has a DRAFT
-  paragraph. [`notifications.md`](notifications.md).
+  the Home gate. Three new release permissions; the notice has a paragraph
+  (since 1.2). [`notifications.md`](notifications.md).
 - **Place names on alerts** (`feature/alert-place-names`, 2026-10-20). Every
   alert row, Track's panel and the latest card say "Street, Barangay, City"
   instead of latitude and longitude, from Android's `Geocoder` (no key, no
   dependency, no permission; Google's service on Play-services phones). One
   lookup per point rounded to about 11 m, names in memory only, coordinates
   until a name arrives or when none exists. A new flow of the band's
-  positions to Google's geocoder, so the notice has a DRAFT row.
+  positions to Google's geocoder, so the notice has a row (since 1.2).
   [`alert-data.md`](alert-data.md) §7.
 - **Alert rows redesigned** (2026-10-20). One binder, `AlertCardViews`, for
   the rows and the latest card: the type's symbol on a pale circle of its
@@ -283,9 +283,7 @@ has published it ([`database-rules.md`](database-rules.md) §7).
 | **Two app-wide theme changes** | Jehan + Jul | Confirm they are intended: outlined buttons went from 8 dp to 28 dp corners, and every sign-up screen's top padding from 96 dp to 24 dp (`themes.xml`, `f34487b`). |
 | **Test Track (map and recent-alerts panel), Alert history and the mock sender** | teammate | Never had a full human pass. Checklists: [`mock-sender-and-receiver.md` §6](mock-sender-and-receiver.md), [`alert-data.md` §12](alert-data.md) and the 2026-10-19 block in [`home-host-and-bottom-nav.md` §12](home-host-and-bottom-nav.md). Pan-and-follow matters most, now with the panel over the bottom of the map: a drag that starts on the panel must not stop the map following. (The staleness badge is no longer on screen: the Track status panel was removed on 2026-10-14.) Before 2026-10-11 every history read was denied by the rules, so this has effectively never worked end to end until now. |
 | **Band firmware sends check-ins** | band/firmware teammate | The app now reads the check-in payload defined in `SCHEMA.md` (FR-10: double-press within 2 seconds, no emergency alert). The band has to write exactly that. Until then only the mock sender produces check-ins. |
-| **Adviser review of the hosted pages** | Jul + adviser | Parked on 2026-10-11. Send `/privacy` and `/delete-account`; when approved, remove the DRAFT banner from both and redeploy. **Since 2026-10-19 the notice's sharing table names MapTiler instead of OpenStreetMap** (a row marked DRAFT, from `feature/maptiler-tiles`; not deployed). **Also a DRAFT row for the Google profile picture** (`feature/track-profile-marker`): shown on Profile and now on the map marker, loaded from Google's image servers, which see the IP address; not deployed, with its own version-bump question ([`privacy-and-consent.md`](privacy-and-consent.md) §4). **Since 2026-10-19/20, two more DRAFT items:** the alert-notifications paragraph (recommended: no bump) and a **Google place names** row (`feature/alert-place-names`): each shown alert's position, rounded to about 11 m, goes to the phone's geocoder (Google's), the first time the band's positions leave Firebase on their own (recommended: bump). Decide whether a different company receiving the IP address needs a notice version and `CONSENT_VERSION` bump (a `DECISION: Jul` comment sits beside the row). A wording change that alters what users agree to bumps `CONSENT_VERSION` with the notice's own version. |
-| **Hosted-page wording after the 2026-10-14 merges** | Jul | Do this in the same deploy as the adviser review. Check: the in-app path to Delete account, now **Track → gear → Settings → Account information → Delete account** (`/delete-account` lines 163 and 168–169, and the notice's "Delete your account" paragraph, still name the old one); the verification email (the notice's email row says only "how you sign in, and how a password reset reaches you"); whether to mention the `deletion_pending` marker left under a deleted account's uid (no personal data); the Google profile photo being fetched from Google's servers; Navigate handing the band's coordinates to a maps app, if that is built; and that the notice says clearly that the **band's** position is collected even though the app asks for no location permission. Since the consent gate: whether the notice should say that an account found without a consent record is asked to agree before it can use the app, and that declining signs out without deleting anything. |
-| **Each teammate's fingerprints** | each developer | Debug **SHA-1** in Firebase Console → Project settings (else Google sign-in fails on their build). Debug **SHA-256** added to `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else the reset and verification links open the browser; Firebase's own page still completes them). `assetlinks.json` holds **one** developer's today. Release keystore's SHA-1 and SHA-256 before any signed build. |
+| **Each teammate's fingerprints** | each developer | Debug **SHA-1** in Firebase Console → Project settings (else Google sign-in fails on their build). Debug **SHA-256** added to `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else the reset and verification links open the browser; Firebase's own page still completes them). `assetlinks.json` holds **four** developers' since 2026-10-25 (James's and three teammates'); each of those three still runs `adb shell pm verify-app-links --re-verify com.example.guardband` on their own phone. Anyone else adds theirs. Release keystore's SHA-1 and SHA-256 before any signed build. |
 
 ### Engineering, roughly in order
 

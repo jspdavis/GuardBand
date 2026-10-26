@@ -171,14 +171,17 @@ Use the debug mock sender to produce alerts.
 - [ ] 🗳️ **Register your debug fingerprints** · *each developer*
   SHA-1 in the Firebase Console (or Google sign-in fails on your build);
   SHA-256 in `hosting/public/.well-known/assetlinks.json`, then redeploy
-  Hosting (or reset and verification links open the browser).
+  Hosting (or reset and verification links open the browser). **Four
+  SHA-256s are live since 25 Oct** (James's and three teammates'); those three
+  run `adb shell pm verify-app-links --re-verify com.example.guardband` on
+  their phones. Anyone else still adds theirs.
 
-- [ ] 🗳️ **Adviser review of the hosted pages** · *Jul + adviser*
-  Four DRAFT items wait in the Privacy Notice: MapTiler, the Google profile
-  photo, alert notifications and Google place names. Decide whether they need
-  a notice version and `CONSENT_VERSION` bump, fix the Delete account path on
-  `/delete-account`, then remove the DRAFT banners and redeploy.
-  Where: [`privacy-and-consent.md`](privacy-and-consent.md) §4, [`handoff.md`](handoff.md) §4
+- [x] 🗳️ **Publish the hosted pages** · *done 24 Oct*
+  Published as final without the adviser review, at the team's decision:
+  notice 1.2 (MapTiler, Google profile photo, alert notifications, Google
+  place names), `CONSENT_VERSION` bumped to match, the Delete account path
+  fixed, the DRAFT banners removed.
+  Where: [`privacy-and-consent.md`](privacy-and-consent.md) §2
 
 - [ ] 🗳️ **Design pass on the placeholders** · *Jul*
   - The dark palette (`values-night/colors.xml`) and whether to use

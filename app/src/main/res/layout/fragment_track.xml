@@ -86,13 +86,13 @@
             android:layout_marginTop="24dp"
             android:contentDescription="@string/cd_open_settings"
             android:src="@drawable/ic_settings"
-            app:backgroundTint="@color/surface_elevated"
+            app:backgroundTint="@color/brand_primary_dark"
             app:elevation="4dp"
             app:fabCustomSize="36dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-            app:tint="@color/brand_green" />
+            app:tint="@color/white" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/ib_track_notifications"
@@ -102,13 +102,13 @@
             android:layout_marginEnd="16dp"
             android:contentDescription="@string/cd_open_notifications"
             android:src="@drawable/ic_notifications"
-            app:backgroundTint="@color/surface_elevated"
+            app:backgroundTint="@color/brand_primary_dark"
             app:elevation="4dp"
             app:fabCustomSize="36dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-            app:tint="@color/brand_green" />
+            app:tint="@color/white" />
 
         <!-- ── Round map controls ─────────────────────────────────────────── -->
 
@@ -120,12 +120,12 @@
             android:layout_marginBottom="12dp"
             android:contentDescription="@string/cd_map_layers"
             android:src="@drawable/ic_layers"
-            app:backgroundTint="@color/surface_elevated"
+            app:backgroundTint="@color/brand_primary_dark"
             app:fabCustomSize="36dp"
             app:layout_constraintBottom_toTopOf="@id/track_navigate_button"
             app:layout_constraintEnd_toEndOf="parent"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-            app:tint="@color/brand_green" />
+            app:tint="@color/white" />
 
         <!-- Navigate (D6): a tap opens a maps app on the band's position, a
              long-press re-centres the map and resumes following (D4).
@@ -139,12 +139,12 @@
             android:contentDescription="@string/cd_track_navigate"
             android:enabled="false"
             android:src="@drawable/ic_navigation"
-            app:backgroundTint="@color/surface_elevated"
+            app:backgroundTint="@color/brand_primary_dark"
             app:fabCustomSize="36dp"
             app:layout_constraintBottom_toTopOf="@id/track_checkin_pill"
             app:layout_constraintEnd_toEndOf="parent"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
-            app:tint="@color/map_control_icon" />
+            app:tint="@color/white" />
 
         <!-- Check-in pill (FR-10): the wearer's latest check-in, read-only.
              A TextView rather than a Button, so it is not clickable, has no

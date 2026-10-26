@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
-import android.widget.TextView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -40,10 +40,10 @@ import kotlinx.coroutines.launch
  * theme; Change password opens [ChangePasswordActivity] (password accounts
  * only); Device information is a placeholder.
  *
- * View ids: ib_settings_back, tv_settings_title, tv_settings_account,
- * tv_settings_change_password, tv_settings_alert_notifications,
- * tv_settings_display, tv_settings_device_info, tv_settings_changelog,
- * tv_settings_about, btn_settings_logout.
+ * View ids: ib_settings_back, tv_settings_title, row_settings_account,
+ * row_settings_change_password, row_settings_alert_notifications,
+ * row_settings_display, row_settings_device_info, row_settings_changelog,
+ * row_settings_about, btn_settings_logout.
  */
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
@@ -57,25 +57,25 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
 
-        view.findViewById<TextView>(R.id.tv_settings_account)
+        view.findViewById<LinearLayout>(R.id.row_settings_account)
             .setOnClickListener { viewModel.onAccountClicked() }
 
-        view.findViewById<TextView>(R.id.tv_settings_change_password)
+        view.findViewById<LinearLayout>(R.id.row_settings_change_password)
             .setOnClickListener { viewModel.onChangePasswordClicked() }
 
-        view.findViewById<TextView>(R.id.tv_settings_alert_notifications)
+        view.findViewById<LinearLayout>(R.id.row_settings_alert_notifications)
             .setOnClickListener { viewModel.onAlertNotificationsClicked() }
 
-        view.findViewById<TextView>(R.id.tv_settings_display)
+        view.findViewById<LinearLayout>(R.id.row_settings_display)
             .setOnClickListener { viewModel.onDisplayClicked() }
 
-        view.findViewById<TextView>(R.id.tv_settings_device_info)
+        view.findViewById<LinearLayout>(R.id.row_settings_device_info)
             .setOnClickListener { viewModel.onPlaceholderRowClicked() }
 
-        view.findViewById<TextView>(R.id.tv_settings_about)
+        view.findViewById<LinearLayout>(R.id.row_settings_about)
             .setOnClickListener { viewModel.onAboutClicked() }
 
-        view.findViewById<TextView>(R.id.tv_settings_changelog)
+        view.findViewById<LinearLayout>(R.id.row_settings_changelog)
             .setOnClickListener { viewModel.onChangelogClicked() }
 
         view.findViewById<Button>(R.id.btn_settings_logout)
