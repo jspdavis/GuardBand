@@ -171,8 +171,8 @@ Use the debug mock sender to produce alerts.
 - [ ] 🗳️ **Register your debug fingerprints** · *each developer*
   SHA-1 in the Firebase Console (or Google sign-in fails on your build);
   SHA-256 in `hosting/public/.well-known/assetlinks.json`, then redeploy
-  Hosting (or reset and verification links open the browser). **Three
-  SHA-256s are live since 24 Oct** (James's and two teammates'); those two
+  Hosting (or reset and verification links open the browser). **Four
+  SHA-256s are live since 25 Oct** (James's and three teammates'); those three
   run `adb shell pm verify-app-links --re-verify com.example.guardband` on
   their phones. Anyone else still adds theirs.
 

@@ -261,8 +261,8 @@ candidates for it; adding a rule means a predicate in `InputValidator`, a field
 on `PasswordCriteria` and a row in that layout, never a length comparison
 written out again.
 
-**Hosting is deployed** (first 2026-10-11; last 2026-10-24) with **three**
-debug SHA-256s in `assetlinks.json`: James's and two teammates'. Any other
+**Hosting is deployed** (first 2026-10-11; last 2026-10-25) with **four**
+debug SHA-256s in `assetlinks.json`: James's and three teammates'. Any other
 developer's debug SHA-256, and a release one, still has to be added and
 Hosting redeployed. The doc's §1 is the checklist.
 
