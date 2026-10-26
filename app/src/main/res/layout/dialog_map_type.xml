@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/surface_bg"
+    android:paddingTop="16dp"
+    android:paddingBottom="32dp">
+
+    <!-- Close button -->
+    <ImageButton
+        android:id="@+id/btn_close_map_type"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/cd_dialog_close"
+        android:src="@drawable/ic_close"
+        app:tint="@color/text_primary" />
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/tv_map_type_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="12dp"
+        android:fontFamily="@font/poppins_semibold"
+        android:text="@string/dialog_map_type_title"
+        android:textColor="@color/text_primary"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- Map types horizontal container -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp">
+
+            <!-- Item: Auto -->
+            <LinearLayout
+                android:id="@+id/item_layer_auto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="20dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_outer_layer_auto"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    app:cardBackgroundColor="@color/surface_bg"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:contentPadding="3dp"
+                    app:strokeColor="@color/brand_primary"
+                    app:strokeWidth="2.5dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp">
+
+                        <ImageView
+                            android:id="@+id/iv_layer_auto"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/label_map_layer_auto"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/preview_map_auto" />
+                    </com.google.android.material.card.MaterialCardView>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/tv_layer_auto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/poppins_semibold"
+                    android:gravity="center"
+                    android:text="@string/label_map_layer_auto"
+                    android:textColor="@color/brand_primary"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- Item: Street -->
+            <LinearLayout
+                android:id="@+id/item_layer_street"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="20dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_outer_layer_street"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    app:cardBackgroundColor="@color/surface_bg"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:contentPadding="3dp"
+                    app:strokeColor="@android:color/transparent"
+                    app:strokeWidth="0dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp">
+
+                        <ImageView
+                            android:id="@+id/iv_layer_street"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/label_map_layer_street"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/preview_map_street" />
+                    </com.google.android.material.card.MaterialCardView>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/tv_layer_street"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/poppins"
+                    android:gravity="center"
+                    android:text="@string/label_map_layer_street"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- Item: Satellite -->
+            <LinearLayout
+                android:id="@+id/item_layer_satellite"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_outer_layer_satellite"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    app:cardBackgroundColor="@color/surface_bg"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:contentPadding="3dp"
+                    app:strokeColor="@android:color/transparent"
+                    app:strokeWidth="0dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp">
+
+                        <ImageView
+                            android:id="@+id/iv_layer_satellite"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/label_map_layer_satellite"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/preview_map_satellite" />
+                    </com.google.android.material.card.MaterialCardView>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/tv_layer_satellite"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:fontFamily="@font/poppins"
+                    android:gravity="center"
+                    android:text="@string/label_map_layer_satellite"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+</LinearLayout>
