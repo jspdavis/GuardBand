@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <!--
-  GuardBand Privacy Notice, version 1.1.
+  GuardBand Privacy Notice, version 1.2. See docs/privacy-and-consent.md.
 
-  DRAFT. The banner at the top of the page stays until a human has reviewed
-  this. See docs/privacy-and-consent.md.
-
-  Every statement below is taken from the code, not assumed. Where a fact has
-  not been decided it says DECISION: Jul rather than guessing, because a notice
+  Every statement below is taken from the code, not assumed, because a notice
   that describes practices the project does not actually follow is worse than
-  one with a gap in it.
+  one with a gap in it. If the app changes what it collects or who receives
+  it, this page changes in the same commit.
 
   The version here must equal UserProfileRepository.CONSENT_VERSION. The whole
   point of recording a version with somebody's consent is being able to say
@@ -30,9 +27,6 @@
       --bg: #FFFFFF;
       --card: #F4F4F6;
       --rule: #E0E0E0;
-      --warn-bg: #FFF4E5;
-      --warn-text: #8A4B00;
-      --warn-rule: #F57C00;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -43,9 +37,6 @@
         --bg: #121212;
         --card: #1E1E1E;
         --rule: #333333;
-        --warn-bg: #2E2008;
-        --warn-text: #FFCC80;
-        --warn-rule: #F57C00;
       }
     }
 
@@ -94,33 +85,11 @@
       margin: 0 0 1.5rem;
     }
 
-    .draft {
-      background: var(--warn-bg);
-      color: var(--warn-text);
-      border: 1px solid var(--warn-rule);
-      border-radius: 10px;
-      padding: 14px 18px;
-      margin: 0 0 1.75rem;
-      font-weight: 600;
-    }
-
-    .draft span { display: block; font-weight: 400; margin-top: 6px; }
-
     .card {
       background: var(--card);
       border-radius: 10px;
       padding: 14px 18px;
       margin: 0 0 1rem;
-    }
-
-    .todo {
-      color: var(--warn-text);
-      background: var(--warn-bg);
-      border-radius: 4px;
-      padding: 1px 6px;
-      font-weight: 600;
-      font-size: 0.85em;
-      white-space: nowrap;
     }
 
     table {
@@ -158,16 +127,7 @@
 
   <p class="brand">GuardBand</p>
   <h1>Privacy Notice</h1>
-  <p class="meta"><strong>Version 1.1</strong> &middot; 11 October 2026</p>
-
-  <div class="draft">
-    DRAFT, pending review by the project team.
-    <span>
-      This text has not yet been reviewed by the project adviser or a data
-      privacy contact. Do not rely on it as a final statement of how GuardBand
-      handles data, and do not remove this banner before that review.
-    </span>
-  </div>
+  <p class="meta"><strong>Version 1.2</strong> &middot; 24 October 2026</p>
 
   <p>
     GuardBand is a student project. It is a phone app that works with a
@@ -209,7 +169,10 @@
       </tr>
       <tr>
         <td>Your email address</td>
-        <td>It is how you sign in, and how a password reset reaches you.</td>
+        <td>
+          It is how you sign in. The app also sends a link to it to confirm the
+          address is yours, and a password reset reaches you there.
+        </td>
       </tr>
       <tr>
         <td>Your password</td>
@@ -231,8 +194,8 @@
 
   <p>
     If you sign in with Google instead of a password, Google tells the app your
-    name, email address and account identifier. GuardBand never sees your
-    Google password.
+    name, email address, account identifier and a link to your profile
+    picture. GuardBand never sees your Google password.
   </p>
 
   <h3>Your emergency contacts</h3>
@@ -242,6 +205,12 @@
     <strong>name, phone number and relationship to you</strong>. The band texts
     these people when an alert is raised, which is the entire reason they are
     collected.
+  </p>
+
+  <p>
+    You can also mark a contact as <strong>Emergency</strong>. That is stored
+    with the contact and, at present, only changes how your list is sorted and
+    labelled in the app.
   </p>
 
   <div class="card">
@@ -299,17 +268,10 @@
           <strong>asia-southeast1</strong> region (Singapore).
         </td>
       </tr>
-      <!-- DRAFT row, 2026-10-19 (feature/maptiler-tiles): the map tiles moved
-           from OpenStreetMap's public servers to MapTiler, which replaces the
-           OpenStreetMap row that stood here. Not deployed. DECISION: Jul -
-           whether this change needs the notice's version (and
-           CONSENT_VERSION) bumped, since a different company now receives
-           the IP address. -->
       <tr>
         <td><strong>MapTiler</strong> (map tiles)</td>
         <td>
-          <strong>[DRAFT, pending review]</strong> The map is served by a
-          third-party tile provider, MapTiler. Each time the map loads, MapTiler
+          The map is served by a third-party tile provider, MapTiler. Each time the map loads, MapTiler
           receives <strong>your phone's IP address and the map tiles
           requested</strong>, which reveal the approximate area you are looking
           at. MapTiler does not receive your account details, your contacts or
@@ -317,15 +279,10 @@
           OpenStreetMap.
         </td>
       </tr>
-      <!-- DRAFT row, 2026-10-19 (feature/track-profile-marker): the Track
-           map's marker shows the signed-in user's Google profile picture,
-           which the Profile tab already showed. Not deployed. DECISION: Jul -
-           whether this needs the notice's version (and CONSENT_VERSION)
-           bumped. -->
       <tr>
         <td><strong>Google</strong> (profile picture)</td>
         <td>
-          <strong>[DRAFT, pending review]</strong> If you sign in with Google,
+          If you sign in with Google,
           the app shows your Google profile picture on the Profile tab and on
           the map, as the marker for the band's position. The picture is loaded
           from Google's image servers, which receive <strong>your phone's IP
@@ -335,15 +292,10 @@
           and password show their initials instead, and nothing is fetched.
         </td>
       </tr>
-      <!-- DRAFT row, 2026-10-20 (feature/alert-place-names): alert rows show
-           a place name instead of coordinates, from Android's geocoder.
-           Not deployed. DECISION: Jul - whether this needs the notice's
-           version (and CONSENT_VERSION) bumped: unlike the rows above, a
-           company outside Firebase now receives the band's alert positions. -->
       <tr>
         <td><strong>Google</strong> (place names)</td>
         <td>
-          <strong>[DRAFT, pending review]</strong> To show a place name such as
+          To show a place name such as
           a street and barangay on each alert instead of bare coordinates, the
           app asks your phone's built-in place-name service (Google's, on most
           Android phones) about <strong>each alert's position, rounded to about
@@ -388,17 +340,14 @@
 
   <ul>
     <li>your <strong>sign-in session</strong>, so you stay signed in;</li>
-    <li>a <strong>cache of map images</strong>, in the app's own temporary storage.</li>
+    <li>a <strong>cache of map images</strong>, in the app's own temporary storage;</li>
+    <li>if you sign in with Google, a <strong>cached copy of your profile
+      picture</strong>, in the same storage;</li>
+    <li>your <strong>display setting</strong> &mdash; light, dark, or the phone's own.</li>
   </ul>
 
-  <!-- DRAFT paragraph, 2026-10-19 (feature/alert-notifications): the opt-in
-       alert notifications. No new data and no new company; the new things
-       are a background connection and alert text in the phone's
-       notification shade. Not deployed. DECISION: Jul - recommended: no
-       notice version or CONSENT_VERSION bump, reviewed with the MapTiler and
-       Google picture rows. -->
   <p>
-    <strong>[DRAFT, pending review]</strong> If you turn on
+    If you turn on
     <strong>Alert notifications</strong> in Settings, GuardBand keeps a
     connection open in the background to watch your band, and shows its alerts
     as notifications on this phone. They say only the type of alert, its time
@@ -411,7 +360,8 @@
   <p>
     Your contacts, your profile and the band's reports are <strong>not</strong>
     stored on the phone for offline use. Uninstalling the app removes the
-    session and the map cache; it does <strong>not</strong> delete your account.
+    session, the caches and these settings; it does <strong>not</strong> delete
+    your account.
   </p>
 
   <div class="card">
@@ -462,7 +412,8 @@
 
   <p>
     In the app: <strong>Track tab &rarr; the gear icon &rarr; Settings &rarr;
-    Delete account</strong>. You will be asked to confirm who you are first.
+    Account information &rarr; Delete account</strong>. You will be asked to
+    confirm who you are first.
   </p>
 
   <p>That deletes, permanently:</p>
@@ -483,6 +434,13 @@
     app.
   </p>
 
+  <p>
+    One small record is also left behind: a marker, under your account's
+    internal identifier, saying the account was deleted. It holds no name, no
+    email and no contacts. It is what lets the app finish a deletion that was
+    interrupted part way.
+  </p>
+
   <h3>Withdraw your consent</h3>
 
   <p>
@@ -495,13 +453,15 @@
 
   <p>
     When you finish signing up, the app records that you agreed, in the same
-    write as your profile, so an account cannot exist without one. It stores:
+    write as your profile. An account that reaches the app without a record
+    is shown the same agreement before it can go any further; declining signs
+    you out and records nothing. The record stores:
   </p>
 
   <ul>
     <li>that you <strong>accepted</strong>;</li>
     <li><strong>when</strong>, from the server's clock rather than your phone's;</li>
-    <li>the <strong>version</strong> of this notice you agreed to &mdash; <strong>1.1</strong> for the current wording.</li>
+    <li>the <strong>version</strong> of this notice you agreed to &mdash; <strong>1.2</strong> for the current wording.</li>
   </ul>
 
   <p>
@@ -560,7 +520,7 @@
   </p>
 
   <footer>
-    GuardBand Privacy Notice, version 1.1 &middot; DRAFT, pending review &middot;
+    GuardBand Privacy Notice, version 1.2 &middot;
     <a href="/delete-account">How to delete your account</a>
   </footer>
 

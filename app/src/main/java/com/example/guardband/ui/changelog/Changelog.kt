@@ -37,6 +37,17 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-10-26",
+            title = "The Privacy Notice and delete-account page published as final; the unit tests finish again",
+            changes = listOf(
+                "The Privacy Notice (version 1.2) and the delete-account page are live without their DRAFT banners. They now name MapTiler, Google's place names and the Google profile picture, the alert notifications, email verification and the Emergency mark, and give the new Delete account path through Account information.",
+                "New sign-ups and consents are recorded against notice version 1.2. Accounts that agreed to an earlier version keep it and are not asked again.",
+                "Password-reset and verification links open the app on four developers' builds, up from one.",
+                "One sign-up test still counted up to the old contact limit. With the limit removed it never finished, which locked the build folder; it now checks that there is no limit. 727 unit tests pass."
+            ),
+            commit = "9c08f87"
+        ),
+        ChangelogEntry(
             date = "2026-10-21",
             title = "A real Notifications inbox; double-press check-in on the mock sender",
             changes = listOf(

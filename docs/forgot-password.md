@@ -7,7 +7,7 @@ password is set inside the app.
 | | |
 |---|---|
 | **Branch** | `mvvm-main` |
-| **Status** | Hosting deployed 2026-10-11 with one debug SHA-256; Google's Digital Asset Links checker reports the link host as linked. Verified on a device and **manual pass passed** on 2026-10-11 (§1). |
+| **Status** | Hosting deployed 2026-10-11 with one debug SHA-256, then on 2026-10-24 with three and on 2026-10-25 with four (James's and three teammates'); Google's Digital Asset Links checker reported the link host as linked on 2026-10-11. Verified on a device and **manual pass passed** on 2026-10-11 (§1). |
 | **Link host** | `guardband-aae65.firebaseapp.com` — Firebase's own default handler, not a page of ours (§3) |
 | **Link path** | `/__/auth/action` |
 | **Declared in** | [`../app/build.gradle.kts`](../app/build.gradle.kts) — `resetLinkHost` / `resetLinkPath`, one place (§3) |
@@ -26,7 +26,7 @@ instead of the app, which still completes the reset, in the browser.
 | # | Step | Status |
 |---|---|---|
 | 1 | **Deploy Hosting** from `hosting/`: `firebase deploy --only hosting --project guardband-aae65`. Don't run `firebase init`; keep the `ignore` list in the committed `firebase.json` (§5). | **Done** 2026-10-11 |
-| 2 | **SHA-256 fingerprints in `assetlinks.json`.** `./gradlew signingReport`, the `SHA-256` line of the `debug` variant, added to `sha256_cert_fingerprints`, then **redeploy**. | **One developer's done.** Each teammate adds their own; a release one is needed before any signed build. |
+| 2 | **SHA-256 fingerprints in `assetlinks.json`.** `./gradlew signingReport`, the `SHA-256` line of the `debug` variant, added to `sha256_cert_fingerprints`, then **redeploy**. | **Four developers' done** (one 2026-10-11, two more 2026-10-24, one 2026-10-25). Any other developer adds their own; a release one is needed before any signed build. |
 | 3 | ~~Set the Console action URL.~~ **Not possible on this project** — §3. Nothing to do: the app claims the default handler instead. | n/a |
 | 4 | **Verify the App Link on a device:** `adb shell pm get-app-links com.example.guardband` should show `guardband-aae65.firebaseapp.com` as `verified`. To force a re-check: `adb shell pm verify-app-links --re-verify com.example.guardband`. | **Done** 2026-10-11: `verified`, and a reset link opened `ResetPasswordActivity` with no chooser |
 | 5 | **Manual test pass** (§8). | **Passed** 2026-10-11 |

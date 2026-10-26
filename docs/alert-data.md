@@ -364,7 +364,7 @@ coordinates show only while the name loads, and for good when none is found.
 - **Privacy:** this is a new flow. The band's positions used to go only to
   Firebase (and to a maps app on Navigate); now the geocoder's service
   receives each shown alert's rounded position and the phone's IP address.
-  The notice has a DRAFT row ([`privacy-and-consent.md`](privacy-and-consent.md) §4).
+  The notice says so since 1.2 ([`privacy-and-consent.md`](privacy-and-consent.md) §2).
   Never log a place name: it is a location.
 
 ---

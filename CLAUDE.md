@@ -261,10 +261,10 @@ candidates for it; adding a rule means a predicate in `InputValidator`, a field
 on `PasswordCriteria` and a row in that layout, never a length comparison
 written out again.
 
-**Hosting is deployed** (2026-10-11) with one debug SHA-256 in
-`assetlinks.json`; Google's Digital Asset Links checker reports both hosts as
-linked for it. Every other developer's debug SHA-256, and a release one, still
-has to be added. The doc's §1 is the checklist.
+**Hosting is deployed** (first 2026-10-11; last 2026-10-25) with **four**
+debug SHA-256s in `assetlinks.json`: James's and three teammates'. Any other
+developer's debug SHA-256, and a release one, still has to be added and
+Hosting redeployed. The doc's §1 is the checklist.
 
 ## Email verification
 
@@ -318,7 +318,7 @@ The signed-in user's own record, separate from the band's `devices/` tree:
 - **There is no `location`.** It was a city or region typed at sign-up, and it was dropped with the sign-up revamp: the band's GPS is the real location, and a stale self-reported city on the Track chip was worse than nothing. The field, its sign-up step and its Profile/Track rows are gone — don't reintroduce it without deciding what reads it.
 - **`phone` is always E.164.** `InputValidator.normalizePhoneToE164` is the only thing that decides the stored form: it takes `09XXXXXXXXX`, `639XXXXXXXXX` and `+639XXXXXXXXX` and stores all three as `+639XXXXXXXXX`, and it accepts any other number that is already valid E.164 (`+` and 8–15 digits), stored as typed. It strips spaces, hyphens, parentheses and dots first. ViewModels pass the phone through **untouched** — normalising in a screen would mean two places could disagree. `relationship` is optional and stored as `""` when blank.
 - **Minimum 1, no upper cap** (cap was 3 until 2026-10-13, then raised to 10, then removed). `InputValidator.MIN_CONTACTS` / `MAX_CONTACTS` (now `Int.MAX_VALUE`; kept only so existing callers compile). Enforced in the **repository**, not just the dialog: deleting the last contact fails with `ContactError.MinimumContacts`; there is no add cap. Editing is always allowed — it is the way out of a wrong number. Security Rules **cannot** enforce counts, because RTDB rules cannot count children, so the repository is the last line. Sign-up requires the same minimum (`SignUpContactsViewModel.MIN_AT_SIGNUP` *is* `MIN_CONTACTS`).
-- **No "other" (non-emergency) contacts yet, deliberately.** Everything under `emergency_contacts` is someone the band texts, and the Privacy Notice gives that as *the entire reason* the numbers are collected. Storing contacts the band never texts needs a stated purpose first, then the notice, `CONSENT_VERSION` and the notice's version changed in the same commit.
+- **No "other" (non-emergency) contacts yet, deliberately.** Everything under `emergency_contacts` is someone the band texts, and the Privacy Notice gives that as *the entire reason* the numbers are collected. Storing contacts the band never texts needs a stated purpose first, then the notice, `CONSENT_VERSION` and the notice's version changed in the same commit. The `emergency` flag (2026-10-23) does not change that: it only sorts the contact to the top and badges it, and notice 1.2 says exactly that. If it ever decides who the band texts, the notice changes with it.
 - **Every mutation is a transaction** on the `emergency_contacts` node, not a write to one child. The bounds are counts over siblings, so a check-then-write would let two devices both pass the cap or both delete below the minimum.
 - **The sign-up wizard collects; only Consent writes.** Account → Name → Contacts → Consent. Steps 1–3 stage everything in memory and pass it on as Intent extras (contacts as `Parcelable`), so abandoning the wizard leaves nothing behind and never occupies an email address. The cost is that a taken address is not discovered until the final submit — deliberately, because checking earlier is the question Firebase's email-enumeration protection exists to refuse, and Login and forgot-password both already decline to answer it.
 - **Consent is recorded, not just collected.** `finalizeSignUp` writes `accepted`, a server `acceptedAt` and `UserProfileRepository.CONSENT_VERSION` in the same atomic commit as the profile and contacts, so a profile can never exist without one. Bump the version whenever `label_signup_consent_statement` changes what is being agreed to.
@@ -408,8 +408,8 @@ with it — and the modal says so, rather than implying everything is gone.
 is gone no session can write `users/{uid}`, so `deletion_pending: true` stays
 under a uid that no longer belongs to anyone — no name, no email, no contacts.
 Any marker cleared before the Auth delete would reopen the gap. A human can
-sweep them from the Console. The hosted pages do not mention it yet (a human
-decision).
+sweep them from the Console. Both hosted pages say so (2026-10-24): a marker
+under the account's internal identifier, holding no name, email or contacts.
 
 **No rules change was needed, and that was checked.** `users/$uid` has
 `".write": "auth != null && auth.uid == $uid"`, nothing at that level refuses
@@ -527,7 +527,7 @@ nothing else may spell one out. The reset link has its own
 the log in `docs/privacy-and-consent.md`, **in the same commit**. The point of
 storing a version with somebody's consent is being able to say which words
 they agreed to, and that fails the moment the number cannot be matched to a
-document. It is a **String** (`"1.1"`), not a number, so `"1.10"` can follow
+document. It is a **String** (`"1.2"`), not a number, so `"1.10"` can follow
 `"1.9"`.
 
 **The consent statement stays plain text and the link is a separate button.**
@@ -559,14 +559,17 @@ PH mobile and RTDB's regex has no negative lookahead. Change one, change the
 other.
 
 **The notice states only what the code does.** Undecided facts carry a
-`DECISION: Jul` rather than a plausible default, it claims compliance with
-nothing, and both pages keep a **DRAFT** banner until a human has reviewed
-them. **Firebase Analytics was dropped** because no app code called it, yet it
+`DECISION: Jul` rather than a plausible default, and it claims compliance with
+nothing. **Both pages are published without a DRAFT banner (2026-10-24, notice
+1.2)**: the team decided to publish without the adviser review, so the pages
+are the final word on what the app does, and a change to what the app
+collects or who receives it must change the notice (and bump the version) in
+the same commit. **Firebase Analytics was dropped** because no app code called it, yet it
 collected an advertising id on its own; the notice now says the app has no
 analytics, so **adding any analytics SDK back means changing the notice in the
 same commit.** And **the map's tile provider sees the phone's IP and the area
 being viewed** on every tile, which the notice discloses. That is MapTiler
-since 2026-10-19; its notice row is still a draft, not yet deployed.
+since 2026-10-19, in the notice since 1.2.
 
 **The "profile with no consent" gap is closed in the app (2026-10-14).**
 `ProfileProvisioning` still writes only `name` and `email`, so `users/{uid}`
@@ -619,7 +622,7 @@ Track's recent-alerts panel and the Alert history screen read `devices/{deviceId
 
 **Locations are never logged.** An alert carries the wearer's coordinates; nothing in `data/` logs at all, and neither alert screen logs anything either. Same rule as contact phone numbers — see "Contacts and profile data". A place name is a location too.
 
-**Rows show place names, not coordinates (2026-10-20).** `AlertViewModel` looks up each shown alert's point through `PlaceRepository` (Android's `Geocoder`: no key, no dependency, no permission; Google's service on Play-services phones), once per point rounded to 4 decimals, and keeps the names in memory only (`AlertUiState.placeNames`). Coordinates show until a name arrives, and for good when none exists. This sends the band's rounded positions to the geocoder's service, which the notice discloses in a DRAFT row. Details: [docs/alert-data.md](docs/alert-data.md) §7, "Place names".
+**Rows show place names, not coordinates (2026-10-20).** `AlertViewModel` looks up each shown alert's point through `PlaceRepository` (Android's `Geocoder`: no key, no dependency, no permission; Google's service on Play-services phones), once per point rounded to 4 decimals, and keeps the names in memory only (`AlertUiState.placeNames`). Coordinates show until a name arrives, and for good when none exists. This sends the band's rounded positions to the geocoder's service, which the notice discloses (since 1.2). Details: [docs/alert-data.md](docs/alert-data.md) §7, "Place names".
 
 **Every alert card is bound by `ui/alert/AlertCardViews` (2026-10-20)**, the
 rows and Alert history's latest card alike: the type's symbol on a pale badge,
@@ -880,8 +883,8 @@ pairing and roles.
   `WAKE_LOCK`, `USE_FULL_SCREEN_INTENT` or
   `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` without the owner's approval of the
   release manifest.
-- **The notice has a DRAFT paragraph** for it (not deployed);
-  `CONSENT_VERSION` is unchanged.
+- **The notice has a paragraph** for it, published in notice 1.2
+  (2026-10-24).
 
 ## Mock sender
 

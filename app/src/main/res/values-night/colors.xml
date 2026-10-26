@@ -26,7 +26,7 @@
     <color name="surface_bg">#121212</color>
     <color name="surface_card">#1E1F1E</color>
     <color name="surface_muted">#2C2D2C</color>
-    <color name="surface_elevated">#2A2B2A</color>
+    <color name="surface_elevated">#FF2A2B2A</color>
     <color name="input_bg">#1E1F1E</color>
 
     <!-- Strokes / dividers -->

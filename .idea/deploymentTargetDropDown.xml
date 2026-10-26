@@ -2,7 +2,16 @@
 <project version="4">
   <component name="deploymentTargetDropDown">
     <value>
-      <entry key="app">
+      <entry key="GuardBand.app">
+        <State />
+      </entry>
+      <entry key="GuardBand.app.androidTest">
+        <State />
+      </entry>
+      <entry key="GuardBand.app.main">
+        <State />
+      </entry>
+      <entry key="GuardBand.app.unitTest">
         <State />
       </entry>
     </value>

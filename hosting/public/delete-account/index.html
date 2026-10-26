@@ -6,8 +6,6 @@
   locked out of their account still needs a way to ask. App stores also expect
   a deletion route reachable without installing the app.
 
-  DRAFT. The banner stays until a human has reviewed it.
-
   Every claim here matches what DeleteAccountViewModel actually does, including
   what it deliberately does not delete. If that flow changes, this page changes
   with it.
@@ -28,9 +26,6 @@
       --bg: #FFFFFF;
       --card: #F4F4F6;
       --rule: #E0E0E0;
-      --warn-bg: #FFF4E5;
-      --warn-text: #8A4B00;
-      --warn-rule: #F57C00;
       --danger: #D32F2F;
     }
 
@@ -42,9 +37,6 @@
         --bg: #121212;
         --card: #1E1E1E;
         --rule: #333333;
-        --warn-bg: #2E2008;
-        --warn-text: #FFCC80;
-        --warn-rule: #F57C00;
         --danger: #EF5350;
       }
     }
@@ -85,18 +77,6 @@
     li { margin-bottom: 0.4rem; }
     strong { color: var(--text); }
 
-    .draft {
-      background: var(--warn-bg);
-      color: var(--warn-text);
-      border: 1px solid var(--warn-rule);
-      border-radius: 10px;
-      padding: 14px 18px;
-      margin: 0 0 1.75rem;
-      font-weight: 600;
-    }
-
-    .draft span { display: block; font-weight: 400; margin-top: 6px; }
-
     .card {
       background: var(--card);
       border-radius: 10px;
@@ -116,16 +96,6 @@
 
     .kept { color: var(--danger); font-weight: 600; }
 
-    .todo {
-      color: var(--warn-text);
-      background: var(--warn-bg);
-      border-radius: 4px;
-      padding: 1px 6px;
-      font-weight: 600;
-      font-size: 0.85em;
-      white-space: nowrap;
-    }
-
     footer {
       margin-top: 2.5rem;
       padding-top: 1.25rem;
@@ -143,14 +113,6 @@
   <p class="brand">GuardBand</p>
   <h1>Delete your account</h1>
 
-  <div class="draft">
-    DRAFT, pending review by the project team.
-    <span>
-      This page has not yet been reviewed. The steps below match the app as
-      built.
-    </span>
-  </div>
-
   <p>
     You can delete your GuardBand account yourself, from inside the app. It is
     permanent and there is no undo, no grace period and no recovery window
@@ -160,13 +122,15 @@
   <h2>In the app</h2>
 
   <div class="path">
-    Track tab &rarr; the gear icon, top right &rarr; Settings &rarr; Delete account
+    Track tab &rarr; the gear icon, top right &rarr; Settings &rarr; Account
+    information &rarr; Delete account
   </div>
 
   <ol>
     <li>Open GuardBand and sign in, if you are not already.</li>
     <li>On the <strong>Track</strong> tab, tap the <strong>gear icon</strong> in the top bar.</li>
-    <li>Scroll to the bottom and tap <strong>Delete account</strong>, in red.</li>
+    <li>In Settings, tap <strong>Account information</strong>.</li>
+    <li>Scroll down to the <strong>Danger zone</strong> and tap <strong>Delete account</strong>.</li>
     <li>Read what the confirmation says will be deleted, then tap <strong>Delete account</strong> again.</li>
     <li>
       Confirm it is you. If you sign in with a password, you will be asked to
@@ -184,9 +148,10 @@
     <p style="margin:0">
       <strong>If it stops part way</strong> &mdash; the connection drops, say
       &mdash; the screen shows what is left to do and a <strong>Retry</strong>
-      button. Tap it. Retry picks up where it stopped rather than starting over,
-      and it is worth finishing: if you walk away mid-delete, your sign-in may
-      still exist even though your data is gone.
+      button. Tap it. Retry picks up where it stopped rather than starting over.
+      If you leave before it finishes, your data may already be gone while your
+      sign-in still exists; the next time you sign in, on any phone, the app
+      takes you straight back to finish the deletion.
     </p>
   </div>
 
@@ -224,6 +189,12 @@
   </p>
 
   <p>
+    A small marker is also left under your account's internal identifier,
+    saying the account was deleted. It holds no name, no email and no
+    contacts; it is what lets the app finish a deletion that was interrupted.
+  </p>
+
+  <p>
     Google may also keep its own operational logs of the sign-in service for its
     own retention periods, which the project does not control.
   </p>
@@ -254,7 +225,7 @@
   </div>
 
   <footer>
-    <a href="/privacy">Privacy Notice</a> &middot; DRAFT, pending review
+    <a href="/privacy">Privacy Notice</a>
   </footer>
 
 </main>
