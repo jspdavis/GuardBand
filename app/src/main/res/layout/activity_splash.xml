@@ -9,6 +9,7 @@
     tools:context=".ui.splash.SplashActivity">
 
     <!-- App logo (G mark): packed chain logo -> title, centered in parent -->
+    <!-- Transparent logo asset blends seamlessly in dark mode - ishi -->
     <ImageView
         android:id="@+id/iv_splash_logo"
         android:layout_width="169dp"

@@ -67,6 +67,7 @@
             <!-- Flat and the same white as the screen, so the rows read as part
                  of it rather than as a separate card. DESIGN: Jul -->
 
+            <!-- Settings Card Container - rows full-width extension adjusted by ishi -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -81,9 +82,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp">
+                    android:orientation="vertical">
 
                     <!-- Account Row -->
                     <LinearLayout
@@ -95,7 +94,9 @@
                         android:contentDescription="@string/label_settings_account"
                         android:focusable="true"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -118,10 +119,14 @@
                             android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
                             android:importantForAccessibility="no"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
                             android:text="@string/label_settings_account" />
                     </LinearLayout>
 
-                    <View style="@style/Widget.GuardBand.SettingsDivider" />
+                    <View
+                        style="@style/Widget.GuardBand.SettingsDivider"
+                        android:layout_marginEnd="16dp" />
 
                     <!-- Change Password Row -->
                     <LinearLayout
@@ -133,7 +138,9 @@
                         android:contentDescription="@string/label_settings_change_password"
                         android:focusable="true"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -156,10 +163,14 @@
                             android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
                             android:importantForAccessibility="no"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
                             android:text="@string/label_settings_change_password" />
                     </LinearLayout>
 
-                    <View style="@style/Widget.GuardBand.SettingsDivider" />
+                    <View
+                        style="@style/Widget.GuardBand.SettingsDivider"
+                        android:layout_marginEnd="16dp" />
 
                     <!-- Alert notifications Row: opens its own screen
                          (AlertNotificationsActivity), which holds the switch. -->
@@ -172,7 +183,9 @@
                         android:contentDescription="@string/label_settings_alert_notifications"
                         android:focusable="true"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -195,10 +208,14 @@
                             android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
                             android:importantForAccessibility="no"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
                             android:text="@string/label_settings_alert_notifications" />
                     </LinearLayout>
 
-                    <View style="@style/Widget.GuardBand.SettingsDivider" />
+                    <View
+                        style="@style/Widget.GuardBand.SettingsDivider"
+                        android:layout_marginEnd="16dp" />
 
                     <!-- Display Row: the theme (DisplayActivity). -->
                     <LinearLayout
@@ -210,7 +227,9 @@
                         android:contentDescription="@string/label_settings_display"
                         android:focusable="true"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -233,10 +252,14 @@
                             android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
                             android:importantForAccessibility="no"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
                             android:text="@string/label_settings_display" />
                     </LinearLayout>
 
-                    <View style="@style/Widget.GuardBand.SettingsDivider" />
+                    <View
+                        style="@style/Widget.GuardBand.SettingsDivider"
+                        android:layout_marginEnd="16dp" />
 
                     <!-- Device information Row: a placeholder, for the band
                          once pairing exists. -->
@@ -249,7 +272,9 @@
                         android:contentDescription="@string/label_settings_device_info"
                         android:focusable="true"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -272,10 +297,14 @@
                             android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
                             android:importantForAccessibility="no"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
                             android:text="@string/label_settings_device_info" />
                     </LinearLayout>
 
-                    <View style="@style/Widget.GuardBand.SettingsDivider" />
+                    <View
+                        style="@style/Widget.GuardBand.SettingsDivider"
+                        android:layout_marginEnd="16dp" />
 
                     <!-- Changelog Row -->
                     <LinearLayout
@@ -287,7 +316,9 @@
                         android:contentDescription="@string/label_settings_changelog"
                         android:focusable="true"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -310,10 +341,14 @@
                             android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
                             android:importantForAccessibility="no"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
                             android:text="@string/label_settings_changelog" />
                     </LinearLayout>
 
-                    <View style="@style/Widget.GuardBand.SettingsDivider" />
+                    <View
+                        style="@style/Widget.GuardBand.SettingsDivider"
+                        android:layout_marginEnd="16dp" />
 
                     <!-- About Row: the app's version and the Privacy Notice
                          (AboutActivity). -->
@@ -326,7 +361,9 @@
                         android:contentDescription="@string/label_settings_about"
                         android:focusable="true"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -349,6 +386,8 @@
                             android:focusable="false"
                             android:fontFamily="@font/poppins_extralight"
                             android:importantForAccessibility="no"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
                             android:text="@string/label_settings_about" />
                     </LinearLayout>
 

@@ -35,6 +35,17 @@
             android:src="@drawable/ic_arrow_back"
             app:tint="@color/text_primary" />
 
+        <!-- Notification logo icon added by ishi -->
+        <ImageView
+            android:id="@+id/iv_notifications_logo"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginStart="4dp"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/app_name"
+            android:scaleType="fitCenter"
+            android:src="@drawable/logo_mark" />
+
         <TextView
             android:id="@+id/tv_notifications_title"
             android:layout_width="wrap_content"

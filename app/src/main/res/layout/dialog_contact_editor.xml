@@ -8,11 +8,13 @@
     Guardian, Other) rather than typing free text. The stored value is still
     a plain String — no model change required.
 
+    Restyled to match structural design, background tokens, and styling conventions
+    from dialog_map_type.xml by ishi.
+
     View ids: til_contact_name_input / contact_name_input,
               til_contact_phone_input / contact_phone_input,
               til_contact_relationship_input / contact_relationship_input
               (AutoCompleteTextView, not TextInputEditText).
-    DESIGN: Jul (spacing, typography, colours)
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -20,13 +22,13 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:background="@color/surface_bg"
     android:paddingStart="24dp"
-    android:paddingTop="8dp"
+    android:paddingTop="16dp"
     android:paddingEnd="24dp"
-    android:paddingBottom="8dp">
+    android:paddingBottom="32dp">
 
     <!-- Contact name -->
-    <!-- DESIGN: Jul -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_contact_name_input"
         style="@style/Widget.GuardBand.TextInputLayout"
@@ -38,47 +40,53 @@
             android:id="@+id/contact_name_input"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins"
+            android:textColor="@color/text_primary"
             android:inputType="textPersonName"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Phone number -->
-    <!-- DESIGN: Jul -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_contact_phone_input"
         style="@style/Widget.GuardBand.TextInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="16dp"
         android:hint="@string/hint_contact_phone">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/contact_phone_input"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins"
+            android:textColor="@color/text_primary"
             android:inputType="phone"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Relationship — ExposedDropdownMenu so users pick from a fixed list
-         rather than typing free text. The dropdown items are set in
-         ContactsFragment.showEditor() using an ArrayAdapter.
-         focusable=false + clickable=false on the AutoCompleteTextView stops
-         the keyboard from opening; the dropdown opens on any touch. -->
-    <!-- DESIGN: Jul -->
+    <!-- Relationship — ExposedDropdownMenu matching design tokens -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_contact_relationship_input"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:hint="@string/hint_contact_relationship_dropdown">
+        android:layout_marginTop="16dp"
+        android:hint="@string/hint_contact_relationship_dropdown"
+        app:boxCornerRadiusTopStart="8dp"
+        app:boxCornerRadiusTopEnd="8dp"
+        app:boxCornerRadiusBottomStart="8dp"
+        app:boxCornerRadiusBottomEnd="8dp"
+        app:boxStrokeColor="@color/input_box_stroke"
+        app:hintTextColor="@color/brand_primary">
 
         <AutoCompleteTextView
             android:id="@+id/contact_relationship_input"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:focusable="false"
+            android:fontFamily="@font/poppins"
+            android:textColor="@color/text_primary"
             android:inputType="none"
             android:maxLines="1" />
     </com.google.android.material.textfield.TextInputLayout>

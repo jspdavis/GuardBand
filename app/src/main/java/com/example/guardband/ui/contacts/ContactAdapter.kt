@@ -29,6 +29,7 @@ class ContactAdapter(
     private val onEditClicked: (EmergencyContact) -> Unit,
     private val onDeleteClicked: (EmergencyContact) -> Unit,
     private val onEmergencyClicked: (EmergencyContact) -> Unit,
+    private val onItemLongClicked: ((EmergencyContact) -> Unit)? = null,
 ) : ListAdapter<EmergencyContact, ContactAdapter.ContactViewHolder>(ContactDiff) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ContactViewHolder {
@@ -76,6 +77,12 @@ class ContactAdapter(
             ibEmergency.setOnClickListener { onEmergencyClicked(contact) }
             ibEdit.setOnClickListener      { onEditClicked(contact) }
             ibDelete.setOnClickListener    { onDeleteClicked(contact) }
+
+            // Hold/long-click on the row triggers quick deletion dialog
+            itemView.setOnLongClickListener {
+                (onItemLongClicked ?: onDeleteClicked)(contact)
+                true
+            }
         }
     }
 

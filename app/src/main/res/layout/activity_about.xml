@@ -65,6 +65,7 @@
             android:paddingBottom="24dp">
 
             <!-- The app: logo, name, version. DESIGN: Jul -->
+            <!-- Transparent logo asset blends seamlessly in dark mode - ishi -->
             <ImageView
                 android:layout_width="72dp"
                 android:layout_height="72dp"
