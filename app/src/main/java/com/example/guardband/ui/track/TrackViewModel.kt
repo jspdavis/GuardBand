@@ -53,6 +53,13 @@ import kotlinx.coroutines.launch
  * session, in [markerFace]: the one place that decides whose picture marks
  * the band.
  *
+ * **Recent alerts are pins** ([TrackUiState.alertPins], 2026-10-27), chosen by
+ * [AlertPinSelector] from the list the Fragment hands over in
+ * [onAlertsChanged]: the recent-alerts sheet's own, so no listener is added
+ * here. A tapped pin opens a label ([TrackUiState.pinLabel]) that ages on the
+ * staleness ticker; [onAlertPinTapped] is the hook a pin's next feature hangs
+ * on.
+ *
  * Nothing here logs. The state holds the wearer's coordinates, and the face a
  * photo link.
  *
@@ -99,6 +106,13 @@ class TrackViewModel(
     /** The check-in subscription, cancelled and replaced on retry. */
     private var checkInJob: Job? = null
 
+    /**
+     * The alerts the pins are chosen from, as last handed over by
+     * [onAlertsChanged]. Kept so a new band position can re-choose them: a
+     * pin under the face is dropped.
+     */
+    private var pinSource: List<Alert> = emptyList()
+
     init {
         observeLatest()
         observeCheckIns()
@@ -131,6 +145,43 @@ class TrackViewModel(
         if (_uiState.value.selectedLayer == layer) return
         layerPrefs.layer = layer
         _uiState.update { it.copy(selectedLayer = layer) }
+    }
+
+    /**
+     * The alerts behind the recent-alerts sheet, handed over by the Fragment
+     * from the host-scoped
+     * [AlertViewModel][com.example.guardband.ui.alert.AlertViewModel], which
+     * already reads the history window for the sheet and Alert history. Taking
+     * them from there rather than from the repository means the pins add no
+     * second history listener, and can never disagree with the sheet.
+     *
+     * The pins are re-chosen ([AlertPinSelector]); an open label whose pin is
+     * no longer among them closes.
+     */
+    fun onAlertsChanged(alerts: List<Alert>) {
+        pinSource = alerts
+        recomputePins()
+    }
+
+    /**
+     * A pin was tapped: open its label. **The hook for what a pin opens
+     * next** (an incident view, say); today it does nothing beyond the label.
+     * A pin no longer on the map (a tap racing an update) is ignored.
+     */
+    fun onAlertPinTapped(alert: Alert) {
+        val pin = _uiState.value.alertPins.firstOrNull { it.alert.sequenceId == alert.sequenceId }
+            ?: return
+        _uiState.update { it.copy(pinLabel = AlertPinLabel(pin, elapsedOf(pin.alert))) }
+    }
+
+    /**
+     * The map was tapped anywhere that is not a pin - the map itself, the
+     * band's marker, or the open label - so the label closes. A pin's tap
+     * arrives here first and then reopens its own label.
+     */
+    fun onMapTapped() {
+        if (_uiState.value.pinLabel == null) return
+        _uiState.update { it.copy(pinLabel = null) }
     }
 
     /**
@@ -215,6 +266,7 @@ class TrackViewModel(
                     errorMessage = null
                 )
             }
+            recomputePins()
             return
         }
 
@@ -230,8 +282,33 @@ class TrackViewModel(
                 errorMessage = null
             )
         }
+        // The face may have moved onto, or off, a pin.
+        recomputePins()
         recomputeStaleness()
     }
+
+    /**
+     * Re-chooses the pins from [pinSource] around the band's current marker.
+     * An open label stays open, aged afresh, while its pin is still chosen,
+     * and closes when it is not. An unchanged choice copies an equal state,
+     * which the StateFlow drops, so a walking band moving the face costs the
+     * screen nothing.
+     */
+    private fun recomputePins() {
+        _uiState.update { state ->
+            val pins = AlertPinSelector.select(pinSource, state.location)
+            val label = state.pinLabel?.let { open ->
+                pins.firstOrNull { it.alert.sequenceId == open.pin.alert.sequenceId }
+                    ?.let { pin -> AlertPinLabel(pin, elapsedOf(pin.alert)) }
+            }
+            state.copy(alertPins = pins, pinLabel = label)
+        }
+    }
+
+    /** How long ago [alert] was, by the injected clock; null when its timestamp is unreadable. */
+    private fun elapsedOf(alert: Alert): Elapsed? =
+        BandStatus.parseIsoUtcMillis(alert.timestamp)
+            ?.let { BandStatus.elapsedSince(it, clock.nowMillis()) }
 
     /**
      * Derives [TrackUiState.isOnline], [TrackUiState.elapsed] and the age of a
@@ -256,7 +333,9 @@ class TrackViewModel(
                     CheckInStatus.Received(checkInElapsed())
                 } else {
                     it.checkIn
-                }
+                },
+                // An open pin label ages on the same tick.
+                pinLabel = it.pinLabel?.let { open -> open.copy(elapsed = elapsedOf(open.pin.alert)) }
             )
         }
     }

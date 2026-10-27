@@ -475,8 +475,9 @@ The one marker on the Track map is the band's last reported position (never
 the phone's). Since `feature/track-profile-marker` it is a **face**: a round
 picture in a white ring, with a soft shadow and a short pointer underneath.
 Before that it was osmdroid's default pin. What the marker means, how it
-moves, follow mode and the rest of the map are unchanged. There are no other
-markers or polylines on Track.
+moves, follow mode and the rest of the map are unchanged. Since 2026-10-27
+the recent alerts have small pins of their own, always under this marker
+(§5.5). There are no polylines on Track.
 
 | | |
 |---|---|
@@ -527,6 +528,54 @@ than a second mechanism:
 **Accessibility:** osmdroid overlays are not accessibility nodes, so the
 marker cannot carry a content description of its own; a tap shows its title,
 "Your band", as before.
+
+### 5.5 Alert pins (2026-10-27)
+
+Recent alerts are small pins where they happened, so a guardian sees where
+things took place, not only where the band is now.
+
+| | |
+|---|---|
+| Which | The newest **10** panics, check-ins and low-battery alerts with usable coordinates. Never a tracking update, never an unknown type, never a missing, out-of-range or (0, 0) position. `ui/track/AlertPinSelector` (pure, tested) decides |
+| Order | By `sequenceId`, like every other screen, not by timestamp |
+| One per spot | An alert within **10 m** of a newer pin is dropped (`AlertPinSelector.MERGE_RADIUS_METERS`; the KDoc says why 10 m), and so is one within 10 m of the band's marker: the face wins |
+| Look | `ic_alert_pin_panic` / `_checkin` / `_low_battery`: a 24 × 32 dp vector pin in the type's colour (`alert_*`, lighter from `values-night`), a white ring, and the alert rows' own symbol in white. Anchored at the tip, (12, 30) of the viewport. DESIGN: Jul |
+| Tap | A label above the pin, "Panic, 5 min ago" (`view_alert_pin_label.xml`, `ui/track/AlertPinLabelWindow`), which ages on Track's 30 s ticker. A tap anywhere else, the face or the label included, closes it. Nothing navigates yet: `TrackViewModel.onAlertPinTapped` is the hook for that |
+| Data | The list behind the recent-alerts sheet. `TrackFragment` hands `AlertViewModel`'s `history` to `TrackViewModel.onAlertsChanged`. **No new listener** |
+
+**The overlay order is the design.** osmdroid draws overlays in list order
+and offers a tap to the **last** one first. So:
+
+1. the pins, all in one `FolderOverlay` added at index 0 in `setUpMap`;
+2. the band's face, added on the first fix (`addUnderTapWatcher`);
+3. a pass-through tap watcher, always last. It sees every single tap first,
+   calls `TrackViewModel.onMapTapped()` (close the label) and **never
+   consumes it**. A tap on a pin then reaches the pin, which reopens its own
+   label. A tap on the face reaches the face, which shows "Your band" exactly
+   as before.
+
+The label is a child `View` of the `MapView`, so the `MapView` hands it a tap
+before any overlay sees one. Its own click also goes through
+`onMapTapped()`. osmdroid's info windows normally close themselves on a tap;
+this one never does, so the view cannot be closed behind the state's back and
+then reopened by the next tick.
+
+**No duplicates, no leaks.** The pins are replaced as a set, and only when
+the list changes. A walking band moves the face every few seconds without
+touching them. Each removed pin is taken out of the folder and detached.
+`onDestroyView`'s `mapView.onDetach()` detaches the folder and every pin with
+it, and the label window is detached after it. A layer change only swaps the
+tile source, so the overlays are untouched. A recreated view (a theme change,
+coming back from Alert history after a restore) starts from an empty map and
+redraws the pins and any open label from the ViewModel's state. The pin icons
+are vector drawables, and osmdroid's `BitmapPool` only ever recycles its own
+`ReusableBitmapDrawable`s, so detaching a pin can never recycle a picture
+something else is still drawing.
+
+**Nothing logs**, and the label shows only the type and the time: no place,
+no coordinates. Pins are the alerts the app already reads and shows in the
+sheet, at the positions the app already sends to the geocoder, so the Privacy
+Notice is unchanged.
 
 ---
 
@@ -587,10 +636,11 @@ Tracked in [`handoff.md`](handoff.md).
 ## 8. Not covered by tests
 
 `OsmdroidConfig`, `MapTilerTileSource`, the `MapView` lifecycle, the marker's
-placement and the follow logic all need a real `Context`, a running map, or an
-instrumented test — and the project declares no mocking library. The testable
-logic was lifted out instead: `BandStatus`,
-`TrackViewModel`, `BandMarkerFace` (photo or initials, and the initials
+placement, the alert pins' overlays and label window, and the follow logic all
+need a real `Context`, a running map, or an instrumented test — and the
+project declares no mocking library. The testable logic was lifted out
+instead: `BandStatus`, `AlertPinSelector` (which alerts get a pin),
+`TrackViewModel` (including the pins and their label), `BandMarkerFace` (photo or initials, and the initials
 themselves) and `BandMarkerIcon` under Robolectric (drawn once per face, and
 the anchor; the photo path needs a device), all covered under
 [`app/src/test/java/com/example/guardband/ui/track/`](../app/src/test/java/com/example/guardband/ui/track/).
@@ -608,6 +658,30 @@ network inspector) shows tile requests to `api.maptiler.com` and none to
 `tile.openstreetmap.org`. Then build once **without** the key and check for
 "Map unavailable", no crash and no tile requests at all. Update the Status row
 above once someone has looked at the map.
+
+**Alert pins (§5.5), with the Mock Sender on a second phone:**
+
+- [ ] Send a panic, a check-in and a low battery, each from a different spot
+      (walk 20 m or more between them). Three pins appear within a second or
+      so of each row in the sheet: red octagon, green tick, orange triangle.
+- [ ] Send a tracking update or start a walk. The face moves and no pin is
+      added for it.
+- [ ] Send three or four alerts without moving. One pin, the newest one's
+      type and colour.
+- [ ] Send more than ten from different spots. Ten pins, and the oldest go as
+      new ones arrive.
+- [ ] Stand where the band's face is and send an alert. No pin peeks out from
+      under the face; walk away and send a tracking update, and it appears.
+      Tapping the face still shows "Your band".
+- [ ] Tap a pin: "Panic, 5 min ago" (or the type and time it has) above it.
+      Wait a minute: the time moves on. Tap another pin: the label moves.
+      Tap the map, the face or the label itself: it closes. Panning the map
+      does not.
+- [ ] Switch through all five layers and dark mode with a label open. The pins
+      stay, the face stays on top, and the label reopens after the theme
+      change. Pins are readable on Satellite and on the dark map.
+- [ ] Go to Alert history and back, and switch tabs: no doubled pins.
+- [ ] Log out and back in: the pins come back with the alerts.
 
 ---
 

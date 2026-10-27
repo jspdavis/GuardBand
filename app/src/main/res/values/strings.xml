@@ -139,6 +139,9 @@
     <!-- The MapTiler logo on the Track map; a link to maptiler.com. -->
     <string name="cd_track_map_logo">MapTiler</string>
     <string name="label_track_marker_title">Your band</string>
+    <!-- The label over a tapped alert pin: the type, then how long ago, e.g.
+         "Panic, 5 min ago". Both parts are the alert rows' own wording. -->
+    <string name="label_track_alert_pin">%1$s, %2$s</string>
 
     <string name="label_track_never_reported">Your band hasn\'t reported yet.</string>
     <string name="label_track_no_fix">No location fix yet</string>

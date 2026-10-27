@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The label over a tapped alert pin on the Track map ("Panic, 5 min ago"),
+     shown by ui/track/AlertPinLabelWindow just above the pin's head. A tap on
+     it closes it, like a tap anywhere else on the map. Theme colours only, so
+     it follows dark mode; on every map layer it sits on its own background.
+
+     View IDs: tv_alert_pin_label.
+
+     DESIGN: Jul - the shape, padding, gap above the pin and type size are
+     placeholders (the check-in pill's background, LabelMedium). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:paddingBottom="4dp">
+
+    <TextView
+        android:id="@+id/tv_alert_pin_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_pill"
+        android:maxWidth="240dp"
+        android:paddingStart="12dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="6dp"
+        android:textAppearance="?attr/textAppearanceLabelMedium"
+        android:textColor="@color/text_primary" />
+</FrameLayout>

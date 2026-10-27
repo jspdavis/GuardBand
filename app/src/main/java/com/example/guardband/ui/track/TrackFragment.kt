@@ -18,9 +18,14 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.annotation.DrawableRes
+import androidx.core.content.ContextCompat
 import com.example.guardband.R
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertType
 import com.example.guardband.ui.alert.AlertEvent
+import com.example.guardband.ui.alert.AlertFormatting
+import com.example.guardband.ui.alert.AlertRow
 import com.example.guardband.ui.alert.AlertViewModel
 import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -28,7 +33,9 @@ import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.FolderOverlay
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Overlay
 
 /**
  * Track tab (the default tab): the band's last known position on a map
@@ -59,6 +66,16 @@ import org.osmdroid.views.overlay.Marker
  * a white ring with a pointer, drawn by [BandMarkerIcon] from
  * [TrackUiState.markerFace]. It is drawn when the face changes, not on every
  * position; a new position only moves the marker, as before.
+ *
+ * **Recent alerts are pins** (2026-10-27): small markers in the type's colour
+ * where each of [TrackUiState.alertPins] happened, all in one [FolderOverlay]
+ * at the bottom of the overlays, so the face is always drawn over them and
+ * takes the tap first. A tap on a pin opens its label
+ * ([TrackUiState.pinLabel], drawn by [AlertPinLabelWindow]); a tap anywhere
+ * else closes it, seen by a pass-through overlay on top of everything that
+ * never consumes the tap, so the face keeps its own tap behaviour. The pins'
+ * alerts are the sheet's: this Fragment hands [AlertViewModel]'s list to
+ * [TrackViewModel.onAlertsChanged], and opens no listener of its own.
  *
  * **The round target button re-centres** (2026-10-27): a tap takes the map
  * back to the band's last known position and resumes following (D4),
@@ -104,6 +121,29 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
     /** The band's one marker, created on the first fix. */
     private var marker: Marker? = null
+
+    /** The alert pins, one folder at the bottom of the overlays, under the face. */
+    private var pinFolder: FolderOverlay? = null
+
+    /** The pins on the map now, by `sequenceId`, so a label finds its pin. */
+    private val pinMarkers = mutableMapOf<Long, Marker>()
+
+    /** The pins last drawn, so an unchanged list draws nothing. Null after a new view. */
+    private var appliedPins: List<AlertPin>? = null
+
+    /** The label last shown, so an unchanged one is not reopened. */
+    private var appliedPinLabel: AlertPinLabel? = null
+
+    /** The one label window the pins share. */
+    private var pinLabelWindow: AlertPinLabelWindow? = null
+
+    /**
+     * Sees every single tap before any marker does, never consumes it, and
+     * tells the ViewModel the map was tapped, which closes an open label. A
+     * pin's own tap then reopens its label. Always the top overlay; the face
+     * is added under it ([addUnderTapWatcher]).
+     */
+    private var tapWatcher: Overlay? = null
 
     /**
      * D4: whether new fixes still move the camera. True until the user pans or
@@ -181,7 +221,11 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         }
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                alertViewModel.uiState.collect(recentAlerts::render)
+                alertViewModel.uiState.collect { state ->
+                    recentAlerts.render(state)
+                    // The pins come from the sheet's own list: no second listener.
+                    viewModel.onAlertsChanged(state.history)
+                }
             }
         }
         // Collected here as well as on the history screen: each event reaches
@@ -209,11 +253,19 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
      * MapView has to be detached by hand or the Fragment's view leaks with it.
      */
     override fun onDestroyView() {
+        // Detaches every overlay too: the face, the pin folder and each pin.
         mapView.onDetach()
+        pinLabelWindow?.onDetach()
         attribution.release()
         markerIcon.release()
         marker = null
         bandIcon = null
+        pinFolder = null
+        pinMarkers.clear()
+        appliedPins = null
+        appliedPinLabel = null
+        pinLabelWindow = null
+        tapWatcher = null
         super.onDestroyView()
     }
 
@@ -250,6 +302,24 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             }
             false
         }
+
+        // The alert pins at the bottom, so everything else, the face above
+        // all, is drawn over them and takes a tap first. The tap watcher at
+        // the top. Taps go to the top overlay first.
+        pinFolder = FolderOverlay().also { mapView.overlays.add(0, it) }
+        pinLabelWindow = AlertPinLabelWindow(mapView) { viewModel.onMapTapped() }
+        tapWatcher = object : Overlay() {
+            override fun onSingleTapConfirmed(e: MotionEvent, mapView: MapView): Boolean {
+                viewModel.onMapTapped()
+                return false
+            }
+        }.also { mapView.overlays.add(it) }
+    }
+
+    /** Adds [overlay] over everything already drawn, but under [tapWatcher]. */
+    private fun addUnderTapWatcher(overlay: Overlay) {
+        val at = mapView.overlays.indexOf(tapWatcher)
+        if (at < 0) mapView.overlays.add(overlay) else mapView.overlays.add(at, overlay)
     }
 
     /**
@@ -406,7 +476,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             bandIcon?.let { icon -> it.icon = icon }
             it.setAnchor(markerIcon.anchorU, markerIcon.anchorV)
             it.title = getString(R.string.label_track_marker_title)
-            mapView.overlays.add(it)
+            addUnderTapWatcher(it)
             marker = it
         }
 
@@ -438,6 +508,89 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
         val location = state.location
         if (location != null) showFix(location) else removeMarker()
+
+        // Pins before the label, which opens on one of them.
+        renderPins(state.alertPins)
+        renderPinLabel(state.pinLabel)
+    }
+
+    /**
+     * Redraws the pins when the list changes, and only then: a walking band
+     * moves the face every few seconds without touching them. All of them are
+     * replaced rather than diffed - at most ten, and only when an alert
+     * arrives - so a pin that dropped out can never be left behind. The
+     * oldest is added first, so where two overlap on screen the newest is on
+     * top. The open label is closed with its pin and reopened on the new one
+     * by [renderPinLabel].
+     */
+    private fun renderPins(pins: List<AlertPin>) {
+        if (pins == appliedPins) return
+        val folder = pinFolder ?: return
+
+        pinLabelWindow?.close()
+        appliedPinLabel = null
+        pinMarkers.values.forEach {
+            folder.remove(it)
+            it.onDetach(mapView)
+        }
+        pinMarkers.clear()
+
+        for (pin in pins.asReversed()) {
+            val icon = pinIcon(pin.type) ?: continue
+            val pinMarker = Marker(mapView).apply {
+                position = GeoPoint(pin.lat, pin.lng)
+                this.icon = ContextCompat.getDrawable(requireContext(), icon)
+                setAnchor(PIN_ANCHOR_U, PIN_ANCHOR_V)
+                // The label sits just above the pin's head, not over it.
+                setInfoWindow(pinLabelWindow)
+                setInfoWindowAnchor(PIN_ANCHOR_U, 0f)
+                // osmdroid's default tap pans to the marker; a pin only opens its label.
+                setPanToView(false)
+                setOnMarkerClickListener { _, _ ->
+                    viewModel.onAlertPinTapped(pin.alert)
+                    true
+                }
+            }
+            folder.add(pinMarker)
+            pinMarkers[pin.alert.sequenceId] = pinMarker
+        }
+        appliedPins = pins
+        mapView.invalidate()
+    }
+
+    /**
+     * Opens, moves, re-words or closes the one label, as the state says. The
+     * band's own "Your band" bubble is closed when a pin's opens, so only
+     * one label is ever over the map.
+     */
+    private fun renderPinLabel(label: AlertPinLabel?) {
+        if (label == appliedPinLabel) return
+        appliedPinLabel = label
+
+        val pinMarker = label?.let { pinMarkers[it.pin.alert.sequenceId] }
+        if (label == null || pinMarker == null) {
+            pinLabelWindow?.close()
+            return
+        }
+        marker?.closeInfoWindow()
+        pinMarker.title = pinLabelText(label)
+        pinMarker.showInfoWindow()
+    }
+
+    /** "Panic, 5 min ago": the alert rows' own type name and time wording. */
+    private fun pinLabelText(label: AlertPinLabel): String = getString(
+        R.string.label_track_alert_pin,
+        getString(AlertFormatting.typeLabel(label.pin.type)),
+        AlertFormatting.relativeTime(requireContext(), AlertRow(label.pin.alert, elapsed = label.elapsed))
+    )
+
+    /** Each pinned type's pin: its colour and its symbol. Never null for a type the selector pins. */
+    @DrawableRes
+    private fun pinIcon(type: AlertType): Int? = when (type) {
+        AlertType.PANIC -> R.drawable.ic_alert_pin_panic
+        AlertType.CHECKIN -> R.drawable.ic_alert_pin_checkin
+        AlertType.LOW_BATTERY -> R.drawable.ic_alert_pin_low_battery
+        AlertType.TRACKING_UPDATE -> null
     }
 
     /**
@@ -543,5 +696,13 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
         /** How long the re-centre's pan and zoom take. */
         const val RECENTER_ANIMATION_MS = 600L
+
+        /**
+         * An alert pin's anchor, its tip: centred, and (12, 30) of the
+         * drawables' 24 x 32 viewport (`ic_alert_pin_*.xml`), so the tip is
+         * on the alert's coordinates.
+         */
+        const val PIN_ANCHOR_U = 0.5f
+        const val PIN_ANCHOR_V = 30f / 32f
     }
 }

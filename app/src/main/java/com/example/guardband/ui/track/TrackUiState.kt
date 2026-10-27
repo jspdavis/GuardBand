@@ -73,7 +73,21 @@ data class TrackUiState(
      * and carried unchanged through every position update, so the marker is
      * drawn again only if the face itself changes.
      */
-    val markerFace: BandMarkerFace = BandMarkerFace(photoUrl = null, initials = "")
+    val markerFace: BandMarkerFace = BandMarkerFace(photoUrl = null, initials = ""),
+
+    /**
+     * Recent alerts as small pins where they happened, newest first, chosen
+     * by [AlertPinSelector] from the same list as the recent-alerts sheet.
+     * Drawn under the band's face marker.
+     */
+    val alertPins: List<AlertPin> = emptyList(),
+
+    /**
+     * The small label open over a tapped pin ("Panic, 5 min ago"), or null
+     * when none is. Always one of [alertPins]: a pin that drops out closes
+     * its label.
+     */
+    val pinLabel: AlertPinLabel? = null
 ) {
     /** Whether there is a position to put a marker on (D3, D4). */
     val hasFix: Boolean get() = location != null
@@ -84,3 +98,16 @@ data class TrackUiState(
      */
     val navigateEnabled: Boolean get() = location != null
 }
+
+/**
+ * The label over a tapped alert pin: its type and how long ago it was. The
+ * Fragment words it ("Panic, 5 min ago") with the same strings and plurals as
+ * the alert rows, because a ViewModel cannot reach a `plurals`.
+ *
+ * @param elapsed recomputed on [TrackViewModel]'s ticker, so the label ages
+ *   while it is open; null when the timestamp could not be read.
+ */
+data class AlertPinLabel(
+    val pin: AlertPin,
+    val elapsed: Elapsed?
+)
