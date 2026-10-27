@@ -51,9 +51,10 @@ object Changelog {
                 "Holding a contact asks to delete it. The contact editor, the Notifications header (now with the logo) and the splash logo were tidied.",
                 "Signing out clears the cached Google photo, so the next account never sees the last one's picture.",
                 "The MapTiler logo sits straight on the map, with no white box behind it: white lettering on the dark map and Satellite, dark lettering on the light map.",
+                "Alert notifications show the GuardBand logo in the status bar instead of a bell, as a one-colour outline (Android draws that icon in a single colour).",
                 "Housekeeping: lint passes again (a mock sender string), and Visual Studio's workspace files are no longer in the repo. 741 unit tests pass."
             ),
-            commit = "027b72d"
+            commit = "6d2ccfa"
         ),
         ChangelogEntry(
             date = "2026-10-26",
