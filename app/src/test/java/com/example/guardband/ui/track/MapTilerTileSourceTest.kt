@@ -1,7 +1,9 @@
 package com.example.guardband.ui.track
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -89,5 +91,19 @@ class MapTilerTileSourceTest {
             MapTilerTileSource.forLayer(layer, night = false)
             MapTilerTileSource.forLayer(layer, night = true)
         }
+    }
+
+    @Test
+    fun `the logo follows the tiles, not the theme`() {
+        // White-lettered logo on these; the dark-lettered one on the rest.
+        assertTrue(MapTilerTileSource.STREETS_DARK.drawsDark)
+        assertTrue(MapTilerTileSource.SATELLITE.drawsDark)
+        assertFalse(MapTilerTileSource.STREETS.drawsDark)
+        assertFalse(MapTilerTileSource.OUTDOOR.drawsDark)
+        assertFalse(MapTilerTileSource.TOPO.drawsDark)
+
+        // Street in dark mode is still light; Satellite in light mode is still dark.
+        assertFalse(MapTilerTileSource.forLayer(MapLayer.STREET, night = true).drawsDark)
+        assertTrue(MapTilerTileSource.forLayer(MapLayer.SATELLITE, night = false).drawsDark)
     }
 }

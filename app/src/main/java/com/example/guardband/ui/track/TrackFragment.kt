@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -39,7 +40,8 @@ import org.osmdroid.views.overlay.Marker
  * `track_layers_button`, `track_checkin_pill` (a read-only status, not a
  * button), `track_map_attribution` and `track_map_attribution_info` (the map
  * credits and their ⓘ; see [MapAttribution]), `track_map_logo` (MapTiler's
- * logo, bottom left, never collapsed), `space_track_sheet_peek`,
+ * logo, bottom left, never collapsed; white on a dark map, dark on a light
+ * one, see [applyLayer]), `space_track_sheet_peek`,
  * `track_recent_alerts_panel` (its own ids
  * are listed on [RecentAlertsPanel]), plus the top bar's `ib_track_settings`
  * (top-left) and `ib_track_notifications` (top-right), placed as on the
@@ -79,6 +81,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     private lateinit var tvCheckIn: TextView
     private lateinit var recentAlerts: RecentAlertsPanel
     private lateinit var attribution: MapAttribution
+    private lateinit var mapLogo: ImageView
     private lateinit var markerIcon: BandMarkerIcon
 
     /** The marker's current picture, kept for a marker created after it arrives. */
@@ -130,10 +133,11 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
         // MapTiler's required credits: shown now, then collapsed to an ⓘ.
         // The logo beside them stays.
+        mapLogo = view.findViewById(R.id.track_map_logo)
         attribution = MapAttribution(
             view.findViewById(R.id.track_map_attribution),
             view.findViewById(R.id.track_map_attribution_info),
-            view.findViewById(R.id.track_map_logo)
+            mapLogo
         )
         attribution.expand()
 
@@ -248,6 +252,10 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
      * loading grid is light grey, which would flash on the dark Streets style.
      * The other layers draw on a light grid, and tinting it would colour the
      * flash behind their loading tiles too. DESIGN: Jul
+     *
+     * The MapTiler logo follows the tiles, not the theme: the white-lettered
+     * one on a dark style, the dark-lettered one on a light style
+     * ([MapTilerTileSource.drawsDark]), since it has no chip behind it.
      */
     private var appliedLayer: MapLayer? = null
 
@@ -256,6 +264,9 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         mapView.setTileSource(tileSource)
         mapView.setMinZoomLevel(tileSource.minimumZoomLevel.toDouble())
         mapView.setMaxZoomLevel(tileSource.maximumZoomLevel.toDouble())
+        mapLogo.setImageResource(
+            if (tileSource.drawsDark) R.drawable.logo_maptiler_white else R.drawable.logo_maptiler
+        )
         if (tileSource === MapTilerTileSource.STREETS_DARK) {
             mapView.overlayManager.tilesOverlay.apply {
                 loadingBackgroundColor = requireContext().getColor(R.color.surface_card)

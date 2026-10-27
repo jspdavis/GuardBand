@@ -5,7 +5,7 @@ features come first; each item says who it is waiting on and where its
 details live in the repo. Finished items are at the bottom. The full record
 is [`handoff.md`](handoff.md) §4.
 
-As of 27 Oct 2026 · `mvvm-main` and `main` · 740 unit tests passing · lint
+As of 27 Oct 2026 · `mvvm-main` and `main` · 741 unit tests passing · lint
 passes with no errors.
 
 **Types:** 🟥 heavy feature · 🟩 feature · 🔧 fix · 📱 phone check · 🗳️ decision / setup
@@ -100,8 +100,9 @@ Use the debug mock sender to produce alerts.
 
 - [ ] 📱 **Dark mode**
   Settings → Display → Dark. Walk every screen, sign-up and login included,
-  for white patches and unreadable text. The map turns dark; the credits and
-  MapTiler logo stay readable. Close the app with Dark on a light phone: it
+  for white patches and unreadable text. The map turns dark; the credits stay
+  readable and the MapTiler logo turns white (and is white on Satellite in
+  light mode too). Close the app with Dark on a light phone: it
   reopens dark.
   Where: [`handoff.md`](handoff.md) §4
 
@@ -159,8 +160,8 @@ Use the debug mock sender to produce alerts.
   their phones. Anyone else still adds theirs.
 
 - [ ] 🗳️ **Design pass on the placeholders** · *Jul*
-  - The dark palette (`values-night/colors.xml`) and whether to use
-    MapTiler's white logo on the dark map.
+  - The dark palette (`values-night/colors.xml`). (The white MapTiler logo on
+    dark maps is done, 27 Oct.)
   - The low-battery icon: the warning triangle, or the new nearly-empty battery.
   - Everything marked `DESIGN: Jul` (alert rows, About, Display).
   - Confirm two older theme changes: 28 dp button corners and 24 dp sign-up

@@ -43,11 +43,19 @@ import org.osmdroid.util.MapTileIndex
  * The credits are [attribution]: MapTiler requires both, each linked, on
  * every map. A Free account must also show the MapTiler logo, linked to
  * [LOGO_URL]; `MapAttribution` binds it (see `docs/osmdroid.md`).
+ *
+ * **[drawsDark] picks the logo.** The logo sits straight on the map with no
+ * chip behind it, so a dark style gets MapTiler's white-lettered logo and a
+ * light one the dark-lettered logo. It is the style's own brightness, not
+ * the phone's theme: Street stays light in dark mode, and Satellite is dark
+ * in light mode.
  */
 internal class MapTilerTileSource private constructor(
     name: String,
     baseUrl: String,
     private val apiKey: String,
+    /** True when the style's tiles are mostly dark, so the logo must be the white one. */
+    val drawsDark: Boolean,
 ) : OnlineTileSourceBase(
     name,
     MIN_ZOOM,
@@ -115,10 +123,10 @@ internal class MapTilerTileSource private constructor(
         /** False in a build made without `MAPTILER_API_KEY`. */
         val hasApiKey: Boolean = API_KEY.isNotEmpty()
 
-        val STREETS      = MapTilerTileSource(NAME, BASE_URL, API_KEY)
+        val STREETS      = MapTilerTileSource(NAME, BASE_URL, API_KEY, drawsDark = false)
 
         /** MapTiler's Streets Dark (checked 2026-10-20: served on this key and plan). */
-        val STREETS_DARK = MapTilerTileSource(DARK_NAME, DARK_BASE_URL, API_KEY)
+        val STREETS_DARK = MapTilerTileSource(DARK_NAME, DARK_BASE_URL, API_KEY, drawsDark = true)
 
         /**
          * MapTiler's Satellite style — high-resolution satellite imagery with no
@@ -129,6 +137,7 @@ internal class MapTilerTileSource private constructor(
             "MapTilerSatellite",
             "https://api.maptiler.com/maps/satellite/256/",
             API_KEY,
+            drawsDark = true,
         )
 
         /**
@@ -141,6 +150,7 @@ internal class MapTilerTileSource private constructor(
             "MapTilerOutdoor",
             "https://api.maptiler.com/maps/outdoor-v2/256/",
             API_KEY,
+            drawsDark = false,
         )
 
         /**
@@ -153,6 +163,7 @@ internal class MapTilerTileSource private constructor(
             "MapTilerTopo",
             "https://api.maptiler.com/maps/topo-v2/256/",
             API_KEY,
+            drawsDark = false,
         )
 
         /**

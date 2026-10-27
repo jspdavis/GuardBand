@@ -269,15 +269,28 @@ for a dynamic map in a mobile app:
 | Requirement | Status |
 |---|---|
 | **Text, on every map:** "© MapTiler" linked to `https://www.maptiler.com/copyright/` and "© OpenStreetMap contributors" linked to `https://www.openstreetmap.org/copyright`, bottom right | **Done, collapsible** (below). `track_map_attribution`, a `TextView` whose text and links come from `MapTilerTileSource.attribution()`, bottom right, just above the strip the collapsed sheet covers; `track_map_attribution_info`, the ⓘ, in the same corner. |
-| **Logo, Free plan only:** the MapTiler logo, linked to `https://www.maptiler.com/`, bottom left | **Done (2026-10-19), never collapses.** `track_map_logo`, an `ImageView` of `@drawable/logo_maptiler`, bottom left in the credits' row; `MapAttribution` opens `MapTilerTileSource.LOGO_URL` on a tap. Paid plans can drop the logo; nobody can drop the text without MapTiler's written permission. |
+| **Logo, Free plan only:** the MapTiler logo, linked to `https://www.maptiler.com/`, bottom left | **Done (2026-10-19), never collapses.** `track_map_logo`, an `ImageView` of `@drawable/logo_maptiler` (or `logo_maptiler_white` on a dark style, since 2026-10-27), bottom left in the credits' row; `MapAttribution` opens `MapTilerTileSource.LOGO_URL` on a tap. Paid plans can drop the logo; nobody can drop the text without MapTiler's written permission. |
 
 **The logo (2026-10-19).** The source was MapTiler's own PNG (812 × 212). It was
 cropped to its visible bounds (721 × 186, so the transparent margin does not
 eat the 20 dp) and exported once per density bucket, `drawable-mdpi` to
 `drawable-xxxhdpi`, at 20 dp tall (20 px to 80 px). It is drawn 20 dp tall,
-width from the aspect ratio (about 78 dp), never stretched or tinted, on the
-same 70% white (`map_attribution_bg`) and 4 dp side padding as the credit,
-with 2 dp above and below. Content description "MapTiler". **It must stay
+width from the aspect ratio (about 78 dp), never stretched or tinted, with
+the same 4 dp side padding as the credit and 2 dp above and below. Content
+description "MapTiler".
+
+**No chip since 2026-10-27; white or dark by the tiles.** The logo used to sit
+on the credit's 70% white chip. It is now transparent, straight on the map,
+in two versions: `logo_maptiler` (MapTiler's dark lettering) and
+`logo_maptiler_white` (their white lettering, from MapTiler's transparent
+PNG, 2262 × 595, cropped to 2001 × 515 and exported the same way).
+`MapTilerTileSource.drawsDark` says which a style needs: true for Streets
+Dark and Satellite, false for Streets, Outdoor and Topo. It is the tiles'
+brightness, not the theme's: Street in dark mode is still light, Satellite
+in light mode is still dark. `TrackFragment.applyLayer` sets the drawable
+with the tile source. White lettering on the light Streets tiles was checked
+against real tiles over Cebu City and is not readable, which is why both
+versions exist. **It must stay
 visible:** `MapAttribution` never changes its visibility, the credit's
 collapse does not touch it, and the collapsed sheet does not cover it (it
 sits on the same `space_track_sheet_peek` edge as the credit). To replace the
@@ -406,11 +419,11 @@ with the project's key and the app's user agent: both `200 image/png`.
 - **The loading grid is dark too.** osmdroid draws a light grey grid behind
   a tile still loading; in dark mode `setUpMap` sets the tiles overlay's
   loading colours to `surface_card` and `divider`.
-- **The credits and the logo stay light.** `logo_maptiler.png` has dark
-  lettering, so both keep `map_attribution_bg` (70% white) in dark mode,
-  with `map_attribution_text` rather than `text_secondary`, which turns
-  light. MapTiler offers a white logo for dark maps; swapping it in is Jul's
-  call, and the credits would then follow it.
+- **The credits stay light; the logo turns white.** The credits keep
+  `map_attribution_bg` (70% white) in dark mode, with `map_attribution_text`
+  rather than `text_secondary`, which turns light. The logo has no chip and
+  becomes `logo_maptiler_white` on the dark map (2026-10-27, §4.6). Whether
+  the credits should follow it onto the map is Jul's call.
 
 ## 5. Permissions, the manifest, and the lifecycle
 

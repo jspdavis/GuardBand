@@ -233,8 +233,10 @@
              credits' row, linked to maptiler.com (MapAttribution binds the
              tap). Always visible: unlike the credits it never collapses.
              20dp tall inside the row's 2dp padding, width from the aspect
-             ratio; never stretched or tinted.
-             DESIGN: Jul (background and padding match the credits) -->
+             ratio; never stretched or tinted. Transparent, straight on the
+             map with no chip behind it (2026-10-27): TrackFragment swaps in
+             logo_maptiler_white on a dark style (Streets Dark, Satellite).
+             DESIGN: Jul -->
         <ImageView
             android:id="@+id/track_map_logo"
             android:layout_width="wrap_content"
@@ -242,7 +244,6 @@
             android:layout_marginStart="8dp"
             android:layout_marginBottom="4dp"
             android:adjustViewBounds="true"
-            android:background="@color/map_attribution_bg"
             android:contentDescription="@string/cd_track_map_logo"
             android:paddingStart="4dp"
             android:paddingTop="2dp"

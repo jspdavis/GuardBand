@@ -21,7 +21,7 @@ Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targ
 ./gradlew lint
 ```
 
-On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 740 JVM unit tests (2026-10-27), under `app/src/test`; the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
+On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 741 JVM unit tests (2026-10-27), under `app/src/test`; the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
 
 `app/google-services.json` is required for the `com.google.gms.google-services` plugin. It points at the Firebase project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan, so there are no Cloud Functions).
 
@@ -697,6 +697,11 @@ the Fragment sets this source even without a key.
 - **The MapTiler logo** (the Free plan requires it) is `track_map_logo`,
   bottom left in the same row, linked to `MapTilerTileSource.LOGO_URL` by
   `MapAttribution`. **It never collapses**; only the text goes to the ⓘ.
+  It sits straight on the map, transparent with no chip (2026-10-27), so
+  **it follows the tiles, not the theme**: `logo_maptiler_white` on a style
+  whose `MapTilerTileSource.drawsDark` is true (Streets Dark, Satellite),
+  `logo_maptiler` (dark lettering) on the rest. `TrackFragment.applyLayer`
+  swaps it with the tile source.
   Keep the row's fixed height and the ⓘ's 48 dp touch target. When the
   credit does not fit beside the logo (narrow screen, large font),
   `MapAttribution` moves it onto its own line above the logo, measured from
@@ -947,9 +952,10 @@ every start, because AppCompat keeps it in memory only.
 - **The map goes dark too** (on the Auto layer, the default): `MapTilerTileSource.forNightMode` picks
   MapTiler's `streets-v2-dark` (checked on this key and plan, 2026-10-20),
   cached apart as `MapTilerStreetsDark`. A theme change recreates the
-  Fragment, which picks again. **The credits and the MapTiler logo stay
-  light chips** in dark mode (`map_attribution_bg`, `map_attribution_text`),
-  because the logo's lettering is dark. See [docs/osmdroid.md](docs/osmdroid.md) §4.8.
+  Fragment, which picks again. **The credits stay a light chip** in dark
+  mode (`map_attribution_bg`, `map_attribution_text`); the MapTiler logo has
+  no chip and turns white on the dark map (see "Track and map"). See
+  [docs/osmdroid.md](docs/osmdroid.md) §4.8.
 - The status bar follows: `surface_bg`, with `@bool/theme_light_status_bar`
   for its icons. The green sign-up screens are the brand in both modes.
 
