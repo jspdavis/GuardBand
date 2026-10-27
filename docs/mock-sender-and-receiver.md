@@ -182,7 +182,7 @@ status line. Battery is still on each alert row.
 |---|---|
 | Map + one marker | Last known position. MapTiler tiles via osmdroid; "Map unavailable" if the build has no `MAPTILER_API_KEY`. |
 | Empty overlay | *"Your band hasn't reported yet."* / *"No location fix yet"* / a read error. |
-| **Navigate** (round arrow) | **Tap:** opens a maps app on the position. **Long-press:** re-centres and resumes following. Disabled with no fix. (Since 2026-10-19; the white Navigate pill is gone.) |
+| **Re-centre** (round target) | **Tap:** animates back to the band's last known position, zooms back in to street level if you had zoomed far out, and resumes following. Disabled with no fix. (Since 2026-10-27; it opened Google Maps on a tap until then.) |
 | **Check-in pill** | Read-only status of the latest check-in: *"Last check-in: 5 minutes ago"*, or *"No recent check-ins"*. Read from **history**, not `latest` (see below). Not tappable; the app never sends a check-in. |
 | Layers | UI-only stub. |
 | **Recent alerts sheet** | A draggable bottom sheet over the map: collapsed it shows only its header, dragged up the newest **three**, from `history`, tracking updates hidden, in the same rows as Alert history. **See all** opens Alert history. |
@@ -275,13 +275,15 @@ the timer is alive.
 1. Start the walk; confirm the camera follows the marker.
 2. **Drag the map away.** Keep walking: the camera must now stay where you put
    it, while the marker keeps moving.
-3. **Long-press** the round Navigate button: the map jumps back to the band and follows again.
+3. **Tap** the round target button: the map animates back to the band and follows again.
 4. **Tap** (not drag) the map: following must survive — a tap is not a pan.
 
-### F · Navigate
+### F · Re-centre
 
-With a fix, tap the round **Navigate** button → a maps app opens on the band's coordinates. With
-no fix the button is disabled.
+With a fix, drag the map far away and zoom out a long way, then tap the round
+**target** button: the map animates back to the band at street level. Zoom in
+closer than street level first, and the tap keeps your zoom. With no fix the
+button is disabled.
 
 ### G · Reporting, but no fix
 
@@ -347,7 +349,7 @@ payloads, missing fields and unknown types — see §9.
 | **Map is blank/grey, everything else works** | `OsmdroidConfig` did not run before the `MapView` was built. It must be applied in `onCreate`, ahead of inflation. |
 | Marker never appears, panel does | Reporting without a fix (§G), or the payload has no `location`. |
 | Badge stuck on **Reporting** after the band goes quiet | The 30 s staleness ticker (§D). |
-| Camera won't follow the band | Expected after you pan. Long-press the round Navigate button. |
+| Camera won't follow the band | Expected after you pan. Tap the round target button. |
 | Recent alerts panel / Alert history ignore your tracking updates | Correct (§5). Send a `PANIC` to see them react. |
 | Receiver shows nothing at all | Wrong Firebase project, no network, or you are looking at a different `deviceId`. There is only one: `guardband-001`. |
 | Sequence ids restarted at 1 | The history node was cleared. |

@@ -6,8 +6,8 @@ rules that keep them in step with the app.
 | | |
 |---|---|
 | **Branch** | `feature/trust-gaps` |
-| **Status** | **Both pages published without a DRAFT banner** on 2026-10-24 (notice 1.2), at the team's decision and without the adviser review — see §1. |
-| **Consent version** | `1.2` (`UserProfileRepository.CONSENT_VERSION`) |
+| **Status** | **Both pages published without a DRAFT banner** on 2026-10-24 (notice 1.2), at the team's decision and without the adviser review — see §1. **Notice 1.3** (Google Maps row removed) deployed 2026-10-27. |
+| **Consent version** | `1.3` (`UserProfileRepository.CONSENT_VERSION`) |
 | **Notice** | [`../hosting/public/privacy/index.html`](../hosting/public/privacy/index.html) → `https://guardband-aae65.web.app/privacy` |
 | **Delete page** | [`../hosting/public/delete-account/index.html`](../hosting/public/delete-account/index.html) → `https://guardband-aae65.web.app/delete-account` |
 | **URLs built by** | [`utils/HostedPages.kt`](../app/src/main/java/com/example/guardband/utils/HostedPages.kt), from constants in [`../app/build.gradle.kts`](../app/build.gradle.kts) |
@@ -45,6 +45,7 @@ to, which fails if the number cannot be matched to a document.
 | `1.0` | before this pass | The original statement: agree to the Privacy Notice, confirm 18-or-older or guardian's permission, confirm the wearer knows and agrees to be tracked. **"Privacy Notice" was plain text — there was no notice to read**, which is what this pass fixes. |
 | `1.1` | 2026-10-11 | Wording changed from "I agree to the Privacy Notice" to **"I have read the Privacy Notice and agree to it"**, and the notice became a real, reachable document at `/privacy`. The claim being made is materially different: under 1.0 the user could not have read it. |
 | `1.2` | 2026-10-24 | The statement is unchanged; **the notice it points to changed**, and was published without its DRAFT banner. New recipients: **MapTiler** (map tiles, replacing OpenStreetMap; sees the IP and the area viewed), **Google's place-name service** (each shown alert's position, rounded to about 11 m), **Google's image servers** (the profile picture on Profile and the map marker). Also: the opt-in alert notifications, email verification, the Emergency mark on contacts, what the phone stores (picture cache, display setting), the Delete account path (now via Account information) and the deletion marker it leaves, and the consent gate. |
+| `1.3` | 2026-10-27 | The statement is unchanged; **the notice it points to changed.** The **Google Maps** row came out of the sharing table: Track's round button no longer hands the band's coordinates to a maps app, it re-centres the map on them instead. Nothing new is collected and no one new receives anything; one recipient is gone. |
 
 **Existing users are not re-prompted.** A record written at `1.0` keeps `1.0`;
 nothing rewrites it, and there is no re-consent flow. Building one means
@@ -150,9 +151,9 @@ Needs §1 steps 1–3 done.
 3. With TalkBack on, the checkbox and its statement still read as **one
    control**, and the link reads as a separate button after it.
 4. Finish sign-up. In the Console, the new `users/{uid}/consent` shows
-   **`version: "1.2"`**, `accepted: true` and a server `acceptedAt`.
+   **`version: "1.3"`**, `accepted: true` and a server `acceptedAt`.
 5. **Settings → About → Privacy Notice** opens the same page.
-6. The notice's displayed version reads **1.2**, matching step 4.
+6. The notice's displayed version reads **1.3**, matching step 4.
 7. Open `/delete-account` and follow its in-app steps exactly as written —
    Track → gear → Settings → Account information → Delete account (the
    page names this path since 2026-10-24). The wording should match what the
@@ -167,7 +168,7 @@ Needs §1 steps 1–3 done.
    unverified, so **Verify your email** comes first: Resend, open the link,
    return. Then **Before you continue** appears before any tab, with sign-up's
    statement and "Read the Privacy Notice". Tap **Agree**: the Console shows
-   `users/{uid}/consent` with `version: "1.2"`, `accepted: true` and a server
+   `users/{uid}/consent` with `version: "1.3"`, `accepted: true` and a server
    `acceptedAt`, and the app opens.
 10. **Missing Google profile.** For a Google account, delete only
     `users/{uid}` in the Console (leave its Authentication user) and sign in

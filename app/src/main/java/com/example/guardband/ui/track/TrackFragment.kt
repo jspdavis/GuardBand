@@ -1,10 +1,7 @@
 package com.example.guardband.ui.track
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.drawable.Drawable
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
@@ -12,8 +9,6 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.view.ViewCompat
-import androidx.core.view.accessibility.AccessibilityNodeInfoCompat.AccessibilityActionCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -25,7 +20,6 @@ import com.example.guardband.data.model.Alert
 import com.example.guardband.ui.alert.AlertEvent
 import com.example.guardband.ui.alert.AlertViewModel
 import com.example.guardband.ui.home.HomeViewModel
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
@@ -62,10 +56,12 @@ import org.osmdroid.views.overlay.Marker
  * [TrackUiState.markerFace]. It is drawn when the face changes, not on every
  * position; a new position only moves the marker, as before.
  *
- * **Navigate is the round arrow button** (2026-10-19; the white Navigate pill
- * is gone). A tap opens a maps app on the band's position (D6); a long-press
- * re-centres the map and resumes following (D4), and TalkBack offers that as
- * a named action. Both need a fix, so the button is disabled without one.
+ * **The round target button re-centres** (2026-10-27): a tap takes the map
+ * back to the band's last known position and resumes following (D4),
+ * zooming back in if the user had zoomed far out. It needs a fix, so it is
+ * disabled without one. It used to open Google Maps on a tap (D6, removed
+ * 2026-10-27) and re-centre on a long-press; its view id is still
+ * `track_navigate_button`.
  *
  * **Recentring lives here, not in the ViewModel.** Where the camera is pointing
  * is view state, like a scroll offset: it survives nothing, means nothing to
@@ -102,7 +98,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
     /**
      * D4: whether new fixes still move the camera. True until the user pans or
-     * zooms, and true again when they long-press Navigate - so the map follows the
+     * zooms, and true again when they tap the re-centre button - so the map follows the
      * band by default but never fights someone who is looking somewhere else.
      */
     private var followBand = true
@@ -157,16 +153,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             .setOnClickListener { homeViewModel.onSettingsClicked() }
         view.findViewById<FloatingActionButton>(R.id.track_layers_button)
             .setOnClickListener { showLayerPicker() }
-        btnNavigate.setOnClickListener { viewModel.onNavigateClicked() }
-        btnNavigate.setOnLongClickListener {
-            onRecenter()
-            true
-        }
-        // TalkBack: "double-tap and hold to center on band", not "to long press".
-        ViewCompat.replaceAccessibilityAction(
-            btnNavigate, AccessibilityActionCompat.ACTION_LONG_CLICK,
-            getString(R.string.action_track_recenter), null
-        )
+        btnNavigate.setOnClickListener { onRecenter() }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -347,9 +334,12 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         }
     }
     /**
-     * D4, from a long-press on Navigate: resume following, and move now. With
-     * no fix, go back to D5's view (only reachable if the button is ever left
-     * enabled without one; today it is disabled then).
+     * D4, from a tap on the round re-centre button: back to the band's last
+     * known position, and follow it again. Zoomed out past [FIX_ZOOM] - the
+     * user wandered off to look at the wider area - it zooms back in to that
+     * street-level view in the same animation; zoomed in closer, the zoom is
+     * theirs and stays. With no fix, go back to D5's view (only reachable if
+     * the button is ever left enabled without one; today it is disabled then).
      */
     private fun onRecenter() {
         followBand = true
@@ -359,7 +349,11 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             mapView.controller.animateTo(GeoPoint(DEFAULT_LAT, DEFAULT_LNG))
             mapView.controller.setZoom(DEFAULT_ZOOM)
         } else {
-            centerOn(location)
+            val zoom = maxOf(mapView.zoomLevelDouble, FIX_ZOOM)
+            mapView.controller.animateTo(
+                GeoPoint(location.lat, location.lng), zoom, RECENTER_ANIMATION_MS
+            )
+            hasZoomedToFix = true
         }
     }
 
@@ -462,8 +456,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         when (event) {
             is TrackEvent.ShowMessage ->
                 Toast.makeText(requireContext(), event.text, Toast.LENGTH_SHORT).show()
-
-            is TrackEvent.OpenNavigation -> openNavigation(event.url)
         }
     }
 
@@ -471,23 +463,6 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         when (event) {
             is AlertEvent.ShowMessage ->
                 Toast.makeText(requireContext(), event.text, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
-     * D6: hands the position to whatever maps app the device has, via a plain
-     * `ACTION_VIEW` on Google Maps' keyless universal URL.
-     *
-     * A phone with nothing registered for it throws
-     * [ActivityNotFoundException], which is reported back through the ViewModel
-     * so the wording stays with every other user-facing message rather than
-     * being invented here.
-     */
-    private fun openNavigation(url: String) {
-        try {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-        } catch (e: ActivityNotFoundException) {
-            viewModel.onNavigationUnavailable()
         }
     }
 
@@ -499,7 +474,13 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         const val DEFAULT_LNG = 123.8854
         const val DEFAULT_ZOOM = 13.0
 
-        /** Street level, used once when the first fix arrives. */
+        /**
+         * Street level: used once when the first fix arrives, and as the
+         * zoom a re-centre comes back to when the user had zoomed out past it.
+         */
         const val FIX_ZOOM = 16.0
+
+        /** How long the re-centre's pan and zoom take. */
+        const val RECENTER_ANIMATION_MS = 600L
     }
 }

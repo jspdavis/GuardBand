@@ -79,9 +79,9 @@ com/example/guardband/
 │   │                 ResetLinkParser (pure; the trust boundary) + ViewModel
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate and the account gate (HomeViewModel)
-│   ├── track/          Track tab (default): gear + bell (as on Contacts/Profile), osmdroid map, round Navigate button,
+│   ├── track/          Track tab (default): gear + bell (as on Contacts/Profile), osmdroid map, round re-centre (target) button,
 │   │                 Check-in pill, and the recent-alerts bottom sheet (RecentAlertsPanel; See all → Alert history)
-│   │                 BandStatus + NavigationUrl + OsmdroidConfig (pure helpers; see "Track and map")
+│   │                 BandStatus + OsmdroidConfig (pure helpers; see "Track and map")
 │   │                 BandMarkerFace (pure: photo or initials) + BandMarkerIcon (draws the band's marker)
 │   ├── contacts/       Contacts tab: list + delete
 │   ├── alert/          AlertHistoryFragment (pushed from Track's See all): latest status + incident history;
@@ -529,7 +529,7 @@ nothing else may spell one out. The reset link has its own
 the log in `docs/privacy-and-consent.md`, **in the same commit**. The point of
 storing a version with somebody's consent is being able to say which words
 they agreed to, and that fails the moment the number cannot be matched to a
-document. It is a **String** (`"1.2"`), not a number, so `"1.10"` can follow
+document. It is a **String** (`"1.3"`), not a number, so `"1.10"` can follow
 `"1.9"`.
 
 **The consent statement stays plain text and the link is a separate button.**
@@ -542,8 +542,7 @@ it into a span.
 **Opening either page is a plain `ACTION_VIEW`** - no custom-tabs dependency,
 no permission. A phone with nothing registered for `https` throws
 `ActivityNotFoundException`, which goes back through the ViewModel so the
-wording stays with every other `MSG_*`, the same shape as Track's Navigate
-button.
+wording stays with every other `MSG_*`.
 
 **The Privacy Notice is a row of About** (Settings → About,
 `ui/about/AboutActivity`, since 2026-10-20), which opens the hosted
@@ -775,12 +774,16 @@ a fix" — both have no coordinates and read very differently.
 points is view state, like a scroll offset. Following is switched off by a touch
 listener on `ACTION_MOVE`, not a `MapListener`: a listener cannot tell the
 user's pan from the camera moves the screen makes itself, and a tap gives only
-DOWN and UP, so tapping the map keeps following. **A long-press on the round
-Navigate button** turns it back on (2026-10-19: re-centring moved there when
-the white Navigate pill went and that button became Navigate; a tap opens
-maps, D6). TalkBack offers it as the button's "center on band" action. The
-button is disabled without a fix, so re-centring needs one too; `onRecenter`
-still falls back to the default Cebu City view if it is ever reached without.
+DOWN and UP, so tapping the map keeps following. **A tap on the round target
+button** (`track_navigate_button`, `ic_my_location`, "Center on band") turns it
+back on and animates to the band's last known position (2026-10-27). If the
+user has zoomed out past `FIX_ZOOM` (16, street level) it zooms back in to
+that in the same animation; zoomed in closer, their zoom stays. **There is no
+Google Maps hand-off any more:** D6 (a tap opened a maps app on the band's
+coordinates, re-centring was a long-press) was removed on 2026-10-27, with
+`NavigationUrl`, `TrackEvent.OpenNavigation` and the notice's Google Maps row
+(notice 1.3). The button is disabled without a fix; `onRecenter` still falls
+back to the default Cebu City view if it is ever reached without.
 
 **The recent alerts are a draggable bottom sheet over the map (2026-10-19).**
 `fragment_track.xml` is a CoordinatorLayout; `view_track_recent_alerts.xml` is
@@ -823,7 +826,7 @@ the user-agent restriction and that cap. A real release needs a paid plan.
 **Not covered by tests:** `OsmdroidConfig`, the `MapView` lifecycle, the marker
 and the D4 follow logic. All of it needs a real `Context`, a running map or an
 instrumented test, and the project declares no mocking library. The testable
-logic was lifted out instead — `BandStatus`, `NavigationUrl` and the ViewModel.
+logic was lifted out instead — `BandStatus` and the ViewModel.
 
 ## Check-in status
 

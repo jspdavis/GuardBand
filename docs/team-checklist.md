@@ -61,11 +61,11 @@ None of these needs the band.
   delete the sample card and its two strings and show the empty text again.
   Where: `fragment_notifications.xml` (`cv_notifications_welcome`), [`handoff.md`](handoff.md) §4 small cleanups
 
-- [ ] 🟩 **Navigate button polish** · *app team*
-  Confirm it sends the band's last reported position (not the map centre),
-  use a standard `geo:` link with a web fallback, and show how old the
-  position is.
-  Where: `ui/track/NavigationUrl`, [`handoff.md`](handoff.md) §4 engineering
+- [x] 🟩 **Navigate button** · *replaced 27 Oct*
+  It no longer opens Google Maps. The round button is now a target that
+  re-centres the map on the band's last known position, zooming back in if
+  zoomed far out. The Google Maps row left the Privacy Notice (1.3).
+  Where: `ui/track/TrackFragment` (`onRecenter`)
 
 - [ ] 🟩 **Layers button on Track** · *app team*
   Still a stub that shows a toast. It could switch map styles, now that the

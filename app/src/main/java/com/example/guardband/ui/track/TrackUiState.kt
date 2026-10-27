@@ -77,6 +77,9 @@ data class TrackUiState(
     /** Whether there is a position to put a marker on (D3, D4). */
     val hasFix: Boolean get() = location != null
 
-    /** D6: Navigate is meaningless without somewhere to navigate to. */
+    /**
+     * The round re-centre button (D4) needs a last known position to go back
+     * to. Named for its view id, `track_navigate_button`.
+     */
     val navigateEnabled: Boolean get() = location != null
 }

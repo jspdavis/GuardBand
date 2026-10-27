@@ -158,7 +158,7 @@ Legend: ✅ works with (in-memory) data · 🟡 placeholder UI
 - ✅ **Bell** → Notifications, **gear** → Settings (through `HomeViewModel`).
 - 🟡 **Map:** grey `surface_muted` area with a "Live map coming soon" label.
 - 🟡 **Status pill:** static "You are protected." with a green dot. It isn't driven by alert data yet.
-- 🟡 **Round map buttons** (layers, recenter): toast "The live map isn't available yet." *(Since 2026-10-19 the round arrow is **Navigate**: tap opens maps on the band, long-press re-centres and resumes following. The white Navigate pill is gone. Layers is still a stub.)*
+- 🟡 **Round map buttons** (layers, recenter): toast "The live map isn't available yet." *(Since 2026-10-27 the round button is a **target**: a tap re-centres on the band and resumes following; it opened Google Maps until then. The white Navigate pill is gone. Layers is a real picker since 2026-10-27.)*
 - ✅ **Check-in pill:** read-only status of the latest check-in ("Last check-in: 5 minutes ago" / "No recent check-ins"); not tappable. Was a toast stub until 2026-10-14.
 - ✅ **Recent alerts sheet (2026-10-19):** a draggable bottom sheet over the map (`BottomSheetBehavior`, not hideable) with a drag handle, **See all** → Alert history, and the newest three alerts (`item_alert` rows, same as Alert history). Collapsed it shows only the handle and the header (96dp); dragged up, the three rows. Its own spinner, error + Try again, and empty text ("No alerts from your band yet."). The pill and the round controls sit just above its collapsed height. Bound by `RecentAlertsPanel`; rows come from the host-scoped `AlertViewModel`.
 
@@ -436,7 +436,7 @@ Run `gradlew.bat assembleDebug`, then on a device:
 - [ ] Track shows the recent-alerts sheet collapsed low over the bottom of the map: just the handle and the "Recent alerts · See all" header. Drag it up: at most three rows, newest first. Drag it down, or tap the handle: back to collapsed. It cannot be dragged off screen.
 - [ ] Track's top bar is the gear top-left and the bell top-right, in the same places as on Contacts and Profile. There is no avatar.
 - [ ] The Contacts icon in the bar is a phone.
-- [ ] With a fix, tapping the round arrow opens a maps app on the band; long-pressing it re-centres the map after you have dragged it away. Without a fix it is greyed out. There is no white Navigate pill.
+- [ ] With a fix, tapping the round target button after you have dragged the map away (and zoomed far out) animates back to the band at street level and follows again. Without a fix it is greyed out. Nothing opens Google Maps.
 - [ ] **See all** opens Alert history with the bar hidden. Back, and the back arrow, return to Track with the bar back.
 - [ ] The bell still opens Notifications.
 - [ ] On Alert history, background the app and kill it (`adb shell am kill com.example.guardband`), then reopen from Recents: the gate's spinner covers the screen, then Alert history is back; Back → Track.

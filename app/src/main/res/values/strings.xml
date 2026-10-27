@@ -122,9 +122,8 @@
     <string name="label_changelog_title">Changelog</string>
     <string name="label_changelog_commit">Commit %1$s</string>
     <string name="cd_user_avatar">Profile picture</string>
-    <!-- The round Navigate button: tap opens maps, long-press re-centres. -->
-    <string name="cd_track_navigate">Navigate to band</string>
-    <string name="action_track_recenter">center on band</string>
+    <!-- The round target button: takes the map back to the band. -->
+    <string name="cd_track_navigate">Center on band</string>
     <string name="cd_map_layers">Map layers</string>
     <!-- D7: the layer picker. A single-choice dialog; the checked item is the
          active base map. Streets darkens with the theme, the others stay. -->
@@ -254,7 +253,7 @@
     <string name="label_settings_title">Settings</string>
     <string name="label_settings_account">Account information</string>
     <string name="label_settings_change_password">Change password</string>
-    <string name="label_settings_alert_notifications">Alert notifications</string>
+    <string name="label_settings_alert_notifications">Notifications</string>
     <string name="label_settings_alert_notifications_help">Shows your band\'s alerts on this phone, even when GuardBand is closed. Keeps a small notification while it\'s on. After the phone restarts, open GuardBand once to start watching again.</string>
     <string name="label_settings_alert_notifications_blocked">Notifications are blocked for GuardBand on this phone. Allow them in the phone\'s settings to use alert notifications.</string>
     <string name="btn_settings_notification_settings">Open notification settings</string>

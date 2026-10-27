@@ -526,7 +526,7 @@ marker cannot carry a content description of its own; a tap shows its title,
 | **Every tile reads "access blocked"** | Only possible from OSM's server, which nothing should reach any more. Something is setting an OSM source again (§4). |
 | **Blank or grey** map, everything else fine | `OsmdroidConfig.apply` ran *after* the `MapView` was built. It must be in `onCreate` (§2.3). Or: no connectivity, or a typo in `BASE_URL`. |
 | Map works, **marker never appears** | Not an osmdroid problem. The band is reporting without a fix, or the payload has no `location`. |
-| Camera will not follow the band | Expected after any pan — `ACTION_MOVE` switches following off. Long-press the round Navigate button. |
+| Camera will not follow the band | Expected after any pan — `ACTION_MOVE` switches following off. Tap the round target button. |
 | Tiles load, then stop at high zoom | `MAX_ZOOM` is 22 (§4.7). |
 
 MapTiler refuses with real HTTP errors, which osmdroid logs as
@@ -575,7 +575,7 @@ Tracked in [`handoff.md`](handoff.md).
 `OsmdroidConfig`, `MapTilerTileSource`, the `MapView` lifecycle, the marker's
 placement and the follow logic all need a real `Context`, a running map, or an
 instrumented test — and the project declares no mocking library. The testable
-logic was lifted out instead: `BandStatus`, `NavigationUrl`,
+logic was lifted out instead: `BandStatus`,
 `TrackViewModel`, `BandMarkerFace` (photo or initials, and the initials
 themselves) and `BandMarkerIcon` under Robolectric (drawn once per face, and
 the anchor; the photo path needs a device), all covered under

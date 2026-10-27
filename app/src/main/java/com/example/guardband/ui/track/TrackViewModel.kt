@@ -115,25 +115,9 @@ class TrackViewModel(
     }
 
     /**
-     * D6, from a tap on the round Navigate button. Does nothing without a fix;
-     * the button is disabled in that state.
-     */
-    fun onNavigateClicked() {
-        val location = _uiState.value.location ?: return
-        _events.trySend(
-            TrackEvent.OpenNavigation(NavigationUrl.googleMapsSearch(location.lat, location.lng))
-        )
-    }
-
-    /** D6's fallback: the device has nothing that can open a maps link. */
-    fun onNavigationUnavailable() {
-        _events.trySend(TrackEvent.ShowMessage(MSG_NAVIGATION_UNAVAILABLE))
-    }
-
-    /**
      * D7: the user picked a base map in the layer picker. View-only state goes
      * through the Fragment (the picker is a dialog, like recentering is a
-     * long-press), so this only records the choice; the Fragment re-applies the
+     * camera move), so this only records the choice; the Fragment re-applies the
      * tile source when [TrackUiState.selectedLayer] changes.
      */
     fun onLayerSelected(layer: MapLayer) {
@@ -312,7 +296,6 @@ class TrackViewModel(
          */
         const val TICK_INTERVAL_MS = 30_000L
 
-        const val MSG_NAVIGATION_UNAVAILABLE = "No app on this phone can open maps."
 
         const val MSG_LOAD_FAILED = "Couldn't load your band's location."
         const val MSG_NETWORK = "Couldn't reach your band. Check your connection."

@@ -127,9 +127,10 @@
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
             app:tint="@color/white" />
 
-        <!-- Navigate (D6): a tap opens a maps app on the band's position, a
-             long-press re-centres the map and resumes following (D4).
-             Disabled with no fix; the icon tint greys out then. -->
+        <!-- Re-centre (D4): a tap takes the map back to the band's last known
+             position, zooms back in if zoomed far out, and resumes following.
+             Disabled with no fix; the icon tint greys out then. The id is
+             from when it was Navigate (it opened Google Maps until 2026-10-27). -->
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/track_navigate_button"
             android:layout_width="wrap_content"
@@ -138,7 +139,7 @@
             android:layout_marginBottom="16dp"
             android:contentDescription="@string/cd_track_navigate"
             android:enabled="false"
-            android:src="@drawable/ic_navigation"
+            android:src="@drawable/ic_my_location"
             app:backgroundTint="@color/brand_primary_dark"
             app:fabCustomSize="36dp"
             app:layout_constraintBottom_toTopOf="@id/track_checkin_pill"

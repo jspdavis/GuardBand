@@ -152,10 +152,12 @@ interface UserProfileRepository {
          * Bumped to 1.1 when the consent step gained a working link to the
          * notice. Bumped to 1.2 (2026-10-24) when the notice was published
          * without its DRAFT banner and gained MapTiler, Google's place names
-         * and the Google profile picture. Existing records keep the version
+         * and the Google profile picture. Bumped to 1.3 (2026-10-27) when
+         * Track's Navigate button stopped handing the band's position to Google
+         * Maps and its notice row came out. Existing records keep the version
          * they were given, and **nobody is re-prompted** - there is no
          * re-consent flow yet.
          */
-        const val CONSENT_VERSION = "1.2"
+        const val CONSENT_VERSION = "1.3"
     }
 }

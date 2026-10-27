@@ -287,47 +287,22 @@ class TrackViewModelTest {
         assertFalse(state.isOnline)
     }
 
-    // ── Navigate (D6) ─────────────────────────────────────────────────────────
+    // ── The re-centre button (D4) ─────────────────────────────────────────────
+    // The camera move itself is the Fragment's; the ViewModel only says whether
+    // there is a last known position to go back to.
 
     @Test
-    fun `navigate is disabled until there is a fix`() = runTest {
+    fun `re-centre is disabled until there is a fix`() = runTest {
         val vm = viewModel(FakeAlertRepository(latest = null))
 
         assertFalse(vm.uiState.first { !it.isLoading }.navigateEnabled)
     }
 
     @Test
-    fun `navigate is enabled once there is a fix`() = runTest {
+    fun `re-centre is enabled once there is a fix`() = runTest {
         val vm = viewModel(FakeAlertRepository(latest = reportAt(t0)))
 
         assertTrue(vm.uiState.first { it.hasFix }.navigateEnabled)
-    }
-
-    @Test
-    fun `navigate hands out the maps URL for the last known position`() = runTest {
-        val vm = viewModel(FakeAlertRepository(latest = reportAt(t0)))
-        vm.uiState.first { it.hasFix }
-
-        vm.onNavigateClicked()
-
-        assertEquals(
-            TrackEvent.OpenNavigation(
-                "https://www.google.com/maps/search/?api=1&query=10.3157,123.8854"
-            ),
-            vm.events.first()
-        )
-    }
-
-    @Test
-    fun `a device with no maps app is told, not crashed`() = runTest {
-        val vm = viewModel()
-
-        vm.onNavigationUnavailable()
-
-        assertEquals(
-            TrackViewModel.MSG_NAVIGATION_UNAVAILABLE,
-            (vm.events.first() as TrackEvent.ShowMessage).text
-        )
     }
 
     // ── Check-in status (FR-10) ───────────────────────────────────────────────
