@@ -15,7 +15,7 @@
     <string name="mock_sender_checkin_double_press">Double-press Check-in (FR-10)</string>
     <string name="mock_sender_checkin_armed">Press again within 2 s to check in…</string>
     <string name="mock_sender_checkin_missed">Missed — double-press too slow, try again</string>
-    <string name="mock_sender_gps_fix" formatted="false">GPS fix: %.4f, %.4f (±%.0f m)</string>
+    <string name="mock_sender_gps_fix">GPS fix: %1$.4f, %2$.4f (±%3$.0f m)</string>
     <string name="mock_sender_gps_no_fix">No GPS fix — using simulated Cebu City location</string>
     <string name="mock_sender_gps_denied">Location permission denied — using simulated Cebu City location</string>
     <string name="mock_sender_gps_acquiring">Acquiring GPS fix\u2026</string>

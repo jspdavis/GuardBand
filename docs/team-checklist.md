@@ -87,10 +87,10 @@ None of these needs the band.
   (notifications, place names, alert rows, Settings changes, dark mode),
   before the phone checks below. Merge again after each batch lands.
 
-- [ ] 🔧 **Mock sender lint errors** · *app team*
-  `./gradlew lint` fails on two `StringFormatInvalid` errors:
-  `mock_sender_gps_fix` passed to `String.format` in `MockSenderActivity.kt:284`.
-  Debug-only, but it stops lint from passing.
+- [x] 🔧 **Mock sender lint errors** · *done 27 Oct*
+  `mock_sender_gps_fix` was marked `formatted="false"` yet passed arguments,
+  so lint raised `StringFormatInvalid`. It now uses positional placeholders
+  (`%1$.4f`), and `./gradlew lint` passes with no errors.
 
 - [ ] 🔧 **Clear the Google photo cache on sign-out** · *app team*
   Coil's disk cache keeps the profile photo after Log Out and Delete account.
