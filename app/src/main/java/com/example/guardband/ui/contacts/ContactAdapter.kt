@@ -75,8 +75,10 @@ class ContactAdapter(
             }
 
             ibEmergency.setOnClickListener { onEmergencyClicked(contact) }
-            ibEdit.setOnClickListener      { onEditClicked(contact) }
             ibDelete.setOnClickListener    { onDeleteClicked(contact) }
+
+            // Clicking anywhere on the contact card triggers the edit action
+            itemView.setOnClickListener { onEditClicked(contact) }
 
             // Hold/long-click on the row triggers quick deletion dialog
             itemView.setOnLongClickListener {

@@ -152,23 +152,23 @@
                 android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
                 android:textColor="@color/text_secondary" />
 
+            <!-- Current status / latest alert card customized by ishi -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/alert_latest_card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:visibility="gone"
                 app:cardBackgroundColor="@color/surface_card"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="0dp"
                 tools:visibility="visible">
 
-                <!-- The same shape as an item_alert.xml row, bound by the same
-                     AlertCardViews, with its own ids and a slightly larger
-                     badge. DESIGN: Jul -->
+                <!-- Modern card layout matching item_alert.xml by ishi -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:padding="16dp">
 

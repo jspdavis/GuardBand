@@ -201,21 +201,35 @@ class SignUpContactsActivity : AppCompatActivity() {
             acRelationship.setText(storedRelationship, false)
         }
 
-        MaterialAlertDialogBuilder(this)
-            .setTitle(
-                if (contact == null) R.string.dialog_contact_add_title
-                else R.string.dialog_contact_edit_title
-            )
+        val tvTitle = content.findViewById<TextView>(R.id.tv_dialog_contact_title)
+        val btnCancel = content.findViewById<View>(R.id.btn_dialog_contact_cancel)
+        val btnSave = content.findViewById<View>(R.id.btn_dialog_contact_save)
+
+        tvTitle.setText(
+            if (contact == null) R.string.dialog_contact_add_title
+            else R.string.dialog_contact_edit_title
+        )
+
+        val dialog = MaterialAlertDialogBuilder(this)
             .setView(content)
-            .setNegativeButton(R.string.btn_cancel, null)
-            .setPositiveButton(R.string.btn_save) { _, _ ->
-                viewModel.onEditorSubmitted(
-                    contactId = contact?.id.orEmpty(),
-                    name = etName.text.toString(),
-                    phone = etPhone.text.toString(),
-                    relationship = acRelationship.text.toString()
-                )
-            }
-            .show()
+            .create()
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        btnSave.setOnClickListener {
+            viewModel.onEditorSubmitted(
+                contactId = contact?.id.orEmpty(),
+                name = etName.text.toString(),
+                phone = etPhone.text.toString(),
+                relationship = acRelationship.text.toString()
+            )
+            dialog.dismiss()
+        }
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialog.show()
     }
 }

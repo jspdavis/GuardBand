@@ -1,94 +1,163 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Add/edit emergency contact (D6). One dialog serves both add and edit:
-    the title and the pre-filled values differ; ContactsFragment sets those.
+    the title and the pre-filled values differ; ContactsFragment and SignUpContactsActivity set those.
 
     The relationship field is a Material ExposedDropdownMenu so users pick
     from a predefined list (Parent, Sibling, Relative, Friend, Partner,
     Guardian, Other) rather than typing free text. The stored value is still
     a plain String — no model change required.
 
-    Restyled to match structural design, background tokens, and styling conventions
-    from dialog_map_type.xml by ishi.
+    Restructured with smooth card geometry, embedded header title and action buttons,
+    and adaptive input styling matching dialog_map_type.xml by ishi.
 
-    View ids: til_contact_name_input / contact_name_input,
-              til_contact_phone_input / contact_phone_input,
-              til_contact_relationship_input / contact_relationship_input
-              (AutoCompleteTextView, not TextInputEditText).
+    View ids:
+        tv_dialog_contact_title,
+        til_contact_name_input / contact_name_input,
+        til_contact_phone_input / contact_phone_input,
+        til_contact_relationship_input / contact_relationship_input,
+        btn_dialog_contact_cancel,
+        btn_dialog_contact_save
 -->
-<LinearLayout
+<!-- Unified card container matching dialog_map_type.xml surface and geometry by ishi -->
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="@color/surface_bg"
-    android:paddingStart="24dp"
-    android:paddingTop="16dp"
-    android:paddingEnd="24dp"
-    android:paddingBottom="32dp">
+    app:cardBackgroundColor="@color/surface_bg"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
 
-    <!-- Contact name -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/til_contact_name_input"
-        style="@style/Widget.GuardBand.TextInputLayout"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/hint_contact_name">
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/contact_name_input"
+        <!-- Dialog header title brought inside the card container by ishi -->
+        <TextView
+            android:id="@+id/tv_dialog_contact_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_semibold"
+            android:text="@string/dialog_contact_add_title"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <!-- Contact name with ic_profile start icon and 16dp rounded corners by ishi -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_contact_name_input"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/poppins"
-            android:textColor="@color/text_primary"
-            android:inputType="textPersonName"
-            android:maxLines="1" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginTop="20dp"
+            android:hint="@string/hint_contact_name"
+            app:boxCornerRadiusTopStart="16dp"
+            app:boxCornerRadiusTopEnd="16dp"
+            app:boxCornerRadiusBottomStart="16dp"
+            app:boxCornerRadiusBottomEnd="16dp"
+            app:boxStrokeColor="@color/input_box_stroke"
+            app:hintTextColor="@color/brand_primary"
+            app:startIconDrawable="@drawable/ic_profile"
+            app:startIconTint="@color/text_secondary">
 
-    <!-- Phone number -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/til_contact_phone_input"
-        style="@style/Widget.GuardBand.TextInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="@string/hint_contact_phone">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/contact_name_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins"
+                android:inputType="textPersonName"
+                android:maxLines="1"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/contact_phone_input"
+        <!-- Phone number with ic_phone start icon and 16dp rounded corners by ishi -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_contact_phone_input"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/poppins"
-            android:textColor="@color/text_primary"
-            android:inputType="phone"
-            android:maxLines="1" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginTop="16dp"
+            android:hint="@string/hint_contact_phone"
+            app:boxCornerRadiusTopStart="16dp"
+            app:boxCornerRadiusTopEnd="16dp"
+            app:boxCornerRadiusBottomStart="16dp"
+            app:boxCornerRadiusBottomEnd="16dp"
+            app:boxStrokeColor="@color/input_box_stroke"
+            app:hintTextColor="@color/brand_primary"
+            app:startIconDrawable="@drawable/ic_phone"
+            app:startIconTint="@color/text_secondary">
 
-    <!-- Relationship — ExposedDropdownMenu matching design tokens -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/til_contact_relationship_input"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="@string/hint_contact_relationship_dropdown"
-        app:boxCornerRadiusTopStart="8dp"
-        app:boxCornerRadiusTopEnd="8dp"
-        app:boxCornerRadiusBottomStart="8dp"
-        app:boxCornerRadiusBottomEnd="8dp"
-        app:boxStrokeColor="@color/input_box_stroke"
-        app:hintTextColor="@color/brand_primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/contact_phone_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins"
+                android:inputType="phone"
+                android:maxLines="1"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <AutoCompleteTextView
-            android:id="@+id/contact_relationship_input"
+        <!-- Relationship ExposedDropdownMenu with ic_group start icon and 16dp rounded corners by ishi -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_contact_relationship_input"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:focusable="false"
-            android:fontFamily="@font/poppins"
-            android:textColor="@color/text_primary"
-            android:inputType="none"
-            android:maxLines="1" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginTop="16dp"
+            android:hint="@string/hint_contact_relationship_dropdown"
+            app:boxCornerRadiusTopStart="16dp"
+            app:boxCornerRadiusTopEnd="16dp"
+            app:boxCornerRadiusBottomStart="16dp"
+            app:boxCornerRadiusBottomEnd="16dp"
+            app:boxStrokeColor="@color/input_box_stroke"
+            app:hintTextColor="@color/brand_primary"
+            app:startIconDrawable="@drawable/ic_group"
+            app:startIconTint="@color/text_secondary">
 
-</LinearLayout>
+            <AutoCompleteTextView
+                android:id="@+id/contact_relationship_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:fontFamily="@font/poppins"
+                android:inputType="none"
+                android:maxLines="1"
+                android:textColor="@color/text_primary" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Action buttons container (Cancel / Save) embedded directly inside card container by ishi -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="end"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_dialog_contact_cancel"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="@string/btn_cancel"
+                android:textColor="@color/text_secondary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_dialog_contact_save"
+                style="@style/Widget.GuardBand.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="@string/btn_save"
+                app:cornerRadius="12dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

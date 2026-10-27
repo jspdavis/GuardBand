@@ -10,6 +10,7 @@
     the outline and every tint in code.
     DESIGN: Jul (spacing, sizes, the panic colours and the badge's shade)
 -->
+<!-- Customized alert card container styling and badge layout by ishi -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -18,25 +19,25 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
     app:cardBackgroundColor="@color/surface_card"
-    app:cardCornerRadius="12dp"
+    app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
     app:strokeWidth="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="14dp">
+        android:padding="16dp">
 
-        <!-- The type's symbol (AlertFormatting.typeIcon) on its badge, both
-             tinted in code. Decorative: the label beside it says the type. -->
+        <!-- The type's symbol on its badge, tinted in code by AlertCardViews - modernized badge layout by ishi -->
         <ImageView
             android:id="@+id/iv_item_alert_icon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="@drawable/bg_alert_type_badge"
             android:importantForAccessibility="no"
-            android:padding="9dp"
+            android:padding="10dp"
             tools:backgroundTint="#29D32F2F"
             tools:src="@drawable/ic_alert_panic"
             tools:tint="@color/alert_panic" />

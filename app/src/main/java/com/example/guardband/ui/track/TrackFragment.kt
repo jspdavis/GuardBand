@@ -1,5 +1,6 @@
 package com.example.guardband.ui.track
 
+import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.Bundle
@@ -10,6 +11,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -79,6 +81,10 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     private lateinit var tvEmpty: TextView
     private lateinit var btnNavigate: FloatingActionButton
     private lateinit var tvCheckIn: TextView
+    private var cardCheckIn: View? = null
+    private var ivCheckInStatus: ImageView? = null
+    private var flCheckInIndicator: View? = null
+    private var tvCheckInLabel: TextView? = null
     private lateinit var recentAlerts: RecentAlertsPanel
     private lateinit var attribution: MapAttribution
     private lateinit var mapLogo: ImageView
@@ -120,10 +126,14 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        mapView        = view.findViewById(R.id.track_map_view)
-        tvEmpty        = view.findViewById(R.id.track_empty_view)
-        btnNavigate    = view.findViewById(R.id.track_navigate_button)
-        tvCheckIn      = view.findViewById(R.id.track_checkin_pill)
+        mapView            = view.findViewById(R.id.track_map_view)
+        tvEmpty            = view.findViewById(R.id.track_empty_view)
+        btnNavigate        = view.findViewById(R.id.track_navigate_button)
+        cardCheckIn        = view.findViewById(R.id.card_track_checkin)
+        tvCheckIn          = view.findViewById(R.id.track_checkin_pill)
+        ivCheckInStatus    = view.findViewById(R.id.iv_track_checkin_status)
+        flCheckInIndicator = view.findViewById(R.id.fl_track_checkin_indicator)
+        tvCheckInLabel     = view.findViewById(R.id.tv_track_checkin_label)
 
         recentAlerts = RecentAlertsPanel(
             view.findViewById(R.id.track_recent_alerts_panel),
@@ -422,12 +432,42 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         // Before showFix, so a marker created now gets the face. Draws nothing
         // when the face is the same as last time.
         markerIcon.bind(state.markerFace)
-        tvCheckIn.text = checkInText(state.checkIn)
+        renderCheckIn(state.checkIn)
 
         btnNavigate.isEnabled = state.navigateEnabled
 
         val location = state.location
         if (location != null) showFix(location) else removeMarker()
+    }
+
+    /**
+     * Binds the dedicated last check-in status indicator, label, and timestamp.
+     */
+    private fun renderCheckIn(status: CheckInStatus) {
+        val context = context ?: return
+        tvCheckInLabel?.text = getString(R.string.label_track_checkin_header)
+        tvCheckIn.text = checkInText(status)
+
+        val (iconRes, colorRes) = when (status) {
+            is CheckInStatus.Received -> Pair(R.drawable.ic_check_circle, R.color.alert_checkin)
+            CheckInStatus.Loading -> Pair(R.drawable.ic_history, R.color.text_hint)
+            CheckInStatus.None -> Pair(R.drawable.ic_info, R.color.text_secondary)
+            CheckInStatus.Unavailable -> Pair(R.drawable.ic_warning, R.color.rule_unmet)
+        }
+
+        ivCheckInStatus?.let { iv ->
+            iv.setImageResource(iconRes)
+            iv.imageTintList = ColorStateList.valueOf(context.getColor(colorRes))
+        }
+
+        flCheckInIndicator?.let { fl ->
+            fl.backgroundTintList = ColorStateList.valueOf(
+                ColorUtils.setAlphaComponent(context.getColor(colorRes), 0x29)
+            )
+        }
+
+        cardCheckIn?.contentDescription =
+            "${getString(R.string.label_track_checkin_header)}: ${tvCheckIn.text}"
     }
 
     /**
@@ -441,9 +481,9 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         CheckInStatus.Unavailable -> getString(R.string.label_track_checkin_unavailable)
         is CheckInStatus.Received -> when (val elapsed = status.elapsed) {
             null -> getString(R.string.label_track_checkin_time_unknown)
-            is Elapsed.Seconds -> getString(R.string.label_track_checkin_just_now)
-            is Elapsed.Minutes -> quantity(R.plurals.label_track_checkin_minutes, elapsed.value)
-            is Elapsed.Hours -> quantity(R.plurals.label_track_checkin_hours, elapsed.value)
+            is Elapsed.Seconds -> getString(R.string.label_alert_just_now)
+            is Elapsed.Minutes -> quantity(R.plurals.label_alert_minutes_ago, elapsed.value)
+            is Elapsed.Hours -> quantity(R.plurals.label_alert_hours_ago, elapsed.value)
             is Elapsed.Days -> quantity(R.plurals.label_track_checkin_days, elapsed.value)
         }
     }

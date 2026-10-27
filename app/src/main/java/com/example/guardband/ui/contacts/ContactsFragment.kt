@@ -258,24 +258,34 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
             acRelationship.setText(matchedOption, false)
         }
 
+        val tvTitle = content.findViewById<TextView>(R.id.tv_dialog_contact_title)
+        val btnCancel = content.findViewById<View>(R.id.btn_dialog_contact_cancel)
+        val btnSave = content.findViewById<View>(R.id.btn_dialog_contact_save)
+
+        tvTitle.setText(
+            if (contact == null) R.string.dialog_contact_add_title
+            else R.string.dialog_contact_edit_title
+        )
+
         val dialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(
-                if (contact == null) R.string.dialog_contact_add_title
-                else R.string.dialog_contact_edit_title
-            )
             .setView(content)
-            .setNegativeButton(R.string.btn_cancel, null)
-            .setPositiveButton(R.string.btn_save) { _, _ ->
-                viewModel.onEditorSubmitted(
-                    contactId    = contact?.id.orEmpty(),
-                    name         = etName.text.toString(),
-                    phone        = etPhone.text.toString(),
-                    relationship = acRelationship.text.toString()
-                )
-            }
             .create()
 
-        // Remove the default system window background overlay to eliminate the light grey box wrapper
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        btnSave.setOnClickListener {
+            viewModel.onEditorSubmitted(
+                contactId    = contact?.id.orEmpty(),
+                name         = etName.text.toString(),
+                phone        = etPhone.text.toString(),
+                relationship = acRelationship.text.toString()
+            )
+            dialog.dismiss()
+        }
+
+        // Remove the default system window background overlay so the card's surface and geometry shine through
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         dialog.show()

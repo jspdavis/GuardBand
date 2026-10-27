@@ -145,6 +145,7 @@
     <string name="label_track_map_unavailable">Map unavailable</string>
 
     <!-- Check-in pill (FR-10): a status, never an action. -->
+    <string name="label_track_checkin_header">Last check-in</string>
     <string name="label_track_checkin_loading">Loading check-ins…</string>
     <string name="label_track_checkin_none">No recent check-ins</string>
     <string name="label_track_checkin_unavailable">Check-ins unavailable</string>

@@ -142,39 +142,86 @@
             android:src="@drawable/ic_my_location"
             app:backgroundTint="@color/brand_primary_dark"
             app:fabCustomSize="36dp"
-            app:layout_constraintBottom_toTopOf="@id/track_checkin_pill"
+            app:layout_constraintBottom_toTopOf="@id/card_track_checkin"
             app:layout_constraintEnd_toEndOf="parent"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
             app:tint="@color/white" />
 
-        <!-- Check-in pill (FR-10): the wearer's latest check-in, read-only.
-             A TextView rather than a Button, so it is not clickable, has no
-             ripple and TalkBack reads it as text, not as a control. Check-ins
-             come from the band; the app never sends one. It stacks on
-             barrier_track_credits: the higher of the room the 48dp ⓘ needs
-             above the logo's row and the top of the credits. So it only
-             rises when the credits, moved above the logo, need more than one
-             line (the largest font sizes), and only by that extra height.
-             DESIGN: Jul (white status pill, as a placeholder) -->
-        <TextView
-            android:id="@+id/track_checkin_pill"
+        <!-- Dedicated tracker / last check-in status card container - styled by ishi -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_track_checkin"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_pill"
-            android:drawablePadding="8dp"
-            android:elevation="2dp"
-            android:gravity="center_vertical"
-            android:minHeight="48dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="20dp"
-            android:text="@string/label_track_checkin_loading"
-            android:textAppearance="@style/TextAppearance.GuardBand.LabelLarge"
-            android:textColor="@color/text_primary"
-            app:drawableStartCompat="@drawable/ic_check_circle"
-            app:drawableTint="@color/alert_checkin"
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="@color/surface_card"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp"
+            app:strokeColor="@color/stroke_default"
+            app:strokeWidth="1dp"
             app:layout_constraintBottom_toTopOf="@id/barrier_track_credits"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="8dp">
+
+                <!-- Dedicated visual status indicator element for the last check-in state - added by ishi -->
+                <FrameLayout
+                    android:id="@+id/fl_track_checkin_indicator"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginEnd="10dp"
+                    android:background="@drawable/bg_alert_type_badge">
+
+                    <!-- Visual status indicator dot / icon -->
+                    <ImageView
+                        android:id="@+id/iv_track_checkin_status"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_check_circle"
+                        app:tint="@color/alert_checkin" />
+                </FrameLayout>
+
+                <!-- Check-in label & timestamp/time container -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Dedicated status label -->
+                    <TextView
+                        android:id="@+id/tv_track_checkin_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins_semibold"
+                        android:text="@string/label_track_checkin_header"
+                        android:textAppearance="@style/TextAppearance.GuardBand.LabelSmall"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+
+                    <!-- Corresponding timestamp/time display -->
+                    <TextView
+                        android:id="@+id/track_checkin_pill"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins"
+                        android:text="@string/label_track_checkin_loading"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- The room the 48dp ⓘ needs above the logo's 24dp row. Nothing is
              drawn here. -->

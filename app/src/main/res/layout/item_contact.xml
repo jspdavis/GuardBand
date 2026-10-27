@@ -99,8 +99,7 @@
             android:contentDescription="@string/cd_toggle_favorite"
             android:src="@drawable/ic_star" />
 
-        <!-- Edit -->
-        <!-- DESIGN: Jul - ic_edit is a stand-in until the Figma icon is exported -->
+        <!-- Edit: Deprecated/hidden in favor of clicking anywhere on the contact card by ishi -->
         <ImageButton
             android:id="@+id/ib_item_contact_edit"
             android:layout_width="48dp"
@@ -108,6 +107,7 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/cd_edit_contact"
             android:src="@drawable/ic_edit"
+            android:visibility="gone"
             app:tint="@color/text_secondary" />
 
         <!-- Delete -->
