@@ -10,7 +10,7 @@ GuardBand is an Android (Kotlin) companion app for an IoT wrist-worn safety band
 
 ## Build & test
 
-Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targetSdk 34, minSdk 24, Java/JVM target 1.8. Versions live in `gradle/libs.versions.toml`, but Firebase and CardView are declared inline in `app/build.gradle.kts`.
+Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targetSdk 34, minSdk 24, Java/JVM target 1.8. Versions live in `gradle/libs.versions.toml`; only CardView is declared inline in `app/build.gradle.kts`.
 
 ```bash
 ./gradlew assembleDebug                      # build debug APK
@@ -21,7 +21,7 @@ Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targ
 ./gradlew lint
 ```
 
-On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash). The only tests right now are the template `ExampleUnitTest` and `ExampleInstrumentedTest`.
+On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 736 JVM unit tests (2026-10-27), under `app/src/test`; the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
 
 `app/google-services.json` is required for the `com.google.gms.google-services` plugin. It points at the Firebase project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan, so there are no Cloud Functions).
 
@@ -31,7 +31,7 @@ Each branch holds a deliberately different architecture. Check which one you are
 
 | Branch | Purpose |
 |---|---|
-| `main` | The stable branch, kept behind `mvvm-main`. New work branches off `mvvm-main` and merges back into it with `--no-ff`. |
+| `main` | Kept on the **same commit** as `mvvm-main`: after `mvvm-main` is pushed, `main` is fast-forwarded to it (`git push origin mvvm-main:main`), never merged with `--no-ff`. Teammates push to `mvvm-main` only (since 2026-10-27). |
 | `mvvm-main` | The real product build (MVVM) |
 | `mvp-checkpoint` (+ `-local-backup`, `-phone`) | Instructor-assigned checkpoint that must stay **strict MVP** (Login, Register, Forgot Password, Change Password, Dashboard). Kept separate so it doesn't mix with product work. |
 | `mvvm-jedd`, `ishi` | Individual teammates' working branches |
@@ -46,7 +46,8 @@ View ↔ ViewModel ↔ Repository. Pre-auth screens are Activities. After login,
 ```
 com/example/guardband/
 ├── data/
-│   ├── model/            User, EmergencyContact, Alert (+ AlertType), GoogleSignInOutcome, Place (plain data classes; no passwords)
+│   ├── model/            User, EmergencyContact, Alert (+ AlertType), CheckIn, ConsentRecord, ProfileState,
+│   │                     SignInProvider, GoogleSignInOutcome, Place (plain data classes; no passwords)
 │   ├── repository/       AuthRepository (suspend, Result<T>)
 │   │                     ContactRepository (observe = Flow<Result<T>>; CRUD = suspend)
 │   │                     AlertRepository (Flow<Result<T>>, live reads)
@@ -80,10 +81,11 @@ com/example/guardband/
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate and the account gate (HomeViewModel)
 │   ├── track/          Track tab (default): gear + bell (as on Contacts/Profile), osmdroid map, round re-centre (target) button,
-│   │                 Check-in pill, and the recent-alerts bottom sheet (RecentAlertsPanel; See all → Alert history)
+│   │                 layers button (MapLayer: Auto / Street / Satellite), Check-in pill, and the recent-alerts bottom sheet (RecentAlertsPanel; See all → Alert history)
 │   │                 BandStatus + OsmdroidConfig (pure helpers; see "Track and map")
 │   │                 BandMarkerFace (pure: photo or initials) + BandMarkerIcon (draws the band's marker)
-│   ├── contacts/       Contacts tab: list + delete
+│   ├── contacts/       Contacts tab: search, relationship filter chips (in memory, ContactsUiState.filteredContacts),
+│   │                 add/edit dialog, the Emergency star, delete (trash icon or long-press the row)
 │   ├── alert/          AlertHistoryFragment (pushed from Track's See all): latest status + incident history;
 │   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel
 │   ├── profile/        Profile tab: welcome header + user info
@@ -97,7 +99,8 @@ com/example/guardband/
 │   │                 Google account a "Managed by Google" empty state; Delete account sits in its
 │   │                 danger zone (DeleteAccountViewModel)
 │   ├── changelog/      ChangelogActivity, opened from Settings; Changelog.entries is the progress log
-│   └── notifications/  pushed from Track's bell; placeholder inbox. Also the opt-in alert watch:
+│   └── notifications/  pushed from Track's bell: the inbox, the band's non-tracking alerts by day with place
+│                     names (NotificationsViewModel, Fragment-scoped, its own history subscription). Also the opt-in alert watch:
 │                     AlertNotificationsActivity (the switch, opened from Settings),
 │                     AlertWatchService (foreground service) + AlertWatch (start/stop), AlertNotifier
 │                     (channels, wording), AlertNotificationDecider (pure) + AlertNotificationPrefs
@@ -119,7 +122,7 @@ Conventions (copy `ui/login/*` as the reference):
 - **ViewModels** take repositories through the constructor and hold no `Context` or View. They expose `companion object { val Factory = viewModelFactory { initializer { XViewModel(RepositoryProvider.…) } } }`, and Activities use `by viewModels { XViewModel.Factory }`; plain `by viewModels()` is fine when there are no dependencies. User-facing messages are `MSG_*` constants in the ViewModel — including the wording for every `AuthError`, which each screen maps itself in a private `messageFor(error)`. Those messages stay in Kotlin rather than `strings.xml` precisely because a ViewModel holds no `Context`.
 - **Activities** bind views with `findViewById`, forward raw input and clicks, render state, and execute events (Toast, `startActivity`, `finish`). They collect each flow in its own `lifecycleScope.launch { repeatOnLifecycle(STARTED) { … } }`. Building `Intent`s stays in the Activity.
 - **Wizard data** moves between screens as Intent extras. The Activity passes the extras into the ViewModel's click handler, and the navigation event carries the data back.
-- **Exception:** `NotificationsFragment`, `ui/reset/ResetSuccessActivity`, `ui/signup/WelcomeActivity` and `ui/changelog/ChangelogActivity` have no ViewModel. Each is a static screen whose only action is navigation. (`ForgotSuccessActivity` was another, and it is gone - see "Forgot password".)
+- **Exception:** `ui/reset/ResetSuccessActivity`, `ui/signup/WelcomeActivity` and `ui/changelog/ChangelogActivity` have no ViewModel. Each is a static screen whose only action is navigation. (`ForgotSuccessActivity` was another, and it is gone - see "Forgot password". `NotificationsFragment` was another until the inbox got real data.)
 
 ### Home host (Fragments)
 
@@ -171,7 +174,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 
 **Error wording stays neutral.** `ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL` maps to its own `AuthError.AccountExistsWithDifferentCredential`, shown as "This email uses a different sign-in method." It must not name the other provider: saying "that address uses a password" confirms the account exists, which is the whole thing the shared invalid-credentials message exists to prevent.
 
-**Log out clears the credential state.** `ui/auth/LoginNavigation.clearCredentialsThenGoToLogin` calls `GoogleIdTokenProvider.clearCredentialState()` before navigating (Log Out in Settings and a finished Delete account in Account information both go through it), so the chooser reappears instead of silently reusing the last account. It is bounded by a 2 s timeout and its failures are ignored — the user is already signed out of Firebase, so nothing may keep them on that screen. `HomeViewModel`'s failed auth gate does **not** clear it: that is a dead session, not a user logging out.
+**Log out clears the credential state.** `ui/auth/LoginNavigation.clearCredentialsThenGoToLogin` calls `GoogleIdTokenProvider.clearCredentialState()` before navigating (Log Out in Settings and a finished Delete account in Account information both go through it), so the chooser reappears instead of silently reusing the last account. It is bounded by a 2 s timeout and its failures are ignored — the user is already signed out of Firebase, so nothing may keep them on that screen. It also empties Coil's memory and disk caches (2026-10-27), so the signed-out account's Google photo does not stay on the phone; Coil loads nothing else, and osmdroid's map tiles are a separate cache it leaves alone. `HomeViewModel`'s failed auth gate does **not** clear either: that is a dead session, not a user logging out.
 
 **Never log a token**, an account name or an email, here or anywhere else.
 
@@ -263,7 +266,7 @@ candidates for it; adding a rule means a predicate in `InputValidator`, a field
 on `PasswordCriteria` and a row in that layout, never a length comparison
 written out again.
 
-**Hosting is deployed** (first 2026-10-11; last 2026-10-25) with **four**
+**Hosting is deployed** (first 2026-10-11; last 2026-10-27, notice 1.3) with **four**
 debug SHA-256s in `assetlinks.json`: James's and three teammates'. Any other
 developer's debug SHA-256, and a release one, still has to be added and
 Hosting redeployed. The doc's §1 is the checklist.
@@ -428,7 +431,7 @@ step 2 — safely, with nothing deleted, but it fails.
 themselves, which need a real Firebase. The sequencing, the wording, both
 guards and every marker path (written before the Auth delete, resume on a later
 visit, offline, recent-login, Log Out, another account, a failed read) are
-covered — `DeleteAccountViewModelTest` (39), `HomeViewModelTest` (28, with
+covered — `DeleteAccountViewModelTest` (39), `HomeViewModelTest` (37, with
 the consent gate's) and
 `ProfileProvisioningTest`.
 
@@ -500,7 +503,7 @@ task cleared).
 
 **Not covered by tests:** the RTDB read and write themselves and the two
 Activities. The decision, every outcome, the timeouts, Agree, Retry and
-Decline are covered: `HomeViewModelTest` (28), `ConsentGateTest`,
+Decline are covered: `HomeViewModelTest` (37), `ConsentGateTest`,
 `ConsentRequiredViewModelTest`.
 
 ## Privacy, consent and the hosted pages
@@ -669,7 +672,7 @@ in `onCreate`, before the layout inflates and builds the `MapView`:
   storage and need **no storage permission** on any API level. osmdroid's own
   default wants external storage.
 
-**`ui/track/MapTilerTileSource` is the one tile source (2026-10-19), and the
+**`ui/track/MapTilerTileSource` is the one tile source class (2026-10-19), and the
 only place a MapTiler URL, the key, the zoom range (0-22) or a credit is
 spelled out.** It replaced `GuardBandTileSource` (OSM's public server). Never
 fall back to `TileSourceFactory.MAPNIK` or any `tile.openstreetmap.org`
@@ -715,7 +718,18 @@ restriction **except** normalization. Two consequences worth knowing:
 - **Its name, `MapTilerStreets`, is the cache key**, because osmdroid keys
   cache rows by `(key, provider)` where `provider` is the source name. A new
   name starts on clean rows rather than re-serving the OSM tiles (or the
-  blocked images) cached under `GuardBandOsm` and `Mapnik`.
+  blocked images) cached under `GuardBandOsm` and `Mapnik`. Every style has
+  its own name, so no two styles ever share cache rows.
+
+**The layers button picks the base map (D7, 2026-10-27).** `track_layers_button`
+opens `dialog_map_type.xml`, a bottom sheet with three choices, `ui/track/MapLayer`:
+**Auto** (Streets, dark in dark mode; the default), **Street** (always the light
+Streets) and **Satellite** (`MapTilerSatellite`, no labels). `MapTilerTileSource.forLayer`
+is the one place a layer becomes a tile source; the Fragment never picks one.
+The choice is `TrackUiState.selectedLayer`, so it survives a theme change, but
+it is **not saved**: a new process starts on Auto. `MapTilerTileSource` also
+defines `OUTDOOR` and `TOPO`, which no layer offers yet. Satellite is served
+on this key and plan (checked 2026-10-27: a real 256 px tile over Cebu City).
 
 **No phone-location permission in the main app, ever.** The band supplies the
 location, not the handset. osmdroid adds only four *optional*
@@ -927,7 +941,7 @@ every start, because AppCompat keeps it in memory only.
 - **The dark palette is a placeholder** on Material's dark guidance, marked
   `DESIGN: Jul`; retune it in `values-night/colors.xml` alone. The brand and
   alert colours are a step lighter there so they keep their contrast.
-- **The map goes dark too:** `MapTilerTileSource.forNightMode` picks
+- **The map goes dark too** (on the Auto layer, the default): `MapTilerTileSource.forNightMode` picks
   MapTiler's `streets-v2-dark` (checked on this key and plan, 2026-10-20),
   cached apart as `MapTilerStreetsDark`. A theme change recreates the
   Fragment, which picks again. **The credits and the MapTiler logo stay

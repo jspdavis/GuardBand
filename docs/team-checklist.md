@@ -2,11 +2,16 @@
 
 What is left to build, fix, check and decide on the Android app. Heavy
 features come first; each item says who it is waiting on and where its
-details live in the repo. The full record is [`handoff.md`](handoff.md) §4.
+details live in the repo. Finished items are at the bottom. The full record
+is [`handoff.md`](handoff.md) §4.
 
-As of 20 Oct 2026 · `mvvm-main` at `9f23f06` · 727 unit tests passing.
+As of 27 Oct 2026 · `mvvm-main` and `main` · 736 unit tests passing · lint
+passes with no errors.
 
 **Types:** 🟥 heavy feature · 🟩 feature · 🔧 fix · 📱 phone check · 🗳️ decision / setup
+
+**Pushing:** push to `mvvm-main` only. `main` is then fast-forwarded to the
+same commit (`git push origin mvvm-main:main`), so the two never drift.
 
 ---
 
@@ -38,8 +43,9 @@ the app together. Pairing comes first: SMS depends on it.
     sensitive).
   - If the phone ever sends SMS instead, that adds `SEND_SMS` to the release
     manifest and needs the owner's approval first.
-  - The Privacy Notice already says the numbers are collected for this;
-    re-read it if anything changes.
+  - The Privacy Notice says the numbers are collected for this, and that the
+    Emergency star only sorts and labels the list. If the star ever decides
+    who gets texted, the notice changes (and its version) in the same commit.
 
   Where: CLAUDE.md "Contacts and profile data", [`privacy-and-consent.md`](privacy-and-consent.md)
 
@@ -47,53 +53,38 @@ the app together. Pairing comes first: SMS depends on it.
 
 ## Features to build
 
-None of these needs the band.
-
-- [x] 🟩 **Change password screen** · *done 22 Oct, moved 27 Oct*
-  `ChangePasswordActivity` (Roxette, 22 Oct). Since 27 Oct it opens from
-  **Account information**, not Settings: a Password section shows the row to
-  a password account, and a "Managed by Google" empty state to a Google one.
-  Where: `ui/account/ChangePasswordActivity`, `ui/account/PasswordOption`
-
-- [ ] 🟩 **Notifications inbox with real data** · *app team*
-  The bell's screen shows one sample "Welcome to GuardBand" card. Fill it with
-  real entries (for example the alerts this phone was notified about), then
-  delete the sample card and its two strings and show the empty text again.
-  Where: `fragment_notifications.xml` (`cv_notifications_welcome`), [`handoff.md`](handoff.md) §4 small cleanups
-
-- [x] 🟩 **Navigate button** · *replaced 27 Oct*
-  It no longer opens Google Maps. The round button is now a target that
-  re-centres the map on the band's last known position, zooming back in if
-  zoomed far out. The Google Maps row left the Privacy Notice (1.3).
-  Where: `ui/track/TrackFragment` (`onRecenter`)
-
-- [ ] 🟩 **Layers button on Track** · *app team*
-  Still a stub that shows a toast. It could switch map styles, now that the
-  tile source supports more than one (light and dark).
-  Where: `ui/track/MapTilerTileSource`, [`osmdroid.md`](osmdroid.md) §4.8
-
 - [ ] 🟩 **Band sends check-ins and alerts** · *firmware*
   The app already reads the payload in `SCHEMA.md`. The band has to write
   exactly that: a double-press within 2 seconds is a `CHECKIN` (FR-10), and
   every alert goes to `history/{sequenceId}` first, then `latest`.
   Where: `SCHEMA.md`, [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md)
 
+- [ ] 🟩 **Remember the map layer** · *app team, optional*
+  The layer picked on Track survives a theme change but not a restart: the
+  app always opens on Auto. Saving it would be a small `SharedPreferences`
+  value, like the display setting. `MapTilerTileSource` also defines Outdoor
+  and Topo styles that the picker does not offer.
+  Where: `ui/track/MapLayer`, `ui/track/MapTilerTileSource`
+
 ---
 
 ## Fixes and cleanups
 
-- [x] 🔧 **Bring `main` up to date** · *done 20 Oct*
-  `mvvm-main` was merged into `main` on 20 Oct, with all of that day's work
-  (notifications, place names, alert rows, Settings changes, dark mode),
-  before the phone checks below. Merge again after each batch lands.
+- [ ] 🔧 **Remove `.vs/` from the repo** · *app team*
+  Visual Studio's workspace files (10 of them, about 4 MB) were committed in
+  `8ec773e`. Delete them from the repo and add `.vs/` to `.gitignore`.
 
-- [x] 🔧 **Mock sender lint errors** · *done 27 Oct*
-  `mock_sender_gps_fix` was marked `formatted="false"` yet passed arguments,
-  so lint raised `StringFormatInvalid`. It now uses positional placeholders
-  (`%1$.4f`), and `./gradlew lint` passes with no errors.
+- [ ] 🔧 **Remove the stray `Guardband-MVVM` entry** · *Jehan, then app team*
+  A nested copy of the repo in Jehan's folder got committed as a link to a
+  commit (`9448b3c`) that only exists on his machine. Anything done inside
+  that inner copy never reached GitHub, so check nothing is stranded there
+  first, then remove the entry.
 
-- [ ] 🔧 **Clear the Google photo cache on sign-out** · *app team*
-  Coil's disk cache keeps the profile photo after Log Out and Delete account.
+- [ ] 🔧 **Changelog catch-up** · *app team*
+  Settings → Changelog has no entries for 22–25 Oct (change password,
+  contacts redesign, UI fixes) or 27 Oct (map layers, Account information's
+  Password section, the re-centre button, notice 1.3, lint, photo cache).
+  Where: `ui/changelog/Changelog.kt`, CLAUDE.md "Changelog"
 
 - [ ] 📱 **Confirm the database listener stops** · *app team*
   Never checked by hand: database traffic stops after Log Out. Backgrounding
@@ -110,6 +101,18 @@ None of these needs the band.
 
 Built and unit-tested, never seen on a phone. Each doc has the exact steps.
 Use the debug mock sender to produce alerts.
+
+- [ ] 📱 **This week's changes (22–27 Oct)**
+  - Contacts: search, the filter chips, the Emergency star (sorts to the top),
+    long-press a row to delete.
+  - The bell's inbox: real alerts by day, place names, Retry when offline.
+  - Track: the target button re-centres on the band and zooms back in from
+    far out; it is greyed out before the first fix. The layers button
+    switches Auto, Street and Satellite, and Auto follows dark mode.
+  - Account information: a password account sees Change password; a Google
+    account sees "Managed by Google".
+  - Sign out of a Google account, sign in with an email one: initials, never
+    the old photo.
 
 - [ ] 📱 **Dark mode**
   Settings → Display → Dark. Walk every screen, sign-up and login included,
@@ -176,13 +179,6 @@ Use the debug mock sender to produce alerts.
   run `adb shell pm verify-app-links --re-verify com.example.guardband` on
   their phones. Anyone else still adds theirs.
 
-- [x] 🗳️ **Publish the hosted pages** · *done 24 Oct*
-  Published as final without the adviser review, at the team's decision:
-  notice 1.2 (MapTiler, Google profile photo, alert notifications, Google
-  place names), `CONSENT_VERSION` bumped to match, the Delete account path
-  fixed, the DRAFT banners removed.
-  Where: [`privacy-and-consent.md`](privacy-and-consent.md) §2
-
 - [ ] 🗳️ **Design pass on the placeholders** · *Jul*
   - The dark palette (`values-night/colors.xml`) and whether to use
     MapTiler's white logo on the dark map.
@@ -207,3 +203,31 @@ Use the debug mock sender to produce alerts.
 - [ ] 🟩 **Re-consent flow and a Terms page**
   Only if the notice's wording changes what people agreed to, or the course
   asks for Terms. Both mean a `CONSENT_VERSION` bump.
+
+---
+
+## Done since 20 Oct
+
+- [x] 🟩 **Notifications inbox with real data** · *21 Oct, jspdavis*
+  The bell shows the band's alerts (tracking updates left out) by day, with
+  place names. The sample "Welcome" card is gone.
+- [x] 🟩 **Change password** · *22 Oct, Roxette; moved 27 Oct*
+  `ChangePasswordActivity`, opened from **Account information** since 27 Oct:
+  a password account sees the row, a Google one a "Managed by Google" note.
+- [x] 🟩 **Contacts redesign** · *23 Oct, jspdavis; 27 Oct, Jehan*
+  Search, relationship filter chips, the Emergency star, no upper limit,
+  long-press to delete.
+- [x] 🗳️ **Publish the hosted pages** · *24 Oct; notice 1.3 on 27 Oct*
+  Published as final without the adviser review, at the team's decision, no
+  DRAFT banners. 1.3 (27 Oct) removed the Google Maps row.
+  `CONSENT_VERSION` moves with it.
+  Where: [`privacy-and-consent.md`](privacy-and-consent.md) §2
+- [x] 🟩 **Layers button on Track** · *26–27 Oct, jspdavis*
+  Auto, Street and Satellite. Satellite tiles checked on our key and plan.
+- [x] 🟩 **Re-centre button** · *27 Oct*
+  The round target button re-centres on the band and zooms back in. The
+  Google Maps hand-off is gone.
+- [x] 🔧 **Mock sender lint errors** · *27 Oct*
+  `./gradlew lint` passes with no errors.
+- [x] 🔧 **Clear the Google photo cache on sign-out** · *27 Oct*
+  `LoginNavigation` empties Coil's caches on every way out.
