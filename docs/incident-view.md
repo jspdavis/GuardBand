@@ -84,10 +84,10 @@ is `history.orderByKey().startAt("<panic>").limitToFirst(400)`. No index is
 needed, and no rules change: `history` already has its own `.read`.
 
 - **Why not the alert screens' window.** That is the newest 100 raw entries.
-  The mock sender's walk sends one every 5 s, so after about 8 minutes the
+  The mock sender's tracking sends one every 5 s, so after about 8 minutes the
   panic, and the path behind it, have left the window. Reading from the panic
   on gets the whole path however much has arrived since.
-- **400** (`AlertRepository.INCIDENT_WINDOW`) covers 30 minutes of the walk
+- **400** (`AlertRepository.INCIDENT_WINDOW`) covers 30 minutes of the mock sender's tracking
   (360), or FR-09's real 30, with room for other alerts. About 80 KB at most.
 - **One listener per open screen**, in `IncidentViewModel`'s `viewModelScope`.
   `awaitClose` removes it when the ViewModel is cleared: when the host
@@ -135,10 +135,11 @@ the opener and the listener's removal are covered.
 
 ## 5. Phone checks
 
-Two phones: the Mock Sender on one (the band), the app on the other.
+Two phones: the Mock Sender on one (the band), the app on the other. Keep
+the Mock Sender on screen: its tracking stops when the phone locks.
 
-- [ ] Send a panic, then start the walk and let it go round the loop for a
-      minute or two.
+- [ ] Hold the band button 1.5 s: a panic, and tracking starts by itself.
+      Walk a minute or two (or let the synthetic loop run indoors).
 - [ ] **From the sheet:** drag the recent-alerts sheet up, tap the panic row.
       The Incident view opens with the panic's pin, a blue path round the
       loop, and the end dot where the face is on Track. The map fits the
@@ -149,16 +150,20 @@ Two phones: the Mock Sender on one (the band), the app on the other.
       the red pin. Same path. Back returns to Track.
 - [ ] **From the face:** tap the face; the bubble says "Your band" and "View
       incident". Tap it. Same path. Back returns to Track.
-- [ ] While the incident is open and the walk continues, the path grows and
+- [ ] While the incident is open and tracking continues, the path grows and
       the count and "Latest update" move on; the camera does not jump.
-- [ ] Send a check-in. The face's bubble no longer offers "View incident";
+- [ ] Double-press (a check-in). The face's bubble no longer offers "View incident";
       tapping the face still opens it and pans to the band.
 - [ ] Tap a check-in or low-battery row, or a check-in pin: no incident (a
       pin shows only its label).
-- [ ] **No updates:** stop the walk, send a fresh panic, open it at once:
-      only the pin, and "No tracking updates received yet".
-- [ ] **Panic pin priority:** send a panic, then a low-battery alert without
-      moving. Walk the band away: the red panic pin is the one on that spot.
+- [ ] **No updates:** send a fresh panic and open it within 5 s, before the
+      first tracking step: only the pin, and "No tracking updates received
+      yet".
+- [ ] **Cancel:** during a panic, hold the band button 5 s. Tracking stops, a
+      check-in arrives, and the incident's path stops growing.
+- [ ] **Panic pin priority:** send a panic, then drag the battery slider to
+      20% without moving (a low-battery alert). Walk away: the red panic pin
+      is the one on that spot.
 - [ ] **Dark mode** and a non-default layer (Satellite): the incident map
       follows both; the credits and logo show and the logo suits the tiles.
 - [ ] TalkBack on a panic row reads it and "Opens the incident."

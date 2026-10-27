@@ -2,23 +2,45 @@
 <resources>
     <!-- Launcher label for the debug-only MockSenderActivity -->
     <string name="mock_sender_label">GuardBand Mock Sender</string>
+    <string name="mock_sender_subtitle">This phone plays the band</string>
 
-    <!-- Walk mode: TRACKING_UPDATEs on a timer, so the Track marker moves.
-         The button label is set from code because it toggles. -->
-    <string name="mock_sender_walk_start">Start walk (moving tracking updates)</string>
-    <string name="mock_sender_walk_stop">Stop walk</string>
-    <string name="mock_sender_walk_stopped">Walk stopped</string>
-    <string name="mock_sender_walk_paused">Walk stopped (harness left the foreground)</string>
+    <!-- The band's one button (BandButtonDecoder): its timings are the
+         firmware's. -->
+    <string name="mock_sender_band_button">BAND</string>
+    <string name="mock_sender_band_button_cd">Band button. Double-press to check in, hold to send a panic.</string>
+    <string name="mock_sender_gestures">Hold 1.5 s: panic, then tracking every 5 s for 30 min\nDouble-press: check-in\nDuring a panic, hold 5 s: cancel it (sends a check-in)\nSingle press: nothing</string>
+    <string name="mock_sender_first_press">Press again within 2 s to check in…</string>
+    <string name="mock_sender_single_press">Single press: no action</string>
+    <string name="mock_sender_cancel_hint">Keep holding to 5 s to cancel the panic…</string>
+    <string name="mock_sender_cancel_too_short">Hold to 5 s to cancel the panic</string>
 
-    <!-- Double-press check-in simulation (FR-10): two taps within 2 s fires
-         a CHECKIN, matching the band's physical double-press behaviour. -->
-    <string name="mock_sender_checkin_double_press">Double-press Check-in (FR-10)</string>
-    <string name="mock_sender_checkin_armed">Press again within 2 s to check in…</string>
-    <string name="mock_sender_checkin_missed">Missed — double-press too slow, try again</string>
+    <!-- Accessibility actions on the band button, for TalkBack users who
+         cannot time a hold or a double-press. -->
+    <string name="mock_sender_action_panic">Send a panic</string>
+    <string name="mock_sender_action_check_in">Check in</string>
+    <string name="mock_sender_action_cancel">Cancel the panic</string>
+
+    <!-- Tracking after a panic (FR-09, but every 5 s rather than 60 s so a
+         demo shows a path at once). -->
+    <string name="mock_sender_tracking_off">Not tracking</string>
+    <string name="mock_sender_tracking_on">Tracking after panic: %1$d sent, %2$d min left\n(every 5 s; the band sends every 60 s)</string>
+    <string name="mock_sender_tracking_done">Tracking ended: 30 minutes after the panic</string>
+    <string name="mock_sender_tracking_cancelled">Tracking stopped: panic cancelled</string>
+    <string name="mock_sender_tracking_paused">Tracking stopped: the Mock Sender left the screen</string>
+    <string name="mock_sender_tracking_failed">Tracking stopped after %1$d: %2$s</string>
+
+    <!-- The battery slider: the level every message reports. -->
+    <string name="mock_sender_battery">Battery: %1$d%%</string>
+    <string name="mock_sender_battery_low">Battery: %1$d%% (low battery alert sent)</string>
+    <string name="mock_sender_battery_cd">Band battery level</string>
+
+    <string name="mock_sender_status_heading">Status:</string>
+    <string name="mock_sender_ready">Ready. Hold the band button for a panic, double-press for a check-in.</string>
+
     <string name="mock_sender_gps_fix">GPS fix: %1$.4f, %2$.4f (±%3$.0f m)</string>
     <string name="mock_sender_gps_no_fix">No GPS fix — using simulated Cebu City location</string>
     <string name="mock_sender_gps_denied">Location permission denied — using simulated Cebu City location</string>
-    <string name="mock_sender_gps_acquiring">Acquiring GPS fix\u2026</string>
+    <string name="mock_sender_gps_acquiring">Acquiring GPS fix…</string>
 
     <!-- Runtime permission rationale shown before the system dialog -->
     <string name="mock_sender_permission_rationale">The mock sender can report Phone A\'s real GPS position instead of a hardcoded Cebu City point, the same way the band\'s NEO-6M GPS will. Allow location access to use real coordinates.</string>

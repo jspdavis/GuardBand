@@ -670,7 +670,7 @@ above once someone has looked at the map.
 - [ ] Send a panic, a check-in and a low battery, each from a different spot
       (walk 20 m or more between them). Three pins appear within a second or
       so of each row in the sheet: red octagon, green tick, orange triangle.
-- [ ] Send a tracking update or start a walk. The face moves and no pin is
+- [ ] Let a panic's tracking run (cancel the panic first if you only want the movement). The face moves and no pin is
       added for it.
 - [ ] Send three or four check-ins and low-battery alerts without moving. One
       pin, the newest one's type and colour.
@@ -679,7 +679,7 @@ above once someone has looked at the map.
 - [ ] Send more than ten from different spots. Ten pins, and the oldest go as
       new ones arrive.
 - [ ] Stand where the band's face is and send an alert. No pin peeks out from
-      under the face; walk away and send a tracking update, and it appears.
+      under the face; walk away while the panic's tracking runs, and it appears.
       Tapping the face still shows "Your band", and pans to the band.
 - [ ] After a panic, tap the face: the bubble also offers "View incident",
       which opens it. Send a check-in: the offer goes.

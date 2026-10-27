@@ -176,7 +176,7 @@ a column to fill in, are [`notifications-test-cases.md`](notifications-test-case
    notification settings". Allow: the watch notification appears.
 2. App on screen: PANIC, LOW_BATTERY, CHECKIN each post one notification
    (wording, channel and sound as in §2). The panic makes no sound and no
-   heads-up banner. Walk mode (TRACKING_UPDATE) posts nothing.
+   heads-up banner. The tracking a panic starts (TRACKING_UPDATE) posts nothing.
 3. App in the background (Home pressed): the same.
 4. Screen locked and phone asleep 10+ minutes: send PANIC; note whether and
    how late it arrives. Then `adb shell dumpsys deviceidle force-idle`, send,

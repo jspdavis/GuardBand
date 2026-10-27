@@ -7,7 +7,8 @@ icons**: one pretends to be the wrist band and writes alerts, the other is the
 real app and reads them. This document covers both ends and the path between
 them.
 
-As of `feature/track-map` @ `73993e6`. For the design reasoning behind any of
+As of `feature/mock-sender-band-button` (2026-10-27): the sender is one band
+button and a battery slider (§4). For the design reasoning behind any of
 it, see [`../CLAUDE.md`](../CLAUDE.md) ("Mock sender", "Track and map", "Alert
 data"); this file is the operating manual.
 
@@ -100,35 +101,84 @@ and unchanged.
 
 ## 4. The sender launcher
 
-### Controls
+**It behaves like the band (2026-10-27):** one button, decoded with the
+firmware's own timings, and a battery slider. It replaced six separate
+buttons (Simulate Panic, Check-in, Double-press Check-in, Low Battery,
+Tracking Update, Start walk).
 
-| Control | Writes | Position | Battery |
-|---|---|---|---|
-| **Simulate Panic** | one `PANIC` | Phone A's real GPS fix; falls back to random ±0.01° of Cebu City if no fix or permission denied | random 20–100% |
-| **Simulate Check-in** | one `CHECKIN` (the band's FR-10 double-press) | same | same |
-| **Simulate Low Battery** | one `LOW_BATTERY` | same | same |
-| **Simulate Tracking Update** | one `TRACKING_UPDATE` | same | same |
-| **Start walk / Stop walk** | a `TRACKING_UPDATE` every **5 s** | a ~165 m synthetic circle anchored at Phone A's real fix (or Cebu City if no fix), 24 steps | drains 95% → 20% |
+### The band button
+
+| On the button | Sends | Then |
+|---|---|---|
+| **Hold 1.5 s** | one `PANIC`, the moment the hold reaches 1.5 s, while still held (a phone vibration says it went) | **tracking**: a `TRACKING_UPDATE` every **5 s** for **30 minutes** (FR-09) |
+| **Double-press** (second press within 2 s) | one `CHECKIN` (FR-10) | nothing; a check-in during a panic does **not** stop the tracking |
+| **During a panic, hold 5 s** | one `CHECKIN` | tracking **stops**: the panic is cancelled |
+| **Single press** | nothing | the status line says "Single press: no action" |
+
+- **A hold during a panic never sends a second panic.** One is already
+  running. Let go before 5 s and nothing is sent ("Hold to 5 s to cancel the
+  panic"); at 1.5 s the status line says to keep holding.
+- **A check-in cannot cancel a panic, on purpose.** Someone standing over
+  the wearer could make them double-press. The cancel is a deliberate 5 s
+  hold, and it sends a check-in so the guardian sees "I'm OK" right after
+  the incident.
+- **Tracking starts after the panic has landed**, so its first position is
+  always after the panic in the history. It stops after 30 minutes, on a
+  cancel, on a failed send, or when the Mock Sender leaves the screen.
+- **TalkBack:** the button offers the same three things as accessibility
+  actions ("Send a panic", "Check in", "Cancel the panic"), since a hold or a
+  double-press cannot be timed through it.
+- The timings live in one place, `BandButtonDecoder` (`PANIC_HOLD_MS` 1.5 s,
+  `DOUBLE_PRESS_MS` 2 s, `CANCEL_HOLD_MS` 5 s), with tests in
+  `app/src/testDebug/`. If the firmware's change, change them there.
+
+### The battery slider
+
+The battery level every message reports, 0–100%, never charging (the band is
+on a wrist). It starts at Phone A's own level.
+
+- **Dropping it to 20% or below sends a `LOW_BATTERY` by itself** (FR-11), on
+  release of the slider, not while dragging through. Once only: it sends
+  again only after the slider has gone back above 20%. The label reads
+  "Battery: 15% (low battery alert sent)".
+- Starting at or below 20% sends nothing: only a drop does.
+
+### Position
+
+| | Panic, check-in, low battery | Tracking after a panic |
+|---|---|---|
+| GPS fix | Phone A's real fix | Phone A's real fix, read afresh every step |
+| No fix, or permission denied | a random point within ±0.01° of Cebu City | a ~165 m synthetic circle (24 steps) around Cebu City |
 
 Every send writes the full `SCHEMA.md` v1.0 payload: `schemaVersion` (the
 *string* `"1.0"`), `deviceId`, `type`, `timestamp` (ISO 8601 UTC with
 milliseconds), `location{lat,lng,accuracyMeters}`, `battery{percent,isCharging}`
-and `sequenceId`.
+and `sequenceId`. **One send at a time** (`AlertSender`'s lock): a check-in
+pressed while a tracking step is in flight waits for it, rather than taking
+the same sequence id and overwriting it.
 
-### Reading the status line
+### Reading the screen
+
+The **tracking line** (under the button):
 
 | You see | Meaning |
 |---|---|
-| `Ready to send alerts` | Nothing sent yet this session. |
+| `Not tracking` | No panic running. |
+| `Tracking after panic: 12 sent, 28 min left` | Running. "(every 5 s; the band sends every 60 s)" underneath. |
+| `Tracking ended: 30 minutes after the panic` | It ran its course. |
+| `Tracking stopped: panic cancelled` | The 5 s hold. |
+| `Tracking stopped: the Mock Sender left the screen` | You switched away or the screen locked. See below. |
+| `Tracking stopped after 4: …` | A step failed, so tracking stopped. |
+
+The **status line**:
+
+| You see | Meaning |
+|---|---|
 | `Sending PANIC...` | In flight. |
-| `✓ Sent PANIC as #7 (real GPS)` | Written using Phone A's real GPS fix. |
-| `✓ Sent PANIC as #7 (simulated)` | Written using the Cebu City fallback — no fix available or permission denied. |
-| `⚑ Walking: 12 sent, latest #19 (real origin)` | Walk running, loop anchored at the real fix. |
-| `⚑ Walking: 12 sent, latest #19 (simulated)` | Walk running, loop anchored at Cebu City. |
-| `Walk stopped` | You tapped Stop. |
-| `Walk stopped (harness left the foreground)` | You backgrounded the harness. See below. |
+| `✓ Sent PANIC as #7 (real GPS · 🔋64%)` | Written at Phone A's real fix. |
+| `✓ Sent PANIC as #7 (simulated · 🔋64%)` | Written at the Cebu City fallback. |
+| `Press again within 2 s to check in…` | One press so far. |
 | `✗ Failed: HTTP 401 on PUT /devices/…` | See §8. |
-| `✗ Walk stopped after 4: …` | A step failed, so the whole walk stopped. |
 
 The **GPS badge** below the status line shows the current fix state independently of sends:
 
@@ -147,17 +197,18 @@ first send of each app session the harness reads the existing history keys
 appends instead of overwriting what it wrote last time.** If you clear the
 database from the Console, ids restart from 1.
 
-### Two things the walk does on purpose
+### Two things tracking does on purpose
 
-- **It stops when you background the harness.** A walk still writing while
-  nobody is looking would make a dead band look alive — the exact thing the
-  receiver's staleness badge exists to detect.
-- **One failed step stops the whole walk.** Once a write is being refused every
-  later one will be too, and a status line rewriting the same error every 5
-  seconds hides which step first broke.
+- **It stops when the Mock Sender leaves the screen**, including when the
+  phone locks. A loop still writing while nobody is looking would make a dead
+  band look alive, the exact thing the receiver's staleness check exists to
+  detect. For a walking test, keep the screen on (raise the screen timeout).
+- **One failed step stops it.** Once a write is being refused every later one
+  will be too, and a line rewriting the same error every 5 seconds hides which
+  step first broke.
 
 **5 s is not realistic.** FR-09's real interval is 60 s. The harness is fast so
-a demo shows movement in seconds and stays inside the receiver's 180 s
+a demo shows a path in seconds and stays inside the receiver's 180 s
 staleness window.
 
 ---
@@ -242,27 +293,30 @@ Clear `devices/guardband-001` in the Console first.
 
 ### B · First panic
 
-Phone A → **Simulate Panic**. Expect `✓ Sent PANIC as #1`.
+Phone A → **hold the band button 1.5 s**. Expect `✓ Sent PANIC as #1`, and
+tracking starts (the tracking line counts up). For a panic on its own, cancel
+it at once: hold 5 s, which also sends a check-in.
 
 - **Track:** marker appears and the camera moves to it at street zoom.
 - **Panel:** a red **Panic** row appears at the top, without reopening anything.
 - **History:** Current status is **Panic** with its coordinates and battery,
   and the same row heads the list.
-- Send three more panics: the panel shows the newest three, History shows all
-  four.
+- Cancel and send three more panics: the panel shows the newest three,
+  History shows them all (with the cancels' check-ins between them).
 
-### C · Walk mode — the marker moves
+### C · Tracking after a panic — the marker moves
 
-Phone A → **Start walk**.
+Phone A → **hold 1.5 s** for a panic; tracking follows by itself.
 
-- **Track:** the marker steps around a circle every 5 s.
+- **Track:** the marker follows Phone A every 5 s (a circle round Cebu City
+  without a GPS fix).
 - **Panel and History:** nothing changes. Current status stays **Panic** —
   tracking updates are hidden. This is the single best demonstration of §5's
   split, and you can watch both halves on one screen.
 
 ### D · Going stale — the ticker
 
-Stop the walk. Leave Track open and **wait 3 minutes**.
+Cancel the panic (hold 5 s). Leave Track open and **wait 3 minutes**.
 
 **Nothing on screen shows this any more**: the badge and *Last seen* went with
 the status panel on 2026-10-14. The 30 s timer still runs in the ViewModel and
@@ -272,8 +326,8 @@ the timer is alive.
 
 ### E · Follow, and not fighting the user
 
-1. Start the walk; confirm the camera follows the marker.
-2. **Drag the map away.** Keep walking: the camera must now stay where you put
+1. Send a panic so tracking runs; confirm the camera follows the marker.
+2. **Drag the map away.** Keep tracking: the camera must now stay where you put
    it, while the marker keeps moving.
 3. **Tap** the round target button: the map animates back to the band and follows again.
 4. **Tap** (not drag) the map: following must survive — a tap is not a pan.
@@ -304,19 +358,20 @@ tracking pings that follow.
 1. Fresh state: the pill reads *"No recent check-ins"* (or *"Loading
    check-ins…"* for a moment). If an older check-in is already in the newest
    100 history rows, it shows that one instead.
-2. Phone A: **Simulate Check-in**. Within a second or two the pill on Phone B
+2. Phone A: **double-press** the band button. Within a second or two the pill on Phone B
    reads *"Last check-in: just now"*, and the panel gains a green
    *Check-in* row at the top (History too).
 3. Wait a minute or two without sending: the pill ages to *"Last check-in: 1
    minute ago"*, *"2 minutes ago"*, ... on the 30 s ticker, with no new data.
-4. Phone A: **Start walk**. Tracking updates overwrite `latest` every 5 s; the
-   marker moves, but the pill keeps the check-in's time. (Reading `latest`
+4. Phone A: **hold 1.5 s** for a panic. Its tracking updates overwrite
+   `latest` every 5 s; the marker moves, but the pill keeps the check-in's
+   time. (Reading `latest`
    would have lost it on the first ping.)
 5. Tap the pill: nothing happens, by design. With TalkBack on it is read as
    text, not as a button.
-6. Phone A: **Simulate Panic**. The panel's top row, and History's Current
-   status, become the panic exactly as before; the pill still shows the
-   check-in.
+6. The panel's top row, and History's Current status, are the panic; the
+   pill still shows the check-in. Hold 5 s to cancel: a new check-in, and
+   the pill shows it.
 
 ---
 
@@ -324,7 +379,8 @@ tracking pings that follow.
 
 Two phones are nicer for a demo, but because both icons belong to one install
 you can run the whole thing on a single device: send from the Mock Sender, press
-Home, open GuardBand, watch it arrive. The database is the only channel, so the
+Home, open GuardBand, watch it arrive. **Tracking stops as soon as the Mock
+Sender leaves the screen**, so a panic's path needs two phones. The database is the only channel, so the
 sender does not even have to be running for the receiver to show what it wrote.
 
 Equally, the **Firebase Console works as a third sender**. Editing
@@ -343,7 +399,9 @@ payloads, missing fields and unknown types — see §9.
 | `✗ Failed:` a network error | No connectivity, or the database URL from `google-services.json` is wrong. |
 | **GPS badge stuck on "Acquiring…"** | Indoors or no satellite view. Sends fall back to Cebu City automatically — there is nothing to fix. |
 | **No location permission dialog on first launch** | Already denied once. Go to App Settings → Permissions → Location and grant it manually. |
-| **Sends show `(simulated)` even though permission is granted** | No fix has arrived yet — the badge will show "Acquiring…". Walk until outdoors or use the network provider fix. |
+| **Sends show `(simulated)` even though permission is granted** | No fix has arrived yet — the badge will show "Acquiring…". Go outdoors, or wait for the network provider's fix. |
+| **A panic's path stops partway** | The Mock Sender left the screen (the phone locked, or you switched app): tracking stops then. Keep the screen on. |
+| **A double-press sent nothing** | The second press came more than 2 s after the first ("Single press: no action"), or the first was held past 1.5 s, which makes it a hold. |
 | **"Map unavailable", grey map** | The build has no MapTiler key. Add `MAPTILER_API_KEY` to `local.properties` and rebuild — [`osmdroid.md`](osmdroid.md) §4.4. |
 | **Grey map, tiles refused** | The MapTiler key, or its user-agent restriction not matching `OsmdroidConfig.USER_AGENT`, or the Free plan's monthly limit — [`osmdroid.md`](osmdroid.md) §6. |
 | **Map is blank/grey, everything else works** | `OsmdroidConfig` did not run before the `MapView` was built. It must be applied in `onCreate`, ahead of inflation. |
@@ -363,7 +421,8 @@ payloads, missing fields and unknown types — see §9.
 |---|---|
 | **Real hardware** | No firmware. Everything above is the stand-in. |
 | **SMS to contacts (FR-05)** | The band sends it, not the app. Nothing here exercises it. |
-| **A real check-in (FR-10)** | A band double-press. **Simulate Check-in** sends the same `CHECKIN` payload, which is what the receiver would see (walkthrough H). |
+| **A real check-in (FR-10)** | A band double-press. The Mock Sender's double-press sends the same `CHECKIN` payload, which is what the receiver would see (walkthrough H). |
+| **A low-battery alert** | Drag the battery slider to 20% or below. |
 | **Pairing** | One hardcoded device id, so every account watches the same band. |
 | **Malformed payloads, unknown types, missing fields** | Console only. The harness always writes a valid payload. |
 | **Map layers** | UI stub. |

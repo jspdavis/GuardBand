@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Mock Sender's band button: a round dark button, lighter while held.
+     MockSenderActivity sets the pressed state itself, since it reads the raw
+     touch to time the hold. Debug harness only. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="oval">
+            <solid android:color="#455A64" />
+            <stroke android:width="6dp" android:color="#90A4AE" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#263238" />
+            <stroke android:width="6dp" android:color="#546E7A" />
+        </shape>
+    </item>
+</selector>

@@ -25,9 +25,11 @@ on which phone, how long it took).
   phone (switch apps). Two phones are better for the background and sleep
   cases, because opening the mock sender on the receiver brings GuardBand's
   install to the foreground.
-- The mock sender has a button per alert type (PANIC, CHECKIN, LOW_BATTERY)
-  and **Start walk**, which sends a TRACKING_UPDATE every 5 s. Its battery
-  figure is the sender phone's own battery.
+- The mock sender is one band button and a battery slider (2026-10-27):
+  **hold 1.5 s** sends a PANIC and starts a TRACKING_UPDATE every 5 s;
+  **double-press** sends a CHECKIN; during a panic, **hold 5 s** cancels it
+  (stops tracking, sends a CHECKIN); dragging the **battery slider** to 20% or
+  below sends a LOW_BATTERY. Every message reports the slider's level.
 - A debug build from the commit under test (`./gradlew installDebug`).
 - `adb` connected to the receiver for the Doze and logcat cases. **If
   someone else's phone is plugged in, tell them before you run adb
@@ -83,7 +85,7 @@ Receiver on any GuardBand tab, screen on, switch on.
 | TC-11 | Send **PANIC**. | One notification, wording as in the table. **No sound, no banner** dropping from the top; one short buzz. Status bar icon is the plain bell. | | |
 | TC-12 | Send **LOW_BATTERY**. | One notification: "Your band is at *N*%…" where *N* is the sender phone's battery. Default sound. | | |
 | TC-13 | Send **CHECKIN**. | One quiet notification, "Check-in received". No sound. | | |
-| TC-14 | **Start walk** on the sender for 30 s, then **Stop walk**. | **No** notifications for the tracking updates. The map marker moves as usual. | | |
+| TC-14 | **Hold 1.5 s** on the sender, let tracking run 30 s, then **hold 5 s** to cancel. | **No** notifications for the tracking updates. The map marker moves as usual. | | |
 | TC-15 | Expand each notification from TC-11 to TC-13. | None shows coordinates, a place, your name, a contact, a photo or "guardband-001". The time shown matches the send time. | | |
 | TC-16 | Look at the recent-alerts sheet on Track. | The same alerts appear there as before this feature; nothing in the app changed. | | |
 

@@ -4,6 +4,8 @@ import com.example.guardband.data.DeviceConstants
 import com.example.guardband.data.FirebaseProvider
 import com.example.guardband.data.model.AlertType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -44,6 +46,13 @@ class AlertSender {
     private val client = OkHttpClient()
 
     /**
+     * One send at a time. A check-in pressed while a tracking step is in
+     * flight would otherwise read the same [nextSequenceId] and overwrite that
+     * step's history row. The band sends one message at a time too.
+     */
+    private val sendLock = Mutex()
+
+    /**
      * The id the next alert will use, or null until the first send seeds it
      * from whatever is already in the database. Seeding from the server, rather
      * than from 1, is what stops a relaunched harness from overwriting the
@@ -51,8 +60,8 @@ class AlertSender {
      */
     private var nextSequenceId: Int? = null
 
-    /** How many walk steps have been sent, which is what moves the marker. */
-    private var walkStep = 0
+    /** How many tracking steps have been sent, which is what moves the marker. */
+    private var trackingStep = 0
 
     private val databaseUrl: String by lazy {
         FirebaseProvider.database.reference.toString().trimEnd('/')
@@ -101,20 +110,20 @@ class AlertSender {
      * tick. This is the preferred path when GPS is available (accuracy ≤ ~20 m).
      *
      * When they are null (no fix, or indoors), the sender falls back to the
-     * synthetic circle: [WALK_STEPS] positions around a ~165 m loop anchored
+     * synthetic circle: [LOOP_STEPS] positions around a ~165 m loop anchored
      * at [originLat]/[originLng]. The circle is kept so indoor demos still show
      * a moving marker even without GPS.
      */
-    suspend fun sendWalkStep(
+    suspend fun sendTrackingStep(
         lat: Double? = null,
         lng: Double? = null,
         accuracy: Double? = null,
-        originLat: Double = WALK_ORIGIN_LAT,
-        originLng: Double = WALK_ORIGIN_LNG,
+        originLat: Double = LOOP_ORIGIN_LAT,
+        originLng: Double = LOOP_ORIGIN_LNG,
         batteryPercent: Int? = null,
         isCharging: Boolean? = null
     ): Result<Int> {
-        val resolvedBattery = batteryPercent ?: max(WALK_BATTERY_FLOOR, WALK_BATTERY_START - walkStep / 2)
+        val resolvedBattery = batteryPercent ?: max(LOOP_BATTERY_FLOOR, LOOP_BATTERY_START - trackingStep / 2)
         val resolvedCharging = isCharging ?: false
 
         return if (lat != null && lng != null && accuracy != null) {
@@ -126,29 +135,29 @@ class AlertSender {
                 batteryPercent = resolvedBattery,
                 isCharging = resolvedCharging,
                 accuracyMeters = accuracy
-            ).onSuccess { walkStep++ }
+            ).onSuccess { trackingStep++ }
         } else {
             // No fix — fall back to synthetic circle for indoor demos.
-            val step = walkStep
-            val angle = 2 * Math.PI * (step % WALK_STEPS) / WALK_STEPS
-            val circleLat = originLat + WALK_RADIUS_DEG * sin(angle)
+            val step = trackingStep
+            val angle = 2 * Math.PI * (step % LOOP_STEPS) / LOOP_STEPS
+            val circleLat = originLat + LOOP_RADIUS_DEG * sin(angle)
             // Longitude degrees shrink with latitude; dividing by cos(lat) keeps
             // the loop round on the ground instead of stretched east-west.
-            val circleLng = originLng + WALK_RADIUS_DEG * cos(angle) / cos(Math.toRadians(originLat))
+            val circleLng = originLng + LOOP_RADIUS_DEG * cos(angle) / cos(Math.toRadians(originLat))
             send(
                 lat = circleLat,
                 lng = circleLng,
                 type = AlertType.TRACKING_UPDATE,
                 batteryPercent = resolvedBattery,
                 isCharging = resolvedCharging,
-                accuracyMeters = WALK_SYNTHETIC_ACCURACY
-            ).onSuccess { walkStep = step + 1 }
+                accuracyMeters = LOOP_SYNTHETIC_ACCURACY
+            ).onSuccess { trackingStep = step + 1 }
         }
     }
 
-    /** Resets the walk to the start of the loop. */
-    fun resetWalk() {
-        walkStep = 0
+    /** Resets tracking to the start of the synthetic loop. */
+    fun resetTracking() {
+        trackingStep = 0
     }
 
     /**
@@ -161,6 +170,15 @@ class AlertSender {
      * as its history row lands, so a retry cannot overwrite a good row.
      */
     private suspend fun send(
+        lat: Double,
+        lng: Double,
+        type: AlertType,
+        batteryPercent: Int,
+        isCharging: Boolean,
+        accuracyMeters: Double
+    ): Result<Int> = sendLock.withLock { sendNow(lat, lng, type, batteryPercent, isCharging, accuracyMeters) }
+
+    private suspend fun sendNow(
         lat: Double,
         lng: Double,
         type: AlertType,
@@ -281,27 +299,27 @@ class AlertSender {
         const val CEBU_LNG = 123.8854
 
         /**
-         * Walk-loop origin. Defaults to Cebu City so a demo without a real fix
+         * Synthetic-loop origin. Defaults to Cebu City so a demo without a real fix
          * behaves exactly as before. [MockSenderActivity] passes the phone's
          * real fix here when one is available, anchoring the loop around the
          * actual location instead of the hardcoded city centre.
          */
-        const val WALK_ORIGIN_LAT = CEBU_LAT
-        const val WALK_ORIGIN_LNG = CEBU_LNG
+        const val LOOP_ORIGIN_LAT = CEBU_LAT
+        const val LOOP_ORIGIN_LNG = CEBU_LNG
 
         /**
-         * The walk loop: [WALK_STEPS] positions around a circle of
-         * [WALK_RADIUS_DEG] degrees, roughly 165 m — far enough for the marker
+         * The synthetic loop, used when there is no GPS fix: [LOOP_STEPS] positions around a circle of
+         * [LOOP_RADIUS_DEG] degrees, roughly 165 m — far enough for the marker
          * to move visibly at street zoom, small enough to stay near the origin.
          *
-         * Walk mode uses a fixed synthetic accuracy rather than GPS, because the
+         * The loop uses a fixed synthetic accuracy rather than GPS, because the
          * loop is deterministic, not a sequence of real fixes.
          */
-        private const val WALK_STEPS = 24
-        private const val WALK_RADIUS_DEG = 0.0015
-        private const val WALK_BATTERY_START = 95
-        private const val WALK_BATTERY_FLOOR = 20
-        private const val WALK_SYNTHETIC_ACCURACY = 10.0
+        private const val LOOP_STEPS = 24
+        private const val LOOP_RADIUS_DEG = 0.0015
+        private const val LOOP_BATTERY_START = 95
+        private const val LOOP_BATTERY_FLOOR = 20
+        private const val LOOP_SYNTHETIC_ACCURACY = 10.0
 
         private val JSON = "application/json".toMediaType()
         private const val DEVICE_ID = DeviceConstants.DEFAULT_DEVICE_ID

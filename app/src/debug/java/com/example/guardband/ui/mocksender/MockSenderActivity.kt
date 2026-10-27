@@ -1,6 +1,7 @@
 package com.example.guardband.ui.mocksender
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
@@ -9,13 +10,18 @@ import android.location.LocationListener
 import android.location.LocationManager
 import android.os.BatteryManager
 import android.os.Bundle
-import android.widget.Button
+import android.os.SystemClock
+import android.view.HapticFeedbackConstants
+import android.view.MotionEvent
+import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.guardband.R
 import com.example.guardband.data.model.AlertType
+import com.example.guardband.ui.mocksender.BandButtonDecoder.Gesture
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -27,6 +33,25 @@ import kotlinx.coroutines.launch
  * This activity stands in for ESP32 firmware and should be considered scaffolding/disposable
  * once real hardware exists. It deliberately avoids the MVVM pattern since it is not part of
  * the permanent app architecture.
+ *
+ * **It behaves like the band (2026-10-27):** one button, decoded by
+ * [BandButtonDecoder] with the firmware's timings, and a battery slider.
+ *
+ *  - **Hold 1.5 s → PANIC**, sent the moment the hold reaches it, then
+ *    **tracking**: a TRACKING_UPDATE every [TRACKING_INTERVAL_MS] (5 s) for
+ *    [TRACKING_DURATION_MS] (30 min, FR-09).
+ *  - **Double-press within 2 s → CHECKIN** (FR-10). It does not stop
+ *    tracking: a check-in can be forced, a cancel should not be easy to.
+ *  - **During a panic, hold 5 s → cancel**: tracking stops and a CHECKIN is
+ *    sent, so the guardian sees the wearer says they are OK.
+ *  - **A single press sends nothing.**
+ *  - **The battery slider** is the level every message reports (never
+ *    charging: the band is on a wrist). Dropping it to 20% or below sends a
+ *    LOW_BATTERY by itself (FR-11), once, until it goes back above 20%.
+ *
+ * Tracking stops when the harness leaves the foreground, as the old walk did:
+ * a background loop writing under a backgrounded harness would make a dead
+ * band look alive.
  *
  * **Location strategy:**
  * Uses [LocationManager] directly — no FusedLocationProviderClient, no Play Services
@@ -43,42 +68,43 @@ import kotlinx.coroutines.launch
  *
  * On pause, both listeners are unregistered (no background updates).
  *
- * **Battery:** Real level and charging state from [BatteryManager] via the
- * sticky [Intent.ACTION_BATTERY_CHANGED] broadcast.
- *
  * Location permissions are declared only in `app/src/debug/AndroidManifest.xml`
  * so release builds stay clean. The receiver app never requests location.
  *
- * View IDs: btnSimulatePanic, btnSimulateCheckin, btnSimulateLowBattery,
- *            btnSimulateTracking, btnWalk, tvStatus, tvGpsStatus.
+ * View IDs: btnBand, tvTracking, tvBattery, sbBattery, tvStatus, tvGpsStatus.
  */
 class MockSenderActivity : AppCompatActivity() {
 
-    private lateinit var btnSimulatePanic: Button
-    private lateinit var btnSimulateCheckin: Button
-    private lateinit var btnDoubleCheckin: Button
-    private lateinit var btnSimulateLowBattery: Button
-    private lateinit var btnSimulateTracking: Button
-    private lateinit var btnWalk: Button
+    private lateinit var btnBand: TextView
+    private lateinit var tvTracking: TextView
+    private lateinit var tvBattery: TextView
+    private lateinit var sbBattery: SeekBar
     private lateinit var tvStatus: TextView
     private lateinit var tvGpsStatus: TextView
 
     private val alertSender = AlertSender()
 
-    /** Non-null only while the walk is running; see [onPause]. */
-    private var walkJob: Job? = null
+    // ── The band's button and battery ─────────────────────────────────────────
 
-    // ── Double-press check-in (FR-10) ─────────────────────────────────────────
+    private val decoder = BandButtonDecoder()
 
-    /**
-     * Timestamp of the first tap of a double-press sequence, or null when no
-     * press is pending. Set on the first tap; cleared when the second tap
-     * fires or the 2-second window expires.
-     */
-    private var firstPressTime: Long? = null
+    /** Fires the hold's gesture when it reaches its time; cancelled on release. */
+    private var holdJob: Job? = null
 
-    /** Coroutine that resets [firstPressTime] after [DOUBLE_PRESS_WINDOW_MS]. */
-    private var doublePressCancelJob: Job? = null
+    /** During a panic, the "keep holding" hint at 1.5 s. */
+    private var holdHintJob: Job? = null
+
+    /** Ends a lone first press once the double-press window is over. */
+    private var windowJob: Job? = null
+
+    /** The panic's tracking; non-null only while it runs. See [onPause]. */
+    private var trackingJob: Job? = null
+
+    /** The level every message reports, from the slider. */
+    private var batteryPercent = 100
+
+    /** Whether the next drop to [LOW_BATTERY_PERCENT] sends a LOW_BATTERY. */
+    private var lowBatteryArmed = true
 
     // ── Location ──────────────────────────────────────────────────────────────
 
@@ -134,6 +160,7 @@ class MockSenderActivity : AppCompatActivity() {
         return false
     }
 
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -142,7 +169,8 @@ class MockSenderActivity : AppCompatActivity() {
 
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
         initViews()
-        setupClickListeners()
+        setUpBandButton()
+        setUpBatterySlider()
         requestLocationPermissionIfNeeded()
     }
 
@@ -155,9 +183,9 @@ class MockSenderActivity : AppCompatActivity() {
         super.onPause()
         locationManager.removeUpdates(locationListener)
 
-        if (walkJob != null) {
-            stopWalk()
-            tvStatus.text = getString(R.string.mock_sender_walk_paused)
+        if (trackingJob != null) {
+            stopTracking()
+            tvTracking.text = getString(R.string.mock_sender_tracking_paused)
         }
     }
 
@@ -179,32 +207,101 @@ class MockSenderActivity : AppCompatActivity() {
         }
     }
 
+
     // ── Views ─────────────────────────────────────────────────────────────────
 
     private fun initViews() {
-        btnSimulatePanic = findViewById(R.id.btnSimulatePanic)
-        btnSimulateCheckin = findViewById(R.id.btnSimulateCheckin)
-        btnDoubleCheckin = findViewById(R.id.btnDoubleCheckin)
-        btnSimulateLowBattery = findViewById(R.id.btnSimulateLowBattery)
-        btnSimulateTracking = findViewById(R.id.btnSimulateTracking)
-        btnWalk = findViewById(R.id.btnWalk)
+        btnBand = findViewById(R.id.btnBand)
+        tvTracking = findViewById(R.id.tvTracking)
+        tvBattery = findViewById(R.id.tvBattery)
+        sbBattery = findViewById(R.id.sbBattery)
         tvStatus = findViewById(R.id.tvStatus)
         tvGpsStatus = findViewById(R.id.tvGpsStatus)
     }
 
-    private fun setupClickListeners() {
-        btnSimulatePanic.setOnClickListener { sendAlert(AlertType.PANIC) }
-        btnSimulateCheckin.setOnClickListener { sendAlert(AlertType.CHECKIN) }
-        btnSimulateLowBattery.setOnClickListener { sendAlert(AlertType.LOW_BATTERY) }
-        btnSimulateTracking.setOnClickListener { sendAlert(AlertType.TRACKING_UPDATE) }
-        btnDoubleCheckin.setOnClickListener { onDoubleCheckinPressed() }
-
-        btnWalk.setOnClickListener {
-            if (walkJob == null) startWalk() else {
-                stopWalk()
-                tvStatus.text = getString(R.string.mock_sender_walk_stopped)
+    /**
+     * The band's one button. The raw touch is read, rather than click and
+     * long-click listeners, because the hold has to fire at exactly 1.5 s
+     * while still held, and 5 s during a panic. The ScrollView is kept from
+     * taking the touch, so a hold is never cancelled by a slight drag.
+     *
+     * TalkBack users cannot time a hold or a double-press, so the same three
+     * actions are also offered as accessibility actions.
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setUpBandButton() {
+        btnBand.setOnTouchListener { view, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    view.parent?.requestDisallowInterceptTouchEvent(true)
+                    view.isPressed = true
+                    onBandDown()
+                }
+                MotionEvent.ACTION_UP -> {
+                    view.isPressed = false
+                    onBandUp()
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    view.isPressed = false
+                    cancelHoldTimers()
+                    decoder.cancel()
+                }
             }
+            true
         }
+
+        ViewCompat.addAccessibilityAction(btnBand, getString(R.string.mock_sender_action_panic)) { _, _ ->
+            if (trackingJob == null) perform(Gesture.PANIC)
+            true
+        }
+        ViewCompat.addAccessibilityAction(btnBand, getString(R.string.mock_sender_action_check_in)) { _, _ ->
+            perform(Gesture.CHECK_IN)
+            true
+        }
+        ViewCompat.addAccessibilityAction(btnBand, getString(R.string.mock_sender_action_cancel)) { _, _ ->
+            if (trackingJob != null) perform(Gesture.CANCEL_PANIC)
+            true
+        }
+    }
+
+    /**
+     * Starts on the phone's own battery level, so the first messages look
+     * like before; from then on the slider decides. Starting at or below 20%
+     * does not send a LOW_BATTERY: only a drop to it does.
+     */
+    private fun setUpBatterySlider() {
+        batteryPercent = readBatteryPercent() ?: 100
+        lowBatteryArmed = batteryPercent > LOW_BATTERY_PERCENT
+        sbBattery.progress = batteryPercent
+        renderBattery()
+
+        sbBattery.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                batteryPercent = progress
+                if (progress > LOW_BATTERY_PERCENT) lowBatteryArmed = true
+                renderBattery()
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) = Unit
+
+            // On release, not while dragging, so a drag through 20% on its way
+            // down to 5% sends one alert, at the level let go at.
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                if (batteryPercent <= LOW_BATTERY_PERCENT && lowBatteryArmed) {
+                    lowBatteryArmed = false
+                    renderBattery()
+                    sendAlert(AlertType.LOW_BATTERY)
+                }
+            }
+        })
+    }
+
+    private fun renderBattery() {
+        tvBattery.text = getString(
+            if (batteryPercent <= LOW_BATTERY_PERCENT && !lowBatteryArmed) R.string.mock_sender_battery_low
+            else R.string.mock_sender_battery,
+            batteryPercent
+        )
     }
 
     // ── Location helpers ──────────────────────────────────────────────────────
@@ -321,150 +418,174 @@ class MockSenderActivity : AppCompatActivity() {
         return (level * 100 / scale).coerceIn(0, 100)
     }
 
-    private fun readIsCharging(): Boolean {
-        val intent = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-            ?: return false
-        return when (intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)) {
-            BatteryManager.BATTERY_STATUS_CHARGING,
-            BatteryManager.BATTERY_STATUS_FULL -> true
-            else -> false
+    // ── The band's button ─────────────────────────────────────────────────────
+
+    private fun onBandDown() {
+        cancelHoldTimers()
+        val tracking = trackingJob != null
+        val holdMs = decoder.down(SystemClock.elapsedRealtime(), tracking)
+        holdJob = lifecycleScope.launch {
+            delay(holdMs)
+            decoder.holdReached(SystemClock.elapsedRealtime())?.let(::perform)
+        }
+        if (tracking) {
+            holdHintJob = lifecycleScope.launch {
+                delay(decoder.panicHoldMs)
+                tvStatus.text = getString(R.string.mock_sender_cancel_hint)
+            }
         }
     }
 
-    // ── Double-press check-in (FR-10) ─────────────────────────────────────────
+    private fun onBandUp() {
+        cancelHoldTimers()
+        val gesture = decoder.up(SystemClock.elapsedRealtime()) ?: return
+        perform(gesture)
+        if (gesture == Gesture.FIRST_PRESS) {
+            windowJob?.cancel()
+            windowJob = lifecycleScope.launch {
+                delay(decoder.doublePressMs)
+                decoder.windowLapsed(SystemClock.elapsedRealtime())?.let(::perform)
+            }
+        }
+    }
 
-    /**
-     * Models the band's FR-10 double-press behaviour: two presses within
-     * [DOUBLE_PRESS_WINDOW_MS] (2 s) fire a CHECKIN. A single press that is
-     * not followed by a second press within the window resets and shows a
-     * "missed" message.
-     *
-     * State machine:
-     *   Idle → first tap → armed (shows countdown prompt, starts timeout)
-     *   Armed → second tap within 2 s → send CHECKIN → idle
-     *   Armed → timeout after 2 s → missed → idle
-     */
-    private fun onDoubleCheckinPressed() {
-        val now = System.currentTimeMillis()
-        val firstTime = firstPressTime
+    private fun cancelHoldTimers() {
+        holdJob?.cancel()
+        holdJob = null
+        holdHintJob?.cancel()
+        holdHintJob = null
+    }
 
-        if (firstTime != null && now - firstTime <= DOUBLE_PRESS_WINDOW_MS) {
-            // Second press within the window — fire the CHECKIN.
-            doublePressCancelJob?.cancel()
-            doublePressCancelJob = null
-            firstPressTime = null
-            sendAlert(AlertType.CHECKIN)
-        } else {
-            // First press (or a stale first press just expired) — arm the window.
-            doublePressCancelJob?.cancel()
-            firstPressTime = now
-            tvStatus.text = getString(R.string.mock_sender_checkin_armed)
-
-            // Schedule a reset if the second press doesn't arrive in time.
-            doublePressCancelJob = lifecycleScope.launch {
-                delay(DOUBLE_PRESS_WINDOW_MS)
-                if (firstPressTime != null) {
-                    firstPressTime = null
-                    tvStatus.text = getString(R.string.mock_sender_checkin_missed)
+    /** What the band does for each gesture. */
+    private fun perform(gesture: Gesture) {
+        when (gesture) {
+            Gesture.PANIC -> {
+                btnBand.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                lifecycleScope.launch {
+                    // Tracking starts once the panic has landed, so the first
+                    // position always follows it in the history.
+                    if (send(AlertType.PANIC).isSuccess) startTracking()
                 }
             }
+            Gesture.CHECK_IN -> sendAlert(AlertType.CHECKIN)
+            Gesture.CANCEL_PANIC -> {
+                btnBand.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                stopTracking()
+                tvTracking.text = getString(R.string.mock_sender_tracking_cancelled)
+                sendAlert(AlertType.CHECKIN)
+            }
+            Gesture.FIRST_PRESS -> tvStatus.text = getString(R.string.mock_sender_first_press)
+            Gesture.SINGLE_PRESS -> tvStatus.text = getString(R.string.mock_sender_single_press)
+            Gesture.CANCEL_TOO_SHORT -> tvStatus.text = getString(R.string.mock_sender_cancel_too_short)
         }
     }
 
     // ── Sending ───────────────────────────────────────────────────────────────
 
     private fun sendAlert(type: AlertType) {
-        tvStatus.text = "Sending ${type.name}..."
-
-        val fix = lastFix
-        val battery = readBatteryPercent()
-        val charging = readIsCharging()
-
-        lifecycleScope.launch {
-            val result = alertSender.sendAlert(
-                type = type,
-                lat = fix?.latitude,
-                lng = fix?.longitude,
-                accuracy = fix?.accuracy?.toDouble(),
-                batteryPercent = battery,
-                isCharging = charging
-            )
-
-            result.onSuccess { sequenceId ->
-                val source = if (fix != null) "real GPS" else "simulated"
-                val batteryStr = if (battery != null) "$battery%" else "?"
-                tvStatus.text = "✓ Sent ${type.name} as #$sequenceId ($source · 🔋$batteryStr)"
-            }.onFailure { error ->
-                tvStatus.text = "✗ Failed: ${error.message}"
-            }
-        }
+        lifecycleScope.launch { send(type) }
     }
 
-    private fun startWalk() {
-        alertSender.resetWalk()
-        btnWalk.text = getString(R.string.mock_sender_walk_stop)
+    /** Sends one alert at the GPS fix and the slider's battery, and reports it. */
+    private suspend fun send(type: AlertType): Result<Int> {
+        tvStatus.text = "Sending ${type.name}..."
+        val fix = lastFix
+        val battery = batteryPercent
 
-        walkJob = lifecycleScope.launch {
+        val result = alertSender.sendAlert(
+            type = type,
+            lat = fix?.latitude,
+            lng = fix?.longitude,
+            accuracy = fix?.accuracy?.toDouble(),
+            batteryPercent = battery,
+            isCharging = false
+        )
+
+        result.onSuccess { sequenceId ->
+            val source = if (fix != null) "real GPS" else "simulated"
+            tvStatus.text = "✓ Sent ${type.name} as #$sequenceId ($source · 🔋$battery%)"
+        }.onFailure { error ->
+            tvStatus.text = "✗ Failed: ${error.message}"
+        }
+        return result
+    }
+
+    // ── Tracking after a panic (FR-09) ────────────────────────────────────────
+
+    /**
+     * A TRACKING_UPDATE every [TRACKING_INTERVAL_MS] until
+     * [TRACKING_DURATION_MS] after the panic, a cancel, or the harness
+     * leaving the screen. Each step reads the GPS fix afresh; with no fix the
+     * sender walks its synthetic loop instead, around the last known point.
+     * A failed step stops tracking rather than retrying every few seconds.
+     */
+    private fun startTracking() {
+        if (trackingJob != null) return
+        alertSender.resetTracking()
+        val startedAt = SystemClock.elapsedRealtime()
+
+        trackingJob = lifecycleScope.launch {
             var sent = 0
             while (isActive) {
-                val battery = readBatteryPercent()
-                val charging = readIsCharging()
-
-                // Read lastFix fresh on every step. When a real GPS fix is
-                // available, pass it directly so the walk sends actual phone
-                // coordinates. When there is no fix, null triggers the
-                // synthetic circle fallback in AlertSender.
-                val currentFix = lastFix
-
-                val result = alertSender.sendWalkStep(
-                    lat = currentFix?.latitude,
-                    lng = currentFix?.longitude,
-                    accuracy = currentFix?.accuracy?.toDouble(),
-                    originLat = currentFix?.latitude ?: AlertSender.WALK_ORIGIN_LAT,
-                    originLng = currentFix?.longitude ?: AlertSender.WALK_ORIGIN_LNG,
-                    batteryPercent = battery,
-                    isCharging = charging
-                )
-
-                result.onSuccess { sequenceId ->
-                    sent++
-                    val source = if (currentFix != null) "real GPS" else "simulated"
-                    val batteryStr = if (battery != null) "$battery%" else "?"
-                    tvStatus.text = "⚑ Walking: $sent sent, latest #$sequenceId ($source · 🔋$batteryStr)"
-                }.onFailure { error ->
-                    tvStatus.text = "✗ Walk stopped after $sent: ${error.message}"
-                    stopWalk()
+                val elapsed = SystemClock.elapsedRealtime() - startedAt
+                if (elapsed >= TRACKING_DURATION_MS) {
+                    trackingJob = null
+                    tvTracking.text = getString(R.string.mock_sender_tracking_done)
                     return@launch
                 }
 
-                delay(WALK_INTERVAL_MS)
+                val fix = lastFix
+                val result = alertSender.sendTrackingStep(
+                    lat = fix?.latitude,
+                    lng = fix?.longitude,
+                    accuracy = fix?.accuracy?.toDouble(),
+                    originLat = fix?.latitude ?: AlertSender.LOOP_ORIGIN_LAT,
+                    originLng = fix?.longitude ?: AlertSender.LOOP_ORIGIN_LNG,
+                    batteryPercent = batteryPercent,
+                    isCharging = false
+                )
+
+                result.onSuccess {
+                    sent++
+                    val minutesLeft = ((TRACKING_DURATION_MS - elapsed) / 60_000L).toInt()
+                    tvTracking.text = getString(R.string.mock_sender_tracking_on, sent, minutesLeft)
+                }.onFailure { error ->
+                    trackingJob = null
+                    tvTracking.text = getString(R.string.mock_sender_tracking_failed, sent, error.message ?: "")
+                    return@launch
+                }
+
+                delay(TRACKING_INTERVAL_MS)
             }
         }
     }
 
-    private fun stopWalk() {
-        walkJob?.cancel()
-        walkJob = null
-        btnWalk.text = getString(R.string.mock_sender_walk_start)
+    private fun stopTracking() {
+        trackingJob?.cancel()
+        trackingJob = null
     }
 
     // ── Constants ─────────────────────────────────────────────────────────────
 
     private companion object {
-        const val WALK_INTERVAL_MS = 5_000L
+        /**
+         * How often tracking sends a position after a panic: every 5 s, not
+         * FR-09's 60 s, so a demo shows a path within a minute. The status
+         * line says so.
+         */
+        const val TRACKING_INTERVAL_MS = 5_000L
+
+        /** FR-09: tracking runs for 30 minutes after the panic. */
+        const val TRACKING_DURATION_MS = 30 * 60_000L
+
+        /** FR-11: the band sends a low-battery alert at 20%. */
+        const val LOW_BATTERY_PERCENT = 20
 
         /** Request a new fix at most every 1 s; fire on any movement. */
         const val GPS_MIN_TIME_MS = 1_000L
         const val GPS_MIN_DISTANCE_M = 0f
 
         const val REQUEST_LOCATION = 1001
-
-        /**
-         * FR-10: the band sends CHECKIN on a double-press within this window.
-         * Two taps on [btnDoubleCheckin] within 2 s fire the alert; a single
-         * tap that times out resets and shows a missed message.
-         */
-        const val DOUBLE_PRESS_WINDOW_MS = 2_000L
 
         /**
          * A new fix must be this much more accurate to replace a good GPS fix.

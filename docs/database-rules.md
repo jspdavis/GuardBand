@@ -370,8 +370,9 @@ is not in the repo.
 7. **Check the app** on a phone, signed in: Profile shows your name; Contacts
    lists, adds and edits a contact; Track shows the marker, the Check-in pill
    and the recent-alerts sheet; See all opens Alert history. Then the **Mock
-   Sender**: Simulate Panic reads "✓ Sent PANIC as #n" and the receiver shows
-   it; a few Walk steps move the marker; relaunch the sender and send again
+   Sender**: a 1.5 s hold on the band button reads "✓ Sent PANIC as #n" and
+   the receiver shows it; the tracking that follows moves the marker; cancel
+   it (hold 5 s), relaunch the sender and send again
    (the seed read). Under B or C, expect the sender to fail with HTTP 401.
 8. **Back in the repo:** delete the STATUS paragraph at the top of
    `RTDBS-RULES.md`, replace §9 below with the newly live text, and update the
