@@ -2,7 +2,7 @@
 
 How the GuardBand app is structured after login: one host Activity, three bottom-nav tabs, three pushed screens, and the auth gate around them.
 
-> **2026-10-27: the Profile tab is now the Device tab.** The bar is **Track, Contacts, Device**. The Device tab (`ui/device/`, tag `home_device`, menu item `nav_device`) shows the band's status, battery, last alert and last known position, the account connected to it and a pairing placeholder, with the old Profile header (avatar, name, email) compact at the top. Settings' Device information row opens it. See **[device-tab.md](device-tab.md)**. Where this file says "Profile" below, it describes the tab as it was.
+> **2026-10-27: the Profile tab is now the Device tab.** The bar is **Track, Contacts, Device**. The Device tab (`ui/device/`, tag `home_device`, menu item `nav_device`) shows the band's status, battery, last alert and last known position, the account connected to it and a pairing placeholder, with the old Profile header (avatar, name, email) compact at the top. Settings' Device information row opened it until the row was removed on 2026-10-28. See **[device-tab.md](device-tab.md)**. Where this file says "Profile" below, it describes the tab as it was.
 >
 > **2026-10-19: the Alert tab is gone.** The bar is **Track, Contacts, Profile** (icon-only). Track shows the newest alerts in a draggable bottom sheet over the map, and its **See all** opens **Alert history**, a pushed screen holding the whole list. Both read one host-scoped `AlertViewModel` ([alert-data.md](alert-data.md) §8). Sections below that describe the four-tab layout are kept for the record and marked where they changed.
 
@@ -146,7 +146,6 @@ The saved tags are read back through `HomeDestinations.restoreCurrent` / `restor
 | `ShowSettings` | Track's gear is tapped | `show(home_settings)` |
 | `ShowNotifications` | Track's bell is tapped | `show(home_notifications)` |
 | `ShowAlertHistory` | See all on Track's recent-alerts panel | `show(home_alert_history)` |
-| `ShowDevice` | Settings' Device information row (2026-10-27) | `show(home_device)`: a tab, so Settings is hidden and the bar returns |
 | `ShowContacts` | The Device tab's emergency-contacts row (2026-10-27) | `show(home_contacts)` |
 
 Fragments reach `HomeViewModel` with `by activityViewModels { HomeViewModel.Factory }`. They never cast `requireActivity()` to `HomeActivity`.
@@ -206,7 +205,7 @@ Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC 
 - White background, the same as the rows and the top bar (back arrow + "Settings"), so the rows sit on the screen rather than in a raised card (2026-10-19; it was grey `surface_muted` with a shadowed card). Contacts, Profile, Notifications and Alert history went white the same day.
 - **Every top bar** (Settings, Notifications, Alert history, Account information, Changelog) has a 1dp `divider` line along its bottom edge, from the shared `@drawable/bg_top_bar`, so a white bar stays distinct on a white screen. Change the line there, not per layout.
 - ✅ **Account information** opens `ui/account/AccountActivity` (below).
-- ✅ **Device information** switches to the Device tab (2026-10-27; it showed "Coming soon." before). (A "Privacy & security" placeholder was removed on 2026-10-19. Change password became a real screen on 2026-10-22 and moved into Account information on 2026-10-27.)
+- **Device information** is gone (2026-10-28). It showed "Coming soon.", then for a day switched to the Device tab. (A "Privacy & security" placeholder was removed on 2026-10-19. Change password became a real screen on 2026-10-22 and moved into Account information on 2026-10-27.)
 - ✅ **Display** opens `ui/display/DisplayActivity`: the theme, Use phone setting / Light / Dark (2026-10-20). See CLAUDE.md "Dark mode".
 - ✅ **Alert notifications** opens `ui/notifications/AlertNotificationsActivity`, which holds the switch (2026-10-20).
 - ✅ **Changelog** opens `ChangelogActivity`; **About** opens `ui/about/AboutActivity`: the version, and the **Privacy Notice** row, which opens the hosted page (it was a Settings row until 2026-10-20).

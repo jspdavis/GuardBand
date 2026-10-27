@@ -60,4 +60,8 @@
     <!-- The dark buttons, lifted off the near-black screen. -->
     <color name="retry_gradient_start">#3A3B3A</color>
     <color name="retry_gradient_end">#5A5C5A</color>
+
+    <!-- Contacts' selected filter chip: white with black text. DESIGN: Jul -->
+    <color name="chip_filter_checked_bg">#FFFFFFFF</color>
+    <color name="chip_filter_checked_content">#FF000000</color>
 </resources>

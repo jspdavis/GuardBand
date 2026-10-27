@@ -29,7 +29,7 @@ the app together. Pairing comes first: SMS depends on it.
   - An auth token for the band, so it can write without the rules being open.
   - Close `devices/` in `RTDBS-RULES.md` and publish it; teach the mock sender
     to send `?auth=`.
-  - Build the Device information screen (now a "Coming soon" row in Settings).
+  - Give the Device tab real pairing (its "Pair a band" row is a placeholder).
   - Decide roles: who wears the band and who watches it.
 
   Where: [`database-rules.md`](database-rules.md) §4 and §7, CLAUDE.md "Alert data" (D4)

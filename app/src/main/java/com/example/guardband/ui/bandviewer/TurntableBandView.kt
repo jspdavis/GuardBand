@@ -432,7 +432,8 @@ internal class TurntableBandView(
         /** The ground shadow's strength at its centre. DESIGN: Jul */
         private const val SHADOW_ALPHA = 0x33
 
-        private const val HINT_TEXT_SP = 12f
+        /** LabelSmall's size, like the Device tab's other small labels. DESIGN: Jul */
+        private const val HINT_TEXT_SP = 11f
         private const val HINT_FADE_MS = 400f
 
         /** A small frame is not blown up past this. */

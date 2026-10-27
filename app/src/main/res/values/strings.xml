@@ -309,7 +309,6 @@
     <string name="label_alert_notifications_switch">Show alerts on this phone</string>
     <string name="label_settings_privacy_notice">Privacy Notice</string>
     <string name="label_settings_display">Display</string>
-    <string name="label_settings_device_info">Device Information</string>
     <string name="label_settings_about">About</string>
     <string name="btn_logout">Log Out</string>
 

@@ -202,15 +202,6 @@ class HomeViewModel(
         _events.trySend(HomeEvent.ShowSettings)
     }
 
-    /**
-     * Settings' Device information row: switch to the Device tab. Showing a
-     * tab hides Settings and brings the bar back, so Settings is closed by
-     * the same step.
-     */
-    fun onDeviceInfoClicked() {
-        _events.trySend(HomeEvent.ShowDevice)
-    }
-
     /** The Device tab's emergency-contacts row: switch to the Contacts tab. */
     fun onContactsSummaryClicked() {
         _events.trySend(HomeEvent.ShowContacts)

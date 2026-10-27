@@ -212,9 +212,7 @@ class HomeActivity : AppCompatActivity() {
                 startActivity(Intent(this, AlertNotificationsActivity::class.java))
             }
             HomeEvent.ShowNotifications -> show(HomeDestinations.NOTIFICATIONS)
-            // Tabs: showing one hides the pushed screen that asked (Settings)
-            // and brings the bar back, with the tab's item checked.
-            HomeEvent.ShowDevice -> show(HomeDestinations.DEVICE)
+            // A tab: shown with the bar back and its item checked.
             HomeEvent.ShowContacts -> show(HomeDestinations.CONTACTS)
             HomeEvent.ShowAlertHistory -> show(HomeDestinations.ALERT_HISTORY)
             is HomeEvent.ShowIncident -> showIncident(event.panicSequenceId)

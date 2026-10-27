@@ -21,7 +21,7 @@ Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targ
 ./gradlew lint
 ```
 
-On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 918 JVM unit tests (2026-10-28), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
+On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 917 JVM unit tests (2026-10-28), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
 
 `app/google-services.json` is required for the `com.google.gms.google-services` plugin. It points at the Firebase project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan, so there are no Cloud Functions).
 
@@ -93,7 +93,7 @@ com/example/guardband/
 │   ├── bandviewer/     BandViewer (the interface the Device tab knows) + TurntableBandView: the band
 │   │                 on a turntable of frames from assets/band_turntable/; TurntableMotion (pure maths)
 │   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row.
-│   │                 A chevron means another screen of the app; Device information opens the Device tab
+│   │                 A chevron means another screen of the app (no Device information row since 2026-10-28)
 │   ├── display/        DisplayActivity, opened from Settings: the theme (ThemeChoice, DisplayPrefs)
 │   ├── about/          AboutActivity, opened from Settings: version and the Privacy Notice row
 │   │                 (a web page, so no chevron)
@@ -906,8 +906,10 @@ Profile. Four things are easy to break:
   `Unpaired`; it is always `Paired` with `RepositoryProvider.watchedBandId`,
   which the Factory passes for display only. No band nickname: new stored
   data needs the notice first.
-- **Settings' Device information row and the contacts row** navigate through
-  `HomeViewModel` (`ShowDevice`, `ShowContacts`), which `show()` a tab.
+- **The contacts row** navigates through `HomeViewModel` (`ShowContacts`),
+  which `show()`s the tab. Settings' Device information row, which opened
+  this tab, was removed on 2026-10-28 (with `ShowDevice`); the bar is the
+  only way in.
 
 **The band viewer (2026-10-28,
 [docs/band-viewer.md](docs/band-viewer.md))** sits at the top of the tab,

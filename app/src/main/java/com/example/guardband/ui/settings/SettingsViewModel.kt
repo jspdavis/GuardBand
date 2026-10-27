@@ -16,10 +16,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * Log Out lives here (moved from the old Dashboard, per the Figma). Account
  * information opens its own screen, which holds Change password (a row here
  * until 2026-10-27) and Delete account; Display holds the theme (light, dark,
- * or the phone's); Device information switches to the Device tab, through
- * the host (the Fragment calls
- * [HomeViewModel][com.example.guardband.ui.home.HomeViewModel] directly, as
- * Track's gear does), so it is not an event here; About
+ * or the phone's); About
  * holds the version and the Privacy Notice, which was a row here until
  * 2026-10-20.
  *

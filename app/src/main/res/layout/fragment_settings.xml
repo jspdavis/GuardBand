@@ -217,51 +217,6 @@
                         style="@style/Widget.GuardBand.SettingsDivider"
                         android:layout_marginEnd="16dp" />
 
-                    <!-- Device information Row: switches to the Device tab,
-                         which closes Settings (2026-10-27). -->
-                    <LinearLayout
-                        android:id="@+id/row_settings_device_info"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:contentDescription="@string/label_settings_device_info"
-                        android:focusable="true"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingStart="32dp"
-                        android:paddingEnd="32dp">
-
-                        <ImageView
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:layout_marginEnd="12dp"
-                            android:background="@drawable/bg_settings_icon_badge"
-                            android:importantForAccessibility="no"
-                            android:padding="8dp"
-                            android:src="@drawable/ic_watch"
-                            app:tint="@color/white" />
-
-                        <TextView
-                            android:id="@+id/tv_settings_device_info"
-                            style="@style/Widget.GuardBand.SettingsRow"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="@null"
-                            android:clickable="false"
-                            android:focusable="false"
-                            android:fontFamily="@font/poppins_extralight"
-                            android:importantForAccessibility="no"
-                            android:paddingStart="0dp"
-                            android:paddingEnd="0dp"
-                            android:text="@string/label_settings_device_info" />
-                    </LinearLayout>
-
-                    <View
-                        style="@style/Widget.GuardBand.SettingsDivider"
-                        android:layout_marginEnd="16dp" />
-
                     <!-- Changelog Row -->
                     <LinearLayout
                         android:id="@+id/row_settings_changelog"

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The circle behind the avatar's default icon. Round in itself, so the
+     avatar never depends on ShapeableImageView's mask to hide square
+     corners (they showed through on the Device tab). DESIGN: Jul -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/surface_card" />
+</shape>

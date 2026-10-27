@@ -7,7 +7,6 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -19,7 +18,6 @@ import com.example.guardband.ui.auth.GoogleIdTokenProvider
 import com.example.guardband.ui.auth.LoginNavigation
 import com.example.guardband.ui.changelog.ChangelogActivity
 import com.example.guardband.ui.display.DisplayActivity
-import com.example.guardband.ui.home.HomeViewModel
 import com.example.guardband.ui.notifications.AlertNotificationsActivity
 import kotlinx.coroutines.launch
 
@@ -37,18 +35,17 @@ import kotlinx.coroutines.launch
  * instead (About's Privacy Notice). Alert notifications' switch lives on its
  * own screen, [AlertNotificationsActivity], and the Privacy Notice inside
  * [AboutActivity], since 2026-10-20. Display opens [DisplayActivity], the
- * theme. Device information switches to the Device tab through
- * [HomeViewModel.onDeviceInfoClicked], which hides Settings (2026-10-27).
+ * theme. The Device information row was removed on 2026-10-28; the Device
+ * tab is reached from the bar.
  *
  * View ids: ib_settings_back, tv_settings_title, row_settings_account,
  * row_settings_alert_notifications,
- * row_settings_display, row_settings_device_info, row_settings_changelog,
+ * row_settings_display, row_settings_changelog,
  * row_settings_about, btn_settings_logout.
  */
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private val viewModel: SettingsViewModel by viewModels { SettingsViewModel.Factory }
-    private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
     private val googleIdTokenProvider by lazy { GoogleIdTokenProvider(requireActivity()) }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -66,9 +63,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         view.findViewById<LinearLayout>(R.id.row_settings_display)
             .setOnClickListener { viewModel.onDisplayClicked() }
-
-        view.findViewById<LinearLayout>(R.id.row_settings_device_info)
-            .setOnClickListener { homeViewModel.onDeviceInfoClicked() }
 
         view.findViewById<LinearLayout>(R.id.row_settings_about)
             .setOnClickListener { viewModel.onAboutClicked() }

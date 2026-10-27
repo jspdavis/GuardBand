@@ -3,8 +3,9 @@
 The third tab of the Home host, in place of the Profile tab since
 2026-10-27. It shows the band (its status, battery, last alert and last
 known position), the account connected to it, a placeholder for pairing,
-and how the band works. It also replaces Settings' "Device information
-(Coming soon)" row, which now opens this tab.
+and how the band works. It also replaced Settings' "Device information
+(Coming soon)" row, which opened this tab from 2026-10-27 until the row was
+removed on 2026-10-28; the bar is the way in.
 
 | | |
 |---|---|
@@ -141,10 +142,10 @@ gets a real action. Nothing on the screen needs reshaping.
 - **Tab:** `HomeDestinations.DEVICE` (`home_device`), menu item `nav_device`,
   icon `ic_watch` (a placeholder, DESIGN: Jul), label "Device". A saved
   `home_profile` from before the rename restores to Track.
-- **Settings → Device information** calls `HomeViewModel.onDeviceInfoClicked()`
-  → `HomeEvent.ShowDevice` → `show(DEVICE)`. Showing a tab hides Settings and
-  brings the bar back, so Settings is closed by the same step; Back on the tab
-  then leaves the app, as on any tab.
+- **No Settings row** (2026-10-28). Settings' Device information row opened
+  this tab through `HomeViewModel.onDeviceInfoClicked()` →
+  `HomeEvent.ShowDevice` for a day; both were removed with the row. To bring
+  it back, send a tab event the way the contacts row below does.
 - **Emergency contacts row** calls `HomeViewModel.onContactsSummaryClicked()`
   → `HomeEvent.ShowContacts` → `show(CONTACTS)`, the bar's own mechanism.
 - Gear and bell, as on the other tabs.
@@ -198,8 +199,8 @@ With the Mock Sender on a second phone (or the same phone):
 - [ ] Emergency contacts: N, M starred matches the Contacts tab. Star or add
       a contact in Contacts and return: the count updates. Tap the row: the
       Contacts tab opens with its bar item lit.
-- [ ] Settings → Device information: the Device tab opens, the bar is back
-      with Device lit, and Back leaves the app (Settings is closed).
+- [ ] Settings has no Device information row; Display is followed by
+      Changelog with a single divider between them.
 - [ ] The bar shows Track, Contacts and Device (a watch icon); TalkBack reads
       "Device".
 - [ ] Dark mode: every card, the chip, the initials and the battery colours

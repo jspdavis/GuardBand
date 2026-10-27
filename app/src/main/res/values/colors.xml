@@ -67,6 +67,12 @@
     <!-- Favourite star on a contact row: amber/gold. -->
     <color name="contact_favorite_tint">#F59E0B</color>
 
+    <!-- Contacts' selected filter chip: brand green with white text here,
+         white with black text in dark mode (values-night). The chips'
+         state lists are in res/color/chip_filter_*.xml. DESIGN: Jul -->
+    <color name="chip_filter_checked_bg">#478831</color>
+    <color name="chip_filter_checked_content">#FFFFFFFF</color>
+
     <!-- The dark "Retry"/"Cancel" buttons (bg_retry_gradient), white text. -->
     <color name="retry_gradient_start">#000000</color>
     <color name="retry_gradient_end">#4C4444</color>
