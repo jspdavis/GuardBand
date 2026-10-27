@@ -51,6 +51,23 @@ class InMemoryAlertRepository(
             )
         }
 
+    override fun observeIncident(panicSequenceId: Long, limit: Int): Flow<Result<AlertHistory>> =
+        observeDeviceAlerts().map { alerts ->
+            // From the panic on, the first `limit`: what `startAt` +
+            // `limitToFirst` return on the server.
+            val window = alerts
+                .filter { it.sequenceId >= panicSequenceId }
+                .sortedBy { it.sequenceId }
+                .take(limit)
+            Result.success(
+                AlertHistory(
+                    alerts = window.sortedByDescending { it.sequenceId },
+                    rawCount = window.size,
+                    malformedCount = 0
+                )
+            )
+        }
+
     private fun observeDeviceAlerts(): Flow<List<Alert>> = flow {
         delay(InMemoryStore.SIMULATED_DELAY_MS)
         emitAll(InMemoryStore.alerts.map { all -> all.filter { it.deviceId == deviceId } })

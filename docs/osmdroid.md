@@ -527,7 +527,11 @@ than a second mechanism:
 
 **Accessibility:** osmdroid overlays are not accessibility nodes, so the
 marker cannot carry a content description of its own; a tap shows its title,
-"Your band", as before.
+"Your band", as before. Since 2026-10-27 that bubble is `ui/track/BandBubbleWindow`
+(`view_band_bubble.xml`, theme colours, so it follows dark mode) rather than
+osmdroid's stock one, so it can also offer "View incident" after a panic
+(§5.5). The tap still opens it and pans to the band, and a tap on the bubble
+still closes it.
 
 ### 5.5 Alert pins (2026-10-27)
 
@@ -538,9 +542,11 @@ things took place, not only where the band is now.
 |---|---|
 | Which | The newest **10** panics, check-ins and low-battery alerts with usable coordinates. Never a tracking update, never an unknown type, never a missing, out-of-range or (0, 0) position. `ui/track/AlertPinSelector` (pure, tested) decides |
 | Order | By `sequenceId`, like every other screen, not by timestamp |
-| One per spot | An alert within **10 m** of a newer pin is dropped (`AlertPinSelector.MERGE_RADIUS_METERS`; the KDoc says why 10 m), and so is one within 10 m of the band's marker: the face wins |
+| One per spot | An alert within **10 m** of a pin already chosen is dropped (`AlertPinSelector.MERGE_RADIUS_METERS`; the KDoc says why 10 m), and so is one within 10 m of the band's marker: the face wins |
+| **Panics win** (2026-10-27) | Panics choose their spots first, newest first, then the other types. A newer check-in or low-battery alert never takes a panic's spot; two panics there keep the newer. The dedupe runs **before** the cap, so a cluster takes one slot; a spot's place in the newest ten is the newest alert there, dropped ones included |
 | Look | `ic_alert_pin_panic` / `_checkin` / `_low_battery`: a 24 × 32 dp vector pin in the type's colour (`alert_*`, lighter from `values-night`), a white ring, and the alert rows' own symbol in white. Anchored at the tip, (12, 30) of the viewport. DESIGN: Jul |
-| Tap | A label above the pin, "Panic, 5 min ago" (`view_alert_pin_label.xml`, `ui/track/AlertPinLabelWindow`), which ages on Track's 30 s ticker. A tap anywhere else, the face or the label included, closes it. Nothing navigates yet: `TrackViewModel.onAlertPinTapped` is the hook for that |
+| Tap | **A panic pin opens its Incident view** ([`incident-view.md`](incident-view.md)), through `TrackViewModel.onAlertPinTapped` and the host's one opener. Any other pin shows a label above it, "Check-in, 5 min ago" (`view_alert_pin_label.xml`, `ui/track/AlertPinLabelWindow`), which ages on Track's 30 s ticker. A tap anywhere else, the face or the label included, closes it |
+| Under the face | A panic hidden by the face is still reachable: while the band's latest **non-tracking** alert is a panic (`TrackUiState.bandPanic`), the face's bubble offers **"View incident"** (`BandBubbleWindow`), which opens it the same way. It stays through the tracking updates after the panic and goes when a check-in or low-battery alert arrives |
 | Data | The list behind the recent-alerts sheet. `TrackFragment` hands `AlertViewModel`'s `history` to `TrackViewModel.onAlertsChanged`. **No new listener** |
 
 **The overlay order is the design.** osmdroid draws overlays in list order
@@ -551,8 +557,8 @@ and offers a tap to the **last** one first. So:
 3. a pass-through tap watcher, always last. It sees every single tap first,
    calls `TrackViewModel.onMapTapped()` (close the label) and **never
    consumes it**. A tap on a pin then reaches the pin, which reopens its own
-   label. A tap on the face reaches the face, which shows "Your band" exactly
-   as before.
+   label (or, for a panic, opens its incident). A tap on the face reaches
+   the face, which shows its bubble exactly as before.
 
 The label is a child `View` of the `MapView`, so the `MapView` hands it a tap
 before any overlay sees one. Its own click also goes through
@@ -666,14 +672,18 @@ above once someone has looked at the map.
       so of each row in the sheet: red octagon, green tick, orange triangle.
 - [ ] Send a tracking update or start a walk. The face moves and no pin is
       added for it.
-- [ ] Send three or four alerts without moving. One pin, the newest one's
-      type and colour.
+- [ ] Send three or four check-ins and low-battery alerts without moving. One
+      pin, the newest one's type and colour.
+- [ ] Send a panic, then a low-battery alert and a check-in without moving.
+      One pin, the red panic, and tapping it opens the Incident view.
 - [ ] Send more than ten from different spots. Ten pins, and the oldest go as
       new ones arrive.
 - [ ] Stand where the band's face is and send an alert. No pin peeks out from
       under the face; walk away and send a tracking update, and it appears.
-      Tapping the face still shows "Your band".
-- [ ] Tap a pin: "Panic, 5 min ago" (or the type and time it has) above it.
+      Tapping the face still shows "Your band", and pans to the band.
+- [ ] After a panic, tap the face: the bubble also offers "View incident",
+      which opens it. Send a check-in: the offer goes.
+- [ ] Tap a check-in or low-battery pin: "Check-in, 5 min ago" (its type and time) above it.
       Wait a minute: the time moves on. Tap another pin: the label moves.
       Tap the map, the face or the label itself: it closes. Panning the map
       does not.

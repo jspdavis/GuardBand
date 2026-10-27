@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertType
 import com.example.guardband.data.model.CheckIn
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.data.repository.AlertRepository
@@ -57,8 +58,10 @@ import kotlinx.coroutines.launch
  * [AlertPinSelector] from the list the Fragment hands over in
  * [onAlertsChanged]: the recent-alerts sheet's own, so no listener is added
  * here. A tapped pin opens a label ([TrackUiState.pinLabel]) that ages on the
- * staleness ticker; [onAlertPinTapped] is the hook a pin's next feature hangs
- * on.
+ * staleness ticker, or, for a panic, its Incident view. The band's bubble
+ * offers "View incident" while [TrackUiState.bandPanic] is set
+ * ([onViewIncidentClicked]). Both send [TrackEvent.OpenIncident], which the
+ * Fragment hands to the host's one incident opener.
  *
  * Nothing here logs. The state holds the wearer's coordinates, and the face a
  * photo link.
@@ -164,14 +167,28 @@ class TrackViewModel(
     }
 
     /**
-     * A pin was tapped: open its label. **The hook for what a pin opens
-     * next** (an incident view, say); today it does nothing beyond the label.
-     * A pin no longer on the map (a tap racing an update) is ignored.
+     * A pin was tapped. A panic's opens its Incident view
+     * ([TrackEvent.OpenIncident]); any other type's opens its label. A pin no
+     * longer on the map (a tap racing an update) is ignored.
      */
     fun onAlertPinTapped(alert: Alert) {
         val pin = _uiState.value.alertPins.firstOrNull { it.alert.sequenceId == alert.sequenceId }
             ?: return
+        if (pin.type == AlertType.PANIC) {
+            _events.trySend(TrackEvent.OpenIncident(pin.alert))
+            return
+        }
         _uiState.update { it.copy(pinLabel = AlertPinLabel(pin, elapsedOf(pin.alert))) }
+    }
+
+    /**
+     * "View incident" on the band's bubble: opens [TrackUiState.bandPanic]'s
+     * Incident view. Does nothing when the bubble offers none (the action is
+     * hidden then; this guards a tap racing a check-in).
+     */
+    fun onViewIncidentClicked() {
+        val panic = _uiState.value.bandPanic ?: return
+        _events.trySend(TrackEvent.OpenIncident(panic))
     }
 
     /**
@@ -301,9 +318,16 @@ class TrackViewModel(
                 pins.firstOrNull { it.alert.sequenceId == open.pin.alert.sequenceId }
                     ?.let { pin -> AlertPinLabel(pin, elapsedOf(pin.alert)) }
             }
-            state.copy(alertPins = pins, pinLabel = label)
+            state.copy(alertPins = pins, pinLabel = label, bandPanic = latestPanic())
         }
     }
+
+    /** [pinSource]'s newest non-tracking alert, if it is a panic (see [TrackUiState.bandPanic]). */
+    private fun latestPanic(): Alert? =
+        pinSource
+            .filter { it.alertType() != AlertType.TRACKING_UPDATE }
+            .maxByOrNull { it.sequenceId }
+            ?.takeIf { it.alertType() == AlertType.PANIC }
 
     /** How long ago [alert] was, by the injected clock; null when its timestamp is unreadable. */
     private fun elapsedOf(alert: Alert): Elapsed? =

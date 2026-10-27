@@ -16,6 +16,12 @@ sealed interface HomeEvent {
     /** Open the full alert history, from the Track tab's recent-alerts panel. */
     object ShowAlertHistory : HomeEvent
 
+    /**
+     * Open the Incident view of the panic numbered [panicSequenceId]. Only
+     * [HomeViewModel.onOpenIncident] sends it, for every entry point.
+     */
+    data class ShowIncident(val panicSequenceId: Long) : HomeEvent
+
 
     /**
      * This account's deletion did not finish: its data is gone and its sign-in

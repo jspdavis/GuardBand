@@ -129,11 +129,11 @@ class AlertPinSelectorTest {
     }
 
     @Test
-    fun `several alerts at the same spot keep only the newest`() {
+    fun `several non-panic alerts at the same spot keep only the newest`() {
         val here = spot(0)
         val pins = AlertPinSelector.select(
             listOf(
-                alert(1, "PANIC", here),
+                alert(1, "CHECKIN", here),
                 alert(2, "CHECKIN", here),
                 alert(3, "LOW_BATTERY", here)
             )
@@ -141,6 +141,87 @@ class AlertPinSelectorTest {
 
         assertEquals(listOf(3L), ids(pins))
         assertEquals(AlertType.LOW_BATTERY, pins.single().type)
+    }
+
+    // ── Panics keep their pin (2026-10-27) ────────────────────────────────────
+
+    @Test
+    fun `a panic keeps its pin over a newer low-battery alert at the same spot`() {
+        val here = spot(0)
+        val pins = AlertPinSelector.select(listOf(alert(1, "PANIC", here), alert(2, "LOW_BATTERY", here)))
+
+        assertEquals(listOf(1L), ids(pins))
+        assertEquals(AlertType.PANIC, pins.single().type)
+    }
+
+    @Test
+    fun `a panic keeps its pin over a newer check-in at the same spot`() {
+        val here = spot(0)
+        val pins = AlertPinSelector.select(listOf(alert(1, "PANIC", here), alert(2, "CHECKIN", here)))
+
+        assertEquals(listOf(1L), ids(pins))
+        assertEquals(AlertType.PANIC, pins.single().type)
+    }
+
+    @Test
+    fun `a panic keeps its pin over newer alerts a few metres away`() {
+        val panicSpot = Alert.Location(baseLat, baseLng, 5.0)
+        val beside = Alert.Location(baseLat + 6 * metreStep, baseLng, 5.0)
+        val pins = AlertPinSelector.select(
+            listOf(alert(1, "PANIC", panicSpot), alert(2, "CHECKIN", beside), alert(3, "LOW_BATTERY", beside))
+        )
+
+        assertEquals(listOf(1L), ids(pins))
+    }
+
+    @Test
+    fun `two panics at the same spot keep the newer one`() {
+        val here = spot(0)
+        val pins = AlertPinSelector.select(
+            listOf(alert(1, "PANIC", here), alert(2, "PANIC", here), alert(3, "CHECKIN", here))
+        )
+
+        assertEquals(listOf(2L), ids(pins))
+    }
+
+    @Test
+    fun `a panic beside a newer check-in keeps that check-in's place in the newest ten`() {
+        // The panic (1) is the oldest alert, but the check-in that made way
+        // for it (20) is the newest: the spot is recent, so it is pinned.
+        val here = spot(0)
+        val alerts = listOf(alert(1, "PANIC", here), alert(20, "CHECKIN", here)) +
+            (2L..11L).map { alert(it, "CHECKIN") }
+
+        val pins = AlertPinSelector.select(alerts)
+
+        assertEquals(AlertPinSelector.MAX_PINS, pins.size)
+        assertEquals(1L, pins.first().alert.sequenceId)
+        assertEquals(AlertType.PANIC, pins.first().type)
+    }
+
+    @Test
+    fun `a cluster of more than ten alerts at one spot takes one slot`() {
+        val here = spot(0)
+        val cluster = (1L..12L).map { alert(it, if (it % 2 == 0L) "CHECKIN" else "LOW_BATTERY", here) } +
+            alert(13, "PANIC", here)
+        val elsewhere = (20L..24L).map { alert(it, "CHECKIN", spot(it.toInt())) }
+
+        val pins = AlertPinSelector.select(cluster + elsewhere)
+
+        assertEquals(6, pins.size)
+        assertEquals(1, pins.count { it.lat == here.lat })
+        assertEquals(13L, pins.single { it.lat == here.lat }.alert.sequenceId)
+        assertEquals((24L downTo 20L).toList(), ids(pins).filter { it >= 20L })
+    }
+
+    @Test
+    fun `a panic under the band's marker is still hidden, and does not hide others`() {
+        val pins = AlertPinSelector.select(
+            listOf(alert(1, "PANIC", spot(1)), alert(2, "CHECKIN", spot(2))),
+            bandLocation = spot(1)
+        )
+
+        assertEquals(listOf(2L), ids(pins))
     }
 
     @Test
@@ -196,7 +277,7 @@ class AlertPinSelectorTest {
     fun `at the same spot, the newest by sequenceId wins over a later timestamp`() {
         val here = spot(0)
         val alerts = listOf(
-            alert(1, "PANIC", here, timestamp = "2026-10-27T10:00:00Z"),
+            alert(1, "LOW_BATTERY", here, timestamp = "2026-10-27T10:00:00Z"),
             alert(2, "CHECKIN", here, timestamp = "2026-10-27T07:00:00Z")
         )
 

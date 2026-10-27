@@ -75,6 +75,21 @@ class FirebaseAlertRepository(
             .map { result -> result.map(CheckInSelector::latestFrom) }
 
     /**
+     * `startAt` on the key, so it needs no index either: an integer-like key
+     * string compares numerically against integer keys, exactly as the
+     * `orderByKey` sort does, so `"120"` starts after `"119"` and not after
+     * `"1199"`. A live listener like the others, removed by [awaitClose] when
+     * the Incident view's ViewModel is cleared (its screen closes, or Log Out
+     * finishes the host).
+     */
+    override fun observeIncident(panicSequenceId: Long, limit: Int): Flow<Result<AlertHistory>> =
+        deviceRef.child(PATH_HISTORY)
+            .orderByKey()
+            .startAt(panicSequenceId.toString())
+            .limitToFirst(limit)
+            .asFlow { snapshot -> Result.success(snapshot.toHistory()) }
+
+    /**
      * One malformed entry is skipped and counted, never fatal: a firmware bug
      * in a single row must not hide every good row behind it. The counting and
      * ordering live in [AlertParser.parseHistory] so they are unit-testable

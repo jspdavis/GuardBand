@@ -142,6 +142,8 @@
     <!-- The label over a tapped alert pin: the type, then how long ago, e.g.
          "Panic, 5 min ago". Both parts are the alert rows' own wording. -->
     <string name="label_track_alert_pin">%1$s, %2$s</string>
+    <!-- The band's bubble on Track, while its latest alert is a panic. -->
+    <string name="action_band_view_incident">View incident</string>
 
     <string name="label_track_never_reported">Your band hasn\'t reported yet.</string>
     <string name="label_track_no_fix">No location fix yet</string>
@@ -374,4 +376,19 @@
     <string name="dialog_change_password_title">Confirm it\'s you</string>
     <string name="dialog_change_password_message">Enter your current password to set a new one.</string>
     <string name="btn_change_password">Change password</string>
+
+    <!-- Incident view (2026-10-27): one panic and the tracking after it. -->
+    <string name="label_incident_title">Incident</string>
+    <!-- "5 min ago · Oct 27, 3:04 PM": how long ago, then when. -->
+    <string name="label_incident_time">%1$s · %2$s</string>
+    <plurals name="label_incident_updates">
+        <item quantity="one">%d tracking update</item>
+        <item quantity="other">%d tracking updates</item>
+    </plurals>
+    <!-- "Latest update: 1 min ago · 3:15 PM". -->
+    <string name="label_incident_latest_update">Latest update: %1$s · %2$s</string>
+    <string name="label_incident_no_updates">No tracking updates received yet</string>
+    <string name="label_incident_no_position">This panic has no position to show.</string>
+    <!-- TalkBack, on a tappable panic row: what the row shows, then what a tap does. -->
+    <string name="cd_alert_open_incident">%1$s. Opens the incident.</string>
 </resources>

@@ -5,6 +5,7 @@ import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
+import com.example.guardband.data.model.Alert
 import com.example.guardband.ui.alert.AlertHistoryAdapter
 import com.example.guardband.ui.alert.AlertListItem
 import com.example.guardband.ui.alert.AlertTimeStyle
@@ -37,7 +38,8 @@ import com.example.guardband.ui.alert.AlertUiState
 class RecentAlertsPanel(
     root: View,
     onSeeAll: () -> Unit,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onOpenIncident: (Alert) -> Unit
 ) {
 
     private val progress: View = root.findViewById(R.id.track_recent_alerts_progress)
@@ -45,7 +47,8 @@ class RecentAlertsPanel(
     private val tvError: TextView = root.findViewById(R.id.track_recent_alerts_error_message)
     private val tvEmpty: TextView = root.findViewById(R.id.track_recent_alerts_empty_view)
 
-    private val adapter = AlertHistoryAdapter(AlertTimeStyle.RELATIVE)
+    /** A panic row opens its Incident view; the other rows are not tappable. */
+    private val adapter = AlertHistoryAdapter(AlertTimeStyle.RELATIVE, onOpenIncident)
 
     init {
         root.findViewById<RecyclerView>(R.id.track_recent_alerts_list).adapter = adapter

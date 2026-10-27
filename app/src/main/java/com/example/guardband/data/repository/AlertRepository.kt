@@ -69,8 +69,35 @@ interface AlertRepository {
      */
     fun observeLatestCheckIn(): Flow<Result<CheckIn?>>
 
+    /**
+     * An Incident view's read: `/devices/{id}/history` **from** the panic
+     * numbered [panicSequenceId] onwards, the oldest [limit] raw entries,
+     * tracking updates included, newest first like [observeAlertHistory].
+     *
+     * Its own read rather than [observeAlertHistory]'s window, because that
+     * window is the newest [DEFAULT_HISTORY_WINDOW] entries: a band tracking
+     * every few seconds pushes a panic, and the path behind it, out of it
+     * within minutes. This one starts at the panic, so the whole path is there
+     * however much has been sent since. Nothing it returns reaches a list: the
+     * Incident view is its only reader.
+     *
+     * @param limit how many raw entries to read from the panic on.
+     */
+    fun observeIncident(
+        panicSequenceId: Long,
+        limit: Int = INCIDENT_WINDOW
+    ): Flow<Result<AlertHistory>>
+
     companion object {
         /** D3's raw read window. */
         const val DEFAULT_HISTORY_WINDOW = 100
+
+        /**
+         * How many raw entries an Incident view reads from its panic on: 30
+         * minutes of the mock sender's 5 s walk is 360, FR-09's real 60 s
+         * tracking is 30, and the rest is room for other alerts in between.
+         * About 80 KB at most.
+         */
+        const val INCIDENT_WINDOW = 400
     }
 }

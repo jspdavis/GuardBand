@@ -54,7 +54,9 @@ class TrackViewModelAlertPinsTest {
 
     private fun alert(
         sequenceId: Long,
-        type: String = "PANIC",
+        // Not a panic: a panic pin opens its Incident view, not a label
+        // (TrackViewModelIncidentTest).
+        type: String = "CHECKIN",
         location: Alert.Location? = spot(sequenceId.toInt()),
         millis: Long = t0 - 5 * 60_000L
     ) = Alert(
@@ -177,13 +179,13 @@ class TrackViewModelAlertPinsTest {
     fun `tapping a pin opens its label with the type and how long ago`() = runTest {
         val vm = viewModel()
         advanceUntilIdle()
-        vm.onAlertsChanged(listOf(alert(2, "CHECKIN"), alert(1, "PANIC", millis = t0 - 5 * 60_000L)))
+        vm.onAlertsChanged(listOf(alert(2, "CHECKIN"), alert(1, "LOW_BATTERY", millis = t0 - 5 * 60_000L)))
 
-        vm.onAlertPinTapped(alert(1, "PANIC", millis = t0 - 5 * 60_000L))
+        vm.onAlertPinTapped(alert(1, "LOW_BATTERY", millis = t0 - 5 * 60_000L))
 
         val label = vm.uiState.value.pinLabel!!
         assertEquals(1L, label.pin.alert.sequenceId)
-        assertEquals(AlertType.PANIC, label.pin.type)
+        assertEquals(AlertType.LOW_BATTERY, label.pin.type)
         assertEquals(Elapsed.Minutes(5), label.elapsed)
     }
 
@@ -191,11 +193,11 @@ class TrackViewModelAlertPinsTest {
     fun `tapping another pin moves the label to it`() = runTest {
         val vm = viewModel()
         advanceUntilIdle()
-        vm.onAlertsChanged(listOf(alert(2, "CHECKIN"), alert(1)))
+        vm.onAlertsChanged(listOf(alert(2, "LOW_BATTERY"), alert(1)))
 
         vm.onAlertPinTapped(alert(1))
         vm.onMapTapped()
-        vm.onAlertPinTapped(alert(2, "CHECKIN"))
+        vm.onAlertPinTapped(alert(2, "LOW_BATTERY"))
 
         assertEquals(2L, vm.uiState.value.pinLabel?.pin?.alert?.sequenceId)
     }

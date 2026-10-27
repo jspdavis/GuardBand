@@ -20,11 +20,26 @@ internal object HomeDestinations {
     const val NOTIFICATIONS = "home_notifications"
     const val ALERT_HISTORY = "home_alert_history"
 
+    /**
+     * One panic's Incident view (2026-10-27). **The one destination that is
+     * not added once:** a new Fragment, the panic in its arguments, is added
+     * each time one opens and removed when it closes, so its live listener
+     * ends with it. Back returns to the screen that opened it
+     * ([restoreIncidentReturn]), not to the last tab.
+     */
+    const val INCIDENT = "home_incident"
+
     /** The bottom bar's destinations, in bar order. */
     val TABS: List<String> = listOf(TRACK, CONTACTS, PROFILE)
 
-    /** Reached from a tab, never from the bar; Back returns to the last tab. */
-    val PUSHED: Set<String> = setOf(SETTINGS, NOTIFICATIONS, ALERT_HISTORY)
+    /**
+     * Reached from a tab, never from the bar; Back returns to the last tab,
+     * except from [INCIDENT], which returns to whatever opened it.
+     */
+    val PUSHED: Set<String> = setOf(SETTINGS, NOTIFICATIONS, ALERT_HISTORY, INCIDENT)
+
+    /** Where an Incident view can be opened from, and so where its Back returns. */
+    private val INCIDENT_OPENERS: Set<String> = TABS.toSet() + ALERT_HISTORY
 
     fun isTab(tag: String): Boolean = tag in TABS
 
@@ -42,4 +57,12 @@ internal object HomeDestinations {
      */
     fun restoreLastTab(saved: String?): String =
         saved?.takeIf { it in TABS } ?: TRACK
+
+    /**
+     * The screen Back from an Incident view returns to: [current] when it is
+     * one that opens incidents (a tab or Alert history), else Track. Used
+     * both when an incident opens and when the saved value is read back.
+     */
+    fun restoreIncidentReturn(current: String?): String =
+        current?.takeIf { it in INCIDENT_OPENERS } ?: TRACK
 }

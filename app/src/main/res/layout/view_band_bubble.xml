@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The band's bubble on the Track map: "Your band", opened by a tap on the
+     face marker as before, and closed by a tap on the bubble. While the band's
+     latest non-tracking alert is a panic it also offers "View incident",
+     which opens that panic's Incident view. Shown by ui/track/BandBubbleWindow
+     just above the face. Theme colours, so it follows dark mode (osmdroid's
+     stock bubble, used until 2026-10-27, did not).
+
+     View IDs: tv_band_bubble_title, btn_band_bubble_view_incident.
+
+     DESIGN: Jul - shape, padding, type and the action's style are
+     placeholders (the alert pins' label background, a text button). No
+     gap of its own: the face's bitmap already has 4dp of shadow padding
+     above its ring. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_pill"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingStart="12dp"
+    android:paddingTop="6dp"
+    android:paddingEnd="12dp"
+    android:paddingBottom="6dp">
+
+    <TextView
+        android:id="@+id/tv_band_bubble_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?attr/textAppearanceLabelLarge"
+        android:textColor="@color/text_primary" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_band_bubble_view_incident"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:text="@string/action_band_view_incident"
+        android:textColor="@color/alert_panic"
+        android:visibility="gone" />
+</LinearLayout>

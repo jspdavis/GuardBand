@@ -40,14 +40,23 @@ data class AlertPin(
  *    counter is the order every other screen uses (D2, the check-in pill,
  *    the day headings), and a band whose clock jumps must not reorder its
  *    incidents. The input order does not matter either; it is sorted here.
- *  - **One pin per spot.** An alert within [MERGE_RADIUS_METERS] of a pin
- *    already chosen is dropped, so the newest alert at a spot keeps it and
- *    older ones there do not stack under it unreadably.
+ *  - **One pin per spot, and a panic always keeps it** (2026-10-27). Panics
+ *    choose their spots first, newest first; then the other types, newest
+ *    first. An alert within [MERGE_RADIUS_METERS] of a pin already chosen is
+ *    dropped, so a newer check-in or low-battery alert can never take a
+ *    panic's spot, two panics there keep the newer one, and among the other
+ *    types the newest keeps the spot, as before. Nothing at one spot stacks
+ *    unreadably.
  *  - **The face wins.** An alert within the same radius of the band's own
  *    marker is dropped too: the face is drawn on top and takes the tap, so a
- *    pin there could only peek out from under it.
- *  - **At most [MAX_PINS]**, counted after the drops, so ten readable pins
- *    are shown whenever ten exist.
+ *    pin there could only peek out from under it. A panic hidden this way is
+ *    still reachable from the face's bubble ("View incident").
+ *  - **At most [MAX_PINS], counted after the drops** (the dedupe runs first),
+ *    so a cluster at one spot takes one slot and ten readable pins are shown
+ *    whenever ten spots exist. A pin's place in the newest ten is the newest
+ *    alert at its spot, dropped ones included: a panic with a newer check-in
+ *    beside it is as recent as that check-in, and does not lose its slot
+ *    because the check-in made way for it.
  *
  * Nothing here logs: every input is a location.
  */
@@ -80,24 +89,39 @@ object AlertPinSelector {
      *   the recent-alerts sheet and Alert history are cut from.
      * @param bandLocation where the band's face marker is, or null when there
      *   is none; pins under it are dropped.
-     * @return at most [MAX_PINS] pins, newest first.
+     * @return at most [MAX_PINS] pins, newest spot first.
      */
     fun select(alerts: List<Alert>, bandLocation: Alert.Location? = null): List<AlertPin> {
-        val chosen = mutableListOf<AlertPin>()
         val band = bandLocation?.takeIf { isUsable(it) }
+        val candidates = alerts
+            .distinctBy { it.sequenceId }
+            .sortedByDescending { it.sequenceId }
+            .mapNotNull { alert ->
+                val type = alert.alertType()?.takeIf { it in PINNED_TYPES } ?: return@mapNotNull null
+                val location = alert.location?.takeIf { isUsable(it) } ?: return@mapNotNull null
+                AlertPin(alert, type, location.lat, location.lng)
+            }
+            .filterNot { band != null && isNear(it.lat, it.lng, band.lat, band.lng) }
 
-        for (alert in alerts.distinctBy { it.sequenceId }.sortedByDescending { it.sequenceId }) {
-            if (chosen.size == MAX_PINS) break
-            val type = alert.alertType()?.takeIf { it in PINNED_TYPES } ?: continue
-            val location = alert.location?.takeIf { isUsable(it) } ?: continue
-
-            if (band != null && isNear(location.lat, location.lng, band.lat, band.lng)) continue
-            if (chosen.any { isNear(location.lat, location.lng, it.lat, it.lng) }) continue
-
-            chosen += AlertPin(alert, type, location.lat, location.lng)
+        val spots = mutableListOf<Spot>()
+        // Panics first, so nothing else can take a panic's spot.
+        val (panics, others) = candidates.partition { it.type == AlertType.PANIC }
+        for (pin in panics + others) {
+            val taken = spots.firstOrNull { isNear(pin.lat, pin.lng, it.pin.lat, it.pin.lng) }
+            if (taken == null) {
+                spots += Spot(pin, pin.alert.sequenceId)
+            } else {
+                taken.newest = maxOf(taken.newest, pin.alert.sequenceId)
+            }
         }
-        return chosen
+        return spots
+            .sortedByDescending { it.newest }
+            .take(MAX_PINS)
+            .map { it.pin }
     }
+
+    /** One chosen pin, and the newest `sequenceId` of any alert at its spot. */
+    private class Spot(val pin: AlertPin, var newest: Long)
 
     /** Whether [location] is somewhere a pin can honestly be put. */
     fun isUsable(location: Alert.Location): Boolean {

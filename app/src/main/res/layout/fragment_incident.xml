@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Incident view: one panic and the tracking updates after it. A pushed
+     screen in the Home host, opened from a panic row (Track's sheet, Alert
+     history), a panic pin, or "View incident" on the band's bubble. The map
+     on top (the same MapTiler setup, credits and logo as Track), the summary
+     below. OsmdroidConfig must run before this is inflated, which is why the
+     Fragment applies it in onCreate.
+     DESIGN: Jul - the map's share of the screen, spacing, type and every
+     colour are placeholders on theme tokens. -->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface_bg"
+    android:clickable="true"
+    android:focusable="true"
+    tools:context=".ui.incident.IncidentFragment">
+
+    <!-- Top bar: back arrow and title, as on Alert history. -->
+    <LinearLayout
+        android:id="@+id/ll_incident_top_bar"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_top_bar"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/ib_incident_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/cd_back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+
+        <TextView
+            android:id="@+id/tv_incident_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/label_incident_title"
+            android:textAppearance="@style/TextAppearance.GuardBand.TitleLarge"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline_incident_map_bottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.55" />
+
+    <!-- The map and its credits row. A ConstraintLayout of its own, because
+         ui/track/MapAttribution moves the credits above the logo inside
+         their shared parent when they do not fit beside it. -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_incident_map"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/guideline_incident_map_bottom"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ll_incident_top_bar">
+
+        <org.osmdroid.views.MapView
+            android:id="@+id/incident_map_view"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Why the map is empty: no key in this build, or a panic with no
+             position. The check-in pill's background. -->
+        <TextView
+            android:id="@+id/incident_map_empty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
+            android:background="@drawable/bg_pill"
+            android:gravity="center"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="@color/text_primary"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- The edge the credits row sits on. A Space, as on Track, because
+             MapAttribution re-anchors the credits with bottomToTop when it
+             stacks them above the logo; a bottomToBottom here would leave
+             them with two bottom constraints. -->
+        <Space
+            android:id="@+id/space_incident_map_bottom"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <!-- MapTiler's required credits and logo, exactly as on Track
+             (docs/osmdroid.md section 4.6): the credits collapse to the
+             info button after 5 s or the first pan; the logo never does. -->
+        <TextView
+            android:id="@+id/incident_map_attribution"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="4dp"
+            android:background="@color/map_attribution_bg"
+            android:gravity="center_vertical"
+            android:minHeight="@dimen/track_map_attribution_height"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:textAppearance="@style/TextAppearance.GuardBand.MapAttribution"
+            android:textColor="@color/map_attribution_text"
+            android:textColorLink="@color/map_attribution_text"
+            app:layout_constraintBottom_toTopOf="@id/space_incident_map_bottom"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="© MapTiler © OpenStreetMap contributors" />
+
+        <ImageView
+            android:id="@+id/incident_map_logo"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/track_map_attribution_height"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="4dp"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/cd_track_map_logo"
+            android:paddingStart="4dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="2dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/logo_maptiler"
+            app:layout_constraintBottom_toTopOf="@id/space_incident_map_bottom"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <ImageButton
+            android:id="@+id/incident_map_attribution_info"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_map_attribution_info"
+            android:contentDescription="@string/cd_track_map_credits"
+            android:padding="14dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_info"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/incident_map_logo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:tint="@color/map_attribution_text" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- The summary: the panic, where, the battery, and the tracking so far. -->
+    <ScrollView
+        android:id="@+id/sv_incident_summary"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/guideline_incident_map_bottom">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="24dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="24dp">
+
+            <ProgressBar
+                android:id="@+id/incident_progress"
+                style="@style/Widget.AppCompat.ProgressBar"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center_horizontal"
+                android:indeterminateDrawable="@drawable/bg_spinner_gradient"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/incident_error_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/incident_error_message"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:gravity="center"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="@color/text_secondary" />
+
+                <Button
+                    android:id="@+id/incident_retry_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_retry_gradient"
+                    android:fontFamily="@font/poppins_extralight"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:text="@string/btn_alert_retry"
+                    android:textAllCaps="false"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    app:backgroundTint="@null" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/incident_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <!-- The panic: its symbol on the alert cards' badge, then when. -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/iv_incident_icon"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_alert_type_badge"
+                        android:importantForAccessibility="no"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_alert_panic" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tv_incident_type"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/label_alert_type_panic"
+                            android:textAppearance="@style/TextAppearance.GuardBand.TitleMedium"
+                            android:textColor="@color/alert_panic" />
+
+                        <TextView
+                            android:id="@+id/tv_incident_time"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="@color/text_secondary" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/ll_incident_place"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:importantForAccessibility="no"
+                        android:src="@drawable/ic_map_pin"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/tv_incident_place"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="@color/text_primary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/ll_incident_battery"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/iv_incident_battery_icon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:importantForAccessibility="no" />
+
+                    <TextView
+                        android:id="@+id/tv_incident_battery"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@color/divider" />
+
+                <!-- Tracking: how many updates, and the newest one's time; or
+                     that none has arrived. The path's colour. -->
+                <TextView
+                    android:id="@+id/tv_incident_updates"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.GuardBand.TitleMedium"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    android:id="@+id/tv_incident_latest_update"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="@color/text_secondary" />
+
+                <TextView
+                    android:id="@+id/tv_incident_no_updates"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_incident_no_updates"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="@color/text_secondary"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,10 +1,8 @@
 package com.example.guardband.ui.track
 
 import android.content.res.ColorStateList
-import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageButton
@@ -31,7 +29,6 @@ import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.FolderOverlay
 import org.osmdroid.views.overlay.Marker
@@ -76,6 +73,10 @@ import org.osmdroid.views.overlay.Overlay
  * never consumes the tap, so the face keeps its own tap behaviour. The pins'
  * alerts are the sheet's: this Fragment hands [AlertViewModel]'s list to
  * [TrackViewModel.onAlertsChanged], and opens no listener of its own.
+ *
+ * **Three of the four ways into an Incident view start here** (2026-10-27): a
+ * panic row in the sheet, a panic pin, and "View incident" on the face's
+ * bubble ([BandBubbleWindow]). All go to [HomeViewModel.onOpenIncident].
  *
  * **The round target button re-centres** (2026-10-27): a tap takes the map
  * back to the band's last known position and resumes following (D4),
@@ -137,6 +138,9 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     /** The one label window the pins share. */
     private var pinLabelWindow: AlertPinLabelWindow? = null
 
+    /** The face's bubble: "Your band", and "View incident" after a panic. */
+    private var bandBubble: BandBubbleWindow? = null
+
     /**
      * Sees every single tap before any marker does, never consumes it, and
      * tells the ViewModel the map was tapped, which closes an open label. A
@@ -178,7 +182,8 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         recentAlerts = RecentAlertsPanel(
             view.findViewById(R.id.track_recent_alerts_panel),
             onSeeAll = { homeViewModel.onSeeAllAlertsClicked() },
-            onRetry = { alertViewModel.onRetryClicked() }
+            onRetry = { alertViewModel.onRetryClicked() },
+            onOpenIncident = { homeViewModel.onOpenIncident(it) }
         )
 
         // MapTiler's required credits: shown now, then collapsed to an ⓘ.
@@ -256,6 +261,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         // Detaches every overlay too: the face, the pin folder and each pin.
         mapView.onDetach()
         pinLabelWindow?.onDetach()
+        bandBubble?.onDetach()
         attribution.release()
         markerIcon.release()
         marker = null
@@ -265,6 +271,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         appliedPins = null
         appliedPinLabel = null
         pinLabelWindow = null
+        bandBubble = null
         tapWatcher = null
         super.onDestroyView()
     }
@@ -272,16 +279,11 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     // ── Map ───────────────────────────────────────────────────────────────────
 
     private fun setUpMap() {
-        // Set even without a key, so the MapView's default (OSM's public
-        // server) is never used. A theme change recreates the Fragment, which
-        // applies the selected layer again (see [applyLayer]).
-        if (!MapTilerTileSource.hasApiKey) {
-            mapView.setUseDataConnection(false)
-            Log.w(TAG, "MAPTILER_API_KEY is not set in local.properties; map tiles are disabled.")
-        }
-        mapView.setMultiTouchControls(true)
+        // The tile source is set even without a key, so the MapView's default
+        // (OSM's public server) is never used. A theme change recreates the
+        // Fragment, which applies the selected layer again (see [applyLayer]).
         // The layout supplies its own round controls.
-        mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+        MapTilerMap.prepare(mapView, TAG)
 
         // D5: somewhere sensible to look before the band has ever reported.
         mapView.controller.setZoom(DEFAULT_ZOOM)
@@ -308,6 +310,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         // the top. Taps go to the top overlay first.
         pinFolder = FolderOverlay().also { mapView.overlays.add(0, it) }
         pinLabelWindow = AlertPinLabelWindow(mapView) { viewModel.onMapTapped() }
+        bandBubble = BandBubbleWindow(mapView) { viewModel.onViewIncidentClicked() }
         tapWatcher = object : Overlay() {
             override fun onSingleTapConfirmed(e: MotionEvent, mapView: MapView): Boolean {
                 viewModel.onMapTapped()
@@ -323,42 +326,17 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     }
 
     /**
-     * The base map the state asks for ([TrackUiState.selectedLayer]). Streets
-     * darkens with the theme; the other layers have no dark variant and stay
-     * the same in either mode. Re-applied only when the layer changes (see
-     * [render]) so a no-op re-render does not reload the tiles.
-     *
-     * The dark loading background is set only for Streets Dark: osmdroid's
-     * loading grid is light grey, which would flash on the dark Streets style.
-     * The other layers draw on a light grid, and tinting it would colour the
-     * flash behind their loading tiles too. DESIGN: Jul
-     *
-     * The MapTiler logo follows the tiles, not the theme: the white-lettered
-     * one on a dark style, the dark-lettered one on a light style
-     * ([MapTilerTileSource.drawsDark]), since it has no chip behind it.
+     * The base map the state asks for ([TrackUiState.selectedLayer]), with
+     * its logo and loading grid ([MapTilerMap.applyLayer], shared with the
+     * Incident view). Re-applied only when the layer changes (see [render])
+     * so a no-op re-render does not reload the tiles.
      */
     private var appliedLayer: MapLayer? = null
 
     private fun applyLayer(layer: MapLayer) {
-        val tileSource = MapTilerTileSource.forLayer(layer, isNight())
-        mapView.setTileSource(tileSource)
-        mapView.setMinZoomLevel(tileSource.minimumZoomLevel.toDouble())
-        mapView.setMaxZoomLevel(tileSource.maximumZoomLevel.toDouble())
-        mapLogo.setImageResource(
-            if (tileSource.drawsDark) R.drawable.logo_maptiler_white else R.drawable.logo_maptiler
-        )
-        if (tileSource === MapTilerTileSource.STREETS_DARK) {
-            mapView.overlayManager.tilesOverlay.apply {
-                loadingBackgroundColor = requireContext().getColor(R.color.surface_card)
-                loadingLineColor = requireContext().getColor(R.color.divider)
-            }
-        }
+        MapTilerMap.applyLayer(mapView, mapLogo, layer)
         appliedLayer = layer
     }
-
-    private fun isNight(): Boolean =
-        (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-            Configuration.UI_MODE_NIGHT_YES
 
     /**
      * D7: the map type picker bottom sheet dialog.
@@ -476,6 +454,8 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             bandIcon?.let { icon -> it.icon = icon }
             it.setAnchor(markerIcon.anchorU, markerIcon.anchorV)
             it.title = getString(R.string.label_track_marker_title)
+            // Its own bubble, for "View incident"; the tap still opens it as before.
+            it.setInfoWindow(bandBubble)
             addUnderTapWatcher(it)
             marker = it
         }
@@ -512,6 +492,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         // Pins before the label, which opens on one of them.
         renderPins(state.alertPins)
         renderPinLabel(state.pinLabel)
+        bandBubble?.setIncidentAvailable(state.bandPanic != null)
     }
 
     /**
@@ -670,6 +651,8 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         when (event) {
             is TrackEvent.ShowMessage ->
                 Toast.makeText(requireContext(), event.text, Toast.LENGTH_SHORT).show()
+            // A panic pin, or "View incident" on the band's bubble.
+            is TrackEvent.OpenIncident -> homeViewModel.onOpenIncident(event.panic)
         }
     }
 

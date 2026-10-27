@@ -87,7 +87,16 @@ data class TrackUiState(
      * when none is. Always one of [alertPins]: a pin that drops out closes
      * its label.
      */
-    val pinLabel: AlertPinLabel? = null
+    val pinLabel: AlertPinLabel? = null,
+
+    /**
+     * The panic the band's bubble offers as "View incident", or null when it
+     * offers none. Set while the band's latest **non-tracking** alert (D2's
+     * latest, the one Alert history's card shows) is a panic: it stays through
+     * the tracking updates that follow it, and goes when a check-in or a
+     * low-battery alert arrives. The way to a panic whose pin the face hides.
+     */
+    val bandPanic: Alert? = null
 ) {
     /** Whether there is a position to put a marker on (D3, D4). */
     val hasFix: Boolean get() = location != null

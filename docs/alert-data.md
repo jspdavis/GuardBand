@@ -403,8 +403,11 @@ rows only now.
 `AlertHistoryAdapter`. It has its own `track_recent_alerts_progress`,
 `track_recent_alerts_error_view` (with `track_recent_alerts_retry_button`),
 `track_recent_alerts_empty_view` and `track_recent_alerts_list`, driven by the
-same `isLoading` / `errorMessage` / `emptyMessage` fields. Tapping a row does
-nothing, as on the old tab. It is a draggable bottom sheet
+same `isLoading` / `errorMessage` / `emptyMessage` fields. **A panic row, here
+and in Alert history, opens that panic's Incident view** (2026-10-27,
+[incident-view.md](incident-view.md)); every other row does nothing, as on
+the old tab. The Incident view reads the tracking updates through its own
+query; they stay hidden from every list here. It is a draggable bottom sheet
 (`BottomSheetBehavior`) with a drag handle (`track_recent_alerts_drag_handle`);
 `btn_track_recent_alerts_see_all` opens Alert history.
 

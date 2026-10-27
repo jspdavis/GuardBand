@@ -6,11 +6,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
+import com.example.guardband.data.model.Alert
 import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.repository.AuthRepository
 import com.example.guardband.data.repository.UserProfileRepository
 import com.example.guardband.ui.account.EmailVerification
 import com.example.guardband.ui.consent.ConsentGate
+import com.example.guardband.ui.incident.IncidentEntry
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -207,6 +209,18 @@ class HomeViewModel(
     /** "See all" on Track's recent-alerts panel. */
     fun onSeeAllAlertsClicked() {
         _events.trySend(HomeEvent.ShowAlertHistory)
+    }
+
+    /**
+     * **The one way to open an Incident view.** Every entry point ends here: a
+     * panic row in Track's sheet or in Alert history, a panic pin on the
+     * Track map, and "View incident" on the band's bubble. Anything that is
+     * not a panic ([IncidentEntry.opensIncident]) is ignored, so no caller
+     * can open an incident for a check-in by mistake.
+     */
+    fun onOpenIncident(alert: Alert) {
+        if (!IncidentEntry.opensIncident(alert)) return
+        _events.trySend(HomeEvent.ShowIncident(alert.sequenceId))
     }
 
     companion object {

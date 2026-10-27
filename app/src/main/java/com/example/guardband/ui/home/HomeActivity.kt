@@ -15,6 +15,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.ui.account.AccountActivity
 import com.example.guardband.ui.alert.AlertHistoryFragment
+import com.example.guardband.ui.incident.IncidentFragment
 import com.example.guardband.ui.consent.ConsentRequiredActivity
 import com.example.guardband.ui.contacts.ContactsFragment
 import com.example.guardband.ui.login.LoginActivity
@@ -40,6 +41,14 @@ import kotlinx.coroutines.launch
  * state. A pushed screen hides the bar (it is not a place the tabs lead
  * from); Back (or its back arrow) returns to the last tab and brings the bar
  * back. Back on a tab leaves the app.
+ *
+ * **The Incident view is the one exception** (2026-10-27): one panic per
+ * screen, so a new Fragment is added each time one opens
+ * ([HomeEvent.ShowIncident], [showIncident]) and it is removed, not hidden,
+ * when anything else is shown, so its live read ends with it. Back from it
+ * returns to the screen that opened it, Track or Alert history
+ * ([incidentReturnTag]), not to the last tab. Still no back stack and no
+ * `replace()`.
  *
  * **Nothing is shown until the account gate opens.** [HomeViewModel.gate]
  * reads the account's record first; until it is [HomeGateState.OPEN] the
@@ -79,9 +88,16 @@ class HomeActivity : AppCompatActivity() {
     /** Last tab shown; Back from a pushed screen returns here. */
     private var lastTabTag = HomeDestinations.TRACK
 
+    /**
+     * Where Back from an Incident view returns: the screen that opened it,
+     * Track (sheet, pin or bubble) or Alert history.
+     */
+    private var incidentReturnTag = HomeDestinations.TRACK
+
     /** Enabled only while a pushed screen is showing. */
     private val backToTab = object : OnBackPressedCallback(false) {
-        override fun handleOnBackPressed() = show(lastTabTag)
+        override fun handleOnBackPressed() =
+            show(if (currentTag == HomeDestinations.INCIDENT) incidentReturnTag else lastTabTag)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,6 +123,9 @@ class HomeActivity : AppCompatActivity() {
             )
             lastTabTag = HomeDestinations.restoreLastTab(
                 savedInstanceState.getString(STATE_LAST_TAB_TAG)
+            )
+            incidentReturnTag = HomeDestinations.restoreIncidentReturn(
+                savedInstanceState.getString(STATE_INCIDENT_RETURN_TAG)
             )
         }
 
@@ -172,6 +191,7 @@ class HomeActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
         outState.putString(STATE_CURRENT_TAG, currentTag)
         outState.putString(STATE_LAST_TAB_TAG, lastTabTag)
+        outState.putString(STATE_INCIDENT_RETURN_TAG, incidentReturnTag)
     }
 
     private fun handleEvent(event: HomeEvent) {
@@ -193,6 +213,7 @@ class HomeActivity : AppCompatActivity() {
             }
             HomeEvent.ShowNotifications -> show(HomeDestinations.NOTIFICATIONS)
             HomeEvent.ShowAlertHistory -> show(HomeDestinations.ALERT_HISTORY)
+            is HomeEvent.ShowIncident -> showIncident(event.panicSequenceId)
 
             // The task is cleared so the tabs cannot be reached with Back:
             // there is no account behind them any more, only a sign-in to
@@ -222,14 +243,26 @@ class HomeActivity : AppCompatActivity() {
 
     // ── Fragment hosting ──────────────────────────────────────────────────────
 
-    /** Shows the Fragment for [tag], creating it on first use, and hides the rest. */
+    /**
+     * Shows the Fragment for [tag], creating it on first use, and hides the
+     * rest. An open Incident view is **removed** rather than hidden, so its
+     * live read ends with it; it can only be shown again by [showIncident],
+     * which knows the panic. Asked for one that is gone (a restore that lost
+     * it), this shows the screen it would have returned to.
+     */
     private fun show(tag: String) {
         val fragmentManager = supportFragmentManager
+        val incident = fragmentManager.findFragmentByTag(HomeDestinations.INCIDENT)
+        if (tag == HomeDestinations.INCIDENT && incident == null) {
+            show(incidentReturnTag)
+            return
+        }
         val transaction = fragmentManager.beginTransaction().setReorderingAllowed(true)
 
         fragmentManager.fragments
-            .filter { it.tag != tag && !it.isHidden }
+            .filter { it.tag != tag && !it.isHidden && it !== incident }
             .forEach { transaction.hide(it) }
+        if (incident != null && tag != HomeDestinations.INCIDENT) transaction.remove(incident)
 
         val existing = fragmentManager.findFragmentByTag(tag)
         if (existing == null) {
@@ -239,6 +272,36 @@ class HomeActivity : AppCompatActivity() {
         }
         transaction.commit()
 
+        showChrome(tag)
+    }
+
+    /**
+     * Opens the Incident view of [panicSequenceId]: a new Fragment each time,
+     * the panic in its arguments, over whatever opened it. An incident already
+     * open is removed first, and Back still returns to the screen before it.
+     */
+    private fun showIncident(panicSequenceId: Long) {
+        if (currentTag != HomeDestinations.INCIDENT) {
+            incidentReturnTag = HomeDestinations.restoreIncidentReturn(currentTag)
+        }
+        val fragmentManager = supportFragmentManager
+        val transaction = fragmentManager.beginTransaction().setReorderingAllowed(true)
+        fragmentManager.fragments.forEach { fragment ->
+            if (fragment.tag == HomeDestinations.INCIDENT) transaction.remove(fragment)
+            else if (!fragment.isHidden) transaction.hide(fragment)
+        }
+        transaction.add(
+            R.id.fragment_container_home,
+            IncidentFragment.newInstance(panicSequenceId),
+            HomeDestinations.INCIDENT
+        )
+        transaction.commit()
+
+        showChrome(HomeDestinations.INCIDENT)
+    }
+
+    /** The bar, its selection and Back, for the screen [tag] now showing. */
+    private fun showChrome(tag: String) {
         currentTag = tag
         val isTab = HomeDestinations.isTab(tag)
         if (isTab) {
@@ -262,6 +325,7 @@ class HomeActivity : AppCompatActivity() {
             HomeDestinations.SETTINGS -> SettingsFragment()
             HomeDestinations.NOTIFICATIONS -> NotificationsFragment()
             HomeDestinations.ALERT_HISTORY -> AlertHistoryFragment()
+            // INCIDENT needs its panic: only showIncident creates it.
             else -> throw IllegalArgumentException("Unknown Home destination: $tag")
         }
 
@@ -282,6 +346,7 @@ class HomeActivity : AppCompatActivity() {
     companion object {
         private const val STATE_CURRENT_TAG = "state_current_tag"
         private const val STATE_LAST_TAB_TAG = "state_last_tab_tag"
+        private const val STATE_INCIDENT_RETURN_TAG = "state_incident_return_tag"
         private const val EXTRA_LAUNCH_TARGET = "com.example.guardband.extra.LAUNCH_TARGET"
 
         /**

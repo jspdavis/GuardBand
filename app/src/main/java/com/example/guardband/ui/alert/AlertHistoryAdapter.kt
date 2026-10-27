@@ -8,6 +8,8 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
+import com.example.guardband.data.model.Alert
+import com.example.guardband.ui.incident.IncidentEntry
 
 /**
  * Alert lists: the Alert history screen's, with a heading for each day
@@ -27,9 +29,16 @@ import com.example.guardband.R
  * an `<include>`, which meant constructing one by hand outside any
  * RecyclerView. It is its own block in `fragment_alert_history.xml`, bound
  * by the same [AlertCardViews].
+ *
+ * **Panic rows open their Incident view** (2026-10-27) when [onPanicClick] is
+ * given: the row gets a click, the card's ripple and a content description
+ * that says so. Every other type stays a plain, non-tappable row, and so does
+ * every row when [onPanicClick] is null. Which rows open an incident is
+ * [IncidentEntry.opensIncident], the rule every entry point shares.
  */
 class AlertHistoryAdapter(
-    private val timeStyle: AlertTimeStyle
+    private val timeStyle: AlertTimeStyle,
+    private val onPanicClick: ((Alert) -> Unit)? = null
 ) : ListAdapter<AlertListItem, RecyclerView.ViewHolder>(AlertDiff) {
 
     override fun getItemViewType(position: Int): Int =
@@ -43,7 +52,7 @@ class AlertHistoryAdapter(
         return if (viewType == VIEW_TYPE_DAY) {
             DayViewHolder(inflater.inflate(R.layout.item_alert_day_header, parent, false))
         } else {
-            AlertViewHolder(inflater.inflate(R.layout.item_alert, parent, false))
+            AlertViewHolder(inflater.inflate(R.layout.item_alert, parent, false), onPanicClick)
         }
     }
 
@@ -54,11 +63,40 @@ class AlertHistoryAdapter(
         }
     }
 
-    /** Binds one `item_alert.xml` row. */
-    class AlertViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    /** Binds one `item_alert.xml` row; a panic's is tappable when [onPanicClick] is given. */
+    class AlertViewHolder(
+        itemView: View,
+        private val onPanicClick: ((Alert) -> Unit)?
+    ) : RecyclerView.ViewHolder(itemView) {
         private val views = AlertCardViews.ofItem(itemView)
 
-        fun bind(row: AlertRow, style: AlertTimeStyle) = views.bind(row, style)
+        fun bind(row: AlertRow, style: AlertTimeStyle) {
+            views.bind(row, style)
+
+            // Reset on every bind: a recycled card can stop being a panic.
+            val onClick = onPanicClick?.takeIf { IncidentEntry.opensIncident(row.alert) }
+            if (onClick == null) {
+                itemView.setOnClickListener(null)
+                itemView.isClickable = false
+                itemView.isFocusable = false
+                itemView.contentDescription = null
+            } else {
+                itemView.setOnClickListener { onClick(row.alert) }
+                itemView.isFocusable = true
+                itemView.contentDescription = openIncidentDescription(row, style)
+            }
+        }
+
+        /** What TalkBack reads for a tappable row: what it shows, then what a tap does. */
+        private fun openIncidentDescription(row: AlertRow, style: AlertTimeStyle): String {
+            val context = itemView.context
+            val shown = listOfNotNull(
+                context.getString(AlertFormatting.typeLabel(row.alert.alertType())),
+                AlertFormatting.timeText(context, row, style),
+                row.alert.location?.let { AlertFormatting.locationText(context, it, row.placeName) }
+            )
+            return context.getString(R.string.cd_alert_open_incident, shown.joinToString(", "))
+        }
     }
 
     /** Binds one day's heading. */

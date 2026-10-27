@@ -76,4 +76,35 @@ class HomeDestinationsTest {
             assertEquals(HomeDestinations.TRACK, HomeDestinations.restoreLastTab(tag))
         }
     }
+
+    // ── Incident view (2026-10-27) ────────────────────────────────────────────
+
+    @Test
+    fun `the incident view is a pushed screen, not a tab`() {
+        assertTrue(HomeDestinations.INCIDENT in HomeDestinations.PUSHED)
+        assertFalse(HomeDestinations.isTab(HomeDestinations.INCIDENT))
+    }
+
+    @Test
+    fun `back from an incident returns to the track tab or alert history that opened it`() {
+        assertEquals(HomeDestinations.TRACK, HomeDestinations.restoreIncidentReturn(HomeDestinations.TRACK))
+        assertEquals(
+            HomeDestinations.ALERT_HISTORY,
+            HomeDestinations.restoreIncidentReturn(HomeDestinations.ALERT_HISTORY)
+        )
+    }
+
+    @Test
+    fun `an incident return that is no opener, or nothing, is track`() {
+        for (tag in listOf(
+            HomeDestinations.INCIDENT,
+            HomeDestinations.SETTINGS,
+            HomeDestinations.NOTIFICATIONS,
+            "home_alert",
+            "",
+            null
+        )) {
+            assertEquals(HomeDestinations.TRACK, HomeDestinations.restoreIncidentReturn(tag))
+        }
+    }
 }

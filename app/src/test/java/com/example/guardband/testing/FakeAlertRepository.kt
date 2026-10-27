@@ -87,6 +87,34 @@ class FakeAlertRepository(
         return historyFlow
     }
 
+    private val incidentFlow = replayingFlow<Result<AlertHistory>>()
+
+    /** Every panic an Incident read was opened for, in call order. */
+    val requestedIncidents = mutableListOf<Long>()
+
+    /** How many collectors are subscribed to the incident flow right now. */
+    val activeIncidentCollectors: Int
+        get() = incidentFlow.subscriptionCount.value
+
+    /**
+     * Its own flow, separate from [emitHistory], as the real read is its own
+     * query. Empty until a test emits, so a ViewModel stays loading.
+     */
+    override fun observeIncident(panicSequenceId: Long, limit: Int): Flow<Result<AlertHistory>> {
+        requestedIncidents += panicSequenceId
+        return incidentFlow
+    }
+
+    /** Pushes what an Incident read returns at any live collector. */
+    fun emitIncident(history: AlertHistory) {
+        incidentFlow.tryEmit(Result.success(history))
+    }
+
+    /** Makes the Incident read fail, now and for the next subscriber. */
+    fun failIncident(error: Throwable) {
+        incidentFlow.tryEmit(Result.failure(error))
+    }
+
     /** Pushes a new history at any live collector. */
     fun emitHistory(history: AlertHistory) {
         historyFlow.tryEmit(Result.success(history))

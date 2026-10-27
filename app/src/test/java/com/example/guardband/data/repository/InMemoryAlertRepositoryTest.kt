@@ -68,6 +68,17 @@ class InMemoryAlertRepositoryTest {
     }
 
     @Test
+    fun `an incident read starts at its panic and keeps the first entries from there`() = runTest {
+        val all = repository.observeIncident(panicSequenceId = 2).first().getOrThrow()
+        val first = repository.observeIncident(panicSequenceId = 2, limit = 2).first().getOrThrow()
+
+        // Newest first like the history window, but from the panic on, not the newest on.
+        assertEquals(listOf(4L, 3L, 2L), all.alerts.map { it.sequenceId })
+        assertEquals(listOf(3L, 2L), first.alerts.map { it.sequenceId })
+        assertEquals(2, first.rawCount)
+    }
+
+    @Test
     fun `another device sees no alerts rather than this device's`() = runTest {
         val other = InMemoryAlertRepository("guardband-999")
 

@@ -21,7 +21,7 @@ Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targ
 ./gradlew lint
 ```
 
-On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 777 JVM unit tests (2026-10-27), under `app/src/test`; the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
+On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 828 JVM unit tests (2026-10-27), under `app/src/test`; the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
 
 `app/google-services.json` is required for the `com.google.gms.google-services` plugin. It points at the Firebase project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan, so there are no Cloud Functions).
 
@@ -126,7 +126,7 @@ Conventions (copy `ui/login/*` as the reference):
 
 ### Home host (Fragments)
 
-- **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph. The tags, and how a saved one is read back, are `HomeDestinations`.
+- **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph. The tags, and how a saved one is read back, are `HomeDestinations`. **The one exception is the Incident view** (`HomeDestinations.INCIDENT`, 2026-10-27): `HomeActivity.showIncident` adds a new `IncidentFragment` (panic number in its arguments) each time one opens, and `show()` **removes** it whenever anything else is shown, so its live RTDB listener ends with it. Back from it returns to the screen that opened it (`incidentReturnTag`: Track or Alert history), not to the last tab. Don't make it added-once-and-hidden: its listener would then run until Log Out.
 - **Tabs (three, icon-only):** Track (default), Contacts, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), opened from any tab's top bar, and **Alert history**, opened from "See all" on Track's recent-alerts panel. While one is showing, the bottom bar is hidden, and Back (or the screen's back arrow) returns to the last tab and brings the bar back. Back on a tab exits. There is no Alert tab (removed 2026-10-19): Track shows the newest alerts, and the full history is the pushed screen. A restored tag the host no longer has (the old `home_alert`) falls back to Track.
 - **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings, Notifications and Alert history are inside the host, so they're covered too. Since 2026-10-14 the host also keeps the tabs covered until the account's record has been read (see "Consent gate").
 - **Fragments follow the Activity conventions,** with these differences:
@@ -831,12 +831,29 @@ the photo link. Details: `docs/osmdroid.md` §5.4.
 (pure) picks the newest 10 panics, check-ins and low-battery alerts with
 usable coordinates, one per 10 m and none under the face, from the list
 `TrackFragment` hands over from `AlertViewModel` (`TrackViewModel.onAlertsChanged`):
-**no listener of their own**. A tap opens a label ("Panic, 5 min ago");
-`TrackViewModel.onAlertPinTapped` is the hook for what a pin opens next. **The
+**no listener of their own**. **Panics choose their spots first**, so a newer
+check-in or low-battery alert never takes a panic's pin; the dedupe runs
+before the cap. A panic pin opens its Incident view; other pins open a label
+("Check-in, 5 min ago"). **The face's bubble is `BandBubbleWindow`**, not
+osmdroid's stock one, because it offers "View incident" while
+`TrackUiState.bandPanic` is set (the latest non-tracking alert is a panic):
+the way to a panic whose pin the face hides. Don't swap it back. **The
 overlay order is load-bearing:** the pins' `FolderOverlay` at index 0, the face
 above it, and a pass-through tap watcher last, which closes the label on every
 tap and never consumes one. Add any new overlay under the watcher
 (`addUnderTapWatcher`). Details: `docs/osmdroid.md` §5.5.
+
+**Every way into an Incident view goes through `HomeViewModel.onOpenIncident(alert)`
+(2026-10-27)**: a panic row in Track's sheet or Alert history, a panic pin, the
+face's "View incident". It ignores non-panics (`IncidentEntry.opensIncident`);
+add a new entry point by calling it, never by sending `HomeEvent.ShowIncident`
+yourself. The view reads **its own** query, `AlertRepository.observeIncident`
+(`history` from the panic on, `startAt` + `limitToFirst(400)`), because the
+alert screens' 100-entry window loses a panic within minutes of a walking
+band; it is the only reader of tracking updates, which stay out of every list
+and every pin. `IncidentGrouper` ties them to the panic by `sequenceId` (after
+it, before the next panic) and 30 minutes: SCHEMA.md has no incident id.
+Details: `docs/incident-view.md`.
 
 **The `MapView` is detached by hand** in `onDestroyView` (plus `onResume` /
 `onPause`). osmdroid holds a tile cache, a worker and overlay references, so

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Incident view's end marker: the band's latest tracked position, at
+     the end of the path. A dot in the path's colour (alert_tracking, lighter
+     in dark mode) in a white ring, centred on the point, so it reads apart
+     from the panic's pin at the start. DESIGN: Jul -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="20dp"
+    android:viewportWidth="20"
+    android:viewportHeight="20">
+    <path
+        android:fillColor="@color/alert_tracking"
+        android:pathData="M10,2A8,8 0,1 1,10 18A8,8 0,1 1,10 2Z"
+        android:strokeWidth="3"
+        android:strokeColor="@color/white" />
+</vector>

@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
+import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.launch
 
@@ -55,10 +56,15 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
     private lateinit var latestViews: AlertCardViews
     private lateinit var tvEmpty: TextView
 
-    private val historyAdapter = AlertHistoryAdapter(AlertTimeStyle.CLOCK)
+    /** A panic row opens its Incident view, through the host's one opener. */
+    private val historyAdapter = AlertHistoryAdapter(AlertTimeStyle.CLOCK) {
+        homeViewModel.onOpenIncident(it)
+    }
 
     // Host-scoped: the one instance the Track tab shares. See AlertViewModel.
     private val viewModel: AlertViewModel by activityViewModels { AlertViewModel.Factory }
+
+    private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
