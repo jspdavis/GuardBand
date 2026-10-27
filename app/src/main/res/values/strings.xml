@@ -251,7 +251,7 @@
 
     <!-- Settings -->
     <string name="label_settings_title">Settings</string>
-    <string name="label_settings_account">Account information</string>
+    <string name="label_settings_account">Account Information</string>
     <string name="label_settings_change_password">Change password</string>
     <string name="label_settings_alert_notifications">Notifications</string>
     <string name="label_settings_alert_notifications_help">Shows your band\'s alerts on this phone, even when GuardBand is closed. Keeps a small notification while it\'s on. After the phone restarts, open GuardBand once to start watching again.</string>
@@ -261,7 +261,7 @@
     <string name="label_alert_notifications_switch">Show alerts on this phone</string>
     <string name="label_settings_privacy_notice">Privacy Notice</string>
     <string name="label_settings_display">Display</string>
-    <string name="label_settings_device_info">Device information</string>
+    <string name="label_settings_device_info">Device Information</string>
     <string name="label_settings_about">About</string>
     <string name="btn_logout">Log Out</string>
 
