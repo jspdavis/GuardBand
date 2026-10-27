@@ -19,3 +19,6 @@ hosting/.firebase/
 
 # Visual Studio workspace state; per machine
 .vs/
+
+# The band firmware's Wi-Fi details; secrets.example.h is the template
+firmware/guardband_band/secrets.h

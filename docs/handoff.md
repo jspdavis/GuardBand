@@ -4,7 +4,7 @@
 band viewer at `21fcf18`, placeholder only) plus its Changelog/handoff
 commit, pushed · `main` fast-forwarded to the same commit
 (`git push origin mvvm-main:main`) · 917 JVM unit tests, 0 failures ·
-`./gradlew lint` passes with no errors · nothing in flight.** Run `git status -sb` and `git log origin/mvvm-main -1` before
+`./gradlew lint` passes with no errors · plus the Wi-Fi band prototype in `firmware/` · nothing in flight.** Run `git status -sb` and `git log origin/mvvm-main -1` before
 trusting any hash here.
 
 This file is the entry point for anyone picking the project up cold,
@@ -24,9 +24,13 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 - **The band** (ESP32 + Air780E 4G LTE modem + NEO-6M GPS) is meant to detect
   a panic press, take a GPS fix, text the wearer's emergency contacts by SMS
   itself, and write each alert straight to Firebase Realtime Database over
-  REST. **The firmware does not exist yet.** A debug-only "Mock Sender"
-  screen on a second phone plays the band: it writes the same payloads,
-  using that phone's real GPS.
+  REST. **The real firmware does not exist yet.** A **Wi-Fi prototype**
+  does (2026-10-28, [`../firmware/README.md`](../firmware/README.md)): an
+  ESP32 with three LEDs and one button that writes the same payloads over
+  Wi-Fi, with the Mock Sender's gestures and timings, its position fed from
+  the laptop's Windows location over Serial (no GPS module, modem or SMS
+  yet). A debug-only "Mock Sender" screen on a second phone also plays the
+  band, using that phone's real GPS.
 - **The app** is for the people watching: a guardian sees the band's
   position on a map, its alerts as they arrive, the wearer's check-ins, and
   manages the emergency contacts the band will text.
@@ -224,7 +228,7 @@ says what it depends on and what it would touch.
 | **Remove the stray `Guardband-MVVM` gitlink** | Jehan, then anyone | A nested clone in Jehan's tree was committed as a gitlink to `9448b3c`, which exists only on her machine. Check nothing is stranded in that inner copy ([`guardband-mvvm-folder.md`](guardband-mvvm-folder.md)), then remove the entry. |
 | **Each teammate's fingerprints** | each developer | Debug **SHA-1** in the Firebase Console (else Google sign-in fails on their build); debug **SHA-256** in `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else reset and verification links open the browser). Four SHA-256s are live (James's and three teammates'). Release keystore's before any signed build. |
 | **Band model and turntable frames** | Jul (design and modelling) | The Device tab's band viewer plays a placeholder. Jul models the band in Blender from the concept image (charcoal gray composite strap, neon green perforated liner, brushed steel double-ring clasp, three round buttons with green LEDs, OLED strip) and renders 36 to 72 transparent WebP frames into the viewer's frame folder; no code change is needed. Decide first what the three round elements on the concept are: the concept labels them an HR/SpO2 sensor array, but the requirements and SCHEMA.md contain no heart-rate or blood-oxygen data, and showing one would imply collecting health data (Privacy Notice change and a CONSENT_VERSION bump). A real-time .glb viewer is a possible later replacement behind the same BandViewer interface and would need a dependency check against compileSdk 34 and a release manifest re-check. Folder and frame spec: [`band-viewer.md`](band-viewer.md) §2 and §3. Not started. |
-| **Band firmware** | firmware teammate | Write exactly `SCHEMA.md`'s payload: `history/{sequenceId}` first, then `latest`; a double-press within 2 s is a `CHECKIN` (FR-10); a **1.5 s hold is a `PANIC`**, fired while still held; during a panic a **5 s hold cancels** it (stops tracking, sends a `CHECKIN`), and a check-in alone does not; tracking every 60 s for 30 min after an alert (FR-09); low battery at 20% (FR-11). The Mock Sender copies these gestures (`BandButtonDecoder`): change both together. |
+| **Band firmware** | firmware teammate | Write exactly `SCHEMA.md`'s payload: `history/{sequenceId}` first, then `latest`; a double-press within 2 s is a `CHECKIN` (FR-10); a **1.5 s hold is a `PANIC`**, fired while still held; during a panic a **5 s hold cancels** it (stops tracking, sends a `CHECKIN`), and a check-in alone does not; tracking every 60 s for 30 min after an alert (FR-09); low battery at 20% (FR-11). The Mock Sender copies these gestures (`BandButtonDecoder`): change both together. **Started (2026-10-28):** the Wi-Fi prototype in [`../firmware/`](../firmware/README.md) does all of this (tracking at the Mock Sender's 5 s demo pace), with the laptop standing in for the GPS and battery. Still to do: the NEO-6M, the Air780E (4G and SMS, FR-05), a real battery reading, and authenticated writes once pairing exists. |
 
 ### Phone checks
 
