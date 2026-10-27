@@ -38,16 +38,18 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-28",
-            title = "A place for the band on the Device tab; tidier Device tab; filter chips in GuardBand colours",
+            title = "The first band prototype sends real alerts; a place for the band on the Device tab; tidier Device tab; filter chips in GuardBand colours",
             changes = listOf(
+                "The first band prototype works: an ESP32 board with one button and three lights sends real panics, check-ins, low-battery alerts and location updates to the app over Wi-Fi, with the same button gestures as the Mock Sender. Red lights for a panic and blinks fast if a send fails, yellow blinks while it is sending its position after a panic, and green lights for a check-in. Until the band has its own GPS, the laptop it is plugged into supplies its position.",
                 "The Device tab has room for a picture of the band at the top, which you will be able to drag to turn it round. For now it shows a simple drawing of the band that stays still; the turning version arrives once the band's 3D renders are ready.",
                 "The Device tab's text is a size smaller, so more of it fits on screen.",
                 "Your picture on the Device tab stays perfectly round, including after switching between light and dark mode.",
                 "The relationship filters on the Contacts tab are GuardBand green when selected (white in dark mode) instead of a default purple.",
                 "The Device information row is gone from Settings; open the Device tab from the bar at the bottom.",
+                "The Notifications header no longer shows the GuardBand logo.",
                 "917 unit tests pass."
             ),
-            commit = "9500c09"
+            commit = "9660319"
         ),
         ChangelogEntry(
             date = "2026-10-27",
