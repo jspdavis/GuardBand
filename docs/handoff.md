@@ -1,8 +1,9 @@
 # Handoff
 
-**As of 2026-10-28 · `mvvm-main` at `21fcf18` (the band viewer, placeholder
-only) plus its handoff commit, pushed · `main` fast-forwarded to the same
-commit (`git push origin mvvm-main:main`) · 918 JVM unit tests, 0 failures ·
+**As of 2026-10-28 · `mvvm-main` at `9500c09` (Device tab polish, after the
+band viewer at `21fcf18`, placeholder only) plus its Changelog/handoff
+commit, pushed · `main` fast-forwarded to the same commit
+(`git push origin mvvm-main:main`) · 917 JVM unit tests, 0 failures ·
 `./gradlew lint` passes with no errors · nothing in flight.** Run `git status -sb` and `git log origin/mvvm-main -1` before
 trusting any hash here.
 
@@ -49,7 +50,7 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 | **Notifications** | The bell opens an inbox of the band's alerts by day. Opt-in **alert notifications** (Settings): a foreground service keeps the listener open and posts each new alert as a system notification, panic silent for the wearer's discretion, nothing identifying on the lock screen. |
 | **Contacts tab** | Emergency contacts: add/edit (tap a card)/delete (trash or hold), search, relationship filter chips, an Emergency star that sorts and badges. At least one contact always; phone numbers stored as E.164. |
 | **Device tab** (was Profile) | A compact header (photo or initials, name, email); the band: "Reporting" or "Last seen 5 min ago", battery (orange at 20%), last alert with time and place name, last known position as a place name ("On the move" while tracking); the connected account (sign-in method, email verification, "Emergency contacts: N, M starred" opening Contacts); "Pair a band" (Coming soon); how the band works. Always shows the one hard-coded band. [`device-tab.md`](device-tab.md). At the top, a **band viewer**: the band on a turntable to drag round, built to play rendered frames, **showing a still placeholder** until the frames exist (§3, item 14). [`band-viewer.md`](band-viewer.md). |
-| **Settings** | Account information (details, verification status, Change password, Delete account), Alert notifications, Display (Light/Dark/System), Device information (opens the Device tab), About (version, Privacy Notice), Changelog, Log Out. |
+| **Settings** | Account information (details, verification status, Change password, Delete account), Alert notifications, Display (Light/Dark/System), About (version, Privacy Notice), Changelog, Log Out. |
 | **Mock sender** (debug builds only) | Plays the band with its one button: hold 1.5 s = panic (then tracking every 5 s for 30 min), double-press = check-in, hold 5 s during a panic = cancel (sends a check-in). A battery slider sets the level reported and sends a low-battery alert at 20%. |
 
 ### Requirements coverage
@@ -259,6 +260,7 @@ list; the step-by-step checklists live in each doc:
 |---|---|
 | **Close `devices/`** | Needs pairing (§3, item 1). Close it before any public demo. |
 | **Rename `applicationId` off `com.example.*`** | Only if publishing (§3, item 12). |
+| **Device tab avatar is slow to come back** | Reported 2026-10-28. The square-corner bug is fixed (the avatar is a plain `ImageView` clipped to a circle outline in `ui/avatar/AvatarImage`, no longer a `ShapeableImageView`), and the avatar is now shaped properly. But after the Fragment or Activity is destroyed and rebuilt (checked by switching display modes) the Google photo takes a while to reappear, showing the initials meanwhile. **Not investigated.** Leads, unverified: `AvatarImage.show` puts the icon back first and Coil only checks its memory cache once the view has been measured, and the cache key includes the size and the circle-crop transformation; a key that misses means a disk read and a decode. Check whether the photo comes from Coil's memory cache on a recreate before changing anything. The contact rows' avatars (`item_contact.xml`) are still `ShapeableImageView`s and could show square corners after a theme switch the same way. |
 | **No re-consent flow** | Accounts keep the version they agreed to. Building one means deciding what happens to an account that declines. `ConsentGate.needsConsent` is where a version rule would go. |
 | **Server-side enforcement of verification** | Only if ever wanted. A rule requiring `auth.token.email_verified` on `users/$uid` would fail every sign-up, because the profile is written before the email can be opened. |
 | **Sweep finished deletions' markers** | Optional. Each completed Delete account leaves `users/{uid}: { deletion_pending: true }` under a uid no account owns. A human can delete them from the Console. |
@@ -280,7 +282,7 @@ The full, user-facing record is `Changelog.entries`
 (`app/src/main/java/com/example/guardband/ui/changelog/Changelog.kt`), shown
 in the app under Settings → Changelog. Headlines:
 
-- **2026-10-28:** a band viewer at the top of the Device tab (a turntable of rendered frames behind a `BandViewer` interface; a still placeholder until Jul's frames exist).
+- **2026-10-28:** a band viewer at the top of the Device tab (a turntable of rendered frames behind a `BandViewer` interface; a still placeholder until Jul's frames exist); the Device tab's avatar kept round through a theme switch, its text a size smaller; Contacts' filter chips in brand green (white in dark mode); Settings' Device information row removed.
 - **2026-10-27:** the Device tab replaces Profile (band status, battery, last alert, connected account, pairing placeholder; Settings' Device information opens it), the Mock Sender plays the band (one button: hold = panic + tracking, double-press = check-in, 5 s hold = cancel; battery slider), the Incident view (a panic and its tracking path, from four places), alert pins on the Track map (panics keep their spot), map layers (five, remembered), re-centre button replaces the
   Google Maps hand-off (notice 1.3), check-in card, alert cards restyled,
   contacts tap to edit / hold to delete and one contact dialog, Change

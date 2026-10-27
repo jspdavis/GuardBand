@@ -37,6 +37,19 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-10-28",
+            title = "A place for the band on the Device tab; tidier Device tab; filter chips in GuardBand colours",
+            changes = listOf(
+                "The Device tab has room for a picture of the band at the top, which you will be able to drag to turn it round. For now it shows a simple drawing of the band that stays still; the turning version arrives once the band's 3D renders are ready.",
+                "The Device tab's text is a size smaller, so more of it fits on screen.",
+                "Your picture on the Device tab stays perfectly round, including after switching between light and dark mode.",
+                "The relationship filters on the Contacts tab are GuardBand green when selected (white in dark mode) instead of a default purple.",
+                "The Device information row is gone from Settings; open the Device tab from the bar at the bottom.",
+                "917 unit tests pass."
+            ),
+            commit = "9500c09"
+        ),
+        ChangelogEntry(
             date = "2026-10-27",
             title = "The Device tab; the Incident view; the Mock Sender plays the band; map layers; the re-centre button; alert pins on the map; a check-in card; Change password moves into Account information; contacts tap to edit, hold to delete",
             changes = listOf(
