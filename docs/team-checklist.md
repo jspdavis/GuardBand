@@ -91,8 +91,12 @@ Use the debug mock sender to produce alerts.
   - The bell's inbox: real alerts by day, place names, Retry when offline.
   - Track: the target button re-centres on the band and zooms back in from
     far out; it is greyed out before the first fix. The layers button
-    switches Auto, Street and Satellite, Auto follows dark mode, and the
-    map reopens on the last one picked after the app is closed.
+    switches Auto, Street, Satellite, Outdoor and Topo, Auto follows dark
+    mode, and the map reopens on the last one picked after the app is closed.
+  - Track's check-in card: the symbol and its colour for loading, none, a
+    check-in, and offline; TalkBack reads "Last check-in" and the time as one.
+  - Contacts: tap a card to edit it (no pencil any more); the add and edit
+    dialogs, in Contacts and in sign-up, Cancel and Save.
   - Account information: a password account sees Change password; a Google
     account sees "Managed by Google".
   - Sign out of a Google account, sign in with an email one: initials, never
@@ -204,6 +208,10 @@ Use the debug mock sender to produce alerts.
   Where: [`privacy-and-consent.md`](privacy-and-consent.md) §2
 - [x] 🟩 **Layers button on Track** · *26–27 Oct, jspdavis*
   Auto, Street, Satellite, Outdoor and Topo. Tiles checked on our key and plan.
+- [x] 🟩 **Check-in card, alert cards, contact dialog** · *27 Oct, Jehan*
+  The check-in pill is a card with a status symbol; alert rows and the
+  recent-alerts sheet restyled; tap a contact to edit; one dialog layout with
+  its own Cancel and Save.
 - [x] 🟩 **Remember the map layer** · *27 Oct*
   `MapLayerPrefs` saves the picked layer, so the map reopens on it.
   (`MapTilerTileSource` provides Outdoor and Topo, offered in the picker.)

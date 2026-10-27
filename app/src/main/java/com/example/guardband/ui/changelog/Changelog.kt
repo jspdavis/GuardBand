@@ -38,9 +38,12 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-27",
-            title = "Map layers; the re-centre button; Change password moves into Account information; contacts hold-to-delete",
+            title = "Map layers; the re-centre button; a check-in card; Change password moves into Account information; contacts tap to edit, hold to delete",
             changes = listOf(
-                "Track's layers button opens a picker with three maps: Auto (streets, dark in dark mode), Street (always light) and Satellite. The map reopens on the one last picked.",
+                "Track's layers button opens a picker with five maps: Auto (streets, dark in dark mode), Street (always light), Satellite, Outdoor (terrain and trails) and Topo (contour lines and hill shading). The map reopens on the one last picked.",
+                "Track's check-in pill became a card: a \"Last check-in\" heading over \"5 min ago\", beside a coloured symbol (a green tick once a check-in has arrived, a warning when check-ins cannot be read).",
+                "Alert rows, Alert history's latest card and the recent-alerts sheet were restyled: rounder cards, a slightly larger type badge and a bolder sheet header.",
+                "Tapping a contact anywhere on its card opens the editor; the separate pencil button is gone. The add and edit dialogs, in Contacts and in sign-up, share one layout with its own title and Cancel and Save buttons.",
                 "The round button on Track is now a target. A tap brings the map back to the band's last known position, zooming back in if you had zoomed far out. It no longer opens Google Maps.",
                 "Privacy Notice version 1.3 drops the Google Maps row, since the app no longer hands anything to Google Maps. New consents are recorded against 1.3.",
                 "Change password moved from Settings into Account information. A Google account sees \"Managed by Google\" there instead, since its password is Google's.",
@@ -50,7 +53,7 @@ object Changelog {
                 "The MapTiler logo sits straight on the map, with no white box behind it: white lettering on the dark map and Satellite, dark lettering on the light map.",
                 "Housekeeping: lint passes again (a mock sender string), and Visual Studio's workspace files are no longer in the repo. 741 unit tests pass."
             ),
-            commit = "f171467"
+            commit = "027b72d"
         ),
         ChangelogEntry(
             date = "2026-10-26",
