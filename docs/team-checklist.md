@@ -65,9 +65,11 @@ the app together. Pairing comes first: SMS depends on it.
 
 - [ ] 🔧 **Remove the stray `Guardband-MVVM` entry** · *Jehan, then app team*
   A nested copy of the repo in Jehan's folder got committed as a link to a
-  commit (`9448b3c`) that only exists on his machine. Anything done inside
+  commit (`9448b3c`) that only exists on her machine. Anything done inside
   that inner copy never reached GitHub, so check nothing is stranded there
   first, then remove the entry.
+  Where: [`guardband-mvvm-folder.md`](guardband-mvvm-folder.md) (the
+  10-minute check, by hand)
 
 - [ ] 📱 **Confirm the database listener stops** · *app team*
   Never checked by hand: database traffic stops after Log Out. Backgrounding

@@ -1,261 +1,188 @@
 # Handoff
 
-**As of 2026-10-20 · `mvvm-main`, pushed, with
-`feature/alerts-into-track`, `feature/track-bottom-sheet`,
-`feature/maptiler-tiles`, `feature/rules-and-logo`,
-`feature/credit-overlap-fix`, `feature/track-profile-marker`,
-`feature/alert-symbols-track-buttons`, `feature/alert-notifications` and
-`feature/alert-place-names` merged (last code commit `c28c3bb`). `main` was
-last merged at `feature/alert-symbols-track-buttons` and is behind ·
-691 unit tests, 0 failures · run `git status -sb` to see
-whether anything is unpushed. Pick up from §4, starting with the MapTiler
-key: a developer without one sees "Map unavailable" on Track. Then
-the `devices/` rules decision, which is waiting on Jul ([`database-rules.md`](database-rules.md)). Every branch written on
-2026-10-14 is merged (§3), the avatar and profile fixes landed as `0b8db04`,
-and the Alert tab is gone: its content is now Track's recent-alerts panel and
-the Alert history screen (§3). The
-developer checks every change on their own phone during each session
-(CLAUDE.md, "Working agreements"), so the device checklists below are a
-reference, not a queue to chase.**
+**As of 2026-10-27 · `mvvm-main` at `6514699`, pushed · `main` at `85cbb63`,
+behind (fast-forward it with `git push origin mvvm-main:main`) · 741 JVM unit
+tests, 0 failures · `./gradlew lint` passes with no errors · nothing in
+flight.** Run `git status -sb` and `git log origin/mvvm-main -1` before
+trusting any hash here.
 
-**Where the 2026-10-19 session stopped.** Everything is merged and pushed;
-nothing is in flight. The open threads, all in §4: the device checks of the
-face marker, the alert symbols and the Track buttons; two small design
-questions (match Contacts' and Profile's top buttons to Track's, and a
-battery icon for low battery); Jul's MapTiler key; and Jul's `devices/` rules
-decision, with `RTDBS-RULES.md` still ahead of the Console. **Then alert
-notifications landed** (`feature/alert-notifications`): the release manifest
-gained three permissions, **approved by the owner on 2026-10-27**, and
-none of its device checks has been run (§4). **On 2026-10-20** the inbox got
-a sample row (testing only, §4 small cleanups), alerts got place names
-(`feature/alert-place-names`, a new notice row), and Contacts' and
-Profile's top buttons were matched to Track's. All pushed; `main` not
-updated.
-
-The core build is in place for now, and its backend is live: Hosting, the
-Security Rules and the password-reset App Link were all deployed and checked on
-2026-10-11. Most of the UI has still not had a human pass on a device. This
-file is the **backlog**: what is next, what is waiting on a person, and the
-traps worth knowing before you start. What is already built is documented in
-the files under §2, not here.
+This file is the entry point for anyone picking the project up cold,
+including a chat that is deciding **what to build next**. §1 says what the
+product is and what it can already do; §2 lists the constraints any new idea
+has to live within; §3 sets out the candidate directions; §4 onwards is the
+backlog, the reading list and the traps. What is already built is documented
+in detail in the files under §6, not here.
 
 ---
 
-## 1. Where things stand
+## 1. The product in one page
 
-| Area | State |
+**GuardBand** is a wrist-worn personal safety band plus an Android companion
+app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
+
+- **The band** (ESP32 + Air780E 4G LTE modem + NEO-6M GPS) is meant to detect
+  a panic press, take a GPS fix, text the wearer's emergency contacts by SMS
+  itself, and write each alert straight to Firebase Realtime Database over
+  REST. **The firmware does not exist yet.** A debug-only "Mock Sender"
+  screen on a second phone plays the band: it writes the same payloads,
+  using that phone's real GPS.
+- **The app** is for the people watching: a guardian sees the band's
+  position on a map, its alerts as they arrive, the wearer's check-ins, and
+  manages the emergency contacts the band will text.
+- **Backend:** Firebase only, project `guardband-aae65`, on the free **Spark
+  plan**: Auth (email/password + Google), Realtime Database, Hosting (two
+  static pages and the App Link file). **No Cloud Functions, no server, no
+  FCM.**
+- **Team:** James (owner; approves release permissions), Jul (Figma/design,
+  MapTiler key, the database-rules decision), jspdavis, Jehan Ishi and
+  Roxette (app features and UI), a firmware teammate. An AI coding agent
+  does much of the app work under [`../CLAUDE.md`](../CLAUDE.md).
+
+### What the app does today
+
+| Area | What exists |
 |---|---|
-| **Firebase Hosting** | Live at `guardband-aae65.web.app`: a root page, `/privacy`, `/delete-account`, `/.well-known/assetlinks.json`. Deploy from `hosting/` (§6). |
-| **Privacy Notice + delete page** | **Published as final** on 2026-10-24 (notice 1.2, no DRAFT banner): the team chose to publish without the adviser review. Every claim was re-checked against the code that day, including the new Delete account path and the deletion marker. [`privacy-and-consent.md`](privacy-and-consent.md) §2. |
-| **Password reset** | The App Link claims Firebase's own handler, `guardband-aae65.firebaseapp.com/__/auth/action`, because the Console action URL cannot be changed. Verified on a device; manual pass passed. |
-| **Security Rules** | Deployed 2026-10-11. **Since 2026-10-19 [`../RTDBS-RULES.md`](../RTDBS-RULES.md) is ahead of the Console**: an append-only `history` (Option A+), pending Jul's decision, not deployed; `users/` unchanged. Inventory, options, Playground tests, rollout and rollback text: [`database-rules.md`](database-rules.md). |
-| **Legacy nodes** | `password_resets`, `phone_index`, `email_index`: rules removed, data exported and deleted. |
-| **Firebase Analytics** | Removed. The notice says the app has no analytics; adding any back means changing the notice in the same commit. |
-| **Manual pass, 2026-10-11** | Consent, forgot password, Delete account: **passed**. Alert (now Track's recent-alerts panel and Alert history), Track, mock sender: **with a teammate** (§4). Delete account has **moved and changed since** (Account information, the deletion marker), so it needs passing again (§4). |
-| **Account safety, 2026-10-14** | Delete account lives in **Settings → Account information**, in a danger zone at the bottom. A half-finished deletion leaves `users/{uid}: { deletion_pending: true }` and resumes on the next sign-in; **no rules change** (checked in the emulator). Email/password accounts are sent a **verification email**; the link is handled in the app through the existing App Link. **Unverified password accounts are locked out** of everything behind Home until they verify (a client-side gate; Google accounts exempt). |
-| **Teammate UI pass, 2026-10-13** | `f34487b` (Jehan's redesign) did not compile; fixed and built on in `b05d769`, with real GPS in the mock sender from `c045738`. Everything that changed, and what is still open, is in [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md). **None of it has had a phone pass yet** (§4). |
-| **Map tiles, 2026-10-19** | **MapTiler** raster tiles (Streets, 256 px) replace OpenStreetMap's public server, merged from `feature/maptiler-tiles` (`1ca8177`). The key lives in each machine's `local.properties` as `MAPTILER_API_KEY`; without it the build still succeeds and the map says "Map unavailable" and requests nothing. Credits shown bottom right; the Free plan's **MapTiler logo** bottom left since `feature/rules-and-logo` (never collapses). [`osmdroid.md`](osmdroid.md) §4. |
-| **Release manifest, 2026-10-19** | Checked at the merge stage (`:app:processReleaseManifest`), last at `68055fb`, again on `feature/maptiler-tiles`, `feature/rules-and-logo` and `feature/credit-overlap-fix` (unchanged each time), and on `feature/alert-notifications`, which **added three**: `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_SPECIAL_USE`, plus the `AlertWatchService` entry. **Approved by the owner (James) on 2026-10-27**, after a fresh check found the same seven permissions. Still **no location permission** and no mock sender; the App Link entry is byte-identical to before email verification. The others: `INTERNET`, `ACCESS_NETWORK_STATE`, `READ_GSERVICES` (reCAPTCHA, via Firebase Auth), and the app's own `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. The notice's "no location permission" line is accurate for release; debug builds do ask. Re-run after any dependency change (§6). |
+| **Accounts** | Email/password sign-up wizard (Account → Name → Contacts → Consent), Google sign-in, login, in-app password reset via the email link (App Link), email verification with a gate that locks unverified password accounts out, Change password, Delete account (re-auth, then a resumable two-step delete), Log Out. |
+| **Consent and privacy** | A recorded consent (`accepted`, timestamp, version `1.3`) for every account; a gate that sends any account without one to the consent screen. Hosted Privacy Notice (1.3) and delete-account page, published as final. No analytics. |
+| **Track tab** (default) | A MapTiler map (five layers: Auto/Street/Satellite/Outdoor/Topo, dark map in dark mode, choice remembered) with the band's last known position as a face marker (Google photo or initials); a re-centre button; a "Last check-in: 5 min ago" status card; a draggable bottom sheet with the newest three alerts and "See all". |
+| **Alerts** | Alert history (pushed screen): latest alert card plus the list by day, colour-coded by type (panic, check-in, low battery, unknown), with place names instead of coordinates (Android Geocoder), battery level and "5 min ago" times. Tracking updates are hidden from lists. |
+| **Notifications** | The bell opens an inbox of the band's alerts by day. Opt-in **alert notifications** (Settings): a foreground service keeps the listener open and posts each new alert as a system notification, panic silent for the wearer's discretion, nothing identifying on the lock screen. |
+| **Contacts tab** | Emergency contacts: add/edit (tap a card)/delete (trash or hold), search, relationship filter chips, an Emergency star that sorts and badges. At least one contact always; phone numbers stored as E.164. |
+| **Profile tab** | Avatar, welcome line and email. Thin. |
+| **Settings** | Account information (details, verification status, Change password, Delete account), Alert notifications, Display (Light/Dark/System), Device information (**"Coming soon"**), About (version, Privacy Notice), Changelog, Log Out. |
+| **Mock sender** (debug builds only) | Sends panic, check-in (double-press), low battery and tracking updates; a walk mode moves the marker around a loop. |
 
-**Branches.** `mvvm-main` is ahead of `main`. Branch new work off `mvvm-main`
-and merge back with `--no-ff`, as `feature/trust-gaps` was. CLAUDE.md's branch
-table now includes `main`.
+### Requirements coverage
 
----
+| FR | Requirement | State |
+|---|---|---|
+| FR-01 | Auth (email/password, Google) | **Done** in the app. |
+| FR-02 | Real-time location and incident status | Location **done** (live marker). "Incident status" is only the latest alert's type and age: there is no notion of an incident being active, acknowledged or resolved. |
+| FR-03 | Panic detected within 1 s | **Firmware.** Not started. |
+| FR-04 | GPS fix within 5–10 s | **Firmware.** Not started. |
+| FR-05 | Automated SMS with a Google Maps link | **Firmware** sends it. The app stores the contacts, but nothing gets them onto the band yet (needs pairing). |
+| FR-06 | Contact management | **Done.** |
+| FR-07 | Real-time sync to Firebase | Payload contract (`SCHEMA.md` v1.0) and rules are done; the mock sender writes it; the firmware has to. |
+| FR-08 | Incident history log | **Done** (Alert history, inbox). |
+| FR-09 | Tracking every 60 s for 30 min after an alert | The app moves the marker on each `TRACKING_UPDATE`; **no trail or path** is drawn, and tracking updates are hidden from every list. The firmware has to send them. |
+| FR-10 | Discreet double-press check-in, no SMS | **Done** in the app (status card, history). Firmware has to send it. |
+| FR-11 | Low-battery alert at 20% | **Done** in the app (alert type, orange battery icon, notification). Firmware has to send it. |
 
-## 2. Read these first
-
-| For | Read |
-|---|---|
-| The agent's working rules, conventions, gotchas | [`../CLAUDE.md`](../CLAUDE.md) |
-| **Running a demo with no hardware** | [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md): both launchers, end to end |
-| The map library and its configuration | [`osmdroid.md`](osmdroid.md): **read before touching the map** |
-| How alerts are read from RTDB | [`alert-data.md`](alert-data.md) |
-| The sign-up wizard | [`signup-flow.md`](signup-flow.md) |
-| The post-login host and its tabs | [`home-host-and-bottom-nav.md`](home-host-and-bottom-nav.md) |
-| The in-app password reset | [`forgot-password.md`](forgot-password.md) |
-| Email verification: the link, Account information's status and Resend | [`email-verification.md`](email-verification.md) |
-| Account information and Delete account | [`home-host-and-bottom-nav.md`](home-host-and-bottom-nav.md) and [`../CLAUDE.md`](../CLAUDE.md), "Account deletion" |
-| The 2026-10-13 teammate UI pass: what was fixed, what to check | [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md) |
-| Privacy Notice, consent versions, hosted pages | [`privacy-and-consent.md`](privacy-and-consent.md) |
-| The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md): **authoritative** |
-| Security Rules | [`../RTDBS-RULES.md`](../RTDBS-RULES.md): the source of truth; [`database-rules.md`](database-rules.md): every path, the `devices/` options, the Playground tests, rollout |
+**In short:** the app side of nearly every requirement is built. What is
+missing is the band, and the link between a band and an account (pairing).
 
 ---
 
-## 3. Done, and in flight
+## 2. Constraints any new idea has to live within
 
-### Done
+These are hard rules, from CLAUDE.md and from decisions already taken.
 
-- **Real GPS in the mock sender.** Shipped by jspdavis in `c045738`
-  (2026-10-13). The mock sender reports **Phone A's own fix** through
-  `LocationManager`, asks for location at runtime and falls back to the random
-  Cebu City point if refused. The permission is declared only in
-  `app/src/debug/AndroidManifest.xml`, so release builds have none, and
-  CLAUDE.md's rule now reads "no phone-location permission in the **main** app"
-  with that file as the one named exception. The Privacy Notice stays true.
-  Still open: testing both permission answers on Phone A (§4). Details:
-  [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md).
-- **Quick cleanups (2026-10-14).** Button strings back to normal case with
-  `textAllCaps` doing the capitals (`cd_back` stays plain for TalkBack); the
-  two hard-coded greens are colour tokens; `reset_success` and `welcome` are
-  WebP at screen size; the unused `label_dashboard_*` / `label_your_contacts`
-  strings are gone; `main` is in CLAUDE.md's branch table. All tests passed.
-- **Check-in status (FR-10).** The Check-in pill on Track is now a read-only
-  status of the latest check-in, and the debug mock sender can send one. The
-  main app never writes a check-in. See CLAUDE.md, "Check-in status", and
-  `SCHEMA.md`. **The band firmware still has to send the same payload** (§4).
-- **Launcher icon.** The 2026-10-13 icons came from a PowerShell script that was
-  not committed and is gone. To change the logo, use Android Studio's Image
-  Asset tool with `logo_mark.png`, logo on white, no monochrome layer.
-- **Small cleanups 2** (`457ec8b`). `BandStatus` reads `AlertFormatting`'s
-  ISO-8601 patterns; the unreachable `SignUpNameViewModel.onGoogleSignInClicked`
-  is gone; `item_contact.xml` has a stand-in pencil (`ic_edit`, `DESIGN: Jul`).
-- **Google photo on the Track avatar** (`b75156b`). Coil 2.7.0, pinned; the pure
-  `AvatarPhoto` picks the photo (Google sign-in only, `https` only), the default
-  icon is placeholder and fallback. Both now live in `ui/avatar/` and the
-  Profile tab shows the same photo through the shared `AvatarImage` binder,
-  which also clips to the circle and drops the square background behind a
-  photo (it showed as a square for a moment on a new Google account). The avatar opens the Profile tab (`0c5ef4d`),
-  which also added the **Changelog** under Settings.
-- **Account safety** (`68055fb`):
-  - **Delete account moved** into a new Account information screen
-    (`ui/account/AccountActivity`, Settings → Account information), in a
-    red-outlined danger zone at the bottom. Every safeguard came with it. The
-    inert Account information card on the Profile tab was removed.
-  - **Deletion-pending marker.** Step 2 replaces `users/{uid}` with
-    `{ "deletion_pending": true }` in one write. `ProfileProvisioning` never
-    re-provisions over it; `HomeViewModel`'s gate sends the account back to
-    Account information to finish, with Log Out offered beside Retry. No
-    Security Rules change: verified in the local emulator against the stripped
-    `RTDBS-RULES.md`. The marker outlives a finished deletion (a uid and one
-    boolean; no session is left to clear it).
-  - **Email verification.** Sent once after an email/password sign-up, best
-    effort. The link reaches `VerifyEmailActivity` through the existing App
-    Link (`EmailActionLink.routeOf`); reset links behave exactly as before,
-    other modes say "isn't supported". Account information shows Verified /
-    Not verified with Resend on a 60 s cooldown. [`email-verification.md`](email-verification.md).
-- **Verification gate** (`feature/verification-gate`). An unverified
-  email/password account meets **Verify your email** instead of the tabs, until
-  it verifies; Google accounts are exempt. Client-side only: a rule requiring
-  `email_verified` on `users/$uid` would break sign-up.
-  [`email-verification.md`](email-verification.md) §8.
-- **Consent gate** (`feature/consent-gate`). An account with no
-  `users/{uid}/consent` (made in the Console, or a Google account whose record
-  went missing) meets the consent step before the tabs: sign-up's own
-  statement and notice link, and Agree writes the same record at the same
-  `CONSENT_VERSION`. Decline signs out and changes nothing. The Home host now
-  reads the record before showing the tabs, and a failed or slow read (10 s)
-  is a Retry cover rather than a way in. No rules change (emulator-checked).
-  [`privacy-and-consent.md`](privacy-and-consent.md) §8.
-- **Alerts folded into Track** (`feature/alerts-into-track`, 2026-10-19). The
-  bottom bar is **three icons: Track, Contacts, Profile**; the Alert tab is
-  gone. Track shows the newest three alerts in a draggable bottom sheet over
-  the map, and its **See all** opens **Alert history**, the old
-  tab's screen as a pushed screen in the Home host (bar hidden, Back to
-  Track, behind the same gates as the tabs). Both read one host-scoped
-  `AlertViewModel` (`activityViewModels`), so there is still one history
-  listener. The bell is unchanged: it still opens Notifications. A restored
-  tag naming the removed tab falls back to Track (`HomeDestinations`). No
-  change to `AlertParser`, the repository, the payload, the rules or the
-  gates. [`home-host-and-bottom-nav.md`](home-host-and-bottom-nav.md),
-  [`alert-data.md`](alert-data.md) §7 and §8.
-- **MapTiler map tiles** (`feature/maptiler-tiles`, `1ca8177`, 2026-10-19).
-  The Track map draws MapTiler's Streets raster tiles; nothing requests
-  `tile.openstreetmap.org`. The key is `MAPTILER_API_KEY` in each machine's
-  `local.properties` (without it: "Map unavailable", no requests). The credits
-  show bottom right and collapse to an ⓘ after 5 s or the first pan, per the
-  OSMF guidelines. Still open: Jul's key, a phone check with the key, and
-  asking MapTiler about the collapse (§4).
-  [`osmdroid.md`](osmdroid.md) §4.
-- **MapTiler logo** (`feature/rules-and-logo`, 2026-10-19). Bottom left of
-  the Track map, in the credits' row, 20 dp tall, linked to maptiler.com,
-  and it **never collapses**. The row grew from 18 to 24 dp and the ⓘ from
-  40 to 48 dp; the check-in pill and the buttons above it sit 14 dp higher.
-- **Credit and logo on narrow screens** (`feature/credit-overlap-fix`,
-  2026-10-19). When the credit does not fit beside the logo, it moves onto
-  its own line above it (wrapping at the largest font sizes); the pill rises
-  only for a wrapped credit. Checked on a phone at five width and font-scale
-  combinations ([`osmdroid.md`](osmdroid.md) §4.6).
-- **The band's marker is a face** (`feature/track-profile-marker`,
-  2026-10-19). The Track marker is a round picture in a white ring with a
-  pointer whose tip is the band's position: the signed-in user's Google photo,
-  or their initials on brand green (email accounts, offline, a failed load).
-  It reuses `AvatarPhoto` and Coil; `TrackViewModel.markerFace()` is the one
-  place that decides whose face it is, for when roles exist. Seen on a phone
-  with a Google account; the rest of its device checks are in §4.
-  [`osmdroid.md`](osmdroid.md) §5.4.
-- **Alert symbols and Track buttons** (`feature/alert-symbols-track-buttons`,
-  2026-10-19). Alert rows and the latest-alert card show a symbol in the
-  type's colour instead of a dot: a red octagon with "!" for a panic, an
-  orange warning triangle for low battery, a green tick for a check-in, a
-  grey "?" for an unknown type (`AlertFormatting.typeIcon`;
-  [`alert-data.md`](alert-data.md) D1). Track's four round buttons are all
-  36 dp, and the bell and gear are 16 dp from the sides, so the bell lines up
-  with Layers and Navigate. Contacts and Profile were left at 40 dp / 24 dp,
-  and matched to Track on 2026-10-20 (36 dp, 16 dp from the sides).
-- **Alert notifications** (`feature/alert-notifications`, 2026-10-19, merged,
-  not pushed). Settings → Alert notifications (off by default) starts a
-  `specialUse` foreground service that keeps the history listener open and
-  posts new alerts as system notifications, including in the background and
-  with the phone locked. No server, no FCM, nothing paid. Panic is silent
-  (one buzz, no heads-up) for the wearer's discretion; nothing on a
-  notification names a place or a person; the lock screen's public version
-  says only "New alert from your band". A tap opens Alert history through
-  the Home gate. Three new release permissions; the notice has a paragraph
-  (since 1.2). [`notifications.md`](notifications.md).
-- **Place names on alerts** (`feature/alert-place-names`, 2026-10-20). Every
-  alert row, Track's panel and the latest card say "Street, Barangay, City"
-  instead of latitude and longitude, from Android's `Geocoder` (no key, no
-  dependency, no permission; Google's service on Play-services phones). One
-  lookup per point rounded to about 11 m, names in memory only, coordinates
-  until a name arrives or when none exists. A new flow of the band's
-  positions to Google's geocoder, so the notice has a row (since 1.2).
-  [`alert-data.md`](alert-data.md) §7.
-- **Alert rows redesigned** (2026-10-20). One binder, `AlertCardViews`, for
-  the rows and the latest card: the type's symbol on a pale circle of its
-  colour, a pale red card with a red outline for a panic, the place as the
-  main text with a pin, and the battery with one of five new battery
-  symbols (orange at FR-11's 20%, a bolt while charging). The panel and
-  the latest card say "5 min ago"; Alert history has day headings (Today,
-  Yesterday, a date) over clock times. Times age on a 30 s ticker.
-  [`alert-data.md`](alert-data.md) §8.
-- **Settings tidy-up** (2026-10-20). Account information and Changelog got
-  the white background the other screens already had (Account's details card
-  lost its shadow, as Settings' did). On Settings a chevron now means
-  "another screen of the app". Alert notifications became a chevron row
-  opening its own screen, `ui/notifications/AlertNotificationsActivity`,
-  which holds the switch, the blocked text and the battery row; the watch's
-  ongoing notification opens that screen over Settings. The Privacy Notice
-  moved into a new **About** screen (`ui/about/AboutActivity`: logo,
-  version, and the notice as a row without a chevron, `SettingsRow.Action`).
-  **Device information** (for the band, once pairing exists) is a
-  placeholder row that says "Coming soon".
-- **Dark mode** (2026-10-20). The theme is DayNight, chosen in Settings →
-  **Display** (`ui/display/`): Use phone setting (default), Light or Dark,
-  saved per phone and re-applied at every start by `GuardBandApplication`.
-  `values-night/colors.xml` holds a placeholder dark palette (`DESIGN: Jul`);
-  layouts use `surface_bg` / `surface_elevated` instead of `@color/white`.
-  The Track map switches to MapTiler's Streets Dark, cached apart; the map
-  credits and logo stay light chips. CLAUDE.md "Dark mode",
-  [`osmdroid.md`](osmdroid.md) §4.8.
+- **No server code.** Spark plan: no Cloud Functions, no Admin SDK, no FCM
+  sending. Anything that needs a trusted server (typed reset codes, push to
+  phones, custom tokens) is out unless the plan changes, which costs money.
+- **One hard-coded band.** Every install watches `devices/guardband-001`
+  (`DeviceConstants.DEFAULT_DEVICE_ID`), and `devices/` is open to anyone,
+  read and write, until pairing exists. The Privacy Notice says so.
+- **The app never writes to `devices/`.** Only the band (or the mock sender)
+  does. No check-in, acknowledgement or command goes from the main app to the
+  band's tree today; adding one is a design decision with rules work.
+- **No phone-location permission in the release app, ever.** The band's GPS
+  is the location. (Only the debug mock sender asks.)
+- **Release permissions are fixed at seven**, approved by James on
+  2026-10-27. Any new one (`SEND_SMS`, boot receiver, wake lock, full-screen
+  intents, battery-optimisation exemption) needs his approval first.
+- **The Privacy Notice states only what the code does.** Collecting a new kind
+  of data, sending data to a new third party, or adding analytics means
+  changing the hosted notice and bumping `CONSENT_VERSION` in the same commit.
+- **Contacts are only for the band to text.** Storing non-emergency contacts
+  needs a stated purpose and a notice change first.
+- **Nothing logs PII**: no uid, email, token, phone number, contact name,
+  coordinate or place name.
+- **Architecture is fixed:** MVVM, one host Activity with Fragment tabs, no
+  Navigation Component, `findViewById`, Firebase only inside repositories.
+  compileSdk 34; some libraries are pinned because newer ones need 35.
+- **Design belongs to Jul** (Figma). The agent builds layout skeletons and
+  plumbing and marks visual choices `DESIGN: Jul`.
+- **Maps:** MapTiler's Free plan, non-commercial, pauses at its monthly cap.
+  No bulk downloading or offline regions.
 
-### In flight
+---
 
-Nothing: every branch written on 2026-10-14, `feature/alerts-into-track`,
-`feature/track-bottom-sheet`, `feature/maptiler-tiles`,
-`feature/rules-and-logo` and `feature/credit-overlap-fix` are merged and
-pushed. Before trusting that, run `git branch --no-merged mvvm-main`; only
-`main` and the MVP checkpoint branches should be listed.
+## 3. What could come next
 
-`feature/maptiler-tiles` was merged on 2026-10-19 before any phone check with
-a key. Part of that check happened the same day (§4); the rest is still open.
-The logo followed in `feature/rules-and-logo`, and the narrow-screen fix for
-the credit in `feature/credit-overlap-fix`.
+Ordered roughly by how much they unlock. None of this is decided; each item
+says what it depends on and what it would touch.
 
-**Rules proposal not deployed.** `RTDBS-RULES.md` is ahead of the Console
-(Option A+, pending Jul). Do not describe it as the live ruleset until someone
-has published it ([`database-rules.md`](database-rules.md) §7).
+### Unlocks the most
+
+1. **Device pairing.** Link a band to an account instead of the hard-coded
+   id. Unlocks closing the open `devices/` rules, multiple bands, the Device
+   information screen, and getting contacts onto the band for SMS (FR-05).
+   - Needs: a device id per account (`users/{uid}/devices` or similar), a way
+     to add a band (QR code or typed id), and **a way for the band to
+     authenticate** without a server. One Spark-compatible option is a
+     Firebase Auth account per band, signed in through the Auth REST API, so
+     rules can say `auth.uid == band's uid`. Custom tokens would need a server.
+   - Touches: `RTDBS-RULES.md` (Jul's pending `devices/` decision,
+     [`database-rules.md`](database-rules.md) §4), the mock sender (send
+     `?auth=`), `RepositoryProvider`, the notice.
+2. **Roles: wearer and guardian.** Today the signed-in user is implicitly the
+   wearer (their face is on the marker) and also the watcher. A guardian
+   watching someone else's band needs sharing or invites on top of pairing.
+   `TrackViewModel.markerFace()` is already the one place that decides whose
+   face is shown.
+3. **Getting contacts to the band (FR-05).** After pairing: a band-readable
+   copy of the emergency numbers, plus an agreed SMS wording. A location link
+   in a text is sensitive, so the wording is a privacy decision. SMS stays on
+   the band; the phone sending SMS would need `SEND_SMS` and James's approval.
+
+### App-only, buildable now
+
+4. **An incident view.** Alert rows are not tappable today. Tapping a panic
+   could open the map at that point, with the FR-09 tracking updates that
+   followed it drawn as a path (the data is already in `history`, just
+   hidden). That would give FR-02's "incident status" and FR-09 something to
+   show.
+5. **Incident status: acknowledge or resolve.** A guardian marks a panic "I'm
+   on it" or "resolved", so other guardians (and the history) know. Needs a
+   place to write that is **not** `devices/` (e.g. under the user, or a new
+   node with its own rules), and a decision on who can see it.
+6. **Device information screen.** The Settings row says "Coming soon".
+   `TrackViewModel` already computes "reporting / last seen" (180 s
+   threshold) and battery; the panel showing them was removed from Track on
+   2026-10-14. They could live here, with the device id, before pairing.
+7. **A fuller Profile tab.** It shows only an avatar, a greeting and an email.
+   Candidates: edit display name; wearer details useful to a responder.
+   Anything medical or identifying is new personal data, so the notice
+   changes with it.
+8. **A demo mode / demo script.** The project is presented without hardware.
+   A scripted mock-sender run (panic → tracking walk → check-in → low
+   battery) would make demos reliable.
+
+### Quality and hardening
+
+9. **The phone-check backlog** (§4): most screens since 2026-10-13 have unit
+   tests but no recorded device pass, including alert notifications (47
+   cases), dark mode and the consent gate.
+10. **UI and instrumented tests.** `ExampleInstrumentedTest` is still the
+    template; nothing tests a screen, the `MapView` or the Firebase calls.
+11. **Offline behaviour.** RTDB disk persistence is off, so a cold start
+    offline shows nothing until the network returns.
+12. **Localisation and accessibility.** All copy is English; ViewModel
+    messages are Kotlin `MSG_*` constants, not resources, which makes
+    translation harder. No accessibility pass has been done; the new check-in
+    card may be read twice by TalkBack.
+
+### Bigger ideas that need a decision first
+
+13. **Safe zones / geofences**: alert when the band leaves an area. Needs the
+    band's positions processed somewhere: on the phone through the
+    foreground service (no server), and a notice change.
+14. **Push notifications without the foreground service**: needs FCM
+    sending, so Blaze or a server.
+15. **A Play Store release**: rename `com.example.guardband` (cannot change
+    after a first release; means re-registering the Firebase app and every
+    fingerprint), a release keystore, and a paid MapTiler plan.
 
 ---
 
@@ -265,87 +192,138 @@ has published it ([`database-rules.md`](database-rules.md) §7).
 
 | | Who | Notes |
 |---|---|---|
-| **Phone pass of everything since 2026-10-13** | anyone with the phone | Section A of [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md): tab layouts, back arrows, gear/bell on every tab, the shorter icon-only bar, the Track avatar, the consent step, Welcome (once only), the reset success screen and the launcher icon. **Plus the 2026-10-14 changes:** every button label (capitals), the Welcome and reset-success images, the Check-in pill (starts empty, updates from the mock sender, not tappable), the contact pencil icon, the Google photo on the avatar (Google account: round photo; email account: default icon; airplane mode: default icon; switching accounts: no stale photo), the avatar opening Profile (the Track avatar was removed on 2026-10-19, so check the photo on Profile only), the Changelog. **And account safety** ([`email-verification.md`](email-verification.md) §7 for the email half): Delete account gone from Settings' own list and at the bottom of Account information, with the confirmation dialog; a new email/password sign-up gets a verification email and reads "Not verified"; the link opens the app (or the browser fallback) and the status turns "Verified" on return; Resend works once, then counts down; a Google account reads "Verified" with no Resend; the reset link still works; and a pending deletion resumes on the next sign-in instead of making a blank profile. **That last one is hard to produce with airplane mode** (the window between the two calls is milliseconds): set `users/{uid}/deletion_pending: true` on a throwaway account in the Console, then sign in. **And the consent gate:** [`privacy-and-consent.md`](privacy-and-consent.md) §6, steps 9 to 16. |
-| **MapTiler key** | Jul | **Blocks the map on every machine without one.** One development machine had a key by 2026-10-19 (tiles rendered on a phone); whether it is the dedicated, restricted key below is not recorded. Create a dedicated GuardBand key in the MapTiler dashboard, restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), and give it to each developer privately for their own `local.properties` (`MAPTILER_API_KEY=…`, never committed; then Sync and rebuild). The logo is done (§3). [`osmdroid.md`](osmdroid.md) §4.4. |
-| **Phone check of the MapTiler map** | whoever has the key | **Partly done 2026-10-19**, with a key, on a Realme RMX5111, during the credit-overlap size checks: MapTiler tiles render; the credit shows, collapses to the ⓘ after 5 s, and the ⓘ brings it back; the logo shows bottom left and stays when the credit collapses; the marker shows. **Still open:** tapping the two credit links and the logo (each should open its page); pan, zoom and follow behaving as before; logcat showing tile requests to `api.maptiler.com` only; and the zoom limit (22) against the style's `tiles.json`. [`osmdroid.md`](osmdroid.md) §8. Without a key it was checked on a phone on 2026-10-19: "Map unavailable", no crash. |
-| **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. Their guide says only that the text "must appear on every map"; the ⓘ collapse follows the OSMF guidelines, not a MapTiler statement. If they refuse, keep the credit always expanded ([`osmdroid.md`](osmdroid.md) §4.6 says how). |
-| **Decide `devices/` and publish the rules** | Jul | Pick A, A+ (recommended), B or C ([`database-rules.md`](database-rules.md) §4); B breaks the mock sender and C breaks every receiver until pairing. Then follow §7 there: save the live rules, strip, run the §5 Playground tests, publish, check the app and the mock sender. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
-| **Mock sender GPS on Phone A** | anyone with two phones | Allow location: alerts carry the phone's real position. Refuse: they fall back to the Cebu City point. Pre-grant location on any phone used for a demo, or the prompt appears mid-demo. |
-| **Device check: alert symbols and Track buttons** | whoever has the phone | From `feature/alert-symbols-track-buttons`. The symbols on Track's recent-alerts sheet, on Alert history's rows and on its latest-alert card (send a panic, a low battery and a check-in from the mock sender); the four 36 dp buttons on Track, with the bell over Layers and Navigate. |
-| ~~**Approve the release manifest for alert notifications**~~ **Done 2026-10-27** | owner (James) | `feature/alert-notifications` added `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_SPECIAL_USE` to the release build (§1's manifest row has the full list). Approve before any build is handed out; [`notifications.md`](notifications.md) §5 says why each one is there and what was left out. |
-| **Device checks: alert notifications** | whoever has the phone | **None run yet.** The twelve steps in [`notifications.md`](notifications.md) §7: the prompt only from the switch, each type's wording and sound (the panic silent), background and locked delivery, Doze forced with `adb shell dumpsys deviceidle force-idle`, the lock screen with "hide sensitive content", the tap through the gate, swipe-from-recents and reboot on the Realme, Log Out stopping it, and logcat clean. Record the Realme's battery setting (§6 there) alongside step 4's result. [`notifications-test-cases.md`](notifications-test-cases.md) has the full 47 cases. |
-| **Device check: place names on alerts** | whoever has the phone | From `feature/alert-place-names`. Send a panic from the mock sender: its row's coordinates turn into a place name in a moment, the same on the panel, Alert history and the latest card. Airplane mode on a fresh launch: coordinates, no crash; back online, names fill in within a minute of the next alert. Is the name right for the spot, and is it too long for a row? ([`alert-data.md`](alert-data.md) §12). |
-| **Device check: dark mode** | whoever has the phone | Settings → Display → Dark: every screen turns dark at once, including the status bar icons (light) and the bottom bar; Back still lands on Settings. Walk every screen, sign-up and login included, for white patches, unreadable text, and badges or buttons that vanish. The Track map turns dark with no light grid flashing while tiles load, the credits and MapTiler logo stay readable, the pill and round buttons are grey. Use phone setting follows the phone's own switch while the app is open. Kill the app with Dark chosen on a light phone: it reopens dark, with no white flash on Splash. |
-| **Design: the dark palette** | Jul | `values-night/colors.xml` is a placeholder on Material's dark guidance. Retune it there; also whether to use MapTiler's white logo on the dark map. |
-| **Device check: alert row design** | whoever has the phone | The badges, the panic card's red, the pin and battery symbols, "Just now" turning into "1 min ago" with no new alert, Alert history's day headings, and no red outline leaking onto other rows while scrolling ([`alert-data.md`](alert-data.md) §12). |
-| **One small design question** | Jul | Low battery uses the generic warning triangle; a battery-with-"!" icon would say what the warning is about. `DESIGN: Jul`. The rows now have battery symbols of their own (`ic_battery_*`, 2026-10-20); `ic_battery_critical` could stand in for the triangle, though the triangle's shape is what keeps the types apart without colour. Every new row size, shade and symbol is a placeholder marked `DESIGN: Jul`. (The other question, matching Contacts' and Profile's top buttons to Track's, was answered yes and done on 2026-10-20: all three tabs are 36 dp at 16 dp from the sides and 24 dp from the top. Check on the phone that the gear and bell no longer jump when switching tabs.) |
-| **Device checks of the face marker** | whoever has the phone | From `feature/track-profile-marker`. **Seen:** a Google account's photo on the marker after a cold launch, above the collapsed sheet. **Still to check:** an email/password account shows initials; airplane mode on a fresh launch shows initials (or the cached photo) and does not crash; the pointer's tip on the same spot as the old pin's at the same coordinate and zoom (use the mock sender's fixed point, follow on); pan, zoom and follow unchanged with no stutter. [`osmdroid.md`](osmdroid.md) §5.4. |
-| **Two app-wide theme changes** | Jehan + Jul | Confirm they are intended: outlined buttons went from 8 dp to 28 dp corners, and every sign-up screen's top padding from 96 dp to 24 dp (`themes.xml`, `f34487b`). |
-| **Test Track (map and recent-alerts panel), Alert history and the mock sender** | teammate | Never had a full human pass. Checklists: [`mock-sender-and-receiver.md` §6](mock-sender-and-receiver.md), [`alert-data.md` §12](alert-data.md) and the 2026-10-19 block in [`home-host-and-bottom-nav.md` §12](home-host-and-bottom-nav.md). Pan-and-follow matters most, now with the panel over the bottom of the map: a drag that starts on the panel must not stop the map following. (The staleness badge is no longer on screen: the Track status panel was removed on 2026-10-14.) Before 2026-10-11 every history read was denied by the rules, so this has effectively never worked end to end until now. |
-| **Band firmware sends check-ins** | band/firmware teammate | The app now reads the check-in payload defined in `SCHEMA.md` (FR-10: double-press within 2 seconds, no emergency alert). The band has to write exactly that. Until then only the mock sender produces check-ins. |
-| **Each teammate's fingerprints** | each developer | Debug **SHA-1** in Firebase Console → Project settings (else Google sign-in fails on their build). Debug **SHA-256** added to `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else the reset and verification links open the browser; Firebase's own page still completes them). `assetlinks.json` holds **four** developers' since 2026-10-25 (James's and three teammates'); each of those three still runs `adb shell pm verify-app-links --re-verify com.example.guardband` on their own phone. Anyone else adds theirs. Release keystore's SHA-1 and SHA-256 before any signed build. |
+| **Decide `devices/` and publish the rules** | Jul | Pick A, A+ (recommended), B or C ([`database-rules.md`](database-rules.md) §4). B breaks the mock sender; C breaks every receiver until pairing. `RTDBS-RULES.md` is ahead of the Console until then: do not describe it as the live ruleset. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
+| **MapTiler key** | Jul | A dedicated key restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), shared privately, in each `local.properties` as `MAPTILER_API_KEY`. Without it Track says "Map unavailable". [`osmdroid.md`](osmdroid.md) §4.4. |
+| **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. The ⓘ collapse follows OSMF's guidelines, not a MapTiler statement. [`osmdroid.md`](osmdroid.md) §4.6. |
+| **Design pass on the placeholders** | Jul | The dark palette (`values-night/colors.xml`), the low-battery icon (triangle or battery), everything marked `DESIGN: Jul` (84 places), and two older theme changes to confirm with Jehan: 28 dp outlined-button corners, 24 dp sign-up top padding. |
+| **Remove the stray `Guardband-MVVM` gitlink** | Jehan, then anyone | A nested clone in Jehan's tree was committed as a gitlink to `9448b3c`, which exists only on her machine. Check nothing is stranded in that inner copy ([`guardband-mvvm-folder.md`](guardband-mvvm-folder.md)), then remove the entry. |
+| **Each teammate's fingerprints** | each developer | Debug **SHA-1** in the Firebase Console (else Google sign-in fails on their build); debug **SHA-256** in `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else reset and verification links open the browser). Four SHA-256s are live (James's and three teammates'). Release keystore's before any signed build. |
+| **Band firmware** | firmware teammate | Write exactly `SCHEMA.md`'s payload: `history/{sequenceId}` first, then `latest`; a double-press within 2 s is a `CHECKIN` (FR-10); tracking every 60 s for 30 min after an alert (FR-09); low battery at 20% (FR-11). |
+
+### Phone checks
+
+Built and unit-tested, never recorded on a phone. The developer tests on
+their own phone each session, so this is a reference list, not a queue.
+[`team-checklist.md`](team-checklist.md) "Phone checks" has the current
+list; the step-by-step checklists live in each doc:
+
+- 22–27 Oct changes: Contacts (search, chips, star, tap to edit, hold to
+  delete, the new dialog), the inbox, the re-centre button, the five map
+  layers and their persistence, the check-in card, Change password in Account
+  information, no stale Google photo after switching accounts.
+- Dark mode, every screen.
+- Alert notifications: [`notifications-test-cases.md`](notifications-test-cases.md) (47 cases).
+- Alert rows and place names: [`alert-data.md`](alert-data.md) §12.
+- Map, face marker, credits and logo links: [`osmdroid.md`](osmdroid.md) §5.4 and §8.
+- Settings, About, Display, Alert notifications screens.
+- The older pass since 13 Oct: [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md)
+  section A, the consent gate ([`privacy-and-consent.md`](privacy-and-consent.md) §6
+  steps 9–16), a pending deletion resuming (set
+  `users/{uid}/deletion_pending: true` on a throwaway account in the Console),
+  the mock sender's GPS on a second phone (allow and refuse).
+- Never done: confirm RTDB traffic stops after Log Out. Backgrounding alone
+  does not stop the alerts listener, by design ([`alert-data.md`](alert-data.md) §9).
 
 ### Engineering, roughly in order
 
 | | Notes |
 |---|---|
-| **Close the world-readable, world-writable `devices/`** | Needs device pairing first: a device id per account, an auth token for the band, and `AlertSender` taught to send `?auth=`. Close it before any public demo; the Privacy Notice says plainly that it is open. |
-| ~~**A real tile source**~~ | **Resolved by `feature/maptiler-tiles`** (2026-10-19): MapTiler raster tiles, no request to OSM's public server. What is left: MapTiler's **Free plan is for non-commercial use** and **pauses at its monthly limit** (tiles stop until the next period rather than being billed), the key ships inside the APK with only the user-agent restriction and the cap protecting it, and a release would want a paid plan. See `osmdroid.md` §4 and §7. |
-| **Navigate button** | **Replaced 2026-10-27.** The round button on Track is now a target that re-centres the map on the band's last known position (zooming back in if zoomed far out); it no longer opens Google Maps, and the notice's Google Maps row came out (notice 1.3). Nothing left to do. |
-| **Rename `applicationId` off `com.example.*`** | Only if publishing: Play rejects the prefix and it cannot change after a first release. Means re-registering the Firebase app, every SHA-1, and the `assetlinks.json` package name. |
-| **No re-consent flow** | Users who accepted `1.0` keep `1.0`. Building one means deciding what happens to an account that declines. |
-| **Server-side enforcement of verification, if ever wanted** | The app is gated on verification for password accounts, **client-side only** (`email-verification.md` §8). A rule on `users/$uid` requiring `auth.token.email_verified` would fail every sign-up, because the profile is written before the email can be opened. If a rule ever does read the claim, force a token refresh after verifying. |
-| **Sweep finished deletions' markers** | Optional. Each completed Delete account leaves `users/{uid}: { deletion_pending: true }` under a uid no account owns. Harmless, but a human can delete them from the Console now and then. |
-| **The layers button is a stub** | D7. The Check-in pill is a read-only status of the latest check-in (CLAUDE.md, "Check-in status"); check-in is FR-10's band double-press and the app must never send one. |
-| **A Terms page, only if the course needs one** | The Privacy Notice already covers what users agree to. Adding Terms means a hosted `/terms` page, a `termsPath` + `HostedPages.terms`, and a `CONSENT_VERSION` bump because what is agreed to changes. |
+| **Close `devices/`** | Needs pairing (§3, item 1). Close it before any public demo. |
+| **Rename `applicationId` off `com.example.*`** | Only if publishing (§3, item 15). |
+| **No re-consent flow** | Accounts keep the version they agreed to. Building one means deciding what happens to an account that declines. `ConsentGate.needsConsent` is where a version rule would go. |
+| **Server-side enforcement of verification** | Only if ever wanted. A rule requiring `auth.token.email_verified` on `users/$uid` would fail every sign-up, because the profile is written before the email can be opened. |
+| **Sweep finished deletions' markers** | Optional. Each completed Delete account leaves `users/{uid}: { deletion_pending: true }` under a uid no account owns. A human can delete them from the Console. |
+| **A Terms page** | Only if the course needs one: a hosted `/terms`, `HostedPages.terms`, and a `CONSENT_VERSION` bump. |
 
 ### Small cleanups
 
-- `item_contact.xml`'s pencil (`ic_edit`) is a stand-in; the real icon comes
-  from Figma.
-- **Optional**: give the mock sender its own launcher icon; today it inherits
-  the app's, so the two differ only by label.
-- One manual check never done: confirm RTDB traffic stops when the listener
-  should go (`awaitClose` removing it). Note the alerts listener lives as
-  long as the Home host, in `viewModelScope`, so **backgrounding alone does
-  not stop it**; Log Out does ([`alert-data.md`](alert-data.md) §9). A code
-  read does not replace this.
-- **Remove the sample inbox row** (2026-10-20, testing only): the
-  Notifications inbox shows a static "Welcome to GuardBand" card
-  (`cv_notifications_welcome` in `fragment_notifications.xml`, two
-  `label_notifications_welcome_*` strings) and hides the empty text. Delete
-  the card and the strings and make `tv_notifications_empty` visible again
-  when the inbox gets real data.
-- Refresh this file after each merge: commit hash, test count, and the lines
-  the "In flight" table says to remove.
+- `ic_edit` (the contact pencil) is now hidden in `item_contact.xml` since tap
+  to edit; delete the button and its binding if it stays unused.
+- The mock sender has no launcher icon of its own (it differs by label only).
+- Refresh this file after each merge: the header's hashes and test count,
+  §1's tables and §4.
 
 ---
 
-## 5. Needs a human, not an agent
+## 5. Done, by date
+
+The full, user-facing record is `Changelog.entries`
+(`app/src/main/java/com/example/guardband/ui/changelog/Changelog.kt`), shown
+in the app under Settings → Changelog. Headlines:
+
+- **2026-10-27:** map layers (five, remembered), re-centre button replaces the
+  Google Maps hand-off (notice 1.3), check-in card, alert cards restyled,
+  contacts tap to edit / hold to delete and one contact dialog, Change
+  password moved into Account information, Coil cache cleared on sign-out,
+  MapTiler logo without a chip, release manifest approved, lint clean.
+- **2026-10-26:** Privacy Notice 1.2 and the delete-account page published
+  as final; a hanging sign-up test fixed; the map-type picker layout.
+- **2026-10-21..25:** real Notifications inbox, double-press check-in on the
+  mock sender, Change password, Contacts redesign (search, chips, Emergency
+  star, no upper limit), dark-mode button fixes.
+- **2026-10-20:** place names on alerts, alert rows redesigned, Settings
+  reorganised (About, Display, Alert notifications screens), dark mode.
+- **2026-10-19:** Alert tab folded into Track (bottom sheet + Alert history),
+  MapTiler tiles and logo, face marker, alert symbols, alert notifications.
+- **2026-10-14:** account safety (Delete account in Account information, the
+  deletion marker, email verification), verification gate, consent gate,
+  check-in status.
+- **2026-10-11..13:** Hosting, Security Rules and the reset App Link
+  deployed; the teammate UI redesign; real GPS in the mock sender.
+
+---
+
+## 6. Read these first
+
+| For | Read |
+|---|---|
+| The agent's working rules, conventions, gotchas | [`../CLAUDE.md`](../CLAUDE.md) |
+| What is left, by person, in short | [`team-checklist.md`](team-checklist.md) |
+| **Running a demo with no hardware** | [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) |
+| The map library and its configuration | [`osmdroid.md`](osmdroid.md): **read before touching the map** |
+| How alerts are read from RTDB | [`alert-data.md`](alert-data.md) |
+| Alert notifications | [`notifications.md`](notifications.md), [`notifications-test-cases.md`](notifications-test-cases.md) |
+| The sign-up wizard | [`signup-flow.md`](signup-flow.md) |
+| The post-login host and its tabs | [`home-host-and-bottom-nav.md`](home-host-and-bottom-nav.md) |
+| The in-app password reset | [`forgot-password.md`](forgot-password.md) |
+| Email verification | [`email-verification.md`](email-verification.md) |
+| Account information and Delete account | [`home-host-and-bottom-nav.md`](home-host-and-bottom-nav.md) and CLAUDE.md "Account deletion" |
+| The 2026-10-13 teammate UI pass | [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md) |
+| Privacy Notice, consent versions, hosted pages | [`privacy-and-consent.md`](privacy-and-consent.md) |
+| The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md): **authoritative** |
+| Security Rules | [`../RTDBS-RULES.md`](../RTDBS-RULES.md) (source of truth) and [`database-rules.md`](database-rules.md) (paths, `devices/` options, Playground tests, rollout) |
+
+**Branches.** Push to `mvvm-main` only; `main` is then fast-forwarded to the
+same commit (`git push origin mvvm-main:main`), never merged with `--no-ff`.
+`mvp-checkpoint*` stay strict MVP: never port code between them and the MVVM
+branches. `git branch --no-merged mvvm-main` should list only `main` and the
+MVP checkpoint branches.
+
+---
+
+## 7. Needs a human, not an agent
 
 - **Changing the Security Rules.** Edit `RTDBS-RULES.md`, strip every `"//"`
   key, paste the whole file over the Console's, run the Playground tests in
   [`database-rules.md`](database-rules.md) §5 (or the emulator recipe in §6),
-  publish. Copy the live rules out first. The steps are §7 of that file. The
-  deletion-pending marker needed **no** rule. If anyone ever adds
+  publish. Copy the live rules out first. If anyone adds
   `"$other": { ".validate": false }` at `users/$uid`, give `deletion_pending`
   a rule of its own in the same change, or Delete account fails at step 2.
 - **Registering fingerprints** (§4).
 - **Firebase Console settings.** Email templates' sender name and subject can
-  be edited (this covers the verification email too); the action URL cannot on
-  this project, so leave it at the default.
-- **Reviewing the Privacy Notice** before its banner comes off. It describes
-  how real people's data is handled, including emergency contacts who never
-  signed up, and it was drafted by an agent from the code: a reason for a
-  human to read it, not a reason to trust it.
-- **Figma** is the visual source of truth and is Jul's. `DESIGN: Jul` marks the
-  spots the agent left as placeholders.
-- **The check-in payload** is a contract with the band firmware: the agent can
-  propose it, a human agrees it.
+  be edited; the action URL cannot on this project, so leave it at the default.
+- **The Privacy Notice.** Published as final without an adviser review, at
+  the team's decision. It describes how real people's data is handled,
+  including emergency contacts who never signed up, and an agent drafted it
+  from the code: a reason for a human to re-read it whenever it changes.
+- **Figma** is the visual source of truth and is Jul's.
+- **The payload** is a contract with the band firmware: the agent can propose
+  changes, a human agrees them.
+- **New release permissions**: James approves first.
 
 ---
 
-## 6. Building, deploying and verifying
+## 8. Building, deploying and verifying
 
 **Build and test.**
 
@@ -376,9 +354,12 @@ with "Filename too long" on Gradle output.
 ```
 
 Then read the merged `AndroidManifest.xml` under
-`app/build/intermediates/merged_manifest/release/processReleaseMainManifest/`. It merges without
-compiling or signing, and nothing after it (R8, packaging) adds permissions.
-Expect only the four permissions in §1 and no location permission.
+`app/build/intermediates/merged_manifest/release/processReleaseMainManifest/`.
+Expect exactly the seven approved permissions (`INTERNET`,
+`ACCESS_NETWORK_STATE`, `READ_GSERVICES`, the app's own
+`DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, `POST_NOTIFICATIONS`,
+`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`) and no location
+permission. [`notifications.md`](notifications.md) §5 says why each is there.
 
 **Deploy Hosting.** From `hosting/`, never `firebase init`:
 
@@ -400,14 +381,12 @@ adb shell am start -a android.intent.action.VIEW -c android.intent.category.BROW
 
 The second should open `ResetPasswordActivity` directly, then report the
 dummy link as invalid. The same command with `mode=verifyEmail` should open
-`VerifyEmailActivity` instead and say the link "has already been used" (a dummy
-code fails Firebase's check); `mode=recoverEmail` should say the link "isn't
-supported".
+`VerifyEmailActivity` and say the link "has already been used";
+`mode=recoverEmail` should say the link "isn't supported".
 
 **Testing email flows with one Gmail inbox.** `yourname+test1@gmail.com`,
-`yourname+test2@gmail.com` and so on all arrive in the same inbox, so each can
-be a separate test account. Firebase's default sender sometimes lands in spam;
-check there first.
+`yourname+test2@gmail.com` and so on all arrive in the same inbox. Firebase's
+default sender sometimes lands in spam.
 
 **Test rules without touching production.** The project has no emulator suite,
 but the CLI's Database Emulator works ad hoc from a scratch directory: a
@@ -415,15 +394,15 @@ but the CLI's Database Emulator works ad hoc from a scratch directory: a
 `RTDBS-RULES.md`, then `firebase emulators:exec --only database --project
 demo-guardband "node test.mjs"`. Use a `demo-` project id so nothing can
 reach the real project. Fake users are unsigned JWTs passed as `?auth=`;
-`Authorization: Bearer owner` bypasses rules for seeding. See §7 for its traps.
+`Authorization: Bearer owner` bypasses rules for seeding. See §9 for its traps.
 
 **Not covered by tests:** `FirebaseAlertRepository`'s listener and whether
 `awaitClose` removes it, the Firebase calls in auth, reset, verification and
-the deletion marker's write, the `MapView`, and anything in the UI layer. `ExampleInstrumentedTest` is still the template.
+the deletion marker's write, the `MapView`, and anything in the UI layer.
 
 ---
 
-## 7. Traps that have already cost time
+## 9. Traps that have already cost time
 
 **Firebase**
 
@@ -432,22 +411,31 @@ the deletion marker's write, the `MapView`, and anything in the UI layer. `Examp
   alike. The app claims the default handler instead, with an exact
   `android:path`, because `/__/auth/handler` shares the host.
 - **A child's `.read` never grants the parent.** `history/$sequenceId` alone
-  let each entry be read but denied the list, which 401'd the Alert tab (now Alert history) and the
-  mock sender until 2026-10-11. `history` now has its own `.read`.
+  let each entry be read but denied the list, which 401'd the alert screens
+  and the mock sender until 2026-10-11. `history` now has its own `.read`.
 - **The Console rejects `RTDBS-RULES.md`'s `"//"` keys.** Strip them before
   pasting.
 - **Firebase Hosting's default `ignore` drops `.well-known/`.** The committed
   `firebase.json` omits that glob on purpose; don't tidy it back.
-- **Hosting caches a 404 for an hour** (`max-age=3600`). A page that was
-  missing on first visit keeps showing "not found" after a deploy; hard-refresh
-  or open a private tab.
+- **Hosting caches a 404 for an hour** (`max-age=3600`). Hard-refresh or use a
+  private tab after a deploy.
 - **The emulator needs Java 21+**, the opposite of Gradle: unset `JAVA_HOME`
   so the PATH's Java 25 is used. On Windows its `java` process outlives
-  `emulators:exec` and holds port 9000. And rules from `firebase.json` apply to
+  `emulators:exec` and holds port 9000. Rules from `firebase.json` apply to
   the `<project>-default-rtdb` namespace, so querying `?ns=<project>` silently
   runs with open rules; load them with a `PUT /.settings/rules.json` instead.
+- **With no disk persistence, an RTDB read made offline never fails; it
+  waits.** That is why the Home gate has a 10 s timeout.
 - **A new library can add permissions silently.** Re-run
-  `:app:processReleaseManifest` after any dependency bump (§6).
+  `:app:processReleaseManifest` after any dependency bump (§8).
+
+**Maps**
+
+- **OSM and MapTiler block by user agent, and the block is HTTP 200 with a
+  PNG** reading "access blocked", which osmdroid caches like a good tile.
+  Keep `OsmdroidConfig.USER_AGENT` fixed, never call
+  `Configuration.getInstance().load(...)`, and never put
+  `FLAG_USER_AGENT_NORMALIZED` back into the tile policy. [`osmdroid.md`](osmdroid.md).
 
 **Android and the build**
 
@@ -460,25 +448,24 @@ the deletion marker's write, the `MapView`, and anything in the UI layer. `Examp
   `SAXParseException`.
 - **A duplicated `<string name="…">`** fails with "Found item String/x more than
   one time". Grep first.
-- **`README.md` is UTF-16 LE with CRLF.** A naive script read collapses its
-  CRLFs into a whole-file change that git shows only as `Bin … differ`. Read it
-  with `newline=''`.
+- **`README.md` is UTF-16 LE with CRLF.** Read it with
+  `iconv -f UTF-16 -t UTF-8`; a naive script rewrite turns into a whole-file
+  change git shows only as `Bin … differ`.
 - **A `StateFlow` drops an emission equal to the previous one.**
   `FakeAlertRepository` uses a replaying `MutableSharedFlow` for that reason.
 - **Don't "simplify" `AlertParser` into `getValue(Alert::class.java)`.** It
-  reintroduces the `isCharging` → `charging` mapper bug, silently. Any new
-  parser (the check-in one included) has the same exposure for `is…` fields.
-- **Don't turn `TrackViewModel`'s injected ticker into an internal
-  `while (true) { delay(…) }`.** Tests calling `advanceUntilIdle()` then hang
-  instead of failing.
+  reintroduces the `isCharging` → `charging` mapper bug, silently.
+- **Don't turn an injected ticker into an internal `while (true) { delay(…) }`.**
+  Tests calling `advanceUntilIdle()` then hang instead of failing. A
+  `repeat(Int.MAX_VALUE)` in a test did the same on 2026-10-26 and locked
+  `app/build`.
 - **A ViewModel that launches in `init` breaks a test that builds it in a
   field initializer.** The field runs before `MainDispatcherRule` swaps in
-  Main, so every test fails with "Module with the Main dispatcher had failed to
-  initialize", and the leaked exception then fails an unrelated test class.
-  Build it `by lazy` (as `DeleteAccountViewModelTest` now does) or inside the
-  test.
+  Main. Build it `by lazy` or inside the test.
 
 **Git**
 
 - **`git merge -F -` does not read stdin** ("could not read file '-'"). Write
   the message to a file. `git commit -F -` does.
+- **Teammates commit IDE files** (`.idea/`, once `.vs/`) and once a nested
+  clone as a gitlink. Stage explicit paths, never `git add -A`.

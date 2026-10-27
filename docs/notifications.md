@@ -63,7 +63,8 @@ app cannot know it until the firmware reports it.
 
 **Lock screen.** Every alert is `VISIBILITY_PRIVATE` with a public version
 reading "GuardBand / New alert from your band. Unlock to see it.", and all
-of them share one plain bell as the status-bar icon (`ic_stat_alert`), so the
+of them share one status-bar icon (`ic_stat_alert`, the GuardBand mark as a
+one-colour silhouette since 2026-10-27; it was a plain bell), so the
 status bar does not show a panic octagon either. The public version only
 appears when the phone's lock screen is set to **hide sensitive content**; on
 "show all content" Android shows the full text, which is why the full text
