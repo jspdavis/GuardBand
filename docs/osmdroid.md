@@ -505,7 +505,8 @@ than a second mechanism:
   costs what it did before: move the marker, invalidate. Nothing recycles a
   bitmap; Coil owns the photo ones.
 - **The link is never logged, and the picture is never stored or uploaded**
-  beyond Coil's own on-phone caches, the same ones Profile uses. Loading it
+  beyond Coil's own on-phone caches, the same ones Profile uses, which every
+  sign-out empties (`LoginNavigation`, since 2026-10-27). Loading it
   means Google's image servers see the phone's IP address: see the profile
   picture row in the Privacy Notice (since 1.2) and [`privacy-and-consent.md`](privacy-and-consent.md)
   §4.

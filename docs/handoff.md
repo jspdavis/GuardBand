@@ -303,8 +303,6 @@ has published it ([`database-rules.md`](database-rules.md) §7).
 
 - `item_contact.xml`'s pencil (`ic_edit`) is a stand-in; the real icon comes
   from Figma.
-- Coil's disk cache (the Google photo) is not cleared on Log Out or Delete
-  account.
 - **Optional**: give the mock sender its own launcher icon; today it inherits
   the app's, so the two differ only by label.
 - One manual check never done: confirm RTDB traffic stops when the listener
