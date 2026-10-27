@@ -176,6 +176,8 @@ internal class MapTilerTileSource private constructor(
             MapLayer.AUTO -> forNightMode(night)
             MapLayer.STREET -> STREETS
             MapLayer.SATELLITE -> SATELLITE
+            MapLayer.OUTDOOR -> OUTDOOR
+            MapLayer.TOPO -> TOPO
         }
 
         /** The style for the theme the screen is drawn in. */

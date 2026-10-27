@@ -203,11 +203,10 @@ Use the debug mock sender to produce alerts.
   `CONSENT_VERSION` moves with it.
   Where: [`privacy-and-consent.md`](privacy-and-consent.md) §2
 - [x] 🟩 **Layers button on Track** · *26–27 Oct, jspdavis*
-  Auto, Street and Satellite. Satellite tiles checked on our key and plan.
+  Auto, Street, Satellite, Outdoor and Topo. Tiles checked on our key and plan.
 - [x] 🟩 **Remember the map layer** · *27 Oct*
   `MapLayerPrefs` saves the picked layer, so the map reopens on it.
-  (`MapTilerTileSource` also defines Outdoor and Topo, which the picker does
-  not offer.)
+  (`MapTilerTileSource` provides Outdoor and Topo, offered in the picker.)
 - [x] 🟩 **Re-centre button** · *27 Oct*
   The round target button re-centres on the band and zooms back in. The
   Google Maps hand-off is gone.

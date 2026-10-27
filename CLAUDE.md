@@ -81,7 +81,7 @@ com/example/guardband/
 │   ├── loading/        1.8 s transition → Home (Back blocked)
 │   ├── home/           HomeActivity: bottom-nav host + second auth gate and the account gate (HomeViewModel)
 │   ├── track/          Track tab (default): gear + bell (as on Contacts/Profile), osmdroid map, round re-centre (target) button,
-│   │                 layers button (MapLayer: Auto / Street / Satellite), Check-in pill, and the recent-alerts bottom sheet (RecentAlertsPanel; See all → Alert history)
+│   │                 layers button (MapLayer: Auto / Street / Satellite / Outdoor / Topo), Check-in pill, and the recent-alerts bottom sheet (RecentAlertsPanel; See all → Alert history)
 │   │                 BandStatus + OsmdroidConfig (pure helpers; see "Track and map")
 │   │                 BandMarkerFace (pure: photo or initials) + BandMarkerIcon (draws the band's marker)
 │   ├── contacts/       Contacts tab: search, relationship filter chips (in memory, ContactsUiState.filteredContacts),
@@ -727,16 +727,16 @@ restriction **except** normalization. Two consequences worth knowing:
   its own name, so no two styles ever share cache rows.
 
 **The layers button picks the base map (D7, 2026-10-27).** `track_layers_button`
-opens `dialog_map_type.xml`, a bottom sheet with three choices, `ui/track/MapLayer`:
+opens `dialog_map_type.xml`, a bottom sheet with five choices, `ui/track/MapLayer`:
 **Auto** (Streets, dark in dark mode; the default), **Street** (always the light
-Streets) and **Satellite** (`MapTilerSatellite`, no labels). `MapTilerTileSource.forLayer`
-is the one place a layer becomes a tile source; the Fragment never picks one.
-The choice is `TrackUiState.selectedLayer`, so it survives a theme change, and
+Streets), **Satellite** (`MapTilerSatellite`, no labels), **Outdoor**
+(`MapTilerOutdoor`, terrain and trail data) and **Topo** (`MapTilerTopo`, elevation
+contours and hill shading). `MapTilerTileSource.forLayer` is the one place a layer
+becomes a tile source; the Fragment never picks one. The choice is
+`TrackUiState.selectedLayer`, so it survives a theme change, and
 `ui/track/MapLayerPrefs` saves it (SharedPreferences `map`, per phone, like
 the display setting), so the map reopens on it; a name it does not know reads
-as Auto. `MapTilerTileSource` also
-defines `OUTDOOR` and `TOPO`, which no layer offers yet. Satellite is served
-on this key and plan (checked 2026-10-27: a real 256 px tile over Cebu City).
+as Auto. All styles are served on this key and plan (checked 2026-10-27: real 256 px tiles over Cebu City).
 
 **No phone-location permission in the main app, ever.** The band supplies the
 location, not the handset. osmdroid adds only four *optional*

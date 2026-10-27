@@ -6,6 +6,8 @@ package com.example.guardband.ui.track
  *   Streets Dark in dark mode).
  * - [STREET]: MapTiler's Streets style in light mode, regardless of theme.
  * - [SATELLITE]: MapTiler's Satellite imagery style.
+ * - [OUTDOOR]: MapTiler's Outdoor style with contour lines, terrain colouring and trail data.
+ * - [TOPO]: MapTiler's Topo style with topographic elevation contours and hill shading.
  *
  * The choice lives in [TrackUiState.selectedLayer] so it survives a theme
  * change (the Fragment is recreated, and it re-applies the layer), and is
@@ -15,5 +17,7 @@ package com.example.guardband.ui.track
 enum class MapLayer {
     AUTO,
     STREET,
-    SATELLITE
+    SATELLITE,
+    OUTDOOR,
+    TOPO
 }

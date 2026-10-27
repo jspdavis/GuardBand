@@ -282,7 +282,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
     /**
      * D7: the map type picker bottom sheet dialog.
-     * Displays a bottom sheet with preview thumbnails for Auto, Street, and Satellite.
+     * Displays a bottom sheet with preview thumbnails for Auto, Street, Satellite, Outdoor, and Topo.
      * Tapping an option switches the tile source immediately and highlights the card.
      */
     private fun showLayerPicker() {
@@ -311,6 +311,14 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             viewModel.onLayerSelected(MapLayer.SATELLITE)
             updateMapTypeSelection(dialogView, MapLayer.SATELLITE)
         }
+        dialogView.findViewById<View>(R.id.item_layer_outdoor)?.setOnClickListener {
+            viewModel.onLayerSelected(MapLayer.OUTDOOR)
+            updateMapTypeSelection(dialogView, MapLayer.OUTDOOR)
+        }
+        dialogView.findViewById<View>(R.id.item_layer_topo)?.setOnClickListener {
+            viewModel.onLayerSelected(MapLayer.TOPO)
+            updateMapTypeSelection(dialogView, MapLayer.TOPO)
+        }
 
         dialog.show()
     }
@@ -324,6 +332,8 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             Triple(MapLayer.AUTO, R.id.card_outer_layer_auto, R.id.tv_layer_auto),
             Triple(MapLayer.STREET, R.id.card_outer_layer_street, R.id.tv_layer_street),
             Triple(MapLayer.SATELLITE, R.id.card_outer_layer_satellite, R.id.tv_layer_satellite),
+            Triple(MapLayer.OUTDOOR, R.id.card_outer_layer_outdoor, R.id.tv_layer_outdoor),
+            Triple(MapLayer.TOPO, R.id.card_outer_layer_topo, R.id.tv_layer_topo),
         )
 
         for ((layer, cardId, textId) in items) {

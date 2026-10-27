@@ -71,7 +71,7 @@ class MapTilerTileSourceTest {
     }
 
     @Test
-    fun `forLayer resolves Auto to theme variant, Street to light Streets, and Satellite to satellite`() {
+    fun `forLayer resolves Auto to theme variant, Street to light Streets, and others to themselves`() {
         assertEquals(MapTilerTileSource.STREETS, MapTilerTileSource.forLayer(MapLayer.AUTO, night = false))
         assertEquals(MapTilerTileSource.STREETS_DARK, MapTilerTileSource.forLayer(MapLayer.AUTO, night = true))
 
@@ -82,6 +82,14 @@ class MapTilerTileSourceTest {
         // Satellite is the same in either mode
         assertEquals(MapTilerTileSource.SATELLITE, MapTilerTileSource.forLayer(MapLayer.SATELLITE, night = false))
         assertEquals(MapTilerTileSource.SATELLITE, MapTilerTileSource.forLayer(MapLayer.SATELLITE, night = true))
+
+        // Outdoor is the same in either mode
+        assertEquals(MapTilerTileSource.OUTDOOR, MapTilerTileSource.forLayer(MapLayer.OUTDOOR, night = false))
+        assertEquals(MapTilerTileSource.OUTDOOR, MapTilerTileSource.forLayer(MapLayer.OUTDOOR, night = true))
+
+        // Topo is the same in either mode
+        assertEquals(MapTilerTileSource.TOPO, MapTilerTileSource.forLayer(MapLayer.TOPO, night = false))
+        assertEquals(MapTilerTileSource.TOPO, MapTilerTileSource.forLayer(MapLayer.TOPO, night = true))
     }
 
     @Test
@@ -102,8 +110,10 @@ class MapTilerTileSourceTest {
         assertFalse(MapTilerTileSource.OUTDOOR.drawsDark)
         assertFalse(MapTilerTileSource.TOPO.drawsDark)
 
-        // Street in dark mode is still light; Satellite in light mode is still dark.
+        // Street in dark mode is still light; Satellite in light mode is still dark; Outdoor and Topo are light.
         assertFalse(MapTilerTileSource.forLayer(MapLayer.STREET, night = true).drawsDark)
         assertTrue(MapTilerTileSource.forLayer(MapLayer.SATELLITE, night = false).drawsDark)
+        assertFalse(MapTilerTileSource.forLayer(MapLayer.OUTDOOR, night = true).drawsDark)
+        assertFalse(MapTilerTileSource.forLayer(MapLayer.TOPO, night = true).drawsDark)
     }
 }
