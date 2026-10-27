@@ -38,8 +38,9 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-27",
-            title = "Map layers; the re-centre button; a check-in card; Change password moves into Account information; contacts tap to edit, hold to delete",
+            title = "Map layers; the re-centre button; alert pins on the map; a check-in card; Change password moves into Account information; contacts tap to edit, hold to delete",
             changes = listOf(
+                "Track's map shows where recent alerts happened: a small pin for each of the latest ten panics, check-ins and low-battery alerts, in the same colours and symbols as the alert list. Alerts sent from the same spot share one pin, the newest. Tap a pin to see what it was and when (\"Panic, 5 min ago\"); tap anywhere else to close it. Your band's own marker always stays on top.",
                 "Track's layers button opens a picker with five maps: Auto (streets, dark in dark mode), Street (always light), Satellite, Outdoor (terrain and trails) and Topo (contour lines and hill shading). The map reopens on the one last picked.",
                 "Track's check-in pill became a card: a \"Last check-in\" heading over \"5 min ago\", beside a coloured symbol (a green tick once a check-in has arrived, a warning when check-ins cannot be read).",
                 "Alert rows, Alert history's latest card and the recent-alerts sheet were restyled: rounder cards, a slightly larger type badge and a bolder sheet header.",
@@ -52,9 +53,9 @@ object Changelog {
                 "Signing out clears the cached Google photo, so the next account never sees the last one's picture.",
                 "The MapTiler logo sits straight on the map, with no white box behind it: white lettering on the dark map and Satellite, dark lettering on the light map.",
                 "Alert notifications show the GuardBand logo in the status bar instead of a bell, as a one-colour outline (Android draws that icon in a single colour).",
-                "Housekeeping: lint passes again (a mock sender string), and Visual Studio's workspace files are no longer in the repo. 741 unit tests pass."
+                "Housekeeping: lint passes again (a mock sender string), and Visual Studio's workspace files are no longer in the repo. 777 unit tests pass."
             ),
-            commit = "6d2ccfa"
+            commit = "003bfdc"
         ),
         ChangelogEntry(
             date = "2026-10-26",

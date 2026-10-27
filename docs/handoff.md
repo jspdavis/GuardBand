@@ -1,9 +1,9 @@
 # Handoff
 
-**As of 2026-10-27 · `mvvm-main` at `6514699`, pushed · `main` at `85cbb63`,
-behind (fast-forward it with `git push origin mvvm-main:main`) · 741 JVM unit
-tests, 0 failures · `./gradlew lint` passes with no errors · nothing in
-flight.** Run `git status -sb` and `git log origin/mvvm-main -1` before
+**As of 2026-10-27 · `mvvm-main` at `003bfdc` (alert pins) plus its
+Changelog/handoff commit, pushed · `main` fast-forwarded to the same commit
+(`git push origin mvvm-main:main`) · 777 JVM unit tests, 0 failures ·
+`./gradlew lint` passes with no errors · nothing in flight.** Run `git status -sb` and `git log origin/mvvm-main -1` before
 trusting any hash here.
 
 This file is the entry point for anyone picking the project up cold,
@@ -44,7 +44,7 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 |---|---|
 | **Accounts** | Email/password sign-up wizard (Account → Name → Contacts → Consent), Google sign-in, login, in-app password reset via the email link (App Link), email verification with a gate that locks unverified password accounts out, Change password, Delete account (re-auth, then a resumable two-step delete), Log Out. |
 | **Consent and privacy** | A recorded consent (`accepted`, timestamp, version `1.3`) for every account; a gate that sends any account without one to the consent screen. Hosted Privacy Notice (1.3) and delete-account page, published as final. No analytics. |
-| **Track tab** (default) | A MapTiler map (five layers: Auto/Street/Satellite/Outdoor/Topo, dark map in dark mode, choice remembered) with the band's last known position as a face marker (Google photo or initials); a re-centre button; a "Last check-in: 5 min ago" status card; a draggable bottom sheet with the newest three alerts and "See all". |
+| **Track tab** (default) | A MapTiler map (five layers: Auto/Street/Satellite/Outdoor/Topo, dark map in dark mode, choice remembered) with the band's last known position as a face marker (Google photo or initials); small pins under it for the newest ten panics, check-ins and low-battery alerts (one per spot, colour-coded; a tap shows "Panic, 5 min ago"); a re-centre button; a "Last check-in: 5 min ago" status card; a draggable bottom sheet with the newest three alerts and "See all". |
 | **Alerts** | Alert history (pushed screen): latest alert card plus the list by day, colour-coded by type (panic, check-in, low battery, unknown), with place names instead of coordinates (Android Geocoder), battery level and "5 min ago" times. Tracking updates are hidden from lists. |
 | **Notifications** | The bell opens an inbox of the band's alerts by day. Opt-in **alert notifications** (Settings): a foreground service keeps the listener open and posts each new alert as a system notification, panic silent for the wearer's discretion, nothing identifying on the lock screen. |
 | **Contacts tab** | Emergency contacts: add/edit (tap a card)/delete (trash or hold), search, relationship filter chips, an Emergency star that sorts and badges. At least one contact always; phone numbers stored as E.164. |
@@ -142,7 +142,9 @@ says what it depends on and what it would touch.
    could open the map at that point, with the FR-09 tracking updates that
    followed it drawn as a path (the data is already in `history`, just
    hidden). That would give FR-02's "incident status" and FR-09 something to
-   show.
+   show. **The map half has a start (2026-10-27):** recent alerts are pins on
+   Track, and `TrackViewModel.onAlertPinTapped(alert)` is the empty hook a pin
+   tap would open it from ([`osmdroid.md`](osmdroid.md) §5.5).
 5. **Incident status: acknowledge or resolve.** A guardian marks a panic "I'm
    on it" or "resolved", so other guardians (and the history) know. Needs a
    place to write that is **not** `devices/` (e.g. under the user, or a new
@@ -195,7 +197,7 @@ says what it depends on and what it would touch.
 | **Decide `devices/` and publish the rules** | Jul | Pick A, A+ (recommended), B or C ([`database-rules.md`](database-rules.md) §4). B breaks the mock sender; C breaks every receiver until pairing. `RTDBS-RULES.md` is ahead of the Console until then: do not describe it as the live ruleset. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
 | **MapTiler key** | Jul | A dedicated key restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), shared privately, in each `local.properties` as `MAPTILER_API_KEY`. Without it Track says "Map unavailable". [`osmdroid.md`](osmdroid.md) §4.4. |
 | **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. The ⓘ collapse follows OSMF's guidelines, not a MapTiler statement. [`osmdroid.md`](osmdroid.md) §4.6. |
-| **Design pass on the placeholders** | Jul | The dark palette (`values-night/colors.xml`), the low-battery icon (triangle or battery), everything marked `DESIGN: Jul` (84 places), and two older theme changes to confirm with Jehan: 28 dp outlined-button corners, 24 dp sign-up top padding. |
+| **Design pass on the placeholders** | Jul | The dark palette (`values-night/colors.xml`), the low-battery icon (triangle or battery), everything marked `DESIGN: Jul` (88 places, 4 of them the alert pins and their label), and two older theme changes to confirm with Jehan: 28 dp outlined-button corners, 24 dp sign-up top padding. |
 | **Remove the stray `Guardband-MVVM` gitlink** | Jehan, then anyone | A nested clone in Jehan's tree was committed as a gitlink to `9448b3c`, which exists only on her machine. Check nothing is stranded in that inner copy ([`guardband-mvvm-folder.md`](guardband-mvvm-folder.md)), then remove the entry. |
 | **Each teammate's fingerprints** | each developer | Debug **SHA-1** in the Firebase Console (else Google sign-in fails on their build); debug **SHA-256** in `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else reset and verification links open the browser). Four SHA-256s are live (James's and three teammates'). Release keystore's before any signed build. |
 | **Band firmware** | firmware teammate | Write exactly `SCHEMA.md`'s payload: `history/{sequenceId}` first, then `latest`; a double-press within 2 s is a `CHECKIN` (FR-10); tracking every 60 s for 30 min after an alert (FR-09); low battery at 20% (FR-11). |
@@ -215,6 +217,7 @@ list; the step-by-step checklists live in each doc:
 - Alert notifications: [`notifications-test-cases.md`](notifications-test-cases.md) (47 cases).
 - Alert rows and place names: [`alert-data.md`](alert-data.md) §12.
 - Map, face marker, credits and logo links: [`osmdroid.md`](osmdroid.md) §5.4 and §8.
+- Alert pins on Track (27 Oct): [`osmdroid.md`](osmdroid.md) §8, "Alert pins".
 - Settings, About, Display, Alert notifications screens.
 - The older pass since 13 Oct: [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md)
   section A, the consent gate ([`privacy-and-consent.md`](privacy-and-consent.md) §6
@@ -240,6 +243,10 @@ list; the step-by-step checklists live in each doc:
 - `ic_edit` (the contact pencil) is now hidden in `item_contact.xml` since tap
   to edit; delete the button and its binding if it stays unused.
 - The mock sender has no launcher icon of its own (it differs by label only).
+- The face marker's "Your band" bubble is still osmdroid's stock white bubble,
+  which ignores dark mode. The alert pins' label beside it uses theme colours
+  (`view_alert_pin_label.xml`). Give the face the same label window, or leave
+  it for Jul's design pass.
 - Refresh this file after each merge: the header's hashes and test count,
   §1's tables and §4.
 
@@ -251,7 +258,7 @@ The full, user-facing record is `Changelog.entries`
 (`app/src/main/java/com/example/guardband/ui/changelog/Changelog.kt`), shown
 in the app under Settings → Changelog. Headlines:
 
-- **2026-10-27:** map layers (five, remembered), re-centre button replaces the
+- **2026-10-27:** alert pins on the Track map, map layers (five, remembered), re-centre button replaces the
   Google Maps hand-off (notice 1.3), check-in card, alert cards restyled,
   contacts tap to edit / hold to delete and one contact dialog, Change
   password moved into Account information, Coil cache cleared on sign-out,
