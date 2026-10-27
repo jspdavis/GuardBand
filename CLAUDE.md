@@ -900,10 +900,11 @@ pairing and roles.
   drops it on every other outcome.
 - **Three release permissions came with it:** `POST_NOTIFICATIONS` (asked
   from the switch, never at launch), `FOREGROUND_SERVICE`,
-  `FOREGROUND_SERVICE_SPECIAL_USE`. Don't add `RECEIVE_BOOT_COMPLETED`,
-  `WAKE_LOCK`, `USE_FULL_SCREEN_INTENT` or
-  `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` without the owner's approval of the
-  release manifest.
+  `FOREGROUND_SERVICE_SPECIAL_USE`. **James, the owner, approved the release
+  manifest with these three on 2026-10-27** (seven permissions in all; list in
+  `docs/notifications.md` §5). Any permission beyond those needs his approval
+  again, first: don't add `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`,
+  `USE_FULL_SCREEN_INTENT` or `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` without it.
 - **The notice has a paragraph** for it, published in notice 1.2
   (2026-10-24).
 

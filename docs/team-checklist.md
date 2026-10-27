@@ -42,7 +42,7 @@ the app together. Pairing comes first: SMS depends on it.
   - Agree the message wording and what it may include (a location link is
     sensitive).
   - If the phone ever sends SMS instead, that adds `SEND_SMS` to the release
-    manifest and needs the owner's approval first.
+    manifest and needs the owner's (James's) approval first.
   - The Privacy Notice says the numbers are collected for this, and that the
     Emergency star only sorts and labels the list. If the star ever decides
     who gets texted, the notice changes (and its version) in the same commit.
@@ -139,11 +139,6 @@ Use the debug mock sender to produce alerts.
 
 ## Decisions and setup
 
-- [ ] 🗳️ **Approve the release manifest** · *owner*
-  Alert notifications added `POST_NOTIFICATIONS`, `FOREGROUND_SERVICE` and
-  `FOREGROUND_SERVICE_SPECIAL_USE`. Approve before any release build is shared.
-  Where: [`notifications.md`](notifications.md) §5
-
 - [ ] 🗳️ **Pick the `devices/` rules and publish** · *Jul*
   Choose option A, A+ (recommended), B or C, run the Playground tests, then
   publish. `RTDBS-RULES.md` is ahead of the live rules until then.
@@ -219,6 +214,10 @@ Use the debug mock sender to produce alerts.
   `./gradlew lint` passes with no errors.
 - [x] 🔧 **Clear the Google photo cache on sign-out** · *27 Oct*
   `LoginNavigation` empties Coil's caches on every way out.
+- [x] 🗳️ **Approve the release manifest** · *27 Oct, James (owner)*
+  Seven permissions, including the three for alert notifications. Anything
+  new needs James's approval again.
+  Where: [`notifications.md`](notifications.md) §5
 - [x] 🔧 **Remove `.vs/` from the repo** · *27 Oct*
   Visual Studio's workspace files are gone and `.vs/` is in `.gitignore`.
 - [x] 🔧 **Changelog catch-up** · *27 Oct*

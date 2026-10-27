@@ -139,8 +139,15 @@ any location or SMS permission. Below API 26 there are no channels, so the
 panic is posted fully silent there rather than vibrating (which could need
 `VIBRATE`).
 
-**The release manifest needs the owner's approval before it ships.** Check it
-with `./gradlew :app:processReleaseManifest` and read the `uses-permission`
+**Approved by the owner (James) on 2026-10-27.** Checked that day with
+`./gradlew :app:processReleaseManifest`, the release build asks for exactly
+seven: `INTERNET`, `ACCESS_NETWORK_STATE`, `READ_GSERVICES` (reCAPTCHA, via
+Firebase Auth), the app's own `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, and
+the three above. `AlertWatchService` is the only foreground service
+(`specialUse`, not exported), and nothing of the mock sender is in it.
+
+**Any permission beyond these needs the owner's approval again, before it
+ships.** Re-check after a dependency change by reading the `uses-permission`
 lines of `app/build/intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml`.
 
 ## 6. Phones that stop it anyway
