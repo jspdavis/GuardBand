@@ -9,8 +9,9 @@ import com.example.guardband.ui.avatar.AvatarPhoto
  * falls back on. Pure, so it is unit-testable; [BandMarkerIcon] draws it.
  *
  * [photoUrl] is already vetted by [AvatarPhoto] (Google sign-in only,
- * `https` only, resized), the same link the Profile tab loads, so the two
- * share the image loader's caches. Null means initials only, and no request
+ * `https` only, resized), the same link the Device tab's header loads, so
+ * the two share the image loader's caches. The header shows these same
+ * initials too. Null means initials only, and no request
  * is made. [initials] are drawn while the photo loads, when it fails or is
  * offline, and for an account with no photo; empty means a person glyph.
  *

@@ -51,17 +51,6 @@ class SettingsViewModelTest {
         assertEquals(SettingsEvent.OpenDisplay, viewModel.events.first())
     }
 
-    /** Device information. */
-    @Test
-    fun `the remaining placeholder row still says coming soon`() = runTest {
-        viewModel.onPlaceholderRowClicked()
-
-        assertEquals(
-            SettingsEvent.ShowMessage(SettingsViewModel.MSG_COMING_SOON),
-            viewModel.events.first()
-        )
-    }
-
     @Test
     fun `opening Account information signs nobody out`() = runTest {
         viewModel.onAccountClicked()

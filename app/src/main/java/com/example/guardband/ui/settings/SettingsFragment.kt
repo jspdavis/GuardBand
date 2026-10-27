@@ -6,8 +6,8 @@ import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -19,6 +19,7 @@ import com.example.guardband.ui.auth.GoogleIdTokenProvider
 import com.example.guardband.ui.auth.LoginNavigation
 import com.example.guardband.ui.changelog.ChangelogActivity
 import com.example.guardband.ui.display.DisplayActivity
+import com.example.guardband.ui.home.HomeViewModel
 import com.example.guardband.ui.notifications.AlertNotificationsActivity
 import kotlinx.coroutines.launch
 
@@ -36,7 +37,8 @@ import kotlinx.coroutines.launch
  * instead (About's Privacy Notice). Alert notifications' switch lives on its
  * own screen, [AlertNotificationsActivity], and the Privacy Notice inside
  * [AboutActivity], since 2026-10-20. Display opens [DisplayActivity], the
- * theme; Device information is a placeholder.
+ * theme. Device information switches to the Device tab through
+ * [HomeViewModel.onDeviceInfoClicked], which hides Settings (2026-10-27).
  *
  * View ids: ib_settings_back, tv_settings_title, row_settings_account,
  * row_settings_alert_notifications,
@@ -46,6 +48,7 @@ import kotlinx.coroutines.launch
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private val viewModel: SettingsViewModel by viewModels { SettingsViewModel.Factory }
+    private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
     private val googleIdTokenProvider by lazy { GoogleIdTokenProvider(requireActivity()) }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -65,7 +68,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             .setOnClickListener { viewModel.onDisplayClicked() }
 
         view.findViewById<LinearLayout>(R.id.row_settings_device_info)
-            .setOnClickListener { viewModel.onPlaceholderRowClicked() }
+            .setOnClickListener { homeViewModel.onDeviceInfoClicked() }
 
         view.findViewById<LinearLayout>(R.id.row_settings_about)
             .setOnClickListener { viewModel.onAboutClicked() }
@@ -85,9 +88,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private fun handleEvent(event: SettingsEvent) {
         when (event) {
-            is SettingsEvent.ShowMessage ->
-                Toast.makeText(requireContext(), event.text, Toast.LENGTH_SHORT).show()
-
             SettingsEvent.NavigateToLogin -> viewLifecycleOwner.lifecycleScope.launch {
                 LoginNavigation.clearCredentialsThenGoToLogin(requireContext(), googleIdTokenProvider)
             }

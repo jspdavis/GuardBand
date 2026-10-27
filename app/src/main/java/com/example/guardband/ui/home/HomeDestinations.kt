@@ -5,7 +5,7 @@ package com.example.guardband.ui.home
  * back after a restore. Pure, so the restore rule is a plain JVM test;
  * [HomeActivity] owns everything that touches a view or a menu id.
  *
- * Three tabs on the bottom bar - Track, Contacts, Profile - and three pushed
+ * Three tabs on the bottom bar - Track, Contacts, Device - and three pushed
  * screens that hide the bar: Settings, Notifications and Alert history. The
  * Alert tab was removed on 2026-10-19; its screen is now [ALERT_HISTORY],
  * opened from Track's recent-alerts panel.
@@ -14,7 +14,8 @@ internal object HomeDestinations {
 
     const val TRACK = "home_track"
     const val CONTACTS = "home_contacts"
-    const val PROFILE = "home_profile"
+    /** The band and the account behind it. The Profile tab (`home_profile`) until 2026-10-27. */
+    const val DEVICE = "home_device"
 
     const val SETTINGS = "home_settings"
     const val NOTIFICATIONS = "home_notifications"
@@ -30,7 +31,7 @@ internal object HomeDestinations {
     const val INCIDENT = "home_incident"
 
     /** The bottom bar's destinations, in bar order. */
-    val TABS: List<String> = listOf(TRACK, CONTACTS, PROFILE)
+    val TABS: List<String> = listOf(TRACK, CONTACTS, DEVICE)
 
     /**
      * Reached from a tab, never from the bar; Back returns to the last tab,
@@ -45,8 +46,8 @@ internal object HomeDestinations {
 
     /**
      * The screen to show for a saved `currentTag`. Anything this build does
-     * not host - the removed Alert tab's `home_alert`, or nothing saved at
-     * all - is Track, never a crash.
+     * not host - the removed Alert tab's `home_alert`, the renamed Profile
+     * tab's `home_profile`, or nothing saved at all - is Track, never a crash.
      */
     fun restoreCurrent(saved: String?): String =
         saved?.takeIf { it in TABS || it in PUSHED } ?: TRACK

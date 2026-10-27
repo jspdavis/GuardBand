@@ -7,7 +7,11 @@ screen.
 > consumers: a **recent-alerts panel** on the Track tab (the newest three) and
 > the **Alert history** screen (the whole list), a pushed screen opened from
 > the panel's See all. Both read **one** host-scoped `AlertViewModel`, so there
-> is still one history listener. See §8. Where this file says "the Alert tab"
+> is still one history listener. See §8. Since 2026-10-27 the **Device tab**
+> reads the same instance too: the band's status and battery from
+> `AlertUiState.newestReport` (the window's newest entry of any type,
+> tracking updates included), and its last alert from `latest`
+> ([device-tab.md](device-tab.md)). Where this file says "the Alert tab"
 > below, it describes the screen as it was first built; its content now lives
 > on Alert history unchanged.
 

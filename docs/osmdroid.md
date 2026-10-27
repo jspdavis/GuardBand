@@ -495,14 +495,15 @@ other dark areas alike.
 decides. Today it is the signed-in user's own: there is no wearer or guardian
 role yet. When roles exist, change that function and nothing else.
 
-**Where the picture comes from**, reusing the Profile tab's avatar code rather
-than a second mechanism:
+**Where the picture comes from**, reusing the avatar code (the Profile tab's,
+the Device tab's header since 2026-10-27) rather than a second mechanism:
 
 - `BandMarkerFace.of(user, providers)` (pure, tested) takes the link from
   `ui/avatar/AvatarPhoto.urlFor`: a Google account only, `https` only, and
   Google's `=s96-c` size suffix rewritten to `=s288-c`. 288 px is about twice
-  the 48 dp marker on an xxhdpi screen, and it is the same link Profile loads,
-  so the two share Coil's caches.
+  the 48 dp marker on an xxhdpi screen, and it is the same link the Device
+  tab's header loads, so the two share Coil's caches. The header shows these
+  same initials when there is no photo.
 - **Initials** are the first letter of the first and the last word of the
   session's display name, or one letter for a single word. With no usable
   name, the email's first letter. They work on code points in any script,
@@ -519,7 +520,7 @@ than a second mechanism:
   costs what it did before: move the marker, invalidate. Nothing recycles a
   bitmap; Coil owns the photo ones.
 - **The link is never logged, and the picture is never stored or uploaded**
-  beyond Coil's own on-phone caches, the same ones Profile uses, which every
+  beyond Coil's own on-phone caches, the same ones the Device tab uses, which every
   sign-out empties (`LoginNavigation`, since 2026-10-27). Loading it
   means Google's image servers see the phone's IP address: see the profile
   picture row in the Privacy Notice (since 1.2) and [`privacy-and-consent.md`](privacy-and-consent.md)

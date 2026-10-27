@@ -38,7 +38,10 @@ import kotlinx.coroutines.launch
  * it with `activityViewModels { AlertViewModel.Factory }`. So there is one
  * subscription to the history window, not one per screen: the panel reads
  * [AlertUiState.recent] and the history screen [AlertUiState.history], both
- * cut from the same emission. The subscription ends when the host's
+ * cut from the same emission. The Device tab (2026-10-27) reads the same
+ * instance for the band's status, battery and last alert
+ * ([AlertUiState.newestReport], [AlertUiState.latest]), so it adds no
+ * listener either. The subscription ends when the host's
  * ViewModelStore is cleared, which cancels the repository's `callbackFlow`
  * and its `awaitClose` removes the listener.
  *
@@ -138,6 +141,8 @@ class AlertViewModel(
                 latest = displayable.firstOrNull(),
                 history = displayable,
                 recent = displayable.take(RECENT_ALERTS_LIMIT),
+                // Unfiltered: newest first, so this is the band's newest report.
+                newestReport = history.alerts.firstOrNull(),
                 errorMessage = null,
                 emptyMessage = emptyMessageFor(history, displayable),
                 nowMillis = clock.nowMillis()

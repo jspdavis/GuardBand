@@ -14,7 +14,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -62,7 +61,12 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
     private lateinit var btnAdd: FloatingActionButton
     private lateinit var adapter: ContactAdapter
 
-    private val viewModel: ContactsViewModel by viewModels { ContactsViewModel.Factory }
+    /**
+     * Host-scoped since 2026-10-27, like [AlertViewModel][com.example.guardband.ui.alert.AlertViewModel]:
+     * the Device tab reads the same instance for its contacts count, so there
+     * is still one contacts listener. It ends with the host (Log Out).
+     */
+    private val viewModel: ContactsViewModel by activityViewModels { ContactsViewModel.Factory }
     private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
 
     /**

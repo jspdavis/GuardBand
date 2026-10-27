@@ -424,6 +424,30 @@ class HomeViewModelTest {
         assertEquals(HomeGateState.OPEN, opened.gate)
     }
 
+    @Test
+    fun `Settings' Device information row asks the host for the Device tab`() = runTest {
+        agreed("1.1")
+        val opened = open()
+
+        opened.vm.onDeviceInfoClicked()
+        advanceUntilIdle()
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.ShowDevice), opened.events)
+        assertEquals(HomeGateState.OPEN, opened.gate)
+    }
+
+    @Test
+    fun `the Device tab's contacts row asks the host for the Contacts tab`() = runTest {
+        agreed("1.1")
+        val opened = open()
+
+        opened.vm.onContactsSummaryClicked()
+        advanceUntilIdle()
+
+        assertEquals(listOf<HomeEvent>(HomeEvent.ShowContacts), opened.events)
+        assertEquals(HomeGateState.OPEN, opened.gate)
+    }
+
     // ── A tapped notification ─────────────────────────────────────────────────
 
     @Test

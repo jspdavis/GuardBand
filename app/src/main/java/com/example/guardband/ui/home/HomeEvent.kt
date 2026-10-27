@@ -13,6 +13,12 @@ sealed interface HomeEvent {
     object ShowAlertNotifications : HomeEvent
     object ShowNotifications : HomeEvent
 
+    /** Switch to the Device tab, from Settings' Device information row. */
+    object ShowDevice : HomeEvent
+
+    /** Switch to the Contacts tab, from the Device tab's contacts row. */
+    object ShowContacts : HomeEvent
+
     /** Open the full alert history, from the Track tab's recent-alerts panel. */
     object ShowAlertHistory : HomeEvent
 

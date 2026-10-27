@@ -89,12 +89,12 @@ class TrackViewModel(
     val events: Flow<TrackEvent> = _events.receiveAsFlow()
 
     /**
-     * When the band last reported, parsed from the newest payload's timestamp.
-     * Null while it has never reported, or when its timestamp could not be
-     * read. Kept outside [uiState] because it is an input to what the state
-     * shows, not something the screen renders.
+     * What the band's reports add up to: retained position and battery, and
+     * when it last reported. [BandReport] holds the rules, shared with the
+     * Device tab. Kept outside [uiState] because it is an input to what the
+     * state shows, not something the screen renders.
      */
-    private var lastReportMillis: Long? = null
+    private var band: BandReport = BandReport.NONE
 
     /** The live subscription, cancelled and replaced on retry. */
     private var observeJob: Job? = null
@@ -102,7 +102,7 @@ class TrackViewModel(
     /**
      * When the latest check-in happened, or null when there is none or its
      * timestamp could not be read. An input to [TrackUiState.checkIn], kept
-     * out of the state for the same reason as [lastReportMillis].
+     * out of the state for the same reason as [band].
      */
     private var lastCheckInMillis: Long? = null
 
@@ -270,8 +270,8 @@ class TrackViewModel(
      * the record is gone, so there is nothing to be the last known anything.
      */
     private fun render(alert: Alert?) {
+        band = band.after(alert)
         if (alert == null) {
-            lastReportMillis = null
             _uiState.update {
                 it.copy(
                     isLoading = false,
@@ -287,15 +287,14 @@ class TrackViewModel(
             return
         }
 
-        lastReportMillis = BandStatus.parseIsoUtcMillis(alert.timestamp)
         _uiState.update {
             it.copy(
                 isLoading = false,
                 hasReported = true,
                 // D3, and the same rule for battery: a report that omits one of
-                // these is a report, not an erasure.
-                location = alert.location ?: it.location,
-                battery = alert.battery ?: it.battery,
+                // these is a report, not an erasure. BandReport applies it.
+                location = band.location,
+                battery = band.battery,
                 errorMessage = null
             )
         }
@@ -338,19 +337,18 @@ class TrackViewModel(
      * Derives [TrackUiState.isOnline], [TrackUiState.elapsed] and the age of a
      * received [TrackUiState.checkIn] from the clock.
      *
-     * A null [lastReportMillis] - never reported, or a timestamp that could not
-     * be parsed - clears both rather than leaving the previous report's
-     * freshness on screen. "We cannot say how fresh this is" has to be
-     * distinguishable from "it is fresh".
+     * A band with no readable report time - never reported, or a timestamp
+     * that could not be parsed - clears both rather than leaving the previous
+     * report's freshness on screen ([BandReport.isReporting]). "We cannot say
+     * how fresh this is" has to be distinguishable from "it is fresh".
      */
     private fun recomputeStaleness() {
-        val reportedAt = lastReportMillis
         val now = clock.nowMillis()
 
         _uiState.update {
             it.copy(
-                isOnline = reportedAt != null && BandStatus.isOnline(reportedAt, now),
-                elapsed = reportedAt?.let { at -> BandStatus.elapsedSince(at, now) },
+                isOnline = band.isReporting(now),
+                elapsed = band.elapsed(now),
                 // The pill ages on the same tick. Only a received check-in has
                 // an age; the other states have nothing to recompute.
                 checkIn = if (it.checkIn is CheckInStatus.Received) {

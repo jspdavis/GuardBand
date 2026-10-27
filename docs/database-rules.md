@@ -37,7 +37,7 @@ uid; nothing reads or writes another user's record.
 
 | Path | Read by | Written by | Auth | Class, screen |
 |---|---|---|---|---|
-| `users/{uid}` (whole record) | `FirebaseUserProfileRepository.fetchProfile` (Profile tab); `.profileState` (`ProfileProvisioning` on every email or Google sign-in, `HomeViewModel`'s gate, `DeleteAccountViewModel` on start) | `.markDeletionPending`: one `setValue` replacing the record with `{ "deletion_pending": true }` (Delete account, step 2) | owner | Profile, Home gate, Account information |
+| `users/{uid}` (whole record) | `FirebaseUserProfileRepository.fetchProfile` (Device tab's header; Profile tab until 2026-10-27); `.profileState` (`ProfileProvisioning` on every email or Google sign-in, `HomeViewModel`'s gate, `DeleteAccountViewModel` on start) | `.markDeletionPending`: one `setValue` replacing the record with `{ "deletion_pending": true }` (Delete account, step 2) | owner | Profile, Home gate, Account information |
 | `users/{uid}/name`, `/email` | (inside the record reads above) | `.saveProfile` (`updateChildren`, from `ProfileProvisioning` when the record is absent); `.finalizeSignUp` (one multi-path update from the root) | owner | Sign-in, sign-up Consent step |
 | `users/{uid}/emergency_contacts` | `FirebaseContactRepository.observeContacts` (a live listener) | `addContact`, `updateContact`, `deleteContact`: each a **transaction on the whole node** | owner | Contacts tab |
 | `users/{uid}/emergency_contacts/{pushId}/{name, phone, relationship}` | (inside the node above) | `.finalizeSignUp`, one path per contact | owner | Sign-up Consent step |

@@ -18,11 +18,11 @@ import com.example.guardband.ui.alert.AlertHistoryFragment
 import com.example.guardband.ui.incident.IncidentFragment
 import com.example.guardband.ui.consent.ConsentRequiredActivity
 import com.example.guardband.ui.contacts.ContactsFragment
+import com.example.guardband.ui.device.DeviceFragment
 import com.example.guardband.ui.login.LoginActivity
 import com.example.guardband.ui.notifications.AlertNotificationsActivity
 import com.example.guardband.ui.notifications.AlertWatch
 import com.example.guardband.ui.notifications.NotificationsFragment
-import com.example.guardband.ui.profile.ProfileFragment
 import com.example.guardband.ui.settings.SettingsFragment
 import com.example.guardband.ui.track.TrackFragment
 import com.example.guardband.ui.verify.VerifyRequiredActivity
@@ -30,7 +30,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.launch
 
 /**
- * Post-auth host: three tab Fragments (Track, Contacts, Profile) under a
+ * Post-auth host: three tab Fragments (Track, Contacts, Device) under a
  * BottomNavigationView, plus three pushed Fragments: Settings and
  * Notifications from a tab's top bar, and Alert history from "See all" on
  * Track's recent-alerts panel. No Navigation Component. The destinations and
@@ -212,6 +212,10 @@ class HomeActivity : AppCompatActivity() {
                 startActivity(Intent(this, AlertNotificationsActivity::class.java))
             }
             HomeEvent.ShowNotifications -> show(HomeDestinations.NOTIFICATIONS)
+            // Tabs: showing one hides the pushed screen that asked (Settings)
+            // and brings the bar back, with the tab's item checked.
+            HomeEvent.ShowDevice -> show(HomeDestinations.DEVICE)
+            HomeEvent.ShowContacts -> show(HomeDestinations.CONTACTS)
             HomeEvent.ShowAlertHistory -> show(HomeDestinations.ALERT_HISTORY)
             is HomeEvent.ShowIncident -> showIncident(event.panicSequenceId)
 
@@ -321,7 +325,7 @@ class HomeActivity : AppCompatActivity() {
         when (tag) {
             HomeDestinations.TRACK -> TrackFragment()
             HomeDestinations.CONTACTS -> ContactsFragment()
-            HomeDestinations.PROFILE -> ProfileFragment()
+            HomeDestinations.DEVICE -> DeviceFragment()
             HomeDestinations.SETTINGS -> SettingsFragment()
             HomeDestinations.NOTIFICATIONS -> NotificationsFragment()
             HomeDestinations.ALERT_HISTORY -> AlertHistoryFragment()
@@ -332,14 +336,14 @@ class HomeActivity : AppCompatActivity() {
     private fun tagFor(menuItemId: Int): String =
         when (menuItemId) {
             R.id.nav_contacts -> HomeDestinations.CONTACTS
-            R.id.nav_profile -> HomeDestinations.PROFILE
+            R.id.nav_device -> HomeDestinations.DEVICE
             else -> HomeDestinations.TRACK
         }
 
     private fun menuItemIdFor(tabTag: String): Int =
         when (tabTag) {
             HomeDestinations.CONTACTS -> R.id.nav_contacts
-            HomeDestinations.PROFILE -> R.id.nav_profile
+            HomeDestinations.DEVICE -> R.id.nav_device
             else -> R.id.nav_track
         }
 

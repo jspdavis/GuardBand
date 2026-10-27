@@ -217,8 +217,8 @@
                         style="@style/Widget.GuardBand.SettingsDivider"
                         android:layout_marginEnd="16dp" />
 
-                    <!-- Device information Row: a placeholder, for the band
-                         once pairing exists. -->
+                    <!-- Device information Row: switches to the Device tab,
+                         which closes Settings (2026-10-27). -->
                     <LinearLayout
                         android:id="@+id/row_settings_device_info"
                         android:layout_width="match_parent"

@@ -1,0 +1,591 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Device tab (the Profile tab until 2026-10-27): a scrolling column of cards.
+    The account header, the band, the account connected to it, the pairing
+    placeholder and how the band works. Bound by ui/device/DeviceFragment.
+    No map and no coordinates anywhere on this screen.
+    DESIGN: Jul (every spacing, size, colour and card style here is a
+    placeholder built from the existing tokens)
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface_bg"
+    tools:context=".ui.device.DeviceFragment">
+
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- clipToPadding off: the top buttons' row reaches into the padding. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Top buttons (Settings and Notifications), as on Track and
+                 Contacts. The -8dp margins pull the row out of the 24dp
+                 padding the rest of the screen keeps. DESIGN: Jul -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="-8dp"
+                android:layout_marginEnd="-8dp"
+                android:layout_marginBottom="8dp">
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/ib_device_settings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:contentDescription="@string/cd_open_settings"
+                    android:src="@drawable/ic_settings"
+                    app:backgroundTint="@color/brand_primary_dark"
+                    app:elevation="4dp"
+                    app:fabCustomSize="36dp"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+                    app:tint="@color/white" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/ib_device_notifications"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:contentDescription="@string/cd_open_notifications"
+                    android:src="@drawable/ic_notifications"
+                    app:backgroundTint="@color/brand_primary_dark"
+                    app:elevation="4dp"
+                    app:fabCustomSize="36dp"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+                    app:tint="@color/white" />
+            </RelativeLayout>
+
+            <!-- a) Compact account header: avatar (photo, else initials, else
+                 the icon), name and email. Account information in Settings
+                 holds the rest. DESIGN: Jul -->
+            <LinearLayout
+                android:id="@+id/ll_device_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:layout_width="64dp"
+                    android:layout_height="64dp">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/iv_device_avatar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@color/surface_card"
+                        android:contentDescription="@string/cd_user_avatar"
+                        android:src="@drawable/ic_profile"
+                        app:contentPadding="14dp"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.GuardBand.Circle"
+                        app:tint="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/tv_device_avatar_initials"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_avatar_initials"
+                        android:fontFamily="@font/poppins_semibold"
+                        android:gravity="center"
+                        android:importantForAccessibility="no"
+                        android:textAppearance="@style/TextAppearance.GuardBand.TitleLarge"
+                        android:textColor="@color/white"
+                        android:visibility="gone"
+                        tools:text="AR"
+                        tools:visibility="visible" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tv_device_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:fontFamily="@font/poppins_semibold"
+                        android:maxLines="1"
+                        android:textAppearance="@style/TextAppearance.GuardBand.TitleLarge"
+                        android:textColor="@color/text_primary"
+                        tools:text="Alex Rivera" />
+
+                    <TextView
+                        android:id="@+id/tv_device_email"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                        android:textColor="@color/text_secondary"
+                        tools:text="alexrivera@gmail.com" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- b) The band. DESIGN: Jul -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_device_band"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                app:cardBackgroundColor="@color/surface_card"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Name and id, with the status chip on the right. -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="@drawable/bg_settings_icon_badge"
+                            android:importantForAccessibility="no"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_watch"
+                            app:tint="@color/white" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tv_device_band_name"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppins_semibold"
+                                android:text="@string/label_device_band_name"
+                                android:textAppearance="@style/TextAppearance.GuardBand.TitleMedium"
+                                android:textColor="@color/text_primary" />
+
+                            <TextView
+                                android:id="@+id/tv_device_band_id"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                                android:textColor="@color/text_secondary"
+                                tools:text="ID: guardband-001" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tv_device_band_status"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:accessibilityLiveRegion="polite"
+                            android:background="@drawable/bg_pill"
+                            android:paddingStart="12dp"
+                            android:paddingTop="4dp"
+                            android:paddingEnd="12dp"
+                            android:paddingBottom="4dp"
+                            android:textAppearance="@style/TextAppearance.GuardBand.LabelMedium"
+                            android:textColor="@color/text_secondary"
+                            android:visibility="gone"
+                            tools:text="Last seen 5 min ago"
+                            tools:visibility="visible" />
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/progress_device_band"
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="16dp"
+                        android:visibility="gone" />
+
+                    <!-- The empty state, or a read that failed with nothing to show. -->
+                    <TextView
+                        android:id="@+id/tv_device_band_message"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                        android:textColor="@color/text_secondary"
+                        android:visibility="gone"
+                        tools:text="@string/label_device_no_data" />
+
+                    <LinearLayout
+                        android:id="@+id/ll_device_band_details"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="vertical">
+
+                        <!-- Battery: the alert rows' symbol and colour, orange at 20%. -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/label_device_battery"
+                            android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                            android:textColor="@color/text_secondary" />
+
+                        <LinearLayout
+                            android:id="@+id/ll_device_battery"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:id="@+id/iv_device_battery_icon"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:importantForAccessibility="no"
+                                android:visibility="gone"
+                                tools:src="@drawable/ic_battery_mid"
+                                tools:visibility="visible" />
+
+                            <TextView
+                                android:id="@+id/tv_device_battery"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
+                                android:textColor="@color/text_primary"
+                                tools:text="64%" />
+                        </LinearLayout>
+
+                        <View
+                            style="@style/Widget.GuardBand.SettingsDivider"
+                            android:layout_marginStart="0dp"
+                            android:layout_marginTop="12dp" />
+
+                        <!-- Last alert: the alert rows' symbol on its badge, type,
+                             "5 min ago" and the place name. -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/label_device_last_alert"
+                            android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                            android:textColor="@color/text_secondary" />
+
+                        <TextView
+                            android:id="@+id/tv_device_no_alerts"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/label_device_no_alerts"
+                            android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
+                            android:textColor="@color/text_primary"
+                            android:visibility="gone" />
+
+                        <LinearLayout
+                            android:id="@+id/ll_device_last_alert"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:id="@+id/iv_device_last_alert_icon"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="@drawable/bg_alert_type_badge"
+                                android:importantForAccessibility="no"
+                                android:padding="9dp"
+                                tools:src="@drawable/ic_alert_panic"
+                                tools:tint="@color/alert_panic" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="12dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal">
+
+                                    <TextView
+                                        android:id="@+id/tv_device_last_alert_type"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:fontFamily="@font/poppins_semibold"
+                                        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                                        tools:text="Panic"
+                                        tools:textColor="@color/alert_panic" />
+
+                                    <TextView
+                                        android:id="@+id/tv_device_last_alert_time"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                                        android:textColor="@color/text_secondary"
+                                        tools:text="5 min ago" />
+                                </LinearLayout>
+
+                                <TextView
+                                    android:id="@+id/tv_device_last_alert_place"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:maxLines="2"
+                                    android:ellipsize="end"
+                                    android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                                    android:textColor="@color/text_primary"
+                                    tools:text="Osmeña Blvd, Kamputhaw, Cebu City" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <View
+                            style="@style/Widget.GuardBand.SettingsDivider"
+                            android:layout_marginStart="0dp"
+                            android:layout_marginTop="12dp" />
+
+                        <!-- Last known position: a place name only, never coordinates. -->
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/label_device_position"
+                            android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                            android:textColor="@color/text_secondary" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_map_pin"
+                                app:tint="@color/text_secondary" />
+
+                            <TextView
+                                android:id="@+id/tv_device_position"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:layout_weight="1"
+                                android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
+                                android:textColor="@color/text_primary"
+                                tools:text="Osmeña Blvd, Kamputhaw, Cebu City" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- c) The account connected to the band. DESIGN: Jul -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="@string/label_device_account_title"
+                android:textAppearance="@style/TextAppearance.GuardBand.TitleSmall"
+                android:textColor="@color/text_secondary" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_device_account"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:cardBackgroundColor="@color/surface_card"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:text="@string/label_device_sign_in_method"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/tv_device_sign_in_method"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
+                        android:textColor="@color/text_primary"
+                        tools:text="Google" />
+
+                    <View
+                        style="@style/Widget.GuardBand.SettingsDivider"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="16dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:text="@string/label_device_email_status"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/tv_device_verification"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
+                        android:textColor="@color/text_primary"
+                        tools:text="@string/label_account_verified" />
+
+                    <View
+                        style="@style/Widget.GuardBand.SettingsDivider"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="16dp" />
+
+                    <!-- Opens the Contacts tab, so it has a chevron. -->
+                    <TextView
+                        android:id="@+id/row_device_contacts"
+                        style="@style/Widget.GuardBand.SettingsRow"
+                        tools:text="Emergency contacts: 3, 1 starred" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- d) Pairing placeholder: disabled until pairing exists. DESIGN: Jul -->
+            <LinearLayout
+                android:id="@+id/row_device_pair"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:alpha="0.5"
+                android:enabled="false"
+                android:gravity="center_vertical"
+                android:minHeight="56dp"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_add"
+                    app:tint="@color/text_secondary" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:text="@string/label_device_pair"
+                    android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_device_coming_soon"
+                    android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+
+            <!-- e) How the band works: plain copy. DESIGN: Jul -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_device_how"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="@color/surface_card"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/poppins_semibold"
+                        android:text="@string/label_device_how_title"
+                        android:textAppearance="@style/TextAppearance.GuardBand.TitleSmall"
+                        android:textColor="@color/text_primary" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/label_device_how_panic"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/label_device_how_checkin"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/label_device_how_battery"
+                        android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

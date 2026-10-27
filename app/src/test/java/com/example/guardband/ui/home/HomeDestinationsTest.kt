@@ -18,9 +18,22 @@ class HomeDestinationsTest {
     @Test
     fun `the bar has exactly three tabs, Track first`() {
         assertEquals(
-            listOf(HomeDestinations.TRACK, HomeDestinations.CONTACTS, HomeDestinations.PROFILE),
+            listOf(HomeDestinations.TRACK, HomeDestinations.CONTACTS, HomeDestinations.DEVICE),
             HomeDestinations.TABS
         )
+    }
+
+    @Test
+    fun `the renamed Profile tab's saved tag restores to Track, never a crash`() {
+        assertEquals(HomeDestinations.TRACK, HomeDestinations.restoreCurrent("home_profile"))
+        assertEquals(HomeDestinations.TRACK, HomeDestinations.restoreLastTab("home_profile"))
+    }
+
+    @Test
+    fun `the Device tab is a tab and restores as itself`() {
+        assertTrue(HomeDestinations.isTab(HomeDestinations.DEVICE))
+        assertEquals(HomeDestinations.DEVICE, HomeDestinations.restoreCurrent(HomeDestinations.DEVICE))
+        assertEquals(HomeDestinations.DEVICE, HomeDestinations.restoreLastTab(HomeDestinations.DEVICE))
     }
 
     @Test

@@ -73,7 +73,7 @@
             tools:visibility="visible" />
 
         <!-- ── Top bar: settings · notifications ──────────────────────────
-             The same pair as the Contacts and Profile tabs: gear top-left,
+             The same pair as the Contacts and Device tabs: gear top-left,
              bell top-right, 36dp like the map controls and 16dp from the
              sides so the bell lines up with Layers and Navigate below it.
              Contacts and Profile match since 2026-10-20. DESIGN: Jul -->

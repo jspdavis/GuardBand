@@ -10,8 +10,11 @@
         android:icon="@drawable/ic_group"
         android:title="@string/tab_contacts" />
 
+    <!-- The Profile tab until 2026-10-27. ic_watch is a placeholder from
+         the existing set (Settings' Device information row uses it).
+         DESIGN: Jul -->
     <item
-        android:id="@+id/nav_profile"
-        android:icon="@drawable/ic_profile"
-        android:title="@string/tab_profile" />
+        android:id="@+id/nav_device"
+        android:icon="@drawable/ic_watch"
+        android:title="@string/tab_device" />
 </menu>

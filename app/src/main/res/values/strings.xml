@@ -113,7 +113,7 @@
     <!-- Home host: bottom-nav tabs -->
     <string name="tab_track">Track</string>
     <string name="tab_contacts">Contacts</string>
-    <string name="tab_profile">Profile</string>
+    <string name="tab_device">Device</string>
 
     <!-- Track -->
     <string name="cd_open_settings">Settings</string>
@@ -253,9 +253,43 @@
     <string name="label_alert_type_tracking">Location update</string>
     <string name="label_alert_type_unknown">Unknown alert</string>
 
-    <!-- Profile -->
-    <string name="label_profile_welcome">Welcome back, %1$s</string>
-    <string name="label_profile_email">Email</string>
+    <!-- Device tab (the Profile tab until 2026-10-27). Copy is plain;
+         DESIGN: Jul -->
+    <string name="label_device_band_name">GuardBand</string>
+    <string name="label_device_band_id">ID: %1$s</string>
+    <string name="label_device_status_reporting">Reporting</string>
+    <string name="label_device_status_last_seen">Last seen %1$s</string>
+    <string name="label_device_status_last_seen_unknown">Last seen: time unknown</string>
+    <string name="label_device_just_now">just now</string>
+    <plurals name="label_device_days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <string name="label_device_no_data">No data from the band yet</string>
+    <string name="label_device_battery">Battery</string>
+    <string name="label_device_battery_unknown">Not reported yet</string>
+    <string name="label_device_last_alert">Last alert</string>
+    <string name="label_device_no_alerts">No alerts yet</string>
+    <string name="label_device_position">Last known position</string>
+    <string name="label_device_position_none">No position yet</string>
+    <string name="label_device_place_unnamed">Place name not available</string>
+    <string name="label_device_position_moving">On the move. See the map on Track.</string>
+    <string name="label_device_account_title">Connected account</string>
+    <string name="label_device_sign_in_method">Sign-in method</string>
+    <string name="label_device_sign_in_email">Email and password</string>
+    <string name="label_device_sign_in_google">Google</string>
+    <string name="label_device_sign_in_both">Email and password, Google</string>
+    <string name="label_device_sign_in_unknown">Unknown</string>
+    <string name="label_device_email_status">Email</string>
+    <string name="label_device_contacts">Emergency contacts: %1$d, %2$d starred</string>
+    <string name="label_device_contacts_loading">Emergency contacts: loading…</string>
+    <string name="label_device_contacts_unavailable">Emergency contacts: couldn\'t load</string>
+    <string name="label_device_pair">Pair a band</string>
+    <string name="label_device_coming_soon">Coming soon</string>
+    <string name="label_device_how_title">How the band works</string>
+    <string name="label_device_how_panic">Panic: hold the button to send an alert.</string>
+    <string name="label_device_how_checkin">Check-in: double-press for a silent \"I\'m safe\".</string>
+    <string name="label_device_how_battery">Low battery: the band sends an alert at 20%.</string>
 
     <!-- Settings -->
     <string name="label_settings_title">Settings</string>

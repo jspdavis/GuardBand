@@ -40,6 +40,17 @@ data class AlertUiState(
     val recent: List<Alert> = emptyList(),
 
     /**
+     * The newest entry in the window of **any** type, tracking updates
+     * included: the band's newest report, as `devices/{id}/latest` would hold
+     * it (the band writes history first, then `latest`, with the same
+     * payload). Null when the window is empty. Not shown by the alert
+     * screens; the Device tab reads the band's status and battery from it,
+     * so it needs no listener of its own. Kept through a failed read, like
+     * the lists.
+     */
+    val newestReport: Alert? = null,
+
+    /**
      * Non-null when the last read failed **and** there is nothing on screen to
      * fall back to. Shows the error view and its Retry button.
      *

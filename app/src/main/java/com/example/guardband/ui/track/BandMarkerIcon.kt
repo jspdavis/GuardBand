@@ -45,7 +45,7 @@ import kotlin.math.max
  * initials one lives as long as the drawable that holds it.
  *
  * The link is never logged, and nothing is stored beyond Coil's own caches,
- * the same ones the Profile tab's avatar already uses.
+ * the same ones the Device tab's avatar already uses.
  *
  * One per Track view. Call [release] from `onDestroyView`.
  */

@@ -2,6 +2,8 @@
 
 How the GuardBand app is structured after login: one host Activity, three bottom-nav tabs, three pushed screens, and the auth gate around them.
 
+> **2026-10-27: the Profile tab is now the Device tab.** The bar is **Track, Contacts, Device**. The Device tab (`ui/device/`, tag `home_device`, menu item `nav_device`) shows the band's status, battery, last alert and last known position, the account connected to it and a pairing placeholder, with the old Profile header (avatar, name, email) compact at the top. Settings' Device information row opens it. See **[device-tab.md](device-tab.md)**. Where this file says "Profile" below, it describes the tab as it was.
+>
 > **2026-10-19: the Alert tab is gone.** The bar is **Track, Contacts, Profile** (icon-only). Track shows the newest alerts in a draggable bottom sheet over the map, and its **See all** opens **Alert history**, a pushed screen holding the whole list. Both read one host-scoped `AlertViewModel` ([alert-data.md](alert-data.md) §8). Sections below that describe the four-tab layout are kept for the record and marked where they changed.
 
 | | |
@@ -56,7 +58,7 @@ SplashActivity ──(signed in)────────────────
            SignUp (3) ────┘   │                            ▼
            Forgot (4)         │              ┌──────── HomeActivity ────────┐
                               │              │                              │
-                              │              │  [Track] [Contacts] [Profile]   ◄─ bottom nav
+                              │              │  [Track] [Contacts] [Device]    ◄─ bottom nav
                               │              │     │                        │
                               │              │     ├─ gear ─► Settings      │  pushed: bar
                               │              │     ├─ bell ─► Notifications │  hidden
@@ -105,12 +107,12 @@ Every destination is a Fragment identified by a tag:
 |---|---|---|---|
 | `home_track` | `TrackFragment` | tab (default) | `nav_track` |
 | `home_contacts` | `ContactsFragment` | tab | `nav_contacts` |
-| `home_profile` | `ProfileFragment` | tab | `nav_profile` |
+| `home_device` | `DeviceFragment` | tab | `nav_device` |
 | `home_settings` | `SettingsFragment` | pushed | (none) |
 | `home_notifications` | `NotificationsFragment` | pushed | (none) |
 | `home_alert_history` | `AlertHistoryFragment` | pushed | (none) |
 
-The tags live in `ui/home/HomeDestinations`, a pure object, so the restore rule below is a JVM test (`HomeDestinationsTest`). `home_alert` / `AlertFragment` / `nav_alert` were the Alert tab until 2026-10-19.
+The tags live in `ui/home/HomeDestinations`, a pure object, so the restore rule below is a JVM test (`HomeDestinationsTest`). `home_alert` / `AlertFragment` / `nav_alert` were the Alert tab until 2026-10-19; `home_profile` / `ProfileFragment` / `nav_profile` were the Profile tab until 2026-10-27. Both old tags restore to Track. (`home_incident`, the Incident view, is also pushed; see CLAUDE.md "Home host".)
 
 ### `show(tag)`
 
@@ -144,6 +146,8 @@ The saved tags are read back through `HomeDestinations.restoreCurrent` / `restor
 | `ShowSettings` | Track's gear is tapped | `show(home_settings)` |
 | `ShowNotifications` | Track's bell is tapped | `show(home_notifications)` |
 | `ShowAlertHistory` | See all on Track's recent-alerts panel | `show(home_alert_history)` |
+| `ShowDevice` | Settings' Device information row (2026-10-27) | `show(home_device)`: a tab, so Settings is hidden and the bar returns |
+| `ShowContacts` | The Device tab's emergency-contacts row (2026-10-27) | `show(home_contacts)` |
 
 Fragments reach `HomeViewModel` with `by activityViewModels { HomeViewModel.Factory }`. They never cast `requireActivity()` to `HomeActivity`.
 
@@ -194,15 +198,15 @@ Type colors:
 
 Timestamps go through `AlertFormatting.formatTimestamp`. It parses ISO 8601 UTC with or without milliseconds: SCHEMA.md's example has none, and the debug mock sender writes them. The result is shown in local time as "Oct 4, 4:45 PM". A value it can't parse is shown raw. `SimpleDateFormat` is used because `java.time` needs API 26 and minSdk is 24.
 
-### Profile, `ui/profile/`
-- ✅ Avatar, "Welcome back, *name*" and email. Read-only.
-- The rest of the tab's content is **not yet defined**. (An inert "Account information" card sat at the bottom until 2026-10-14; it was removed, so that screen has one entry point, in Settings.)
+### Device, `ui/device/` (the Profile tab, `ui/profile/`, until 2026-10-27)
+- ✅ A compact header (avatar with photo or initials, name, email), then the band card, the connected-account card with the emergency-contacts count (tap → Contacts tab), a disabled "Pair a band", and "How the band works". See [device-tab.md](device-tab.md).
+- The Profile tab it replaced showed only the avatar, "Welcome back, *name*" and the email. (An inert "Account information" card sat at the bottom until 2026-10-14; it was removed, so that screen has one entry point, in Settings.)
 
 ### Settings (pushed), `ui/settings/`
 - White background, the same as the rows and the top bar (back arrow + "Settings"), so the rows sit on the screen rather than in a raised card (2026-10-19; it was grey `surface_muted` with a shadowed card). Contacts, Profile, Notifications and Alert history went white the same day.
 - **Every top bar** (Settings, Notifications, Alert history, Account information, Changelog) has a 1dp `divider` line along its bottom edge, from the shared `@drawable/bg_top_bar`, so a white bar stays distinct on a white screen. Change the line there, not per layout.
 - ✅ **Account information** opens `ui/account/AccountActivity` (below).
-- 🟡 **Placeholder row:** Device information shows "Coming soon." (A "Privacy & security" placeholder was removed on 2026-10-19. Change password became a real screen on 2026-10-22 and moved into Account information on 2026-10-27.)
+- ✅ **Device information** switches to the Device tab (2026-10-27; it showed "Coming soon." before). (A "Privacy & security" placeholder was removed on 2026-10-19. Change password became a real screen on 2026-10-22 and moved into Account information on 2026-10-27.)
 - ✅ **Display** opens `ui/display/DisplayActivity`: the theme, Use phone setting / Light / Dark (2026-10-20). See CLAUDE.md "Dark mode".
 - ✅ **Alert notifications** opens `ui/notifications/AlertNotificationsActivity`, which holds the switch (2026-10-20).
 - ✅ **Changelog** opens `ChangelogActivity`; **About** opens `ui/about/AboutActivity`: the version, and the **Privacy Notice** row, which opens the hosted page (it was a Settings row until 2026-10-20).
@@ -324,7 +328,7 @@ class ExampleFragment : Fragment(R.layout.fragment_example) {
 
 - **Collect with `viewLifecycleOwner`,** never the Fragment's own lifecycle.
 - **Hiding doesn't pause.** Show/hide doesn't change a Fragment's lifecycle, so hidden tabs keep collecting. That's what keeps Track's alerts panel live while another tab is showing.
-- **A ViewModel two screens share is `activityViewModels`.** `AlertViewModel` is the one case: Track's panel and Alert history both use `by activityViewModels { AlertViewModel.Factory }`, so there is one instance and one listener for both.
+- **A ViewModel two screens share is `activityViewModels`.** `AlertViewModel` was the first case: Track's panel, Alert history and the Device tab all use `by activityViewModels { AlertViewModel.Factory }`, so there is one instance and one listener for all three. `ContactsViewModel` is the second (2026-10-27): the Contacts tab and the Device tab's count share it. Don't turn either back into `by viewModels`; that adds a second listener.
 - **Toasts and `startActivity`** run in the Fragment (`requireContext()`). Fragment transactions run only in `HomeActivity`.
 - **Pushed screens' back arrow** calls `requireActivity().onBackPressedDispatcher.onBackPressed()`, so the host decides where Back goes.
 - **Ids are snake_case, prefixed by screen:** `iv_track_avatar`, `rv_contacts`. List-row ids use `item_`: `tv_item_contact_name`.
@@ -352,13 +356,13 @@ class ExampleFragment : Fragment(R.layout.fragment_example) {
 
 | Kind | Items |
 |---|---|
-| Menu | `menu_home_bottom_nav.xml` (`nav_track`, `nav_contacts`, `nav_profile`; `nav_alert` removed 2026-10-19) |
-| Icons (Material, `?attr/colorControlNormal` tint) | `ic_map` (Track tab), `ic_phone` (Contacts, since 2026-10-19; `ic_group` before, still used by sign-up's consent screen), `ic_warning` (was the Alert tab; Settings still uses it), `ic_profile` (Profile, avatars; from the checkpoint), `ic_settings`, `ic_notifications`, `ic_arrow_back` (from the checkpoint's `back_arrow`), `ic_delete`, `ic_navigation`, `ic_layers`, `ic_check_circle`, `ic_chevron_right` |
+| Menu | `menu_home_bottom_nav.xml` (`nav_track`, `nav_contacts`, `nav_device`; `nav_alert` removed 2026-10-19; `nav_profile` renamed `nav_device` 2026-10-27) |
+| Icons (Material, `?attr/colorControlNormal` tint) | `ic_map` (Track tab), `ic_phone` (Contacts, since 2026-10-19; `ic_group` before, still used by sign-up's consent screen), `ic_warning` (was the Alert tab; Settings still uses it), `ic_watch` (the Device tab since 2026-10-27, a placeholder; also Settings' Device information row), `ic_profile` (the avatar's fallback icon; was the Profile tab's; from the checkpoint), `ic_settings`, `ic_notifications`, `ic_arrow_back` (from the checkpoint's `back_arrow`), `ic_delete`, `ic_navigation`, `ic_layers`, `ic_check_circle`, `ic_chevron_right` |
 | Shapes | `bg_pill.xml` (white pill with a hairline border). `bg_status_dot.xml` was removed on 2026-10-19, when the alert rows' dots became symbols (`alert-data.md`, D1) |
 | Color selector | `color/bottom_nav_item.xml`: green when checked, `text_primary` otherwise |
 | Color tokens | `alert_panic`, `alert_checkin`, `alert_low_battery`, `alert_tracking` |
 | Styles | `Widget.GuardBand.BottomNavigation`: white, no M3 indicator pill, tint selector, always labeled. `Widget.GuardBand.SettingsRow` / `SettingsDivider`. `ShapeAppearance.GuardBand.Circle` (from the theme pass) is now used for every avatar and the round map buttons. |
-| Strings | `tab_*`, plus per-screen `label_track_*`, `label_contacts_*`, `label_alert_*`, `label_profile_*`, `label_settings_*`, `label_notifications_*`, `cd_*` content descriptions and dialog strings |
+| Strings | `tab_*`, plus per-screen `label_track_*`, `label_contacts_*`, `label_alert_*`, `label_device_*` (`label_profile_*` until 2026-10-27), `label_settings_*`, `label_notifications_*`, `cd_*` content descriptions and dialog strings |
 | Dependencies | `androidx.fragment:fragment-ktx:1.8.2`, `androidx.recyclerview:recyclerview:1.3.2` (in `gradle/libs.versions.toml`) |
 
 ---
@@ -432,9 +436,9 @@ Run `gradlew.bat assembleDebug`, then on a device:
 - [✓] Back from Login doesn't return to Home.
 
 **Three tabs and Alert history (2026-10-19)**
-- [ ] The bar shows exactly three icons: Track, Contacts, Profile. Each opens its screen; TalkBack reads each icon's name.
+- [ ] The bar shows exactly three icons: Track, Contacts, Device (Profile until 2026-10-27). Each opens its screen; TalkBack reads each icon's name.
 - [ ] Track shows the recent-alerts sheet collapsed low over the bottom of the map: just the handle and the "Recent alerts · See all" header. Drag it up: at most three rows, newest first. Drag it down, or tap the handle: back to collapsed. It cannot be dragged off screen.
-- [ ] Track's top bar is the gear top-left and the bell top-right, in the same places as on Contacts and Profile. There is no avatar.
+- [ ] Track's top bar is the gear top-left and the bell top-right, in the same places as on Contacts and Device. There is no avatar.
 - [ ] The Contacts icon in the bar is a phone.
 - [ ] With a fix, tapping the round target button after you have dragged the map away (and zoomed far out) animates back to the band at street level and follows again. Without a fix it is greyed out. Nothing opens Google Maps.
 - [ ] **See all** opens Alert history with the bar hidden. Back, and the back arrow, return to Track with the bar back.

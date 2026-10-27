@@ -101,6 +101,25 @@ class AlertViewModelTest {
         assertEquals(listOf(1L), state.history.map { it.sequenceId })
     }
 
+    @Test
+    fun `the newest report includes tracking updates, for the Device tab`() = runTest {
+        val repository = FakeAlertRepository(
+            history(alert(1, "PANIC"), alert(2, "TRACKING_UPDATE"))
+        )
+        val state = viewModel(repository).uiState.first { !it.isLoading }
+
+        assertEquals(2L, state.newestReport?.sequenceId)
+        // The lists still hide it (D1).
+        assertEquals(listOf(1L), state.history.map { it.sequenceId })
+    }
+
+    @Test
+    fun `an empty window has no newest report`() = runTest {
+        val state = viewModel(FakeAlertRepository(history())).uiState.first { !it.isLoading }
+
+        assertNull(state.newestReport)
+    }
+
     // ── D2: the latest card comes from history ────────────────────────────────
 
     @Test

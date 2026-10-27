@@ -33,7 +33,14 @@ object RepositoryProvider {
         FirebaseContactRepository(FirebaseProvider.database, FirebaseProvider.auth)
     }
 
+    /**
+     * The band every screen watches: the one hard-coded id until pairing
+     * exists (D4). The alert repository reads it, and the Device tab shows it
+     * as the band's id; ViewModels never choose which band to read.
+     */
+    val watchedBandId: String = DeviceConstants.DEFAULT_DEVICE_ID
+
     val alertRepository: AlertRepository by lazy {
-        FirebaseAlertRepository(FirebaseProvider.database, DeviceConstants.DEFAULT_DEVICE_ID)
+        FirebaseAlertRepository(FirebaseProvider.database, watchedBandId)
     }
 }

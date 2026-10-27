@@ -216,7 +216,9 @@ staleness window.
 ## 5. The receiver launcher
 
 Splash → Login (or straight to Home if a session is stored) → `HomeActivity`
-and its three tabs: Track, Contacts, Profile. **Track reads the band twice**:
+and its three tabs: Track, Contacts, Device (Profile until 2026-10-27; the
+Device tab shows the band's status, battery and last alert from the same
+history read, [device-tab.md](device-tab.md)). **Track reads the band twice**:
 its map reads `latest`, and its recent-alerts panel reads `history`. The full
 history is **Alert history**, opened with the panel's **See all**. (Until
 2026-10-19 that was a fourth tab, the Alert tab.)

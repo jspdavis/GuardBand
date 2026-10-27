@@ -21,7 +21,7 @@ Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targ
 ./gradlew lint
 ```
 
-On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 842 JVM unit tests (2026-10-27), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
+On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 880 JVM unit tests (2026-10-27), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
 
 `app/google-services.json` is required for the `com.google.gms.google-services` plugin. It points at the Firebase project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan, so there are no Cloud Functions).
 
@@ -66,7 +66,7 @@ com/example/guardband/
 │   ├── splash/         Splash → Home if signed in, else Login (2 s countdown)
 │   ├── auth/           GoogleIdTokenProvider + GoogleIdTokenResult (the only androidx.credentials users)
 │   ├── avatar/         AvatarPhoto (pure: which Google photo, if any) + AvatarImage (the Coil binder);
-│   │                 the Profile tab's avatar (Track's avatar was removed 2026-10-19)
+│   │                 the Device tab's avatar, photo or initials (Track's avatar was removed 2026-10-19)
 │   ├── login/          email + password, and "Continue with Google"
 │   ├── signup/         Account → Name → Contacts → Consent; Contacts → Consent in complete-profile mode;
 │   │                 then Welcome, once per account (its only route is Consent's success)
@@ -88,9 +88,10 @@ com/example/guardband/
 │   │                 add/edit dialog, the Emergency star, delete (trash icon or long-press the row)
 │   ├── alert/          AlertHistoryFragment (pushed from Track's See all): latest status + incident history;
 │   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel
-│   ├── profile/        Profile tab: welcome header + user info
+│   ├── device/         Device tab (the Profile tab until 2026-10-27): account header, band card,
+│   │                 connected account + contacts count, pairing placeholder (see "Device tab")
 │   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row.
-│   │                 A chevron means another screen of the app; Device information is a placeholder
+│   │                 A chevron means another screen of the app; Device information opens the Device tab
 │   ├── display/        DisplayActivity, opened from Settings: the theme (ThemeChoice, DisplayPrefs)
 │   ├── about/          AboutActivity, opened from Settings: version and the Privacy Notice row
 │   │                 (a web page, so no chevron)
@@ -127,12 +128,12 @@ Conventions (copy `ui/login/*` as the reference):
 ### Home host (Fragments)
 
 - **No Navigation Component.** `HomeActivity` drives a `BottomNavigationView` (`menu_home_bottom_nav.xml`) with a manual `FragmentManager`: each Fragment is added once by tag, then shown or hidden, so tab state survives switches. Don't add `replace()`, a back stack, or a nav graph. The tags, and how a saved one is read back, are `HomeDestinations`. **The one exception is the Incident view** (`HomeDestinations.INCIDENT`, 2026-10-27): `HomeActivity.showIncident` adds a new `IncidentFragment` (panic number in its arguments) each time one opens, and `show()` **removes** it whenever anything else is shown, so its live RTDB listener ends with it. Back from it returns to the screen that opened it (`incidentReturnTag`: Track or Alert history), not to the last tab. Don't make it added-once-and-hidden: its listener would then run until Log Out.
-- **Tabs (three, icon-only):** Track (default), Contacts, Profile. **Pushed screens:** Settings (gear) and Notifications (bell), opened from any tab's top bar, and **Alert history**, opened from "See all" on Track's recent-alerts panel. While one is showing, the bottom bar is hidden, and Back (or the screen's back arrow) returns to the last tab and brings the bar back. Back on a tab exits. There is no Alert tab (removed 2026-10-19): Track shows the newest alerts, and the full history is the pushed screen. A restored tag the host no longer has (the old `home_alert`) falls back to Track.
+- **Tabs (three, icon-only):** Track (default), Contacts, Device (Profile until 2026-10-27; a saved `home_profile` restores to Track). **Pushed screens:** Settings (gear) and Notifications (bell), opened from any tab's top bar, and **Alert history**, opened from "See all" on Track's recent-alerts panel. While one is showing, the bottom bar is hidden, and Back (or the screen's back arrow) returns to the last tab and brings the bar back. Back on a tab exits. There is no Alert tab (removed 2026-10-19): Track shows the newest alerts, and the full history is the pushed screen. A restored tag the host no longer has (the old `home_alert`) falls back to Track.
 - **Auth gate (two checks):** `SplashViewModel` routes on `isLoggedIn()`, and `HomeViewModel` re-checks in `init` and emits `NavigateToLogin`. The second check used to be the load-bearing one, because the in-memory session died with the process; now that the session is `FirebaseAuth.currentUser` it rarely fires, and it is kept for a restore after the account was signed out or disabled elsewhere. Settings, Notifications and Alert history are inside the host, so they're covered too. Since 2026-10-14 the host also keeps the tabs covered until the account's record has been read (see "Consent gate").
 - **Fragments follow the Activity conventions,** with these differences:
   - Use `Fragment(R.layout.x)`, and bind views in `onViewCreated` with `view.findViewById`.
   - Collect flows with `viewLifecycleOwner.lifecycleScope.launch { viewLifecycleOwner.repeatOnLifecycle(STARTED) { … } }`.
-  - Get the screen's own ViewModel with `by viewModels { XViewModel.Factory }`. The one exception is `AlertViewModel`, which Track's panel and Alert history both get with `by activityViewModels { AlertViewModel.Factory }`, so the two screens share one instance and one history subscription.
+  - Get the screen's own ViewModel with `by viewModels { XViewModel.Factory }`. There are two exceptions, both host-scoped with `by activityViewModels { … }` so there is one instance and one listener: `AlertViewModel` (Track's panel, Alert history and the Device tab) and, since 2026-10-27, `ContactsViewModel` (the Contacts tab and the Device tab's count). **Don't turn either back into `by viewModels`**: the Device tab would then need a second listener.
   - Host navigation goes through the shared `HomeViewModel` via `by activityViewModels { HomeViewModel.Factory }` (e.g. Track's gear calls `homeViewModel.onSettingsClicked()`). The Activity executes the resulting `HomeEvent`; Fragments never cast `requireActivity()` to `HomeActivity`.
   - A pushed screen's back arrow calls `requireActivity().onBackPressedDispatcher.onBackPressed()`.
 - **Lists** use `ListAdapter` + `DiffUtil` with `findViewById` in the ViewHolder (`ContactAdapter`, `AlertHistoryAdapter`).
@@ -144,7 +145,7 @@ Declared dependencies: AppCompat, Material, ConstraintLayout, CardView (the rede
 Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cloud Functions). Auth is **email + password** and **Google** (see "Google sign-in" below).
 
 - **Firebase calls live only in repository classes.** No Firebase import belongs in an Activity, Fragment or ViewModel. `FirebaseProvider` owns the single `FirebaseAuth` and `FirebaseDatabase`; `FirebaseDatabase.getInstance()` takes the URL from `google-services.json`, so never hardcode it.
-- **The session is `FirebaseAuth.currentUser`,** which the SDK persists, so it survives process death. `currentUser()` is synchronous and safe in a ViewModel's constructor, but it fills `id`, `name` (the Firebase display name, set at sign-up) and `email`, which is the whole of `User`. Profile still reads `users/{uid}` because the stored record is authoritative, but the screen is never blank while it waits.
+- **The session is `FirebaseAuth.currentUser`,** which the SDK persists, so it survives process death. `currentUser()` is synchronous and safe in a ViewModel's constructor, but it fills `id`, `name` (the Firebase display name, set at sign-up) and `email`, which is the whole of `User`. The Device tab's header still reads `users/{uid}` because the stored record is authoritative, but the screen is never blank while it waits.
 - **Failures are typed.** Repositories return `Result.failure(AuthError)`, and `FirebaseAuthErrorMapper` maps `FirebaseAuthException.errorCode`, never the exception message — messages are localised and change between SDK versions. `AuthError` carries no message and suppresses its stack trace, so Firebase text cannot reach a log or a Toast.
 - **Login must not distinguish a wrong password from an unknown account,** and forgot-password must confirm identically for an unregistered email. With email-enumeration protection on, Firebase returns the same code for both anyway; the UI must not undo that.
 - **Password reset happens in the app, not in a browser.** `sendPasswordResetEmail` still sends Firebase's own email, but the link in it is an Android App Link onto `ResetPasswordActivity`, so the new password is set inside GuardBand. Nothing like `otpPlain` or `pendingPassword` is ever written, and there is still **no typed verification code** — see "Forgot password" below.
@@ -329,7 +330,7 @@ The signed-in user's own record, separate from the band's `devices/` tree:
 - **Consent is recorded, not just collected.** `finalizeSignUp` writes `accepted`, a server `acceptedAt` and `UserProfileRepository.CONSENT_VERSION` in the same atomic commit as the profile and contacts, so a profile can never exist without one. Bump the version whenever `label_signup_consent_statement` changes what is being agreed to.
 - **Sign-up finalization is one atomic write.** `UserProfileRepository.finalizeSignUp` puts the profile and every contact into a single multi-path `updateChildren`, so sign-up cannot half-succeed. That is what makes the Retry safe: there is no partial state to reconcile. Registration is deliberately **two** calls — `AuthRepository.createAccount` then `finalizeSignUp` — and the `accountCreated` guard in `SignUpContactsViewModel` means a retry resumes at the write. When they were one call, a failed write left the account created and the only retry went back through account creation, which then failed as "email already in use", so that address could never finish registering.
 - **`saveProfile` merges, never replaces.** It `updateChildren`s its three fields. A `setValue` on `users/{uid}` would delete every emergency contact under it.
-- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); Profile falls back to the session's values when the record is missing or the read fails. Track reads no profile at all and has had no avatar since 2026-10-19; its band marker shows the session's Google photo or initials ("Track and map"). RTDB disk persistence is **not** enabled.
+- **Reads:** contacts come from a `callbackFlow` over a `ValueEventListener` and the list is never edited locally, so what is on screen is what is stored. The profile is a one-shot suspend read (`fetchProfile`); the Device tab's header falls back to the session's values when the record is missing or the read fails. Track reads no profile at all and has had no avatar since 2026-10-19; its band marker shows the session's Google photo or initials ("Track and map"). RTDB disk persistence is **not** enabled.
 - **Failures are typed and mapped by code.** `ContactError` + `FirebaseDatabaseErrorMapper`, on `DatabaseError.getCode()`, never on a message. That code is only reachable through the SDK's completion-listener and `ValueEventListener` callbacks — an awaited `Task` fails with a bare `DatabaseException` carrying localised prose — which is why these repositories wrap the listener forms in `suspendCancellableCoroutine` instead of using `.await()`.
 - **Contact phone numbers are never logged**, and neither are contact names. They are a third party's personal data, not the user's own. Nothing in `data/` logs at all.
 
@@ -496,7 +497,7 @@ task cleared).
   nothing server-side requires consent.
 - **Known limits.** An account that reaches the gate with no record at all
   (`ABSENT`: its provisioning write failed) gets only `consent` written, and
-  the Profile tab falls back to the session's name and email. A first-time
+  the Device tab falls back to the session's name and email. A first-time
   Google user who abandons the contacts step now meets this screen on their
   next launch and can agree with **no emergency contacts**: the gate checks
   consent, not contacts.
@@ -763,9 +764,12 @@ commit.
 
 **The band status panel was removed from the screen (2026-10-14).** The
 Check-in pill is now Track's one status line, so the Reporting badge, "Last
-seen" and battery are no longer shown. `TrackViewModel` still computes
-`isOnline`, `elapsed` and `battery` and the tests still cover them; the rules
-below are what they mean if a screen shows them again.
+seen" and battery are no longer shown there. `TrackViewModel` still computes
+`isOnline`, `elapsed` and `battery`; the **Device tab** shows them (2026-10-27).
+**`ui/track/BandReport` is the one place these rules live** (retained
+position and battery, reporting at under 180 s, last seen, low battery at
+20%), used by Track (fed `latest`) and the Device tab (fed the history
+window's newest entry). Don't re-derive any of them in a ViewModel.
 
 **"Reporting", not "Online".** `BandStatus.ONLINE_THRESHOLD_MS` is **180 s**,
 three of FR-09's 60 s tracking intervals, so one dropped update does not flip
@@ -876,6 +880,32 @@ the user-agent restriction and that cap. A real release needs a paid plan.
 and the D4 follow logic. All of it needs a real `Context`, a running map or an
 instrumented test, and the project declares no mocking library. The testable
 logic was lifted out instead — `BandStatus` and the ViewModel.
+
+## Device tab
+
+> What it shows, where each value comes from, the pairing shape and the
+> phone checks: [docs/device-tab.md](docs/device-tab.md).
+
+The third tab since 2026-10-27 (`ui/device/`, `home_device`), in place of
+Profile. Four things are easy to break:
+
+- **No listener of its own.** `DeviceFragment` hands `DeviceViewModel` the
+  state of the host-scoped `AlertViewModel` (status, battery and last alert,
+  from `AlertUiState.newestReport` and `latest`) and `ContactsViewModel` (the
+  count). Its only call is the one-shot `fetchProfile`. "Now" is
+  `AlertUiState.nowMillis`, so it has no ticker either.
+- **No coordinates, and no geocoding of a tracking update.** The last known
+  position is named only when it is an alert's, with the name the alert
+  screens already found (`DeviceViewModel.positionOf`); a tracking position
+  reads "On the move". The Privacy Notice covers the geocoder for alert
+  positions only, so naming a tracking point needs a notice change and a
+  `CONSENT_VERSION` bump first.
+- **Pairing is a shape, not logic.** `DevicePairing` is `Paired` or
+  `Unpaired`; it is always `Paired` with `RepositoryProvider.watchedBandId`,
+  which the Factory passes for display only. No band nickname: new stored
+  data needs the notice first.
+- **Settings' Device information row and the contacts row** navigate through
+  `HomeViewModel` (`ShowDevice`, `ShowContacts`), which `show()` a tab.
 
 ## Check-in status
 

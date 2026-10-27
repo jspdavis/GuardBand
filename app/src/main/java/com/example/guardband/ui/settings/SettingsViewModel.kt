@@ -16,8 +16,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * Log Out lives here (moved from the old Dashboard, per the Figma). Account
  * information opens its own screen, which holds Change password (a row here
  * until 2026-10-27) and Delete account; Display holds the theme (light, dark,
- * or the phone's); Device information (the band, once pairing exists) is a
- * placeholder until its screen exists; About
+ * or the phone's); Device information switches to the Device tab, through
+ * the host (the Fragment calls
+ * [HomeViewModel][com.example.guardband.ui.home.HomeViewModel] directly, as
+ * Track's gear does), so it is not an event here; About
  * holds the version and the Privacy Notice, which was a row here until
  * 2026-10-20.
  *
@@ -49,11 +51,6 @@ class SettingsViewModel(
         _events.trySend(SettingsEvent.OpenAlertNotifications)
     }
 
-    /** Device information, until pairing exists. */
-    fun onPlaceholderRowClicked() {
-        _events.trySend(SettingsEvent.ShowMessage(MSG_COMING_SOON))
-    }
-
     /** Display: the app's theme. */
     fun onDisplayClicked() {
         _events.trySend(SettingsEvent.OpenDisplay)
@@ -75,8 +72,6 @@ class SettingsViewModel(
     }
 
     companion object {
-        const val MSG_COMING_SOON = "Coming soon."
-
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 SettingsViewModel(RepositoryProvider.authRepository)

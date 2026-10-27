@@ -51,13 +51,14 @@ import org.osmdroid.views.overlay.Overlay
  * `track_recent_alerts_panel` (its own ids
  * are listed on [RecentAlertsPanel]), plus the top bar's `ib_track_settings`
  * (top-left) and `ib_track_notifications` (top-right), placed as on the
- * Contacts and Profile tabs.
+ * Contacts and Device tabs.
  *
  * Gear and bell forward to the shared [HomeViewModel], which asks the host to
  * show Settings or Notifications; the sheet's "See all" does the same for the
  * Alert history screen. The sheet's rows come from the host-scoped
  * [AlertViewModel], the same instance the history screen reads. Track has no
- * avatar since 2026-10-19; the Profile tab is reached from the bar.
+ * avatar since 2026-10-19; the Device tab (the Profile tab until
+ * 2026-10-27) is reached from the bar.
  *
  * **The band's marker is a face** (2026-10-19): a round photo or initials in
  * a white ring with a pointer, drawn by [BandMarkerIcon] from
