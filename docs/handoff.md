@@ -1,8 +1,8 @@
 # Handoff
 
-**As of 2026-10-27 · `mvvm-main` at `9fbd83b` (the Device tab)
-plus its Changelog/handoff commit, pushed · `main` fast-forwarded to the same
-commit (`git push origin mvvm-main:main`) · 880 JVM unit tests, 0 failures ·
+**As of 2026-10-28 · `mvvm-main` at `21fcf18` (the band viewer, placeholder
+only) plus its handoff commit, pushed · `main` fast-forwarded to the same
+commit (`git push origin mvvm-main:main`) · 918 JVM unit tests, 0 failures ·
 `./gradlew lint` passes with no errors · nothing in flight.** Run `git status -sb` and `git log origin/mvvm-main -1` before
 trusting any hash here.
 
@@ -48,7 +48,7 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 | **Alerts** | Alert history (pushed screen): latest alert card plus the list by day, colour-coded by type (panic, check-in, low battery, unknown), with place names instead of coordinates (Android Geocoder), battery level and "5 min ago" times. Tracking updates are hidden from lists. **Incident view** (pushed screen): a panic row, a panic pin or the face's "View incident" opens the panic on a map with the tracking updates after it drawn as a path, plus its time, place, latest battery and update count. |
 | **Notifications** | The bell opens an inbox of the band's alerts by day. Opt-in **alert notifications** (Settings): a foreground service keeps the listener open and posts each new alert as a system notification, panic silent for the wearer's discretion, nothing identifying on the lock screen. |
 | **Contacts tab** | Emergency contacts: add/edit (tap a card)/delete (trash or hold), search, relationship filter chips, an Emergency star that sorts and badges. At least one contact always; phone numbers stored as E.164. |
-| **Device tab** (was Profile) | A compact header (photo or initials, name, email); the band: "Reporting" or "Last seen 5 min ago", battery (orange at 20%), last alert with time and place name, last known position as a place name ("On the move" while tracking); the connected account (sign-in method, email verification, "Emergency contacts: N, M starred" opening Contacts); "Pair a band" (Coming soon); how the band works. Always shows the one hard-coded band. [`device-tab.md`](device-tab.md). |
+| **Device tab** (was Profile) | A compact header (photo or initials, name, email); the band: "Reporting" or "Last seen 5 min ago", battery (orange at 20%), last alert with time and place name, last known position as a place name ("On the move" while tracking); the connected account (sign-in method, email verification, "Emergency contacts: N, M starred" opening Contacts); "Pair a band" (Coming soon); how the band works. Always shows the one hard-coded band. [`device-tab.md`](device-tab.md). At the top, a **band viewer**: the band on a turntable to drag round, built to play rendered frames, **showing a still placeholder** until the frames exist (§3, item 14). [`band-viewer.md`](band-viewer.md). |
 | **Settings** | Account information (details, verification status, Change password, Delete account), Alert notifications, Display (Light/Dark/System), Device information (opens the Device tab), About (version, Privacy Notice), Changelog, Log Out. |
 | **Mock sender** (debug builds only) | Plays the band with its one button: hold 1.5 s = panic (then tracking every 5 s for 30 min), double-press = check-in, hold 5 s during a panic = cancel (sends a check-in). A battery slider sets the level reported and sends a low-battery alert at 20%. |
 
@@ -187,6 +187,26 @@ says what it depends on and what it would touch.
     bump**, since the band would share location outside emergencies.
     Discussed 2026-10-27 and backlogged; nothing built.
 
+### Waiting on design
+
+14. **Band model and turntable frames** (waiting on Jul: design and
+    modelling; the viewer is built, the model is not). The Device tab's band
+    viewer plays a placeholder. Jul models the band in Blender from the
+    concept image (charcoal gray composite strap, neon green perforated
+    liner, brushed steel double-ring clasp, three round buttons with green
+    LEDs, OLED strip) and renders 36 to 72 transparent WebP frames into the
+    viewer's frame folder; no code change is needed. Decide first what the
+    three round elements on the concept are: the concept labels them an
+    HR/SpO2 sensor array, but the requirements and SCHEMA.md contain no
+    heart-rate or blood-oxygen data, and showing one would imply collecting
+    health data (Privacy Notice change and a CONSENT_VERSION bump). A
+    real-time .glb viewer is a possible later replacement behind the same
+    BandViewer interface and would need a dependency check against
+    compileSdk 34 and a release manifest re-check.
+    - The folder is `app/src/main/assets/band_turntable/`, files
+      `band_turn_000.webp` onwards; the spec (direction of turn, size,
+      transparency) is [`band-viewer.md`](band-viewer.md) §2.
+
 ---
 
 ## 4. Backlog
@@ -202,6 +222,7 @@ says what it depends on and what it would touch.
 | **Design pass on the placeholders** | Jul | The dark palette (`values-night/colors.xml`), the low-battery icon (triangle or battery), everything marked `DESIGN: Jul` (94 places: 4 for the alert pins and their label, 6 for the Incident view and the face's bubble), and two older theme changes to confirm with Jehan: 28 dp outlined-button corners, 24 dp sign-up top padding. |
 | **Remove the stray `Guardband-MVVM` gitlink** | Jehan, then anyone | A nested clone in Jehan's tree was committed as a gitlink to `9448b3c`, which exists only on her machine. Check nothing is stranded in that inner copy ([`guardband-mvvm-folder.md`](guardband-mvvm-folder.md)), then remove the entry. |
 | **Each teammate's fingerprints** | each developer | Debug **SHA-1** in the Firebase Console (else Google sign-in fails on their build); debug **SHA-256** in `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else reset and verification links open the browser). Four SHA-256s are live (James's and three teammates'). Release keystore's before any signed build. |
+| **Band model and turntable frames** | Jul (design and modelling) | The Device tab's band viewer plays a placeholder. Jul models the band in Blender from the concept image (charcoal gray composite strap, neon green perforated liner, brushed steel double-ring clasp, three round buttons with green LEDs, OLED strip) and renders 36 to 72 transparent WebP frames into the viewer's frame folder; no code change is needed. Decide first what the three round elements on the concept are: the concept labels them an HR/SpO2 sensor array, but the requirements and SCHEMA.md contain no heart-rate or blood-oxygen data, and showing one would imply collecting health data (Privacy Notice change and a CONSENT_VERSION bump). A real-time .glb viewer is a possible later replacement behind the same BandViewer interface and would need a dependency check against compileSdk 34 and a release manifest re-check. Folder and frame spec: [`band-viewer.md`](band-viewer.md) §2 and §3. Not started. |
 | **Band firmware** | firmware teammate | Write exactly `SCHEMA.md`'s payload: `history/{sequenceId}` first, then `latest`; a double-press within 2 s is a `CHECKIN` (FR-10); a **1.5 s hold is a `PANIC`**, fired while still held; during a panic a **5 s hold cancels** it (stops tracking, sends a `CHECKIN`), and a check-in alone does not; tracking every 60 s for 30 min after an alert (FR-09); low battery at 20% (FR-11). The Mock Sender copies these gestures (`BandButtonDecoder`): change both together. |
 
 ### Phone checks
@@ -221,6 +242,7 @@ list; the step-by-step checklists live in each doc:
 - Map, face marker, credits and logo links: [`osmdroid.md`](osmdroid.md) §5.4 and §8.
 - Alert pins on Track (27 Oct): [`osmdroid.md`](osmdroid.md) §8, "Alert pins".
 - Incident view, its four ways in and the panic-pin rule (27 Oct): [`incident-view.md`](incident-view.md) §5.
+- Band viewer (28 Oct): the placeholder now; drag, fling, auto-turn, scrolling, TalkBack and "remove animations" once frames exist: [`band-viewer.md`](band-viewer.md) §8.
 - Device tab (27 Oct): status chip, battery, last alert and position, contacts count and tap-through, Settings' row, both account kinds, dark mode, no band data: [`device-tab.md`](device-tab.md) §8.
 - Settings, About, Display, Alert notifications screens.
 - The older pass since 13 Oct: [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md)
@@ -258,6 +280,7 @@ The full, user-facing record is `Changelog.entries`
 (`app/src/main/java/com/example/guardband/ui/changelog/Changelog.kt`), shown
 in the app under Settings → Changelog. Headlines:
 
+- **2026-10-28:** a band viewer at the top of the Device tab (a turntable of rendered frames behind a `BandViewer` interface; a still placeholder until Jul's frames exist).
 - **2026-10-27:** the Device tab replaces Profile (band status, battery, last alert, connected account, pairing placeholder; Settings' Device information opens it), the Mock Sender plays the band (one button: hold = panic + tracking, double-press = check-in, 5 s hold = cancel; battery slider), the Incident view (a panic and its tracking path, from four places), alert pins on the Track map (panics keep their spot), map layers (five, remembered), re-centre button replaces the
   Google Maps hand-off (notice 1.3), check-in card, alert cards restyled,
   contacts tap to edit / hold to delete and one contact dialog, Change
@@ -291,6 +314,7 @@ in the app under Settings → Changelog. Headlines:
 | How alerts are read from RTDB | [`alert-data.md`](alert-data.md) |
 | The Incident view: grouping, its read, its ways in | [`incident-view.md`](incident-view.md) |
 | The Device tab: where each value comes from, pairing's shape | [`device-tab.md`](device-tab.md) |
+| The band viewer: frames, their folder and spec, the placeholder | [`band-viewer.md`](band-viewer.md) |
 | Alert notifications | [`notifications.md`](notifications.md), [`notifications-test-cases.md`](notifications-test-cases.md) |
 | The sign-up wizard | [`signup-flow.md`](signup-flow.md) |
 | The post-login host and its tabs | [`home-host-and-bottom-nav.md`](home-host-and-bottom-nav.md) |
