@@ -67,15 +67,15 @@
             <!-- Flat and the same white as the screen, so the rows read as part
                  of it rather than as a separate card. DESIGN: Jul -->
 
-            <!-- Settings Card Container - rows full-width extension adjusted by ishi -->
+            <!-- Settings Card Container. Edge to edge: no side margins and square
+                 corners, so each row and its ripple reach the screen's sides. The
+                 rows' own 16dp padding keeps the icons off the edge. -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
                 android:layout_marginTop="8dp"
-                android:layout_marginEnd="16dp"
                 app:cardBackgroundColor="@color/surface_bg"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="0dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="0dp">
 
@@ -95,8 +95,8 @@
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp">
+                        android:paddingStart="32dp"
+                        android:paddingEnd="32dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -128,50 +128,6 @@
                         style="@style/Widget.GuardBand.SettingsDivider"
                         android:layout_marginEnd="16dp" />
 
-                    <!-- Change Password Row -->
-                    <LinearLayout
-                        android:id="@+id/row_settings_change_password"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:contentDescription="@string/label_settings_change_password"
-                        android:focusable="true"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp">
-
-                        <ImageView
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:layout_marginEnd="12dp"
-                            android:background="@drawable/bg_settings_icon_badge"
-                            android:importantForAccessibility="no"
-                            android:padding="8dp"
-                            android:src="@drawable/ic_settings"
-                            app:tint="@color/white" />
-
-                        <TextView
-                            android:id="@+id/tv_settings_change_password"
-                            style="@style/Widget.GuardBand.SettingsRow"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="@null"
-                            android:clickable="false"
-                            android:focusable="false"
-                            android:fontFamily="@font/poppins_extralight"
-                            android:importantForAccessibility="no"
-                            android:paddingStart="0dp"
-                            android:paddingEnd="0dp"
-                            android:text="@string/label_settings_change_password" />
-                    </LinearLayout>
-
-                    <View
-                        style="@style/Widget.GuardBand.SettingsDivider"
-                        android:layout_marginEnd="16dp" />
-
                     <!-- Alert notifications Row: opens its own screen
                          (AlertNotificationsActivity), which holds the switch. -->
                     <LinearLayout
@@ -184,8 +140,8 @@
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp">
+                        android:paddingStart="32dp"
+                        android:paddingEnd="32dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -228,8 +184,8 @@
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp">
+                        android:paddingStart="32dp"
+                        android:paddingEnd="32dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -273,8 +229,8 @@
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp">
+                        android:paddingStart="32dp"
+                        android:paddingEnd="32dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -317,8 +273,8 @@
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp">
+                        android:paddingStart="32dp"
+                        android:paddingEnd="32dp">
 
                         <ImageView
                             android:layout_width="36dp"
@@ -362,8 +318,8 @@
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp">
+                        android:paddingStart="32dp"
+                        android:paddingEnd="32dp">
 
                         <ImageView
                             android:layout_width="36dp"

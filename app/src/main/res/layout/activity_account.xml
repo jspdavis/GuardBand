@@ -186,6 +186,102 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Password: Change password for a password account, an empty
+                 state for a Google one, and no section at all otherwise
+                 (PasswordOption). Moved here from Settings on 2026-10-27. -->
+            <!-- DESIGN: Jul -->
+
+            <LinearLayout
+                android:id="@+id/ll_account_password_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:id="@+id/tv_account_password_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginTop="24dp"
+                    android:accessibilityHeading="true"
+                    android:text="@string/label_account_password_section"
+                    android:textAppearance="@style/TextAppearance.GuardBand.TitleMedium"
+                    android:textColor="@color/text_primary"
+                    tools:ignore="UnusedAttribute" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_account_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:cardBackgroundColor="@color/surface_bg"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <!-- A password account: opens ChangePasswordActivity. -->
+                        <TextView
+                            android:id="@+id/tv_account_change_password"
+                            style="@style/Widget.GuardBand.SettingsRow"
+                            android:text="@string/label_settings_change_password"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+
+                        <!-- A Google account: nothing to change here, and it
+                             says why. Not clickable; focusable so TalkBack
+                             reads the title and the body as one. -->
+                        <LinearLayout
+                            android:id="@+id/ll_account_password_google"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:visibility="gone"
+                            tools:visibility="gone">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_marginEnd="16dp"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_google" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tv_account_password_google_title"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/label_account_password_google_title"
+                                    android:textAppearance="@style/TextAppearance.GuardBand.BodyLarge"
+                                    android:textColor="@color/text_primary" />
+
+                                <TextView
+                                    android:id="@+id/tv_account_password_google_body"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="@string/label_account_password_google_body"
+                                    android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                                    android:textColor="@color/text_secondary" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
             <!-- Danger zone: heading, explainer and the destructive row,
                  behind a red outline and well below everything else. -->
             <!-- DESIGN: Jul -->

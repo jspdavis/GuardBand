@@ -22,7 +22,10 @@ data class AccountUiState(
     val isSending: Boolean = false,
 
     /** Seconds until Resend unlocks again; 0 when it is available. */
-    val resendSecondsRemaining: Int = 0
+    val resendSecondsRemaining: Int = 0,
+
+    /** The Password section: Change password, Google's empty state, or none. */
+    val password: PasswordOption = PasswordOption.NONE
 ) {
     /** Whether the Resend button is shown at all. */
     val showResend: Boolean get() = canResend

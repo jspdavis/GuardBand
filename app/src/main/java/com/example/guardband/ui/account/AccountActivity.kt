@@ -51,10 +51,19 @@ import kotlinx.coroutines.launch
  * account is stopped before the tabs by the Home gate, and reaches this
  * screen only from the gate's "Wrong email? Delete this account".)
  *
+ * **Password** sits between the details and the danger zone (moved here from
+ * Settings on 2026-10-27), chosen by [PasswordOption]: a Change password row
+ * opening [ChangePasswordActivity] for a password account, and for a Google
+ * account an empty state saying the password is Google's. An account with
+ * neither has no section.
+ *
  * View ids: ib_account_back, tv_account_title, card_account_details,
  * tv_account_name, tv_account_email, tv_account_verification,
  * btn_account_resend_verification, tv_account_verification_hint,
- * tv_account_danger_title,
+ * ll_account_password_section, tv_account_password_title,
+ * card_account_password, tv_account_change_password,
+ * ll_account_password_google, tv_account_password_google_title,
+ * tv_account_password_google_body, tv_account_danger_title,
  * card_account_danger, tv_account_danger_explainer, tv_account_delete,
  * card_account_delete_failure, tv_account_delete_error,
  * btn_account_delete_log_out, btn_account_delete_retry,
@@ -67,6 +76,7 @@ import kotlinx.coroutines.launch
  * removes the sign-in, and Log Out leaves it waiting for the next sign-in.
  *
  * Flow: Settings → AccountActivity → (Back) Settings
+ *       AccountActivity → (Change password) → ChangePasswordActivity → (Back) AccountActivity
  *       AccountActivity → (Delete account, done) → LoginActivity (task cleared)
  *       Home gate, deletion pending → AccountActivity (task cleared)
  */
@@ -84,6 +94,9 @@ class AccountActivity : AppCompatActivity() {
     private lateinit var tvVerification: TextView
     private lateinit var tvVerificationHint: TextView
     private lateinit var btnResend: Button
+    private lateinit var llPasswordSection: View
+    private lateinit var tvChangePassword: TextView
+    private lateinit var llPasswordGoogle: View
     private lateinit var tvDeleteAccount: TextView
     private lateinit var cardDeleteFailure: MaterialCardView
     private lateinit var tvDeleteError: TextView
@@ -113,6 +126,11 @@ class AccountActivity : AppCompatActivity() {
         tvVerificationHint = findViewById(R.id.tv_account_verification_hint)
         btnResend = findViewById(R.id.btn_account_resend_verification)
         btnResend.setOnClickListener { viewModel.onResendClicked() }
+
+        llPasswordSection = findViewById(R.id.ll_account_password_section)
+        tvChangePassword = findViewById(R.id.tv_account_change_password)
+        tvChangePassword.setOnClickListener { viewModel.onChangePasswordClicked() }
+        llPasswordGoogle = findViewById(R.id.ll_account_password_google)
 
         tvDeleteAccount = findViewById(R.id.tv_account_delete)
         tvDeleteAccount.setOnClickListener { deleteViewModel.onDeleteAccountClicked() }
@@ -178,6 +196,13 @@ class AccountActivity : AppCompatActivity() {
         } else {
             getString(R.string.btn_account_resend)
         }
+
+        llPasswordSection.visibility =
+            if (state.password == PasswordOption.NONE) View.GONE else View.VISIBLE
+        tvChangePassword.visibility =
+            if (state.password == PasswordOption.CHANGE) View.VISIBLE else View.GONE
+        llPasswordGoogle.visibility =
+            if (state.password == PasswordOption.MANAGED_BY_GOOGLE) View.VISIBLE else View.GONE
     }
 
     private fun renderDelete(state: DeleteAccountUiState) {
@@ -187,6 +212,7 @@ class AccountActivity : AppCompatActivity() {
         // screen can start a second thing on top of it.
         val enabled = !state.isBusy
         ibBack.isEnabled = enabled
+        tvChangePassword.isEnabled = enabled
         tvDeleteAccount.isEnabled = enabled
         btnDeleteRetry.isEnabled = enabled
         btnDeleteLogOut.isEnabled = enabled
@@ -207,6 +233,9 @@ class AccountActivity : AppCompatActivity() {
         when (event) {
             is AccountEvent.ShowMessage ->
                 Toast.makeText(this, event.text, Toast.LENGTH_LONG).show()
+
+            AccountEvent.OpenChangePassword ->
+                startActivity(Intent(this, ChangePasswordActivity::class.java))
 
             AccountEvent.NavigateToLogin -> {
                 startActivity(

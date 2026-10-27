@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
-import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.repository.AuthRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -15,10 +14,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * Settings (pushed over the Home host from Track's gear).
  *
  * Log Out lives here (moved from the old Dashboard, per the Figma). Account
- * information opens its own screen, which holds Delete account; Display
- * holds the theme (light, dark, or the phone's); Change password and Device
- * information (the band, once pairing exists) are placeholders until their
- * screens exist; About
+ * information opens its own screen, which holds Change password (a row here
+ * until 2026-10-27) and Delete account; Display holds the theme (light, dark,
+ * or the phone's); Device information (the band, once pairing exists) is a
+ * placeholder until its screen exists; About
  * holds the version and the Privacy Notice, which was a row here until
  * 2026-10-20.
  *
@@ -40,19 +39,9 @@ class SettingsViewModel(
     private val _events = Channel<SettingsEvent>(Channel.BUFFERED)
     val events: Flow<SettingsEvent> = _events.receiveAsFlow()
 
-    /** Account information: the account's details, and Delete account. */
+    /** Account information: the account's details, Change password and Delete account. */
     fun onAccountClicked() {
         _events.trySend(SettingsEvent.OpenAccount)
-    }
-
-    /** Account information: the account's details, and Delete account. */
-    /** Change password: password accounts only. A Google account has no password. */
-    fun onChangePasswordClicked() {
-        if (SignInProvider.PASSWORD in authRepository.currentUserProviders()) {
-            _events.trySend(SettingsEvent.OpenChangePassword)
-        } else {
-            _events.trySend(SettingsEvent.ShowMessage(MSG_NO_PASSWORD))
-        }
     }
 
     /** Alert notifications: its own screen, with the switch. */
@@ -60,7 +49,7 @@ class SettingsViewModel(
         _events.trySend(SettingsEvent.OpenAlertNotifications)
     }
 
-    /** Change password and Device information. */
+    /** Device information, until pairing exists. */
     fun onPlaceholderRowClicked() {
         _events.trySend(SettingsEvent.ShowMessage(MSG_COMING_SOON))
     }
@@ -87,9 +76,6 @@ class SettingsViewModel(
 
     companion object {
         const val MSG_COMING_SOON = "Coming soon."
-        const val MSG_NO_PASSWORD =
-            "You sign in with Google, so there is no password to change."
-
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

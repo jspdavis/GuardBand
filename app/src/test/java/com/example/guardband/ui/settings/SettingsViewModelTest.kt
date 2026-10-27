@@ -51,9 +51,9 @@ class SettingsViewModelTest {
         assertEquals(SettingsEvent.OpenDisplay, viewModel.events.first())
     }
 
-    /** Change password and Device information. */
+    /** Device information. */
     @Test
-    fun `the remaining placeholder rows still say coming soon`() = runTest {
+    fun `the remaining placeholder row still says coming soon`() = runTest {
         viewModel.onPlaceholderRowClicked()
 
         assertEquals(

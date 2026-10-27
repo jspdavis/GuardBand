@@ -24,8 +24,9 @@ import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
 
 /**
- * Change password, opened from the row of that name in Settings. Password
- * accounts only: Settings refuses a Google account, and
+ * Change password, opened from the row of that name in Account information
+ * (it was a Settings row until 2026-10-27). Password accounts only: Account
+ * information shows a Google account an empty state instead of the row, and
  * [ChangePasswordViewModel] checks again.
  *
  * Two fields, new and confirm, with the same rules checklist the reset screen
@@ -35,7 +36,7 @@ import kotlinx.coroutines.launch
  * Reuses the view ids of `activity_reset_password.xml` (the layout was copied
  * from it), which is why they read `reset`.
  *
- * Flow: Settings → ChangePasswordActivity → (done, Back or Cancel) Settings
+ * Flow: Account information → ChangePasswordActivity → (done, Back or Cancel) Account information
  *       ChangePasswordActivity → (session gone) → LoginActivity (task cleared)
  */
 class ChangePasswordActivity : AppCompatActivity() {

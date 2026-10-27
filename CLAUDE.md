@@ -93,7 +93,9 @@ com/example/guardband/
 │   ├── about/          AboutActivity, opened from Settings: version and the Privacy Notice row
 │   │                 (a web page, so no chevron)
 │   ├── account/        AccountActivity (Account information), opened from Settings;
-│   │                 Delete account sits in its danger zone (DeleteAccountViewModel)
+│   │                 its Password section (PasswordOption) opens ChangePasswordActivity, or shows a
+│   │                 Google account a "Managed by Google" empty state; Delete account sits in its
+│   │                 danger zone (DeleteAccountViewModel)
 │   ├── changelog/      ChangelogActivity, opened from Settings; Changelog.entries is the progress log
 │   └── notifications/  pushed from Track's bell; placeholder inbox. Also the opt-in alert watch:
 │                     AlertNotificationsActivity (the switch, opened from Settings),

@@ -71,6 +71,39 @@ class AccountViewModelTest {
         assertEquals(AccountUiState(), vm.uiState.value)
     }
 
+    // ── Password ──────────────────────────────────────────────────────────────
+
+    @Test
+    fun `a password account sees Change password, and the row opens it`() = runTest {
+        val vm = open()
+
+        assertEquals(PasswordOption.CHANGE, vm.uiState.value.password)
+
+        vm.onChangePasswordClicked()
+        advanceUntilIdle()
+
+        assertEquals(listOf<AccountEvent>(AccountEvent.OpenChangePassword), events)
+    }
+
+    @Test
+    fun `a google account sees the managed-by-Google empty state`() = runTest {
+        auth.providers = setOf(SignInProvider.GOOGLE)
+
+        assertEquals(PasswordOption.MANAGED_BY_GOOGLE, open().uiState.value.password)
+    }
+
+    /** The live session decides, not whatever the screen last showed. */
+    @Test
+    fun `Change password never opens for an account with no password`() = runTest {
+        auth.providers = setOf(SignInProvider.GOOGLE)
+        val vm = open()
+
+        vm.onChangePasswordClicked()
+        advanceUntilIdle()
+
+        assertTrue(events.isEmpty())
+    }
+
     // ── Verification status ───────────────────────────────────────────────────
 
     @Test

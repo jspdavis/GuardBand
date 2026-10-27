@@ -8,9 +8,6 @@ sealed interface SettingsEvent {
     /** Open Account information, which holds Delete account. */
     object OpenAccount : SettingsEvent
 
-    /** Open Change password. Only sent for a password account. */
-    object OpenChangePassword : SettingsEvent
-
     /** Open the in-app Changelog. */
     object OpenChangelog : SettingsEvent
 

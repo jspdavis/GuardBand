@@ -21,8 +21,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Account information: who is signed in, and whether their email is verified.
- * Delete account, at the bottom of the same screen, is [DeleteAccountViewModel]'s.
+ * Account information: who is signed in, whether their email is verified, and
+ * the Password section ([PasswordOption]: Change password for a password
+ * account, an empty state for a Google one; moved here from Settings on
+ * 2026-10-27). Delete account, at the bottom of the same screen, is
+ * [DeleteAccountViewModel]'s.
  *
  * Everything comes from the session, synchronously, so the screen is never
  * blank. The email shown is the one the account signs in with, which is the
@@ -118,11 +121,23 @@ class AccountViewModel(
         }
     }
 
-    /** Name, email and verification, from the session as it is now. */
+    /**
+     * The Change password row. Re-checks the live session rather than the
+     * state, so a row left on screen can never open the screen for an account
+     * that has no password; [ChangePasswordViewModel] checks a third time.
+     */
+    fun onChangePasswordClicked() {
+        if (PasswordOption.of(authRepository.currentUserProviders()) == PasswordOption.CHANGE) {
+            _events.trySend(AccountEvent.OpenChangePassword)
+        }
+    }
+
+    /** Name, email, verification and the Password section, from the session as it is now. */
     private fun publishSession() {
         val user = authRepository.currentUser() ?: return
+        val providers = authRepository.currentUserProviders()
         val verification = EmailVerification.of(
-            providers = authRepository.currentUserProviders(),
+            providers = providers,
             isEmailVerified = authRepository.isEmailVerified()
         )
         _uiState.update {
@@ -130,7 +145,8 @@ class AccountViewModel(
                 name = user.name,
                 email = user.email,
                 emailVerified = verification.verified,
-                canResend = verification.canResend
+                canResend = verification.canResend,
+                password = PasswordOption.of(providers)
             )
         }
     }

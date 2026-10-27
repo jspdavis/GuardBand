@@ -49,11 +49,11 @@ the app together. Pairing comes first: SMS depends on it.
 
 None of these needs the band.
 
-- [ ] 🟩 **Change password screen** · *app team*
-  The Settings row still says "Coming soon". Reuse the password-rules
-  checklist (`PasswordCriteriaList`) and the re-sign-in step from Delete
-  account. Password accounts only; a Google account has no password to change.
-  Where: `ui/settings/`, `ui/auth/PasswordCriteriaList`, `ui/account/DeleteAccountViewModel`
+- [x] 🟩 **Change password screen** · *done 22 Oct, moved 27 Oct*
+  `ChangePasswordActivity` (Roxette, 22 Oct). Since 27 Oct it opens from
+  **Account information**, not Settings: a Password section shows the row to
+  a password account, and a "Managed by Google" empty state to a Google one.
+  Where: `ui/account/ChangePasswordActivity`, `ui/account/PasswordOption`
 
 - [ ] 🟩 **Notifications inbox with real data** · *app team*
   The bell's screen shows one sample "Welcome to GuardBand" card. Fill it with

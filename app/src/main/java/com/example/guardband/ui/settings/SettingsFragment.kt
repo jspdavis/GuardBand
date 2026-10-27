@@ -15,7 +15,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.ui.about.AboutActivity
 import com.example.guardband.ui.account.AccountActivity
-import com.example.guardband.ui.account.ChangePasswordActivity
 import com.example.guardband.ui.auth.GoogleIdTokenProvider
 import com.example.guardband.ui.auth.LoginNavigation
 import com.example.guardband.ui.changelog.ChangelogActivity
@@ -30,18 +29,17 @@ import kotlinx.coroutines.launch
  *
  * Account information opens [AccountActivity], which is where Delete account
  * lives now - one level deeper than this list, so the destructive action is
- * not a stray tap away.
+ * not a stray tap away - and, since 2026-10-27, Change password.
  *
  * **A chevron means another screen of the app**, so every row here has
  * one; a row that opens a web or system page uses `SettingsRow.Action`
  * instead (About's Privacy Notice). Alert notifications' switch lives on its
  * own screen, [AlertNotificationsActivity], and the Privacy Notice inside
  * [AboutActivity], since 2026-10-20. Display opens [DisplayActivity], the
- * theme; Change password opens [ChangePasswordActivity] (password accounts
- * only); Device information is a placeholder.
+ * theme; Device information is a placeholder.
  *
  * View ids: ib_settings_back, tv_settings_title, row_settings_account,
- * row_settings_change_password, row_settings_alert_notifications,
+ * row_settings_alert_notifications,
  * row_settings_display, row_settings_device_info, row_settings_changelog,
  * row_settings_about, btn_settings_logout.
  */
@@ -59,9 +57,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         view.findViewById<LinearLayout>(R.id.row_settings_account)
             .setOnClickListener { viewModel.onAccountClicked() }
-
-        view.findViewById<LinearLayout>(R.id.row_settings_change_password)
-            .setOnClickListener { viewModel.onChangePasswordClicked() }
 
         view.findViewById<LinearLayout>(R.id.row_settings_alert_notifications)
             .setOnClickListener { viewModel.onAlertNotificationsClicked() }
@@ -99,9 +94,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
             SettingsEvent.OpenAccount ->
                 startActivity(Intent(requireContext(), AccountActivity::class.java))
-
-            SettingsEvent.OpenChangePassword ->
-                startActivity(Intent(requireContext(), ChangePasswordActivity::class.java))
 
             SettingsEvent.OpenChangelog ->
                 startActivity(Intent(requireContext(), ChangelogActivity::class.java))

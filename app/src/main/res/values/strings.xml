@@ -286,6 +286,11 @@
     <string name="label_account_verification_hint">We sent a link to this address. Open it on this phone, then come back here.</string>
     <string name="btn_account_resend">Resend email</string>
     <string name="btn_account_resend_in">Resend in %1$ds</string>
+    <!-- Account information's Password section: Change password, or for a
+         Google account, why there is nothing to change. -->
+    <string name="label_account_password_section">Password</string>
+    <string name="label_account_password_google_title">Managed by Google</string>
+    <string name="label_account_password_google_body">You sign in with Google, so your password belongs to your Google account. Change it there, not in GuardBand.</string>
     <string name="label_account_danger_zone">Danger zone</string>
     <string name="label_account_danger_explainer">Deleting your account removes your profile, your emergency contacts, your consent record and your sign-in. It cannot be undone.</string>
 

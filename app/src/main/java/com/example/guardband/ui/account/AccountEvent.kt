@@ -5,6 +5,9 @@ sealed interface AccountEvent {
 
     data class ShowMessage(val text: String) : AccountEvent
 
+    /** Open Change password. Only sent for a password account. */
+    object OpenChangePassword : AccountEvent
+
     /**
      * There is no session, so there is no account to show. Go to Login with
      * the back stack cleared.
