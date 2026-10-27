@@ -2,6 +2,7 @@ package com.example.guardband.ui.track
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -55,6 +56,8 @@ import kotlinx.coroutines.launch
  * Nothing here logs. The state holds the wearer's coordinates, and the face a
  * photo link.
  *
+ * @param layerPrefs where the picked base map is kept, so the map reopens on
+ *   it. Read once, for the first state.
  * @param staleTicks fires the staleness recompute. Injected so a test can
  *   drive it by hand, or pass an empty flow and be sure nothing is ticking in
  *   the background.
@@ -62,11 +65,14 @@ import kotlinx.coroutines.launch
 class TrackViewModel(
     private val alertRepository: AlertRepository,
     private val authRepository: AuthRepository,
+    private val layerPrefs: MapLayerPrefs,
     private val clock: Clock = Clock.SYSTEM,
     private val staleTicks: Flow<Unit> = defaultStaleTicks()
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TrackUiState(markerFace = markerFace()))
+    private val _uiState = MutableStateFlow(
+        TrackUiState(markerFace = markerFace(), selectedLayer = layerPrefs.layer)
+    )
     val uiState: StateFlow<TrackUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<TrackEvent>(Channel.BUFFERED)
@@ -118,10 +124,13 @@ class TrackViewModel(
      * D7: the user picked a base map in the layer picker. View-only state goes
      * through the Fragment (the picker is a dialog, like recentering is a
      * camera move), so this only records the choice; the Fragment re-applies the
-     * tile source when [TrackUiState.selectedLayer] changes.
+     * tile source when [TrackUiState.selectedLayer] changes. The choice is
+     * also saved, so the map reopens on it after the app is closed.
      */
     fun onLayerSelected(layer: MapLayer) {
-        _uiState.update { if (it.selectedLayer == layer) it else it.copy(selectedLayer = layer) }
+        if (_uiState.value.selectedLayer == layer) return
+        layerPrefs.layer = layer
+        _uiState.update { it.copy(selectedLayer = layer) }
     }
 
     /**
@@ -313,7 +322,11 @@ class TrackViewModel(
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                TrackViewModel(RepositoryProvider.alertRepository, RepositoryProvider.authRepository)
+                TrackViewModel(
+                    RepositoryProvider.alertRepository,
+                    RepositoryProvider.authRepository,
+                    MapLayerPrefs.from(checkNotNull(this[APPLICATION_KEY]))
+                )
             }
         }
     }

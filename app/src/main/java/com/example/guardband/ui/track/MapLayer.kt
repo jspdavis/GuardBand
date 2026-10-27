@@ -8,8 +8,9 @@ package com.example.guardband.ui.track
  * - [SATELLITE]: MapTiler's Satellite imagery style.
  *
  * The choice lives in [TrackUiState.selectedLayer] so it survives a theme
- * change (the Fragment is recreated, and it re-applies the layer). [AUTO]
- * is the default because it is the style matching the system theme.
+ * change (the Fragment is recreated, and it re-applies the layer), and is
+ * saved in [MapLayerPrefs] so it survives the app closing. [AUTO] is a fresh
+ * install's, because it is the style matching the system theme.
  */
 enum class MapLayer {
     AUTO,

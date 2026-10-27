@@ -5,7 +5,7 @@ features come first; each item says who it is waiting on and where its
 details live in the repo. Finished items are at the bottom. The full record
 is [`handoff.md`](handoff.md) §4.
 
-As of 27 Oct 2026 · `mvvm-main` and `main` · 736 unit tests passing · lint
+As of 27 Oct 2026 · `mvvm-main` and `main` · 740 unit tests passing · lint
 passes with no errors.
 
 **Types:** 🟥 heavy feature · 🟩 feature · 🔧 fix · 📱 phone check · 🗳️ decision / setup
@@ -59,13 +59,6 @@ the app together. Pairing comes first: SMS depends on it.
   every alert goes to `history/{sequenceId}` first, then `latest`.
   Where: `SCHEMA.md`, [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md)
 
-- [ ] 🟩 **Remember the map layer** · *app team, optional*
-  The layer picked on Track survives a theme change but not a restart: the
-  app always opens on Auto. Saving it would be a small `SharedPreferences`
-  value, like the display setting. `MapTilerTileSource` also defines Outdoor
-  and Topo styles that the picker does not offer.
-  Where: `ui/track/MapLayer`, `ui/track/MapTilerTileSource`
-
 ---
 
 ## Fixes and cleanups
@@ -108,7 +101,8 @@ Use the debug mock sender to produce alerts.
   - The bell's inbox: real alerts by day, place names, Retry when offline.
   - Track: the target button re-centres on the band and zooms back in from
     far out; it is greyed out before the first fix. The layers button
-    switches Auto, Street and Satellite, and Auto follows dark mode.
+    switches Auto, Street and Satellite, Auto follows dark mode, and the
+    map reopens on the last one picked after the app is closed.
   - Account information: a password account sees Change password; a Google
     account sees "Managed by Google".
   - Sign out of a Google account, sign in with an email one: initials, never
@@ -224,6 +218,10 @@ Use the debug mock sender to produce alerts.
   Where: [`privacy-and-consent.md`](privacy-and-consent.md) §2
 - [x] 🟩 **Layers button on Track** · *26–27 Oct, jspdavis*
   Auto, Street and Satellite. Satellite tiles checked on our key and plan.
+- [x] 🟩 **Remember the map layer** · *27 Oct*
+  `MapLayerPrefs` saves the picked layer, so the map reopens on it.
+  (`MapTilerTileSource` also defines Outdoor and Topo, which the picker does
+  not offer.)
 - [x] 🟩 **Re-centre button** · *27 Oct*
   The round target button re-centres on the band and zooms back in. The
   Google Maps hand-off is gone.

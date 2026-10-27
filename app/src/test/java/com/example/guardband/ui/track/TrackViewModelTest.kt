@@ -7,6 +7,7 @@ import com.example.guardband.data.model.User
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.testing.FakeAlertRepository
 import com.example.guardband.testing.FakeAuthRepository
+import com.example.guardband.testing.FakeMapLayerPrefs
 import com.example.guardband.testing.MainDispatcherRule
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -72,8 +73,9 @@ class TrackViewModelTest {
         repository: FakeAlertRepository = FakeAlertRepository(),
         clock: Clock = FakeClock(t0),
         ticks: Flow<Unit> = emptyFlow(),
-        auth: FakeAuthRepository = FakeAuthRepository(signedIn = true)
-    ) = TrackViewModel(repository, auth, clock, ticks)
+        auth: FakeAuthRepository = FakeAuthRepository(signedIn = true),
+        layerPrefs: FakeMapLayerPrefs = FakeMapLayerPrefs()
+    ) = TrackViewModel(repository, auth, layerPrefs, clock, ticks)
 
     // ── The marker's face ─────────────────────────────────────────────────────
 
@@ -468,11 +470,46 @@ class TrackViewModelTest {
 
     @Test
     fun `selecting the same layer again does nothing`() = runTest {
-        val vm = viewModel()
+        val prefs = FakeMapLayerPrefs()
+        val vm = viewModel(layerPrefs = prefs)
 
         vm.onLayerSelected(MapLayer.AUTO)
 
         assertEquals(MapLayer.AUTO, vm.uiState.value.selectedLayer)
+        assertEquals(0, prefs.writes)
+    }
+
+    @Test
+    fun `the map opens on the saved layer`() = runTest {
+        val vm = viewModel(layerPrefs = FakeMapLayerPrefs(initial = MapLayer.SATELLITE))
+
+        assertEquals(MapLayer.SATELLITE, vm.uiState.value.selectedLayer)
+    }
+
+    @Test
+    fun `selecting a layer saves it`() = runTest {
+        val prefs = FakeMapLayerPrefs()
+        val vm = viewModel(layerPrefs = prefs)
+
+        vm.onLayerSelected(MapLayer.STREET)
+
+        assertEquals(MapLayer.STREET, prefs.layer)
+        assertEquals(1, prefs.writes)
+    }
+
+    @Test
+    fun `a new screen after a layer change opens on that layer`() = runTest {
+        val prefs = FakeMapLayerPrefs()
+        viewModel(layerPrefs = prefs).onLayerSelected(MapLayer.SATELLITE)
+
+        assertEquals(MapLayer.SATELLITE, viewModel(layerPrefs = prefs).uiState.value.selectedLayer)
+    }
+
+    @Test
+    fun `a stored layer name this build does not know falls back to Auto`() {
+        assertEquals(MapLayer.AUTO, MapLayerPrefs.fromStored("TERRAIN"))
+        assertEquals(MapLayer.AUTO, MapLayerPrefs.fromStored(null))
+        MapLayer.entries.forEach { assertEquals(it, MapLayerPrefs.fromStored(it.name)) }
     }
 
     @Test

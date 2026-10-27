@@ -21,7 +21,7 @@ Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targ
 ./gradlew lint
 ```
 
-On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 736 JVM unit tests (2026-10-27), under `app/src/test`; the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
+On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 740 JVM unit tests (2026-10-27), under `app/src/test`; the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
 
 `app/google-services.json` is required for the `com.google.gms.google-services` plugin. It points at the Firebase project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan, so there are no Cloud Functions).
 
@@ -726,8 +726,10 @@ opens `dialog_map_type.xml`, a bottom sheet with three choices, `ui/track/MapLay
 **Auto** (Streets, dark in dark mode; the default), **Street** (always the light
 Streets) and **Satellite** (`MapTilerSatellite`, no labels). `MapTilerTileSource.forLayer`
 is the one place a layer becomes a tile source; the Fragment never picks one.
-The choice is `TrackUiState.selectedLayer`, so it survives a theme change, but
-it is **not saved**: a new process starts on Auto. `MapTilerTileSource` also
+The choice is `TrackUiState.selectedLayer`, so it survives a theme change, and
+`ui/track/MapLayerPrefs` saves it (SharedPreferences `map`, per phone, like
+the display setting), so the map reopens on it; a name it does not know reads
+as Auto. `MapTilerTileSource` also
 defines `OUTDOOR` and `TOPO`, which no layer offers yet. Satellite is served
 on this key and plan (checked 2026-10-27: a real 256 px tile over Cebu City).
 

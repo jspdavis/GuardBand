@@ -60,9 +60,10 @@ data class TrackUiState(
 
     /**
      * The selected base map (D7), kept here so it survives a theme change: the
-     * Fragment is recreated on a theme switch and re-applies it. Defaults to
-     * [MapLayer.STREETS], the style the map has always drawn. Satellite, Outdoor
-     * and Topo have no dark variant, so they draw the same in either mode.
+     * Fragment is recreated on a theme switch and re-applies it. The ViewModel
+     * starts it from [MapLayerPrefs], so it also survives the app closing;
+     * [MapLayer.AUTO] is a fresh install's. Street and Satellite have no dark
+     * variant, so they draw the same in either mode.
      */
     val selectedLayer: MapLayer = MapLayer.AUTO,
 
