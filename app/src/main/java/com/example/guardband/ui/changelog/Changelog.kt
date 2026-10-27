@@ -38,10 +38,11 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-27",
-            title = "The Incident view; map layers; the re-centre button; alert pins on the map; a check-in card; Change password moves into Account information; contacts tap to edit, hold to delete",
+            title = "The Incident view; the Mock Sender plays the band; map layers; the re-centre button; alert pins on the map; a check-in card; Change password moves into Account information; contacts tap to edit, hold to delete",
             changes = listOf(
                 "New Incident view: tap a panic in the recent-alerts sheet or in Alert history, tap a panic's pin on the map, or tap your band's marker and choose \"View incident\". It shows the panic on a map with the path the band reported afterwards, and when it happened, where, the battery, and how many location updates have come in since (or that none has yet). Back returns to where you opened it.",
                 "A panic's pin is never replaced by a later check-in or low-battery alert from the same spot.",
+                "The Mock Sender (the test app that stands in for the band) now works like the band: one button, where holding it for 1.5 seconds sends a panic and starts sending the band's position every 5 seconds for 30 minutes, a double-press sends a check-in, and during a panic holding it for 5 seconds cancels the panic and sends a check-in. A battery slider sets the battery level, and dropping it to 20% sends a low-battery alert.",
                 "Track's map shows where recent alerts happened: a small pin for each of the latest ten panics, check-ins and low-battery alerts, in the same colours and symbols as the alert list. Alerts sent from the same spot share one pin, the newest. Tap a pin to see what it was and when (\"Panic, 5 min ago\"); tap anywhere else to close it. Your band's own marker always stays on top.",
                 "Track's layers button opens a picker with five maps: Auto (streets, dark in dark mode), Street (always light), Satellite, Outdoor (terrain and trails) and Topo (contour lines and hill shading). The map reopens on the one last picked.",
                 "Track's check-in pill became a card: a \"Last check-in\" heading over \"5 min ago\", beside a coloured symbol (a green tick once a check-in has arrived, a warning when check-ins cannot be read).",
@@ -55,9 +56,9 @@ object Changelog {
                 "Signing out clears the cached Google photo, so the next account never sees the last one's picture.",
                 "The MapTiler logo sits straight on the map, with no white box behind it: white lettering on the dark map and Satellite, dark lettering on the light map.",
                 "Alert notifications show the GuardBand logo in the status bar instead of a bell, as a one-colour outline (Android draws that icon in a single colour).",
-                "Housekeeping: lint passes again (a mock sender string), and Visual Studio's workspace files are no longer in the repo. 828 unit tests pass."
+                "Housekeeping: lint passes again (a mock sender string), and Visual Studio's workspace files are no longer in the repo. 842 unit tests pass."
             ),
-            commit = "ed7f43b"
+            commit = "b94dd26"
         ),
         ChangelogEntry(
             date = "2026-10-26",

@@ -1,8 +1,8 @@
 # Handoff
 
-**As of 2026-10-27 · `mvvm-main` at `ed7f43b` (the Incident view) plus its
-Changelog/handoff commit, pushed · `main` fast-forwarded to the same commit
-(`git push origin mvvm-main:main`) · 828 JVM unit tests, 0 failures ·
+**As of 2026-10-27 · `mvvm-main` at `b94dd26` (the Mock Sender's band button)
+plus its Changelog/handoff commit, pushed · `main` fast-forwarded to the same
+commit (`git push origin mvvm-main:main`) · 842 JVM unit tests, 0 failures ·
 `./gradlew lint` passes with no errors · nothing in flight.** Run `git status -sb` and `git log origin/mvvm-main -1` before
 trusting any hash here.
 
@@ -50,7 +50,7 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 | **Contacts tab** | Emergency contacts: add/edit (tap a card)/delete (trash or hold), search, relationship filter chips, an Emergency star that sorts and badges. At least one contact always; phone numbers stored as E.164. |
 | **Profile tab** | Avatar, welcome line and email. Thin. |
 | **Settings** | Account information (details, verification status, Change password, Delete account), Alert notifications, Display (Light/Dark/System), Device information (**"Coming soon"**), About (version, Privacy Notice), Changelog, Log Out. |
-| **Mock sender** (debug builds only) | Sends panic, check-in (double-press), low battery and tracking updates; a walk mode moves the marker around a loop. |
+| **Mock sender** (debug builds only) | Plays the band with its one button: hold 1.5 s = panic (then tracking every 5 s for 30 min), double-press = check-in, hold 5 s during a panic = cancel (sends a check-in). A battery slider sets the level reported and sends a low-battery alert at 20%. |
 
 ### Requirements coverage
 
@@ -151,7 +151,7 @@ says what it depends on and what it would touch.
    Anything medical or identifying is new personal data, so the notice
    changes with it.
 7. **A demo mode / demo script.** The project is presented without hardware.
-   A scripted mock-sender run (panic → tracking walk → check-in → low
+   A scripted mock-sender run (panic → tracking → check-in → low
    battery) would make demos reliable.
 
 ### Quality and hardening
@@ -178,6 +178,19 @@ says what it depends on and what it would touch.
 14. **A Play Store release**: rename `com.example.guardband` (cannot change
     after a first release; means re-registering the Firebase app and every
     fingerprint), a release keystore, and a paid MapTiler plan.
+15. **Journeys ("walk me home").** The wearer starts a journey on the band
+    before a trip they want watched; the guardian sees "On a journey since
+    9:40 PM" and the route so far, quietly (no SMS, no alarm); the wearer ends
+    it with "arrived", and tracking stops. Optionally an **overdue** warning
+    when no "arrived" comes in time or the band goes silent: the part that
+    makes it worth having, and the hardest without a server (the alert
+    watch's foreground service could do it on the guardian's phone). Needs:
+    new message types (journey start and end) agreed in `SCHEMA.md` with the
+    firmware, a rules change (the rules accept only the four types today), a
+    gesture the band's one button does not use yet, app screens (much like
+    the Incident view), and a **Privacy Notice change and `CONSENT_VERSION`
+    bump**, since the band would share location outside emergencies.
+    Discussed 2026-10-27 and backlogged; nothing built.
 
 ---
 
@@ -193,7 +206,7 @@ says what it depends on and what it would touch.
 | **Design pass on the placeholders** | Jul | The dark palette (`values-night/colors.xml`), the low-battery icon (triangle or battery), everything marked `DESIGN: Jul` (94 places: 4 for the alert pins and their label, 6 for the Incident view and the face's bubble), and two older theme changes to confirm with Jehan: 28 dp outlined-button corners, 24 dp sign-up top padding. |
 | **Remove the stray `Guardband-MVVM` gitlink** | Jehan, then anyone | A nested clone in Jehan's tree was committed as a gitlink to `9448b3c`, which exists only on her machine. Check nothing is stranded in that inner copy ([`guardband-mvvm-folder.md`](guardband-mvvm-folder.md)), then remove the entry. |
 | **Each teammate's fingerprints** | each developer | Debug **SHA-1** in the Firebase Console (else Google sign-in fails on their build); debug **SHA-256** in `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else reset and verification links open the browser). Four SHA-256s are live (James's and three teammates'). Release keystore's before any signed build. |
-| **Band firmware** | firmware teammate | Write exactly `SCHEMA.md`'s payload: `history/{sequenceId}` first, then `latest`; a double-press within 2 s is a `CHECKIN` (FR-10); tracking every 60 s for 30 min after an alert (FR-09); low battery at 20% (FR-11). |
+| **Band firmware** | firmware teammate | Write exactly `SCHEMA.md`'s payload: `history/{sequenceId}` first, then `latest`; a double-press within 2 s is a `CHECKIN` (FR-10); a **1.5 s hold is a `PANIC`**, fired while still held; during a panic a **5 s hold cancels** it (stops tracking, sends a `CHECKIN`), and a check-in alone does not; tracking every 60 s for 30 min after an alert (FR-09); low battery at 20% (FR-11). The Mock Sender copies these gestures (`BandButtonDecoder`): change both together. |
 
 ### Phone checks
 
@@ -248,7 +261,7 @@ The full, user-facing record is `Changelog.entries`
 (`app/src/main/java/com/example/guardband/ui/changelog/Changelog.kt`), shown
 in the app under Settings → Changelog. Headlines:
 
-- **2026-10-27:** the Incident view (a panic and its tracking path, from four places), alert pins on the Track map (panics keep their spot), map layers (five, remembered), re-centre button replaces the
+- **2026-10-27:** the Mock Sender plays the band (one button: hold = panic + tracking, double-press = check-in, 5 s hold = cancel; battery slider), the Incident view (a panic and its tracking path, from four places), alert pins on the Track map (panics keep their spot), map layers (five, remembered), re-centre button replaces the
   Google Maps hand-off (notice 1.3), check-in card, alert cards restyled,
   contacts tap to edit / hold to delete and one contact dialog, Change
   password moved into Account information, Coil cache cleared on sign-out,
