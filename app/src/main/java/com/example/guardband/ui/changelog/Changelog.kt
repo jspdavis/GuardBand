@@ -37,15 +37,67 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-10-27",
+            title = "Map layers; the re-centre button; Change password moves into Account information; contacts hold-to-delete",
+            changes = listOf(
+                "Track's layers button opens a picker with three maps: Auto (streets, dark in dark mode), Street (always light) and Satellite. The map reopens on the one last picked.",
+                "The round button on Track is now a target. A tap brings the map back to the band's last known position, zooming back in if you had zoomed far out. It no longer opens Google Maps.",
+                "Privacy Notice version 1.3 drops the Google Maps row, since the app no longer hands anything to Google Maps. New consents are recorded against 1.3.",
+                "Change password moved from Settings into Account information. A Google account sees \"Managed by Google\" there instead, since its password is Google's.",
+                "Settings rows run edge to edge, and Account Information and Device Information are title-cased.",
+                "Holding a contact asks to delete it. The contact editor, the Notifications header (now with the logo) and the splash logo were tidied.",
+                "Signing out clears the cached Google photo, so the next account never sees the last one's picture.",
+                "Housekeeping: lint passes again (a mock sender string), and Visual Studio's workspace files are no longer in the repo. 740 unit tests pass."
+            ),
+            commit = "1214f32"
+        ),
+        ChangelogEntry(
             date = "2026-10-26",
             title = "The Privacy Notice and delete-account page published as final; the unit tests finish again",
             changes = listOf(
                 "The Privacy Notice (version 1.2) and the delete-account page are live without their DRAFT banners. They now name MapTiler, Google's place names and the Google profile picture, the alert notifications, email verification and the Emergency mark, and give the new Delete account path through Account information.",
                 "New sign-ups and consents are recorded against notice version 1.2. Accounts that agreed to an earlier version keep it and are not asked again.",
                 "Password-reset and verification links open the app on four developers' builds, up from one.",
-                "One sign-up test still counted up to the old contact limit. With the limit removed it never finished, which locked the build folder; it now checks that there is no limit. 727 unit tests pass."
+                "One sign-up test still counted up to the old contact limit. With the limit removed it never finished, which locked the build folder; it now checks that there is no limit. 727 unit tests pass.",
+                "The layout for a map-type picker was added, ready for the layers button (wired up the next day)."
             ),
-            commit = "9c08f87"
+            commit = "8ec773e"
+        ),
+        ChangelogEntry(
+            date = "2026-10-25",
+            title = "Dark-mode buttons",
+            changes = listOf(
+                "The round top buttons on Track, Contacts and Profile are dark green with white icons, instead of white with green icons."
+            ),
+            commit = "f6774e7"
+        ),
+        ChangelogEntry(
+            date = "2026-10-24",
+            title = "Contacts and Settings fixes",
+            changes = listOf(
+                "The Contacts list scrolls properly, and the filter chips' layout was fixed.",
+                "Every Settings row can be tapped anywhere along its width, not just on its label.",
+                "The top-bar buttons look right in dark mode."
+            ),
+            commit = "6370441"
+        ),
+        ChangelogEntry(
+            date = "2026-10-23",
+            title = "Contacts redesigned",
+            changes = listOf(
+                "Contacts has a search box and filter chips by relationship (Emergency, Family, Parent, Sibling and so on).",
+                "A star marks a contact as Emergency: it moves to the top of the list and gets a badge. It does not change who the band texts.",
+                "There is no upper limit on contacts any more; at least one is still required."
+            ),
+            commit = "a10fdbd"
+        ),
+        ChangelogEntry(
+            date = "2026-10-22",
+            title = "Change password",
+            changes = listOf(
+                "A Change password screen, opened from Settings: the new password, checked against the same rules as sign-up, then the current one to confirm it is you."
+            ),
+            commit = "7a0b26d"
         ),
         ChangelogEntry(
             date = "2026-10-21",

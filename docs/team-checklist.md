@@ -63,21 +63,11 @@ the app together. Pairing comes first: SMS depends on it.
 
 ## Fixes and cleanups
 
-- [ ] 🔧 **Remove `.vs/` from the repo** · *app team*
-  Visual Studio's workspace files (10 of them, about 4 MB) were committed in
-  `8ec773e`. Delete them from the repo and add `.vs/` to `.gitignore`.
-
 - [ ] 🔧 **Remove the stray `Guardband-MVVM` entry** · *Jehan, then app team*
   A nested copy of the repo in Jehan's folder got committed as a link to a
   commit (`9448b3c`) that only exists on his machine. Anything done inside
   that inner copy never reached GitHub, so check nothing is stranded there
   first, then remove the entry.
-
-- [ ] 🔧 **Changelog catch-up** · *app team*
-  Settings → Changelog has no entries for 22–25 Oct (change password,
-  contacts redesign, UI fixes) or 27 Oct (map layers, Account information's
-  Password section, the re-centre button, notice 1.3, lint, photo cache).
-  Where: `ui/changelog/Changelog.kt`, CLAUDE.md "Changelog"
 
 - [ ] 📱 **Confirm the database listener stops** · *app team*
   Never checked by hand: database traffic stops after Log Out. Backgrounding
@@ -229,3 +219,7 @@ Use the debug mock sender to produce alerts.
   `./gradlew lint` passes with no errors.
 - [x] 🔧 **Clear the Google photo cache on sign-out** · *27 Oct*
   `LoginNavigation` empties Coil's caches on every way out.
+- [x] 🔧 **Remove `.vs/` from the repo** · *27 Oct*
+  Visual Studio's workspace files are gone and `.vs/` is in `.gitignore`.
+- [x] 🔧 **Changelog catch-up** · *27 Oct*
+  Entries for 22, 23, 24, 25 and 27 Oct; 26 Oct gained the map-type layout.
