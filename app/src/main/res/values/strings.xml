@@ -256,6 +256,12 @@
     <!-- Device tab (the Profile tab until 2026-10-27). Copy is plain;
          DESIGN: Jul -->
     <string name="label_device_band_name">GuardBand</string>
+    <!-- The band viewer at the top of the Device tab -->
+    <string name="cd_band_viewer">GuardBand band, interactive view. Drag to rotate.</string>
+    <string name="cd_band_viewer_still">GuardBand band</string>
+    <string name="label_band_viewer_hint">Drag to rotate</string>
+    <string name="action_band_viewer_next">Next angle</string>
+    <string name="action_band_viewer_previous">Previous angle</string>
     <string name="label_device_band_id">ID: %1$s</string>
     <string name="label_device_status_reporting">Reporting</string>
     <string name="label_device_status_last_seen">Last seen %1$s</string>

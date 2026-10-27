@@ -26,6 +26,7 @@ A scrolling column, top to bottom:
 | Part | Shows |
 |---|---|
 | **a) Header** | Avatar (Google photo, else initials, else the person icon), display name, email. What the Profile tab showed, made compact. Account information in Settings still holds the rest. |
+| **Band viewer** (2026-10-28) | The band on a turntable: drag to turn it. A still placeholder until the rendered frames exist. Visual only; the tab knows it only as a `BandViewer`. [band-viewer.md](band-viewer.md). |
 | **b) Band card** | "GuardBand" and the band's id; a status chip, **"Reporting"** or **"Last seen 5 min ago"**; battery with the alert rows' battery symbol, orange at 20% or below; the last alert (type in its colour and symbol, "5 min ago", place name); the last known position as a place name. **"No data from the band yet"** when the band has never reported. No map, no coordinates. |
 | **c) Connected account** | Sign-in method (Email and password, Google, or both); email Verified / Not verified; **"Emergency contacts: N, M starred"**, which switches to the Contacts tab. |
 | **d) Pair a band** | Disabled, "Coming soon". |

@@ -21,7 +21,7 @@ Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targ
 ./gradlew lint
 ```
 
-On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 880 JVM unit tests (2026-10-27), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
+On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 918 JVM unit tests (2026-10-28), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
 
 `app/google-services.json` is required for the `com.google.gms.google-services` plugin. It points at the Firebase project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan, so there are no Cloud Functions).
 
@@ -90,6 +90,8 @@ com/example/guardband/
 │   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel
 │   ├── device/         Device tab (the Profile tab until 2026-10-27): account header, band card,
 │   │                 connected account + contacts count, pairing placeholder (see "Device tab")
+│   ├── bandviewer/     BandViewer (the interface the Device tab knows) + TurntableBandView: the band
+│   │                 on a turntable of frames from assets/band_turntable/; TurntableMotion (pure maths)
 │   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row.
 │   │                 A chevron means another screen of the app; Device information opens the Device tab
 │   ├── display/        DisplayActivity, opened from Settings: the theme (ThemeChoice, DisplayPrefs)
@@ -906,6 +908,26 @@ Profile. Four things are easy to break:
   data needs the notice first.
 - **Settings' Device information row and the contacts row** navigate through
   `HomeViewModel` (`ShowDevice`, `ShowContacts`), which `show()` a tab.
+
+**The band viewer (2026-10-28,
+[docs/band-viewer.md](docs/band-viewer.md))** sits at the top of the tab,
+and is visual only: no data, no network, nothing stored. Keep it that way:
+- **The tab knows only `BandViewer`.** A 3D (`.glb`) viewer goes behind
+  `BandViewer.create`, after a dependency check against compileSdk 34 and a
+  release manifest re-check. No 3D library and no WebView until then.
+- **Frames are `app/src/main/assets/band_turntable/band_turn_NNN.webp`,
+  counted at run time.** Never hard-code a frame count, and never commit
+  stand-in frames as if they were the real ones. Today the folder does not
+  exist and `res/drawable/band_placeholder.xml` shows.
+- **No loop, no timer:** redraws come from `postInvalidateOnAnimation` or one
+  `postDelayed`, and only between `setActive(true)` and `setActive(false)`,
+  which `DeviceFragment` drives from `onResume`/`onPause`/`onHiddenChanged`.
+  Inactive, it holds no decoded frame.
+- **It claims only clearly horizontal drags** (`requestDisallowInterceptTouchEvent`
+  after the slop), so the tab's vertical scroll still starts on the band.
+- **Three round elements on the concept** are labelled an HR/SpO2 sensor
+  array. Showing one as a sensor would imply health data the app does not
+  collect: a notice change first (handoff §3, item 14).
 
 ## Check-in status
 

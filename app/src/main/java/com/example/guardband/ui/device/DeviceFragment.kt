@@ -3,6 +3,7 @@ package com.example.guardband.ui.device
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.ProgressBar
@@ -20,6 +21,7 @@ import com.example.guardband.ui.alert.AlertFormatting
 import com.example.guardband.ui.alert.AlertRow
 import com.example.guardband.ui.alert.AlertViewModel
 import com.example.guardband.ui.avatar.AvatarImage
+import com.example.guardband.ui.bandviewer.BandViewer
 import com.example.guardband.ui.contacts.ContactsViewModel
 import com.example.guardband.ui.home.HomeViewModel
 import com.example.guardband.ui.track.Elapsed
@@ -40,9 +42,11 @@ import kotlinx.coroutines.launch
  * Nothing on this screen shows a coordinate: positions are place names, or
  * a pointer to the map.
  *
+ * The band viewer (`fl_device_band_viewer`) is a [BandViewer], visual only.
+ *
  * View ids: ib_device_settings, ib_device_notifications, ll_device_header,
  * iv_device_avatar, tv_device_avatar_initials, tv_device_name,
- * tv_device_email, card_device_band, tv_device_band_name, tv_device_band_id,
+ * tv_device_email, fl_device_band_viewer, card_device_band, tv_device_band_name, tv_device_band_id,
  * tv_device_band_status, progress_device_band, tv_device_band_message,
  * ll_device_band_details, ll_device_battery, iv_device_battery_icon,
  * tv_device_battery, tv_device_no_alerts, ll_device_last_alert,
@@ -73,6 +77,13 @@ class DeviceFragment : Fragment(R.layout.fragment_device) {
     private lateinit var tvSignInMethod: TextView
     private lateinit var tvVerification: TextView
     private lateinit var rowContacts: TextView
+
+    /**
+     * The band viewer at the top. The tab knows only the interface, not
+     * whether frames or a 3D model are behind it. Active only while the tab
+     * is on screen and resumed; released with the view.
+     */
+    private var bandViewer: BandViewer? = null
 
     private val viewModel: DeviceViewModel by viewModels { DeviceViewModel.Factory }
     private val homeViewModel: HomeViewModel by activityViewModels { HomeViewModel.Factory }
@@ -113,6 +124,16 @@ class DeviceFragment : Fragment(R.layout.fragment_device) {
 
         rowContacts.setOnClickListener { homeViewModel.onContactsSummaryClicked() }
 
+        bandViewer = BandViewer.create(requireContext()).also { viewer ->
+            view.findViewById<FrameLayout>(R.id.fl_device_band_viewer).addView(
+                viewer.view,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            )
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect(::render)
@@ -138,7 +159,27 @@ class DeviceFragment : Fragment(R.layout.fragment_device) {
         }
     }
 
+    // The viewer animates and holds decoded frames only while this tab is
+    // both showing (the host hides tabs rather than destroying them) and
+    // resumed (not in the background).
+    override fun onResume() {
+        super.onResume()
+        bandViewer?.setActive(!isHidden)
+    }
+
+    override fun onPause() {
+        bandViewer?.setActive(false)
+        super.onPause()
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        bandViewer?.setActive(!hidden && isResumed)
+    }
+
     override fun onDestroyView() {
+        bandViewer?.release()
+        bandViewer = null
         avatarImage.dispose()
         super.onDestroyView()
     }

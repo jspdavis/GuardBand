@@ -141,12 +141,23 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <!-- The band viewer: a BandViewer (ui/bandviewer) added in code,
+                 centred on the screen's own background so the frames'
+                 transparency shows the theme in both modes. Purely visual.
+                 DESIGN: Jul (height, spacing) -->
+            <FrameLayout
+                android:id="@+id/fl_device_band_viewer"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:layout_marginTop="16dp"
+                android:background="@color/surface_bg" />
+
             <!-- b) The band. DESIGN: Jul -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_device_band"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
                 app:cardBackgroundColor="@color/surface_card"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
