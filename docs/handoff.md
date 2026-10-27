@@ -1,8 +1,8 @@
 # Handoff
 
-**As of 2026-10-27 · `mvvm-main` at `b94dd26` (the Mock Sender's band button)
+**As of 2026-10-27 · `mvvm-main` at `9fbd83b` (the Device tab)
 plus its Changelog/handoff commit, pushed · `main` fast-forwarded to the same
-commit (`git push origin mvvm-main:main`) · 842 JVM unit tests, 0 failures ·
+commit (`git push origin mvvm-main:main`) · 880 JVM unit tests, 0 failures ·
 `./gradlew lint` passes with no errors · nothing in flight.** Run `git status -sb` and `git log origin/mvvm-main -1` before
 trusting any hash here.
 
@@ -48,8 +48,8 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 | **Alerts** | Alert history (pushed screen): latest alert card plus the list by day, colour-coded by type (panic, check-in, low battery, unknown), with place names instead of coordinates (Android Geocoder), battery level and "5 min ago" times. Tracking updates are hidden from lists. **Incident view** (pushed screen): a panic row, a panic pin or the face's "View incident" opens the panic on a map with the tracking updates after it drawn as a path, plus its time, place, latest battery and update count. |
 | **Notifications** | The bell opens an inbox of the band's alerts by day. Opt-in **alert notifications** (Settings): a foreground service keeps the listener open and posts each new alert as a system notification, panic silent for the wearer's discretion, nothing identifying on the lock screen. |
 | **Contacts tab** | Emergency contacts: add/edit (tap a card)/delete (trash or hold), search, relationship filter chips, an Emergency star that sorts and badges. At least one contact always; phone numbers stored as E.164. |
-| **Profile tab** | Avatar, welcome line and email. Thin. |
-| **Settings** | Account information (details, verification status, Change password, Delete account), Alert notifications, Display (Light/Dark/System), Device information (**"Coming soon"**), About (version, Privacy Notice), Changelog, Log Out. |
+| **Device tab** (was Profile) | A compact header (photo or initials, name, email); the band: "Reporting" or "Last seen 5 min ago", battery (orange at 20%), last alert with time and place name, last known position as a place name ("On the move" while tracking); the connected account (sign-in method, email verification, "Emergency contacts: N, M starred" opening Contacts); "Pair a band" (Coming soon); how the band works. Always shows the one hard-coded band. [`device-tab.md`](device-tab.md). |
+| **Settings** | Account information (details, verification status, Change password, Delete account), Alert notifications, Display (Light/Dark/System), Device information (opens the Device tab), About (version, Privacy Notice), Changelog, Log Out. |
 | **Mock sender** (debug builds only) | Plays the band with its one button: hold 1.5 s = panic (then tracking every 5 s for 30 min), double-press = check-in, hold 5 s during a panic = cancel (sends a check-in). A battery slider sets the level reported and sends a low-battery alert at 20%. |
 
 ### Requirements coverage
@@ -125,7 +125,10 @@ says what it depends on and what it would touch.
      rules can say `auth.uid == band's uid`. Custom tokens would need a server.
    - Touches: `RTDBS-RULES.md` (Jul's pending `devices/` decision,
      [`database-rules.md`](database-rules.md) §4), the mock sender (send
-     `?auth=`), `RepositoryProvider`, the notice.
+     `?auth=`), `RepositoryProvider` (`watchedBandId`), the notice. The
+     Device tab is ready for it: `DevicePairing` already has `Unpaired`, and
+     the disabled "Pair a band" row is where adding a band would start
+     ([`device-tab.md`](device-tab.md) §5).
 2. **Roles: wearer and guardian.** Today the signed-in user is implicitly the
    wearer (their face is on the marker) and also the watcher. A guardian
    watching someone else's band needs sharing or invites on top of pairing.
@@ -142,43 +145,35 @@ says what it depends on and what it would touch.
    on it" or "resolved", so other guardians (and the history) know. Needs a
    place to write that is **not** `devices/` (e.g. under the user, or a new
    node with its own rules), and a decision on who can see it.
-5. **Device information screen.** The Settings row says "Coming soon".
-   `TrackViewModel` already computes "reporting / last seen" (180 s
-   threshold) and battery; the panel showing them was removed from Track on
-   2026-10-14. They could live here, with the device id, before pairing.
-6. **A fuller Profile tab.** It shows only an avatar, a greeting and an email.
-   Candidates: edit display name; wearer details useful to a responder.
-   Anything medical or identifying is new personal data, so the notice
-   changes with it.
-7. **A demo mode / demo script.** The project is presented without hardware.
+5. **A demo mode / demo script.** The project is presented without hardware.
    A scripted mock-sender run (panic → tracking → check-in → low
    battery) would make demos reliable.
 
 ### Quality and hardening
 
-8. **The phone-check backlog** (§4): most screens since 2026-10-13 have unit
+6. **The phone-check backlog** (§4): most screens since 2026-10-13 have unit
    tests but no recorded device pass, including alert notifications (47
    cases), dark mode and the consent gate.
-9. **UI and instrumented tests.** `ExampleInstrumentedTest` is still the
+7. **UI and instrumented tests.** `ExampleInstrumentedTest` is still the
     template; nothing tests a screen, the `MapView` or the Firebase calls.
-10. **Offline behaviour.** RTDB disk persistence is off, so a cold start
+8. **Offline behaviour.** RTDB disk persistence is off, so a cold start
     offline shows nothing until the network returns.
-11. **Localisation and accessibility.** All copy is English; ViewModel
+9. **Localisation and accessibility.** All copy is English; ViewModel
     messages are Kotlin `MSG_*` constants, not resources, which makes
     translation harder. No accessibility pass has been done; the new check-in
     card may be read twice by TalkBack.
 
 ### Bigger ideas that need a decision first
 
-12. **Safe zones / geofences**: alert when the band leaves an area. Needs the
+10. **Safe zones / geofences**: alert when the band leaves an area. Needs the
     band's positions processed somewhere: on the phone through the
     foreground service (no server), and a notice change.
-13. **Push notifications without the foreground service**: needs FCM
+11. **Push notifications without the foreground service**: needs FCM
     sending, so Blaze or a server.
-14. **A Play Store release**: rename `com.example.guardband` (cannot change
+12. **A Play Store release**: rename `com.example.guardband` (cannot change
     after a first release; means re-registering the Firebase app and every
     fingerprint), a release keystore, and a paid MapTiler plan.
-15. **Journeys ("walk me home").** The wearer starts a journey on the band
+13. **Journeys ("walk me home").** The wearer starts a journey on the band
     before a trip they want watched; the guardian sees "On a journey since
     9:40 PM" and the route so far, quietly (no SMS, no alarm); the wearer ends
     it with "arrived", and tracking stops. Optionally an **overdue** warning
@@ -202,6 +197,7 @@ says what it depends on and what it would touch.
 |---|---|---|
 | **Decide `devices/` and publish the rules** | Jul | Pick A, A+ (recommended), B or C ([`database-rules.md`](database-rules.md) §4). B breaks the mock sender; C breaks every receiver until pairing. `RTDBS-RULES.md` is ahead of the Console until then: do not describe it as the live ruleset. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
 | **MapTiler key** | Jul | A dedicated key restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), shared privately, in each `local.properties` as `MAPTILER_API_KEY`. Without it Track says "Map unavailable". [`osmdroid.md`](osmdroid.md) §4.4. |
+| **The Privacy Notice still says "Profile tab"** | James | Its Google profile picture row says the picture shows "on the Profile tab and on the map". It is now the Device tab. Nothing about the data changed, so it is a wording fix for a human to make (and decide whether it needs a version bump); the agent was told not to edit the hosted notice. |
 | **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. The ⓘ collapse follows OSMF's guidelines, not a MapTiler statement. [`osmdroid.md`](osmdroid.md) §4.6. |
 | **Design pass on the placeholders** | Jul | The dark palette (`values-night/colors.xml`), the low-battery icon (triangle or battery), everything marked `DESIGN: Jul` (94 places: 4 for the alert pins and their label, 6 for the Incident view and the face's bubble), and two older theme changes to confirm with Jehan: 28 dp outlined-button corners, 24 dp sign-up top padding. |
 | **Remove the stray `Guardband-MVVM` gitlink** | Jehan, then anyone | A nested clone in Jehan's tree was committed as a gitlink to `9448b3c`, which exists only on her machine. Check nothing is stranded in that inner copy ([`guardband-mvvm-folder.md`](guardband-mvvm-folder.md)), then remove the entry. |
@@ -225,6 +221,7 @@ list; the step-by-step checklists live in each doc:
 - Map, face marker, credits and logo links: [`osmdroid.md`](osmdroid.md) §5.4 and §8.
 - Alert pins on Track (27 Oct): [`osmdroid.md`](osmdroid.md) §8, "Alert pins".
 - Incident view, its four ways in and the panic-pin rule (27 Oct): [`incident-view.md`](incident-view.md) §5.
+- Device tab (27 Oct): status chip, battery, last alert and position, contacts count and tap-through, Settings' row, both account kinds, dark mode, no band data: [`device-tab.md`](device-tab.md) §8.
 - Settings, About, Display, Alert notifications screens.
 - The older pass since 13 Oct: [`mvvm-main-cleanup-checklist.md`](mvvm-main-cleanup-checklist.md)
   section A, the consent gate ([`privacy-and-consent.md`](privacy-and-consent.md) §6
@@ -239,7 +236,7 @@ list; the step-by-step checklists live in each doc:
 | | Notes |
 |---|---|
 | **Close `devices/`** | Needs pairing (§3, item 1). Close it before any public demo. |
-| **Rename `applicationId` off `com.example.*`** | Only if publishing (§3, item 14). |
+| **Rename `applicationId` off `com.example.*`** | Only if publishing (§3, item 12). |
 | **No re-consent flow** | Accounts keep the version they agreed to. Building one means deciding what happens to an account that declines. `ConsentGate.needsConsent` is where a version rule would go. |
 | **Server-side enforcement of verification** | Only if ever wanted. A rule requiring `auth.token.email_verified` on `users/$uid` would fail every sign-up, because the profile is written before the email can be opened. |
 | **Sweep finished deletions' markers** | Optional. Each completed Delete account leaves `users/{uid}: { deletion_pending: true }` under a uid no account owns. A human can delete them from the Console. |
@@ -261,7 +258,7 @@ The full, user-facing record is `Changelog.entries`
 (`app/src/main/java/com/example/guardband/ui/changelog/Changelog.kt`), shown
 in the app under Settings → Changelog. Headlines:
 
-- **2026-10-27:** the Mock Sender plays the band (one button: hold = panic + tracking, double-press = check-in, 5 s hold = cancel; battery slider), the Incident view (a panic and its tracking path, from four places), alert pins on the Track map (panics keep their spot), map layers (five, remembered), re-centre button replaces the
+- **2026-10-27:** the Device tab replaces Profile (band status, battery, last alert, connected account, pairing placeholder; Settings' Device information opens it), the Mock Sender plays the band (one button: hold = panic + tracking, double-press = check-in, 5 s hold = cancel; battery slider), the Incident view (a panic and its tracking path, from four places), alert pins on the Track map (panics keep their spot), map layers (five, remembered), re-centre button replaces the
   Google Maps hand-off (notice 1.3), check-in card, alert cards restyled,
   contacts tap to edit / hold to delete and one contact dialog, Change
   password moved into Account information, Coil cache cleared on sign-out,
@@ -293,6 +290,7 @@ in the app under Settings → Changelog. Headlines:
 | The map library and its configuration | [`osmdroid.md`](osmdroid.md): **read before touching the map** |
 | How alerts are read from RTDB | [`alert-data.md`](alert-data.md) |
 | The Incident view: grouping, its read, its ways in | [`incident-view.md`](incident-view.md) |
+| The Device tab: where each value comes from, pairing's shape | [`device-tab.md`](device-tab.md) |
 | Alert notifications | [`notifications.md`](notifications.md), [`notifications-test-cases.md`](notifications-test-cases.md) |
 | The sign-up wizard | [`signup-flow.md`](signup-flow.md) |
 | The post-login host and its tabs | [`home-host-and-bottom-nav.md`](home-host-and-bottom-nav.md) |

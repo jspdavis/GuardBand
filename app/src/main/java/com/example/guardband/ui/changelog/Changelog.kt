@@ -38,8 +38,9 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-10-27",
-            title = "The Incident view; the Mock Sender plays the band; map layers; the re-centre button; alert pins on the map; a check-in card; Change password moves into Account information; contacts tap to edit, hold to delete",
+            title = "The Device tab; the Incident view; the Mock Sender plays the band; map layers; the re-centre button; alert pins on the map; a check-in card; Change password moves into Account information; contacts tap to edit, hold to delete",
             changes = listOf(
+                "The Profile tab is now the Device tab. It shows your band: whether it is reporting right now or when it was last seen, its battery (orange at 20% or below), its last alert with the time and place, and the place it was last at (or \"On the move\" while it is sending its position after a panic). Below that: how you sign in, whether your email is verified, and how many emergency contacts you have and how many are starred (tap to open Contacts). Your picture, name and email sit at the top, with your initials if there is no photo. \"Pair a band\" is there, marked Coming soon, and a short card explains the band's button. Settings' Device information row opens this tab instead of saying Coming soon.",
                 "New Incident view: tap a panic in the recent-alerts sheet or in Alert history, tap a panic's pin on the map, or tap your band's marker and choose \"View incident\". It shows the panic on a map with the path the band reported afterwards, and when it happened, where, the battery, and how many location updates have come in since (or that none has yet). Back returns to where you opened it.",
                 "A panic's pin is never replaced by a later check-in or low-battery alert from the same spot.",
                 "The Mock Sender (the test app that stands in for the band) now works like the band: one button, where holding it for 1.5 seconds sends a panic and starts sending the band's position every 5 seconds for 30 minutes, a double-press sends a check-in, and during a panic holding it for 5 seconds cancels the panic and sends a check-in. A battery slider sets the battery level, and dropping it to 20% sends a low-battery alert.",
@@ -56,9 +57,9 @@ object Changelog {
                 "Signing out clears the cached Google photo, so the next account never sees the last one's picture.",
                 "The MapTiler logo sits straight on the map, with no white box behind it: white lettering on the dark map and Satellite, dark lettering on the light map.",
                 "Alert notifications show the GuardBand logo in the status bar instead of a bell, as a one-colour outline (Android draws that icon in a single colour).",
-                "Housekeeping: lint passes again (a mock sender string), and Visual Studio's workspace files are no longer in the repo. 842 unit tests pass."
+                "Housekeeping: lint passes again (a mock sender string), and Visual Studio's workspace files are no longer in the repo. 880 unit tests pass."
             ),
-            commit = "b94dd26"
+            commit = "9fbd83b"
         ),
         ChangelogEntry(
             date = "2026-10-26",
