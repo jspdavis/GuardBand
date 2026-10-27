@@ -47,9 +47,10 @@ object Changelog {
                 "Settings rows run edge to edge, and Account Information and Device Information are title-cased.",
                 "Holding a contact asks to delete it. The contact editor, the Notifications header (now with the logo) and the splash logo were tidied.",
                 "Signing out clears the cached Google photo, so the next account never sees the last one's picture.",
-                "Housekeeping: lint passes again (a mock sender string), and Visual Studio's workspace files are no longer in the repo. 740 unit tests pass."
+                "The MapTiler logo sits straight on the map, with no white box behind it: white lettering on the dark map and Satellite, dark lettering on the light map.",
+                "Housekeeping: lint passes again (a mock sender string), and Visual Studio's workspace files are no longer in the repo. 741 unit tests pass."
             ),
-            commit = "1214f32"
+            commit = "f171467"
         ),
         ChangelogEntry(
             date = "2026-10-26",
