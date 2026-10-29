@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > Picking this up cold? Read [docs/handoff.md](docs/handoff.md) first — current state, open items and the traps that have already cost time.
 
-GuardBand is an Android (Kotlin) companion app for an IoT wrist-worn safety band (ESP32 + Air780E 4G LTE + NEO-6M GPS). The band itself sends SMS to emergency contacts and writes alerts directly to Firebase Realtime Database over REST; the app reads that data so guardians can watch in real time. The real firmware does not exist yet. A **Wi-Fi prototype** does: `firmware/guardband_band/` (ESP32, three LEDs, one button, the laptop's Windows location over Serial; see `firmware/README.md`), and a phone can still act as the band (see "Mock sender" below). This is an academic project; the requirements are FR-01..FR-11 in README.md.
+GuardBand is an Android (Kotlin) companion app for an IoT wrist-worn safety band (ESP32 + Air780E 4G LTE + NEO-6M GPS). The band itself sends SMS to emergency contacts and writes alerts directly to Firebase Realtime Database over REST; the app reads that data so guardians can watch in real time. The real firmware does not exist yet. A **Wi-Fi prototype** does: `firmware/guardband_band/` (ESP32, three LEDs, one button, the laptop's Windows location over Serial; see "Band firmware (prototype)" in `README.md`, which also holds the demo day checklist), and a phone can still act as the band (see "Mock sender" below). This is an academic project; the requirements are FR-01..FR-11 in README.md.
 
 ## Build & test
 
@@ -1086,7 +1086,7 @@ about the user.
 
 ## Gotchas
 
-- `README.md` is UTF-16 encoded. Plain `cat`/`grep` will show it with spaces between characters, so use `iconv -f UTF-16 -t UTF-8 README.md` to read it.
+- `README.md` is UTF-8 since 2026-10-29 (it was UTF-16 LE before, so older commits of it diff as binary). It holds the firmware docs and the demo day checklist too; there is no `firmware/README.md` or `docs/demo-checklist.md` any more.
 - Layouts use plain `findViewById` with snake_case IDs prefixed by screen (`et_login_email`, `btn_login`). There is no ViewBinding or Compose.
 - Every Activity is locked to portrait in the manifest. New Activities must be added there.
 - **An unescaped apostrophe in a string resource** fails `mergeDebugResources` with `Can not extract resource from ParsedResource`, naming neither the string nor the line. Write it `\'`.

@@ -29,7 +29,7 @@
 //   BATT,85                      battery percent
 //   STATUS                       what the band has right now
 //
-// See firmware/README.md for setup and how to check an alert end to end.
+// See the "Band firmware (prototype)" section of the root README.md for setup and how to check an alert end to end.
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
