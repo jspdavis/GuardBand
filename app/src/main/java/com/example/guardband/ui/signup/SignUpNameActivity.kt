@@ -14,21 +14,9 @@ import com.example.guardband.R
 import kotlinx.coroutines.launch
 
 /**
- * Sign-Up Step 1 — user enters their full name.
+ * Sign-Up Step 2 — user enters their full name.
  *
- * View ids: et_signup_first_name, et_signup_last_name, btn_signup_name_next,
- * progress_signup_name, til_signup_first_name, til_signup_last_name,
- * tv_signup_name_title, tv_signup_name_subtitle. The back arrow and the step
- * indicator come from the shared header — see [SignUpStepHeader].
- *
- * Step 2 of 3 in the revamped flow (Account → Name → Contacts → Consent).
- *
- * Receives [EXTRA_EMAIL] and [EXTRA_PASSWORD] from step 1 and passes them on
- * untouched — it neither reads nor validates them.
- *
- * The screen has no Google button: that path lives on Login, which offers
- * "Continue with Google" and routes a first-time user through the
- * complete-profile steps.
+ * Receives [EXTRA_EMAIL], [EXTRA_PASSWORD], [EXTRA_ROLE], [EXTRA_PHONE] and passes them on.
  *
  * Flow: SignUpNameActivity → SignUpContactsActivity
  */
@@ -37,6 +25,8 @@ class SignUpNameActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_EMAIL = "extra_email"
         const val EXTRA_PASSWORD = "extra_password"
+        const val EXTRA_ROLE = "extra_role"
+        const val EXTRA_PHONE = "extra_phone"
     }
 
     private lateinit var etFirstName: EditText
@@ -47,6 +37,8 @@ class SignUpNameActivity : AppCompatActivity() {
 
     private var email: String = ""
     private var password: String = ""
+    private var role: String = ""
+    private var phone: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,6 +48,8 @@ class SignUpNameActivity : AppCompatActivity() {
 
         email    = intent.getStringExtra(EXTRA_EMAIL) ?: ""
         password = intent.getStringExtra(EXTRA_PASSWORD) ?: ""
+        role     = intent.getStringExtra(EXTRA_ROLE) ?: ""
+        phone    = intent.getStringExtra(EXTRA_PHONE) ?: ""
 
         etFirstName = findViewById(R.id.et_signup_first_name)
         etLastName  = findViewById(R.id.et_signup_last_name)
@@ -88,6 +82,8 @@ class SignUpNameActivity : AppCompatActivity() {
                         putExtra(SignUpContactsActivity.EXTRA_NAME, event.name)
                         putExtra(SignUpContactsActivity.EXTRA_EMAIL, event.email)
                         putExtra(SignUpContactsActivity.EXTRA_PASSWORD, event.password)
+                        putExtra(SignUpContactsActivity.EXTRA_ROLE, role)
+                        putExtra(SignUpContactsActivity.EXTRA_PHONE, phone)
                     }
                 )
         }

@@ -1,6 +1,7 @@
 package com.example.guardband.testing
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.data.model.CheckIn
 import com.example.guardband.data.repository.AlertHistory
 import com.example.guardband.data.repository.AlertRepository
@@ -24,17 +25,23 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 class FakeAlertRepository(
     history: AlertHistory = AlertHistory(),
     latest: Alert? = null,
-    latestCheckIn: CheckIn? = null
+    latestCheckIn: CheckIn? = null,
+    statuses: Map<Long, AlertStatus> = emptyMap()
 ) : AlertRepository {
 
     private val historyFlow = replayingFlow<Result<AlertHistory>>()
     private val latestFlow = replayingFlow<Result<Alert?>>()
     private val checkInFlow = replayingFlow<Result<CheckIn?>>()
+    private val statusesFlow = replayingFlow<Result<Map<Long, AlertStatus>>>()
+
+    val requestedAcknowledge = mutableListOf<Long>()
+    val requestedResolve = mutableListOf<Long>()
 
     init {
         historyFlow.tryEmit(Result.success(history))
         latestFlow.tryEmit(Result.success(latest))
         checkInFlow.tryEmit(Result.success(latestCheckIn))
+        statusesFlow.tryEmit(Result.success(statuses))
     }
 
     /** Every `limit` ever passed to [observeAlertHistory], in call order. */
@@ -103,6 +110,26 @@ class FakeAlertRepository(
     override fun observeIncident(panicSequenceId: Long, limit: Int): Flow<Result<AlertHistory>> {
         requestedIncidents += panicSequenceId
         return incidentFlow
+    }
+
+    override fun observeStatuses(): Flow<Result<Map<Long, AlertStatus>>> = statusesFlow
+
+    override suspend fun acknowledge(sequenceId: Long): Result<Unit> {
+        requestedAcknowledge += sequenceId
+        return Result.success(Unit)
+    }
+
+    override suspend fun resolve(sequenceId: Long): Result<Unit> {
+        requestedResolve += sequenceId
+        return Result.success(Unit)
+    }
+
+    fun emitStatuses(statuses: Map<Long, AlertStatus>) {
+        statusesFlow.tryEmit(Result.success(statuses))
+    }
+
+    fun failStatuses(error: Throwable) {
+        statusesFlow.tryEmit(Result.failure(error))
     }
 
     /** Pushes what an Incident read returns at any live collector. */

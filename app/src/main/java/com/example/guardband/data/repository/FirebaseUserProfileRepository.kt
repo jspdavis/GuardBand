@@ -3,6 +3,7 @@ package com.example.guardband.data.repository
 import com.example.guardband.data.model.ConsentRecord
 import com.example.guardband.data.model.EmergencyContact
 import com.example.guardband.data.model.ProfileState
+import com.example.guardband.data.model.Role
 import com.example.guardband.data.model.User
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -59,7 +60,8 @@ class FirebaseUserProfileRepository(
             User(
                 id = uid,
                 name = snapshot.child(FIELD_NAME).value?.toString().orEmpty(),
-                email = snapshot.child(FIELD_EMAIL).value?.toString().orEmpty()
+                email = snapshot.child(FIELD_EMAIL).value?.toString().orEmpty(),
+                role = Role.fromWire(snapshot.child(FIELD_ROLE).value?.toString())
             )
         }
     }
@@ -77,6 +79,8 @@ class FirebaseUserProfileRepository(
         uid: String,
         name: String,
         email: String,
+        role: Role,
+        ownPhone: String,
         contacts: List<EmergencyContact>,
         consentVersion: String
     ): Result<Unit> = profileResult {
@@ -87,15 +91,17 @@ class FirebaseUserProfileRepository(
         // emergency_contacts parent as a map would replace that subtree, which
         // is harmless on a new account but a trap if this is ever reused.
         val updates = mutableMapOf<String, Any?>(
-            "$NODE_USERS/$uid/$FIELD_NAME" to name,
-            "$NODE_USERS/$uid/$FIELD_EMAIL" to email
+            "$NODE_USERS/$uid/$FIELD_NAME"  to name,
+            "$NODE_USERS/$uid/$FIELD_EMAIL" to email,
+            "$NODE_USERS/$uid/$FIELD_ROLE"  to role.name,
+            "$NODE_USERS/$uid/$FIELD_PHONE" to ownPhone
         )
         updates += consentUpdates(uid, consentVersion)
 
         contacts.forEach { contact ->
-            // Validated before anything is sent, so one bad phone number fails
-            // the call rather than committing a partial sign-up.
-            val stored = ContactFields.validated(contact)
+            // ownPhone passed so a guardian contact whose phone matches the
+            // dependent's own is refused before any commit (REQ-PHONE-04).
+            val stored = ContactFields.validated(contact, ownPhone)
             val key = contactsRef.push().key ?: throw AuthError.Unknown(null)
             val path = "$NODE_USERS/$uid/${ContactFields.NODE_EMERGENCY_CONTACTS}/$key"
             updates[path] = ContactFields.toFieldMap(stored)
@@ -229,5 +235,11 @@ class FirebaseUserProfileRepository(
 
         /** The marker a half-finished deletion leaves - see [markDeletionPending]. */
         const val FIELD_DELETION_PENDING = "deletion_pending"
+
+        /** The user's role, `GUARDIAN` or `DEPENDENT`, written at sign-up. */
+        const val FIELD_ROLE = "role"
+
+        /** The user's own phone in E.164, written at sign-up for guardian self-check. */
+        const val FIELD_PHONE = "phone"
     }
 }

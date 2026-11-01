@@ -1,6 +1,7 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertStatus
 
 /**
  * Turns one Realtime Database node into an [Alert], or null when the node is
@@ -65,7 +66,11 @@ internal object AlertParser {
             timestamp = timestamp,
             location = parseLocation(map[FIELD_LOCATION]),
             battery = parseBattery(map[FIELD_BATTERY]),
-            sequenceId = sequenceId
+            sequenceId = sequenceId,
+            // The band never writes either; both default when absent, so
+            // existing history still renders and a real panic still sends SMS.
+            status = AlertStatus.fromWire(map[FIELD_STATUS] as? String),
+            simulated = (map[FIELD_SIMULATED] as? Boolean) ?: false
         )
     }
 
@@ -100,4 +105,8 @@ internal object AlertParser {
     private const val FIELD_LOCATION = "location"
     private const val FIELD_BATTERY = "battery"
     private const val FIELD_SEQUENCE_ID = "sequenceId"
+    /** Guardian-written resolution state; absent → ACTIVE. */
+    private const val FIELD_STATUS = "status"
+    /** Set only by the debug panic-test trigger; absent → false. */
+    private const val FIELD_SIMULATED = "simulated"
 }

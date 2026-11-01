@@ -3,6 +3,7 @@ package com.example.guardband.ui.home
 import com.example.guardband.data.model.ConsentRecord
 import com.example.guardband.data.model.ProfileState
 import com.example.guardband.data.model.SignInProvider
+import com.example.guardband.data.model.Role
 import com.example.guardband.data.model.User
 import com.example.guardband.data.repository.AuthError
 import com.example.guardband.data.repository.UserProfileRepository
@@ -77,7 +78,8 @@ class HomeViewModelTest {
 
     /** A profile with a consent record at [version], as sign-up leaves one. */
     private suspend fun agreed(version: String, forUid: String = uid) {
-        profiles.finalizeSignUp(forUid, "Alex Rivera", "alex@guardband.com", emptyList(), version)
+        profiles.finalizeSignUp(forUid, "Alex Rivera", "alex@guardband.com",
+            com.example.guardband.data.model.Role.GUARDIAN, "+639171234567", emptyList(), version)
     }
 
     // ── Session ───────────────────────────────────────────────────────────────
@@ -135,8 +137,9 @@ class HomeViewModelTest {
     @Test
     fun `a user who just finished sign-up is not asked again`() = runTest {
         profiles.finalizeSignUp(
-            uid, "Alex Rivera", "alex@guardband.com", emptyList(),
-            UserProfileRepository.CONSENT_VERSION
+            uid, "Alex Rivera", "alex@guardband.com",
+            com.example.guardband.data.model.Role.GUARDIAN, "+639171234567",
+            emptyList(), UserProfileRepository.CONSENT_VERSION
         )
 
         val opened = open()
@@ -147,9 +150,21 @@ class HomeViewModelTest {
 
     @Test
     fun `a pinned consent record is honoured`() = runTest {
+        profiles.finalizedRoles[uid] = Role.GUARDIAN
+        profiles.saved[uid] = Pair("Alex Rivera", "alex@guardband.com")
         profiles.consentRecordResult = Result.success(ConsentRecord(version = "1.1"))
 
         assertEquals(HomeGateState.OPEN, open().gate)
+    }
+
+    @Test
+    fun `a profile with consent but missing role goes to role completion`() = runTest {
+        profiles.saved[uid] = Pair("Alex Rivera", "alex@guardband.com")
+        profiles.consentRecordResult = Result.success(ConsentRecord(version = "1.1"))
+
+        val opened = open()
+        assertEquals(listOf<HomeEvent>(HomeEvent.RequireCompleteProfile), opened.events)
+        assertEquals(HomeGateState.CHECKING, opened.gate)
     }
 
     // ── Consent absent ────────────────────────────────────────────────────────

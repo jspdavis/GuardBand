@@ -26,18 +26,8 @@ import kotlinx.coroutines.launch
 /**
  * Sign-Up Step 3 of 3 — the emergency contacts.
  *
- * Receives [EXTRA_NAME], [EXTRA_EMAIL] and [EXTRA_PASSWORD] from the earlier
- * steps, or [EXTRA_NAME], [EXTRA_EMAIL] and [EXTRA_COMPLETE_PROFILE] straight
- * from Login. All of it is passed on to Consent, which is where anything is
- * written.
- *
- * View ids: tv_signup_contacts_title, tv_signup_contacts_subtitle,
- * signup_contacts_min_notice, tv_signup_contacts_empty, rv_signup_contacts,
- * btn_signup_contacts_add, btn_signup_contacts_next. Rows come from
- * `item_contact.xml` and the editor from `dialog_contact_editor.xml` — both
- * shared with the Contacts tab. The back arrow and step indicator come from
- * the shared header; see [SignUpStepHeader]. In complete-profile mode the
- * indicator is hidden, because this is then the only step.
+ * Receives [EXTRA_NAME], [EXTRA_EMAIL], [EXTRA_PASSWORD], [EXTRA_ROLE], [EXTRA_PHONE]
+ * and passes them on to Consent.
  *
  * Flow: SignUpContactsActivity → SignUpConsentActivity
  */
@@ -45,14 +35,10 @@ class SignUpContactsActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_NAME = "extra_name"
-
-        /** From step 1, or the Google address in complete-profile mode. */
         const val EXTRA_EMAIL = "extra_email"
-
-        /** From step 1. Absent in complete-profile mode, where no account is made. */
         const val EXTRA_PASSWORD = "extra_password"
-
-        /** True when a Google sign-in already created the account. */
+        const val EXTRA_ROLE = "extra_role"
+        const val EXTRA_PHONE = "extra_phone"
         const val EXTRA_COMPLETE_PROFILE = "extra_complete_profile"
     }
 
@@ -67,6 +53,8 @@ class SignUpContactsActivity : AppCompatActivity() {
     private var userName: String = ""
     private var email: String = ""
     private var password: String = ""
+    private var role: String = ""
+    private var phone: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,12 +63,14 @@ class SignUpContactsActivity : AppCompatActivity() {
         userName = intent.getStringExtra(EXTRA_NAME) ?: ""
         email    = intent.getStringExtra(EXTRA_EMAIL) ?: ""
         password = intent.getStringExtra(EXTRA_PASSWORD) ?: ""
+        role     = intent.getStringExtra(EXTRA_ROLE) ?: ""
+        phone    = intent.getStringExtra(EXTRA_PHONE) ?: ""
+
+        viewModel.ownPhone = phone
 
         val completeProfile = intent.getBooleanExtra(EXTRA_COMPLETE_PROFILE, false)
         viewModel.setCompleteProfileMode(completeProfile)
 
-        // A first-time Google user skips steps 1 and 2, so this is the only
-        // step they see - counting it as 3 of 3 would misreport where they are.
         if (completeProfile) SignUpStepHeader.bindBackOnly(this)
         else SignUpStepHeader.bind(this, step = 3)
 
@@ -92,7 +82,6 @@ class SignUpContactsActivity : AppCompatActivity() {
         adapter = ContactAdapter(
             onEditClicked      = viewModel::onEditClicked,
             onDeleteClicked    = { viewModel.onDeleteClicked(it.id) },
-            // Emergency designation is not available during sign-up.
             onEmergencyClicked = {}
         )
         findViewById<RecyclerView>(R.id.rv_signup_contacts).adapter = adapter
@@ -144,6 +133,8 @@ class SignUpContactsActivity : AppCompatActivity() {
                         putExtra(SignUpConsentActivity.EXTRA_NAME, event.name)
                         putExtra(SignUpConsentActivity.EXTRA_EMAIL, event.email)
                         putExtra(SignUpConsentActivity.EXTRA_PASSWORD, event.password)
+                        putExtra(SignUpConsentActivity.EXTRA_ROLE, role)
+                        putExtra(SignUpConsentActivity.EXTRA_PHONE, phone)
                         putExtra(
                             SignUpConsentActivity.EXTRA_COMPLETE_PROFILE,
                             event.completeProfile
@@ -157,11 +148,6 @@ class SignUpContactsActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * The same add/edit dialog the Contacts tab uses. A null [contact] means
-     * add; otherwise the fields start on the staged values and the draft id
-     * rides back so the ViewModel replaces rather than appends.
-     */
     private fun showEditor(contact: EmergencyContact?) {
         val content = LayoutInflater.from(this)
             .inflate(R.layout.dialog_contact_editor, null)

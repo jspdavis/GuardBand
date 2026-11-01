@@ -16,7 +16,14 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import android.widget.Toast
 import com.example.guardband.R
+import com.example.guardband.data.FirebaseProvider
+import com.example.guardband.data.RepositoryProvider
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import com.example.guardband.ui.alert.AlertFormatting
 import com.example.guardband.ui.alert.AlertRow
 import com.example.guardband.ui.alert.AlertViewModel
@@ -123,6 +130,44 @@ class DeviceFragment : Fragment(R.layout.fragment_device) {
         rowContacts = view.findViewById(R.id.row_device_contacts)
 
         rowContacts.setOnClickListener { homeViewModel.onContactsSummaryClicked() }
+
+        val btnSimulate = view.findViewById<View>(R.id.btn_trigger_panic_simulation)
+        btnSimulate?.setOnClickListener {
+            val deviceId = RepositoryProvider.watchedBandId
+            val seq = System.currentTimeMillis()
+            val isoTime = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }.format(Date(seq))
+            val payload: Map<String, Any> = mapOf(
+                "schemaVersion" to "1.0",
+                "deviceId" to deviceId,
+                "type" to "PANIC",
+                "timestamp" to isoTime,
+                "sequenceId" to seq,
+                "status" to "ACTIVE",
+                "simulated" to true,
+                "location" to mapOf(
+                    "lat" to 10.3157,
+                    "lng" to 123.8854,
+                    "accuracyMeters" to 5.0
+                ),
+                "battery" to mapOf(
+                    "percent" to 85,
+                    "isCharging" to false
+                )
+            )
+            try {
+                val db = FirebaseProvider.database
+                db.getReference("devices").child(deviceId).child("history").child(seq.toString()).setValue(payload)
+                db.getReference("devices").child(deviceId).child("latest").setValue(payload)
+                db.getReference("devices").child(deviceId).child("status").child(seq.toString()).setValue(
+                    mapOf("status" to "ACTIVE", "updatedAt" to seq)
+                )
+            } catch (e: Exception) {
+                // Ignore in unit test environments without Firebase initialized
+            }
+            Toast.makeText(requireContext(), R.string.toast_simulated_panic_sent, Toast.LENGTH_SHORT).show()
+        }
 
         bandViewer = BandViewer.create(requireContext()).also { viewer ->
             view.findViewById<FrameLayout>(R.id.fl_device_band_viewer).addView(

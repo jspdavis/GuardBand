@@ -4,7 +4,6 @@ import android.content.Context
 import com.example.guardband.R
 import com.example.guardband.data.model.Alert
 import com.example.guardband.testing.FakeAlertRepository.Companion.alert
-import com.example.guardband.ui.track.BandStatus
 import com.example.guardband.ui.track.Elapsed
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -83,14 +82,10 @@ class AlertCardTextTest {
     // ── Day headings ──────────────────────────────────────────────────────────
 
     @Test
-    fun `headings say today, yesterday, a weekday and date, or the year too`() {
-        val oct18 = checkNotNull(BandStatus.parseIsoUtcMillis("2026-10-18T00:00:00Z"))
-        val dec31 = checkNotNull(BandStatus.parseIsoUtcMillis("2025-12-31T00:00:00Z"))
-
+    fun `headings say today, yesterday, or older`() {
         assertEquals("Today", AlertFormatting.dayLabel(context, AlertDay.Today))
         assertEquals("Yesterday", AlertFormatting.dayLabel(context, AlertDay.Yesterday))
-        assertEquals("Sun, Oct 18", AlertFormatting.dayLabel(context, AlertDay.On(oct18, sameYear = true)))
-        assertEquals("Dec 31, 2025", AlertFormatting.dayLabel(context, AlertDay.On(dec31, sameYear = false)))
+        assertEquals("Older", AlertFormatting.dayLabel(context, AlertDay.Older))
         assertEquals("Date unknown", AlertFormatting.dayLabel(context, AlertDay.Unknown))
     }
 

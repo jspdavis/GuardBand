@@ -41,6 +41,6 @@ object RepositoryProvider {
     val watchedBandId: String = DeviceConstants.DEFAULT_DEVICE_ID
 
     val alertRepository: AlertRepository by lazy {
-        FirebaseAlertRepository(FirebaseProvider.database, watchedBandId)
+        FirebaseAlertRepository(FirebaseProvider.database, watchedBandId, FirebaseProvider.auth)
     }
 }

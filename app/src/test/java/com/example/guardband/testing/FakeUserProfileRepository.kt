@@ -77,7 +77,7 @@ class FakeUserProfileRepository(
 
         val record = saved[uid] ?: return Result.success(null)
         return Result.success(
-            User(id = uid, name = record.first, email = record.second)
+            User(id = uid, name = record.first, email = record.second, role = finalizedRoles[uid])
         )
     }
 
@@ -135,6 +135,12 @@ class FakeUserProfileRepository(
         return markDeletionPendingResult
     }
 
+    /** uid → the role passed to [finalizeSignUp]. */
+    val finalizedRoles = mutableMapOf<String, com.example.guardband.data.model.Role>()
+
+    /** uid → the own-phone passed to [finalizeSignUp]. */
+    val finalizedOwnPhones = mutableMapOf<String, String>()
+
     /**
      * Records the profile and the contacts together, so a test can assert the
      * all-or-nothing behaviour: on a pinned failure **neither** is recorded.
@@ -143,12 +149,16 @@ class FakeUserProfileRepository(
         uid: String,
         name: String,
         email: String,
+        role: com.example.guardband.data.model.Role,
+        ownPhone: String,
         contacts: List<EmergencyContact>,
         consentVersion: String
     ): Result<Unit> {
         finalizeSignUpCalls++
         if (finalizeSignUpResult.isSuccess) {
             saved[uid] = Pair(name, email)
+            finalizedRoles[uid] = role
+            finalizedOwnPhones[uid] = ownPhone
             finalizedContacts[uid] = contacts
             recordedConsent[uid] = consentVersion
         }

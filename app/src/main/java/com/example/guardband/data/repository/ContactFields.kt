@@ -28,17 +28,26 @@ internal object ContactFields {
     /**
      * [contact] trimmed and with its phone in E.164, ready to store.
      *
+     * @param ownPhone The signed-in user's own phone (E.164), or null when not
+     *   yet known (e.g. the account screen). If provided and the contact's
+     *   normalized phone equals it, [ContactError.SelfPhone] is thrown: a
+     *   guardian cannot be the same person as the dependent.
      * @throws ContactError.Validation if the name, phone or relationship fails
      *   [InputValidator]. Throwing rather than returning null because every
      *   caller is already inside a `Result`-producing wrapper.
+     * @throws ContactError.SelfPhone if the contact's phone equals [ownPhone].
      */
-    fun validated(contact: EmergencyContact): EmergencyContact {
+    fun validated(contact: EmergencyContact, ownPhone: String? = null): EmergencyContact {
         if (!InputValidator.isValidContactName(contact.name)) throw ContactError.Validation
         if (!InputValidator.isValidContactRelationship(contact.relationship)) {
             throw ContactError.Validation
         }
         val phone = InputValidator.normalizePhoneToE164(contact.phone)
             ?: throw ContactError.Validation
+
+        // REQ-PHONE-03/04: block a contact whose phone is the user's own.
+        // Both sides are E.164 at this point, so a plain equality check is safe.
+        if (ownPhone != null && phone == ownPhone) throw ContactError.SelfPhone
 
         return contact.copy(
             name = contact.name.trim(),

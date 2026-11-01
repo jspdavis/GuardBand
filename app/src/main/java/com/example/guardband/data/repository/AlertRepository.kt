@@ -1,6 +1,7 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.data.model.CheckIn
 import kotlinx.coroutines.flow.Flow
 
@@ -87,6 +88,12 @@ interface AlertRepository {
         panicSequenceId: Long,
         limit: Int = INCIDENT_WINDOW
     ): Flow<Result<AlertHistory>>
+
+    fun observeStatuses(): Flow<Result<Map<Long, AlertStatus>>>
+
+    suspend fun acknowledge(sequenceId: Long): Result<Unit>
+
+    suspend fun resolve(sequenceId: Long): Result<Unit>
 
     companion object {
         /** D3's raw read window. */

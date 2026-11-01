@@ -18,12 +18,16 @@ import com.example.guardband.ui.alert.AlertHistoryFragment
 import com.example.guardband.ui.incident.IncidentFragment
 import com.example.guardband.ui.consent.ConsentRequiredActivity
 import com.example.guardband.ui.contacts.ContactsFragment
+import com.example.guardband.data.model.Role
+import com.example.guardband.ui.dependent.DependentStatusFragment
 import com.example.guardband.ui.device.DeviceFragment
+import com.example.guardband.ui.guardian.GuardianDetailsFragment
 import com.example.guardband.ui.login.LoginActivity
 import com.example.guardband.ui.notifications.AlertNotificationsActivity
 import com.example.guardband.ui.notifications.AlertWatch
 import com.example.guardband.ui.notifications.NotificationsFragment
 import com.example.guardband.ui.settings.SettingsFragment
+import com.example.guardband.ui.signup.SignUpRoleActivity
 import com.example.guardband.ui.track.TrackFragment
 import com.example.guardband.ui.verify.VerifyRequiredActivity
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -79,6 +83,7 @@ class HomeActivity : AppCompatActivity() {
 
     /** True once the gate has opened and the first tab has been shown. */
     private var tabsShown = false
+    private var currentRole: Role? = null
 
     private val viewModel: HomeViewModel by viewModels { HomeViewModel.Factory }
 
@@ -136,7 +141,10 @@ class HomeActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.gate.collect(::renderGate)
+                viewModel.uiState.collect { state ->
+                    applyRole(state.role)
+                    renderGate(state.gate)
+                }
             }
         }
         lifecycleScope.launch {
@@ -171,6 +179,30 @@ class HomeActivity : AppCompatActivity() {
      * FragmentManager has already re-added the Fragments, and show() then
      * re-applies visibility, the bar's checked state and Back.
      */
+    private fun applyRole(role: Role?) {
+        if (role == null || role == currentRole) return
+        currentRole = role
+        bottomNav.menu.clear()
+        val menuRes = if (role == Role.DEPENDENT) {
+            R.menu.menu_home_bottom_nav_dependent
+        } else {
+            R.menu.menu_home_bottom_nav_guardian
+        }
+        bottomNav.inflateMenu(menuRes)
+
+        val validTabs = HomeDestinations.tabsFor(role)
+        if (currentTag !in validTabs && !HomeDestinations.PUSHED.contains(currentTag)) {
+            val defaultTab = if (role == Role.DEPENDENT) HomeDestinations.DEVICE else HomeDestinations.TRACK
+            currentTag = defaultTab
+            lastTabTag = defaultTab
+            if (tabsShown) {
+                show(defaultTab)
+            }
+        } else if (HomeDestinations.isTab(currentTag)) {
+            bottomNav.menu.findItem(menuItemIdFor(currentTag))?.isChecked = true
+        }
+    }
+
     private fun renderGate(state: HomeGateState) {
         val open = state == HomeGateState.OPEN
         gateCover.isVisible = !open
@@ -230,6 +262,7 @@ class HomeActivity : AppCompatActivity() {
             // Cleared too: Back from the consent screen must not reach tabs
             // the account has not agreed to use.
             HomeEvent.RequireConsent -> leaveFor(ConsentRequiredActivity::class.java)
+            HomeEvent.RequireCompleteProfile -> leaveFor(SignUpRoleActivity::class.java)
         }
     }
 
@@ -324,6 +357,8 @@ class HomeActivity : AppCompatActivity() {
             HomeDestinations.TRACK -> TrackFragment()
             HomeDestinations.CONTACTS -> ContactsFragment()
             HomeDestinations.DEVICE -> DeviceFragment()
+            HomeDestinations.DEPENDENT -> DependentStatusFragment()
+            HomeDestinations.GUARDIAN -> GuardianDetailsFragment()
             HomeDestinations.SETTINGS -> SettingsFragment()
             HomeDestinations.NOTIFICATIONS -> NotificationsFragment()
             HomeDestinations.ALERT_HISTORY -> AlertHistoryFragment()
@@ -335,6 +370,8 @@ class HomeActivity : AppCompatActivity() {
         when (menuItemId) {
             R.id.nav_contacts -> HomeDestinations.CONTACTS
             R.id.nav_device -> HomeDestinations.DEVICE
+            R.id.nav_dependent -> HomeDestinations.DEPENDENT
+            R.id.nav_guardian -> HomeDestinations.GUARDIAN
             else -> HomeDestinations.TRACK
         }
 
@@ -342,6 +379,8 @@ class HomeActivity : AppCompatActivity() {
         when (tabTag) {
             HomeDestinations.CONTACTS -> R.id.nav_contacts
             HomeDestinations.DEVICE -> R.id.nav_device
+            HomeDestinations.DEPENDENT -> R.id.nav_dependent
+            HomeDestinations.GUARDIAN -> R.id.nav_guardian
             else -> R.id.nav_track
         }
 

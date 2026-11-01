@@ -2,6 +2,8 @@ package com.example.guardband.ui.signup
 
 import androidx.lifecycle.ViewModel
 import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.repository.ContactError
+import com.example.guardband.data.repository.ContactFields
 import com.example.guardband.utils.InputValidator
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -14,19 +16,6 @@ import kotlinx.coroutines.flow.update
 /**
  * Sign-Up Step 3 — staging the emergency contacts.
  *
- * **It writes nothing.** Contacts are collected in memory and handed to the
- * Consent screen, which creates the account and commits the whole record in
- * one atomic write. That is what keeps an abandoned sign-up from leaving
- * anything behind, and it is why this ViewModel takes no repositories at all.
- *
- * **Sign-up asks for the same minimum as the Contacts tab**
- * ([MIN_CONTACTS][InputValidator.MIN_CONTACTS], one). The band texts these
- * people, so finishing with none would be a safety app with nobody to call.
- *
- * Staged contacts carry a local `draft-n` id so the list can diff and the
- * editor can tell add from edit. The repository assigns the real keys at the
- * final write, so these ids never reach the database.
- *
  * Flow: SignUpContactsActivity → SignUpConsentActivity
  */
 class SignUpContactsViewModel : ViewModel() {
@@ -36,6 +25,8 @@ class SignUpContactsViewModel : ViewModel() {
 
     private val _events = Channel<SignUpContactsEvent>(Channel.BUFFERED)
     val events: Flow<SignUpContactsEvent> = _events.receiveAsFlow()
+
+    var ownPhone: String? = null
 
     private var nextDraftId = 1
 
@@ -58,10 +49,6 @@ class SignUpContactsViewModel : ViewModel() {
 
     /**
      * Adds or replaces a staged contact.
-     *
-     * A blank [contactId] means add. The phone is stored **as typed**: the
-     * repository normalises to E.164 at the write, and it is the only layer
-     * that decides the stored form.
      */
     fun onEditorSubmitted(
         contactId: String,
@@ -69,14 +56,25 @@ class SignUpContactsViewModel : ViewModel() {
         phone: String,
         relationship: String
     ) {
-        val error = when {
-            !InputValidator.isValidContactName(name) -> MSG_CONTACT_NAME_INVALID
-            !InputValidator.isValidPhone(phone) -> MSG_CONTACT_PHONE_INVALID
-            !InputValidator.isValidContactRelationship(relationship) ->
-                MSG_CONTACT_RELATIONSHIP_INVALID
-            else -> null
-        }
-        if (error != null) {
+        val draft = EmergencyContact(
+            id = if (contactId.isBlank()) "draft" else contactId,
+            name = name,
+            phone = phone,
+            relationship = relationship
+        )
+        try {
+            ContactFields.validated(draft, ownPhone)
+        } catch (e: ContactError.SelfPhone) {
+            _events.trySend(SignUpContactsEvent.ShowMessage(MSG_SELF_PHONE))
+            return
+        } catch (e: Exception) {
+            val error = when {
+                !InputValidator.isValidContactName(name) -> MSG_CONTACT_NAME_INVALID
+                !InputValidator.isValidPhone(phone) -> MSG_CONTACT_PHONE_INVALID
+                !InputValidator.isValidContactRelationship(relationship) ->
+                    MSG_CONTACT_RELATIONSHIP_INVALID
+                else -> MSG_CONTACT_PHONE_INVALID
+            }
             _events.trySend(SignUpContactsEvent.ShowMessage(error))
             return
         }
@@ -104,10 +102,6 @@ class SignUpContactsViewModel : ViewModel() {
 
     /**
      * Removes a staged contact.
-     *
-     * No minimum is enforced here, unlike the repository's delete: nothing has
-     * been written, so there is no stored record to protect. Continue is what
-     * requires one.
      */
     fun onDeleteClicked(contactId: String) {
         publish(_uiState.value.contacts.filterNot { it.id == contactId })
@@ -132,7 +126,6 @@ class SignUpContactsViewModel : ViewModel() {
         )
     }
 
-    /** The one place the derived flags are recomputed, so they cannot drift. */
     private fun publish(contacts: List<EmergencyContact>) {
         _uiState.update {
             it.copy(
@@ -144,14 +137,13 @@ class SignUpContactsViewModel : ViewModel() {
     }
 
     companion object {
-        /** What sign-up requires: the same minimum the Contacts tab enforces. */
-        const val MIN_AT_SIGNUP = InputValidator.MIN_CONTACTS
+        const val MIN_AT_SIGNUP = 1
 
-        const val MSG_ONE_CONTACT_REQUIRED =
-            "Add at least one emergency contact so your band has someone to text."
-        const val MSG_MAXIMUM_REACHED = "You have reached the contact limit."
-        const val MSG_CONTACT_NAME_INVALID = "Enter the contact's name."
-        const val MSG_CONTACT_PHONE_INVALID = "Enter a valid mobile number, like 09171234567."
-        const val MSG_CONTACT_RELATIONSHIP_INVALID = "That relationship is too long."
+        const val MSG_SELF_PHONE = "Guardian phone number cannot be the same as the dependent's phone number."
+        const val MSG_MAXIMUM_REACHED = "You can add up to 5 emergency contacts."
+        const val MSG_CONTACT_NAME_INVALID = "Please enter the contact's name."
+        const val MSG_CONTACT_PHONE_INVALID = "Please enter a valid phone number."
+        const val MSG_CONTACT_RELATIONSHIP_INVALID = "Please choose a relationship."
+        const val MSG_ONE_CONTACT_REQUIRED = "Add at least one emergency contact to continue."
     }
 }

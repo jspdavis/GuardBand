@@ -1,16 +1,21 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.data.model.CheckIn
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.Query
+import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 /**
  * [AlertRepository] on the Realtime Database at `devices/{deviceId}`, matching
@@ -40,7 +45,8 @@ import kotlinx.coroutines.flow.map
  */
 class FirebaseAlertRepository(
     database: FirebaseDatabase,
-    private val deviceId: String
+    private val deviceId: String,
+    private val auth: FirebaseAuth? = null
 ) : AlertRepository {
 
     private val deviceRef = database.getReference(PATH_DEVICES).child(deviceId)
@@ -89,6 +95,43 @@ class FirebaseAlertRepository(
             .limitToFirst(limit)
             .asFlow { snapshot -> Result.success(snapshot.toHistory()) }
 
+    override fun observeStatuses(): Flow<Result<Map<Long, AlertStatus>>> =
+        deviceRef.child(PATH_STATUS).asFlow { snapshot ->
+            val statuses = mutableMapOf<Long, AlertStatus>()
+            for (child in snapshot.children) {
+                val seq = child.key?.toLongOrNull() ?: continue
+                val statusStr = child.child(KEY_STATUS).getValue(String::class.java)
+                    ?: (child.value as? Map<*, *>)?.get(KEY_STATUS) as? String
+                statuses[seq] = AlertStatus.fromWire(statusStr)
+            }
+            Result.success(statuses)
+        }
+
+    override suspend fun acknowledge(sequenceId: Long): Result<Unit> =
+        writeStatus(sequenceId, AlertStatus.ACKNOWLEDGED)
+
+    override suspend fun resolve(sequenceId: Long): Result<Unit> =
+        writeStatus(sequenceId, AlertStatus.RESOLVED)
+
+    private suspend fun writeStatus(sequenceId: Long, status: AlertStatus): Result<Unit> =
+        suspendCancellableCoroutine { continuation ->
+            val uid = auth?.currentUser?.uid.orEmpty()
+            val payload = mapOf(
+                KEY_STATUS to status.name,
+                KEY_UPDATED_AT to ServerValue.TIMESTAMP,
+                KEY_UPDATED_BY to uid
+            )
+            deviceRef.child(PATH_STATUS).child(sequenceId.toString()).setValue(payload) { error, _ ->
+                if (continuation.isActive) {
+                    if (error != null) {
+                        continuation.resume(Result.failure(FirebaseDatabaseErrorMapper.mapToAlertError(error)))
+                    } else {
+                        continuation.resume(Result.success(Unit))
+                    }
+                }
+            }
+        }
+
     /**
      * One malformed entry is skipped and counted, never fatal: a firmware bug
      * in a single row must not hide every good row behind it. The counting and
@@ -126,5 +169,9 @@ class FirebaseAlertRepository(
         const val PATH_DEVICES = "devices"
         const val PATH_LATEST = "latest"
         const val PATH_HISTORY = "history"
+        const val PATH_STATUS = "status"
+        const val KEY_STATUS = "status"
+        const val KEY_UPDATED_AT = "updatedAt"
+        const val KEY_UPDATED_BY = "updatedBy"
     }
 }

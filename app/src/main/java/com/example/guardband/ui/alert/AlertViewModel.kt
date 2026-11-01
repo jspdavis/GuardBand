@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.model.Alert
 import com.example.guardband.data.model.AlertType
+import com.example.guardband.data.model.Role
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.data.repository.AlertHistory
 import com.example.guardband.data.repository.AlertRepository
@@ -79,8 +80,11 @@ class AlertViewModel(
     private val alertRepository: AlertRepository,
     private val placeRepository: PlaceRepository = PlaceRepository.NONE,
     private val clock: Clock = Clock.SYSTEM,
-    private val ticks: Flow<Unit> = emptyFlow()
+    private val ticks: Flow<Unit> = emptyFlow(),
+    initialRole: Role? = null
 ) : ViewModel() {
+
+    var userRole: Role? = initialRole
 
     private val _uiState = MutableStateFlow(AlertUiState())
     val uiState: StateFlow<AlertUiState> = _uiState.asStateFlow()
@@ -90,6 +94,7 @@ class AlertViewModel(
 
     /** The live subscription, cancelled and replaced on retry. */
     private var observeJob: Job? = null
+    private var observeStatusesJob: Job? = null
 
     /** Place keys asked about, or being asked about; never asked twice. */
     private val placesRequested = mutableSetOf<String>()
@@ -125,6 +130,30 @@ class AlertViewModel(
                         .onSuccess { history -> render(history) }
                         .onFailure { error -> reportFailure(error) }
                 }
+        }
+
+        observeStatusesJob?.cancel()
+        observeStatusesJob = viewModelScope.launch {
+            alertRepository.observeStatuses()
+                .collect { result ->
+                    result.onSuccess { statuses ->
+                        _uiState.update { it.copy(statuses = statuses) }
+                    }
+                }
+        }
+    }
+
+    fun onAcknowledge(sequenceId: Long) {
+        if (userRole != Role.GUARDIAN) return
+        viewModelScope.launch {
+            alertRepository.acknowledge(sequenceId)
+        }
+    }
+
+    fun onResolve(sequenceId: Long) {
+        if (userRole != Role.GUARDIAN) return
+        viewModelScope.launch {
+            alertRepository.resolve(sequenceId)
         }
     }
 

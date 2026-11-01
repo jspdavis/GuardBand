@@ -1,9 +1,12 @@
 package com.example.guardband.data.repository
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.data.model.CheckIn
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -24,6 +27,8 @@ import kotlinx.coroutines.flow.map
 class InMemoryAlertRepository(
     private val deviceId: String
 ) : AlertRepository {
+
+    private val statusesFlow = MutableStateFlow<Map<Long, AlertStatus>>(emptyMap())
 
     override fun observeLatestAlert(): Flow<Result<Alert?>> =
         observeDeviceAlerts().map { alerts ->
@@ -67,6 +72,19 @@ class InMemoryAlertRepository(
                 )
             )
         }
+
+    override fun observeStatuses(): Flow<Result<Map<Long, AlertStatus>>> =
+        statusesFlow.asStateFlow().map { Result.success(it) }
+
+    override suspend fun acknowledge(sequenceId: Long): Result<Unit> {
+        statusesFlow.value = statusesFlow.value + (sequenceId to AlertStatus.ACKNOWLEDGED)
+        return Result.success(Unit)
+    }
+
+    override suspend fun resolve(sequenceId: Long): Result<Unit> {
+        statusesFlow.value = statusesFlow.value + (sequenceId to AlertStatus.RESOLVED)
+        return Result.success(Unit)
+    }
 
     private fun observeDeviceAlerts(): Flow<List<Alert>> = flow {
         delay(InMemoryStore.SIMULATED_DELAY_MS)

@@ -7,6 +7,7 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -14,6 +15,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
+import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.Role
 import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.launch
@@ -57,9 +60,11 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
     private lateinit var tvEmpty: TextView
 
     /** A panic row opens its Incident view, through the host's one opener. */
-    private val historyAdapter = AlertHistoryAdapter(AlertTimeStyle.CLOCK) {
-        homeViewModel.onOpenIncident(it)
-    }
+    private val historyAdapter = AlertHistoryAdapter(
+        timeStyle = AlertTimeStyle.CLOCK,
+        onPanicClick = { homeViewModel.onOpenIncident(it) },
+        onStatusClick = { row -> showStatusDialog(row.alert) }
+    )
 
     // Host-scoped: the one instance the Track tab shares. See AlertViewModel.
     private val viewModel: AlertViewModel by activityViewModels { AlertViewModel.Factory }
@@ -88,12 +93,25 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
             place = view.findViewById(R.id.alert_latest_location),
             batteryRow = view.findViewById(R.id.alert_latest_battery_row),
             batteryIcon = view.findViewById(R.id.alert_latest_battery_icon),
-            battery = view.findViewById(R.id.alert_latest_battery)
+            battery = view.findViewById(R.id.alert_latest_battery),
+            statusBadge = view.findViewById(R.id.alert_latest_status)
         )
+
+        view.findViewById<View>(R.id.alert_latest_status)?.setOnClickListener {
+            viewModel.uiState.value.latest?.let { showStatusDialog(it) }
+        }
 
         view.findViewById<RecyclerView>(R.id.alert_history_list).adapter = historyAdapter
 
         btnRetry.setOnClickListener { viewModel.onRetryClicked() }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                homeViewModel.uiState.collect { homeState ->
+                    viewModel.userRole = homeState.role
+                }
+            }
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -105,6 +123,24 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
                 viewModel.events.collect(::handleEvent)
             }
         }
+    }
+
+    private fun showStatusDialog(alert: Alert) {
+        if (viewModel.userRole != Role.GUARDIAN) return
+        val options = arrayOf(
+            getString(R.string.action_acknowledge),
+            getString(R.string.action_resolve)
+        )
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.dialog_update_status_title)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> viewModel.onAcknowledge(alert.sequenceId)
+                    1 -> viewModel.onResolve(alert.sequenceId)
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun render(state: AlertUiState) {

@@ -29,6 +29,16 @@ sealed class ContactError : Exception() {
     object Validation : ContactError()
 
     /**
+     * The contact's phone matches the signed-in user's own phone.
+     *
+     * A guardian cannot be the same person as the dependent: storing the same
+     * number would mean the band sends an emergency SMS to its own wearer's
+     * phone, which helps nobody. The check runs in [ContactFields.validated]
+     * after E.164 normalization so both sides are in the same canonical form.
+     */
+    object SelfPhone : ContactError()
+
+    /**
      * Deleting would leave fewer than
      * [MIN_CONTACTS][com.example.guardband.utils.InputValidator.MIN_CONTACTS].
      */

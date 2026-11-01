@@ -39,15 +39,13 @@ class AlertDaysTest {
     }
 
     @Test
-    fun `an earlier day this year carries its midnight and no year`() {
-        assertEquals(AlertDay.On(millis("2026-10-17T16:00:00Z"), sameYear = true), dayOf("2026-10-18T10:00:00Z"))
+    fun `an earlier day is Older, carrying no date`() {
+        assertEquals(AlertDay.Older, dayOf("2026-10-18T10:00:00Z"))
     }
 
     @Test
-    fun `a day in another year says so`() {
-        val day = dayOf("2025-12-31T10:00:00Z") as AlertDay.On
-
-        assertEquals(false, day.sameYear)
+    fun `a day in another year is also Older`() {
+        assertEquals(AlertDay.Older, dayOf("2025-12-31T10:00:00Z"))
     }
 
     @Test
@@ -76,7 +74,7 @@ class AlertDaysTest {
                 AlertListItem.Row(today2),
                 AlertListItem.Header(AlertDay.Yesterday),
                 AlertListItem.Row(yesterday),
-                AlertListItem.Header(AlertDay.On(millis("2026-10-17T16:00:00Z"), sameYear = true)),
+                AlertListItem.Header(AlertDay.Older),
                 AlertListItem.Row(earlier)
             ),
             items

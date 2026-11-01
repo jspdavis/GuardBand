@@ -142,6 +142,8 @@ class ProfileProvisioningTest {
                 uid: String,
                 name: String,
                 email: String,
+                role: com.example.guardband.data.model.Role,
+                ownPhone: String,
                 contacts: List<EmergencyContact>,
                 consentVersion: String
             ): Result<Unit> = Result.success(Unit)

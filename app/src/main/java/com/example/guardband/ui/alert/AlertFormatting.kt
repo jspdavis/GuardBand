@@ -11,7 +11,6 @@ import com.example.guardband.data.model.AlertType
 import com.example.guardband.ui.track.Elapsed
 import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
@@ -88,16 +87,13 @@ internal object AlertFormatting {
     private fun quantity(context: Context, @PluralsRes resId: Int, value: Long): String =
         context.resources.getQuantityString(resId, value.toInt(), value.toInt())
 
-    /** A day's heading: "Today", "Yesterday", "Sat, Oct 18", or "Oct 18, 2025" in another year. */
+    /** A day's heading: "Today", "Yesterday", or "Older" for every earlier day. */
     fun dayLabel(context: Context, day: AlertDay): String =
         when (day) {
             AlertDay.Today -> context.getString(R.string.label_alert_day_today)
             AlertDay.Yesterday -> context.getString(R.string.label_alert_day_yesterday)
+            AlertDay.Older -> context.getString(R.string.label_alert_day_older)
             AlertDay.Unknown -> context.getString(R.string.label_alert_day_unknown)
-            is AlertDay.On -> SimpleDateFormat(
-                if (day.sameYear) DAY_PATTERN else DAY_WITH_YEAR_PATTERN,
-                Locale.getDefault()
-            ).format(Date(day.startMillis))
         }
 
     /**
@@ -173,6 +169,4 @@ internal object AlertFormatting {
 
     private const val DISPLAY_PATTERN = "MMM d, h:mm a"
     private const val CLOCK_PATTERN = "h:mm a"
-    private const val DAY_PATTERN = "EEE, MMM d"
-    private const val DAY_WITH_YEAR_PATTERN = "MMM d, yyyy"
 }

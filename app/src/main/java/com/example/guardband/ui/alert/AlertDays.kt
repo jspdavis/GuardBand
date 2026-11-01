@@ -14,10 +14,11 @@ sealed interface AlertDay {
     object Yesterday : AlertDay
 
     /**
-     * An earlier day. [startMillis] is its midnight in the phone's zone;
-     * [sameYear] is whether it is this year, which drops the year from the label.
+     * Every day before yesterday, collapsed into one heading. The history
+     * timeline shows a single "Older" section rather than a per-day heading,
+     * so the day's date and year are no longer carried.
      */
-    data class On(val startMillis: Long, val sameYear: Boolean) : AlertDay
+    object Older : AlertDay
 
     /** The alert's timestamp could not be read. */
     object Unknown : AlertDay
@@ -69,7 +70,8 @@ internal object AlertDays {
             // The millisecond before midnight is yesterday, so this holds
             // across a daylight-saving change too.
             day == startOfDay(today - 1, zone) -> AlertDay.Yesterday
-            else -> AlertDay.On(day, yearOf(day, zone) == yearOf(nowMillis, zone))
+            // Every earlier day collapses into one "Older" heading (REQ-TL-01).
+            else -> AlertDay.Older
         }
     }
 
@@ -81,7 +83,4 @@ internal object AlertDays {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
-
-    private fun yearOf(millis: Long, zone: TimeZone): Int =
-        Calendar.getInstance(zone).apply { timeInMillis = millis }.get(Calendar.YEAR)
 }

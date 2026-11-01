@@ -21,7 +21,19 @@ data class Alert(
     val timestamp: String = "",
     val location: Location? = null,
     val battery: Battery? = null,
-    val sequenceId: Long = 0
+    val sequenceId: Long = 0,
+    /**
+     * The alert's resolution state. Defaults to [AlertStatus.ACTIVE] because the
+     * band never sends one; [AlertParser] overlays a guardian-written status from
+     * `devices/{id}/status/{seq}` when present. See [AlertStatus].
+     */
+    val status: AlertStatus = AlertStatus.ACTIVE,
+    /**
+     * True only for a panic fired by the debug panic-test trigger. The band
+     * never sets it. The SMS path skips a simulated panic (D6), so a simulation
+     * can never send a real emergency SMS; history rendering ignores it.
+     */
+    val simulated: Boolean = false
 ) {
     data class Location(
         val lat: Double = 0.0,

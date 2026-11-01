@@ -1,5 +1,6 @@
 package com.example.guardband.data.repository
 
+import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.data.model.AlertType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -192,5 +193,43 @@ class AlertParserTest {
         val alert = AlertParser.parse(payload(deviceId = null))
         assertNotNull(alert)
         assertEquals("", alert?.deviceId)
+    }
+
+    // ── New fields: status and simulated ──────────────────────────────────────
+
+    @Test
+    fun `status absent defaults to ACTIVE`() {
+        val alert = AlertParser.parse(payload())
+        assertEquals(AlertStatus.ACTIVE, alert?.status)
+    }
+
+    @Test
+    fun `status ACKNOWLEDGED is parsed`() {
+        val alert = AlertParser.parse(payload() + ("status" to "ACKNOWLEDGED"))
+        assertEquals(AlertStatus.ACKNOWLEDGED, alert?.status)
+    }
+
+    @Test
+    fun `status RESOLVED is parsed`() {
+        val alert = AlertParser.parse(payload() + ("status" to "RESOLVED"))
+        assertEquals(AlertStatus.RESOLVED, alert?.status)
+    }
+
+    @Test
+    fun `an unknown status value defaults to ACTIVE`() {
+        val alert = AlertParser.parse(payload() + ("status" to "CLOSED"))
+        assertEquals(AlertStatus.ACTIVE, alert?.status)
+    }
+
+    @Test
+    fun `simulated absent defaults to false`() {
+        val alert = AlertParser.parse(payload())
+        assertEquals(false, alert?.simulated)
+    }
+
+    @Test
+    fun `simulated true is read`() {
+        val alert = AlertParser.parse(payload() + ("simulated" to true))
+        assertEquals(true, alert?.simulated)
     }
 }

@@ -16,26 +16,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.data.model.EmergencyContact
+import com.example.guardband.data.model.Role
+
 import com.google.android.material.checkbox.MaterialCheckBox
 import kotlinx.coroutines.launch
 
 /**
  * Sign-Up final screen — consent, and the commit.
- *
- * Outside the step indicator by design, so Back is a BACK button at the
- * bottom instead of the shared header. Receives everything the wizard
- * collected and is the only screen that writes anything.
- *
- * View ids: btn_signup_back, tv_signup_consent_title,
- * tv_signup_consent_subtitle, tv_signup_consent_location_title,
- * tv_signup_consent_location_desc, tv_signup_consent_contacts_title,
- * tv_signup_consent_contacts_desc, cb_signup_consent,
- * btn_signup_consent_privacy, btn_signup_consent_create,
- * btn_signup_consent_retry, progress_signup_consent.
- *
- * Retry calls the same handler with the same arguments as Get started — the
- * ViewModel's `accountCreated` guard is what makes the second call resume at
- * the write instead of creating a second account.
  *
  * Flow: SignUpConsentActivity → WelcomeActivity → LoadingActivity → HomeActivity
  */
@@ -46,6 +33,8 @@ class SignUpConsentActivity : AppCompatActivity() {
         const val EXTRA_EMAIL = "extra_email"
         const val EXTRA_PASSWORD = "extra_password"
         const val EXTRA_CONTACTS = "extra_contacts"
+        const val EXTRA_ROLE = "extra_role"
+        const val EXTRA_PHONE = "extra_phone"
         const val EXTRA_COMPLETE_PROFILE = "extra_complete_profile"
 
         private const val DISABLED_ALPHA = 0.5f
@@ -62,6 +51,8 @@ class SignUpConsentActivity : AppCompatActivity() {
     private var userName: String = ""
     private var email: String = ""
     private var password: String = ""
+    private var role: Role = Role.DEPENDENT
+    private var ownPhone: String = ""
     private var completeProfile: Boolean = false
     private var contacts: List<EmergencyContact> = emptyList()
 
@@ -72,6 +63,9 @@ class SignUpConsentActivity : AppCompatActivity() {
         userName        = intent.getStringExtra(EXTRA_NAME) ?: ""
         email           = intent.getStringExtra(EXTRA_EMAIL) ?: ""
         password        = intent.getStringExtra(EXTRA_PASSWORD) ?: ""
+        val roleStr     = intent.getStringExtra(EXTRA_ROLE)
+        role            = Role.fromWire(roleStr) ?: Role.DEPENDENT
+        ownPhone        = intent.getStringExtra(EXTRA_PHONE) ?: ""
         completeProfile = intent.getBooleanExtra(EXTRA_COMPLETE_PROFILE, false)
         contacts        = readContacts()
 
@@ -91,7 +85,6 @@ class SignUpConsentActivity : AppCompatActivity() {
 
         btnCreate.setOnClickListener { submit() }
         btnPrivacy.setOnClickListener { viewModel.onPrivacyNoticeClicked() }
-        // Deliberately the same call: see the class KDoc.
         btnRetry.setOnClickListener { submit() }
 
         lifecycleScope.launch {
@@ -111,7 +104,9 @@ class SignUpConsentActivity : AppCompatActivity() {
         email = email,
         password = password,
         contacts = contacts,
-        completeProfile = completeProfile
+        completeProfile = completeProfile,
+        role = role,
+        ownPhone = ownPhone
     )
 
     @Suppress("DEPRECATION")
@@ -127,26 +122,13 @@ class SignUpConsentActivity : AppCompatActivity() {
 
         btnCreate.isEnabled = state.consentGiven && !state.isLoading
         btnRetry.isEnabled = !state.isLoading
-        // The gradient background has no disabled state of its own, so a
-        // disabled button would otherwise look ready to tap.
         btnCreate.alpha = if (btnCreate.isEnabled) 1f else DISABLED_ALPHA
         btnRetry.alpha = if (btnRetry.isEnabled) 1f else DISABLED_ALPHA
 
         btnRetry.visibility = if (state.canRetry) View.VISIBLE else View.GONE
-        // Create account would only try to make it a second time, which is the
-        // dead end Retry exists to avoid.
         btnCreate.visibility = if (state.canRetry) View.GONE else View.VISIBLE
     }
 
-    /**
-     * Opens the Privacy Notice in whatever browser the phone has.
-     *
-     * A plain `ACTION_VIEW`, so it needs no permission and no extra
-     * dependency. A phone with nothing registered for `https` throws
-     * [ActivityNotFoundException], which goes back through the ViewModel so
-     * the wording stays with every other user-facing message - the same shape
-     * as Track's Navigate button.
-     */
     private fun openPrivacyNotice(url: String) {
         try {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
