@@ -22,3 +22,6 @@ hosting/.firebase/
 
 # The band firmware's Wi-Fi details; secrets.example.h is the template
 firmware/guardband_band/secrets.h
+
+# A stray copy of the project; committed by mistake as an embedded repo
+/Guardband-MVVM/
