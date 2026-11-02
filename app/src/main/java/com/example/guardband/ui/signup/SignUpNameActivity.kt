@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 /**
  * Sign-Up Step 2 — user enters their full name.
  *
- * Receives [EXTRA_EMAIL], [EXTRA_PASSWORD], [EXTRA_ROLE], [EXTRA_PHONE] and passes them on.
+ * Receives [EXTRA_EMAIL], [EXTRA_PASSWORD], [EXTRA_PHONE] and passes them on.
  *
  * Flow: SignUpNameActivity → SignUpContactsActivity
  */
@@ -25,7 +25,6 @@ class SignUpNameActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_EMAIL = "extra_email"
         const val EXTRA_PASSWORD = "extra_password"
-        const val EXTRA_ROLE = "extra_role"
         const val EXTRA_PHONE = "extra_phone"
     }
 
@@ -37,7 +36,6 @@ class SignUpNameActivity : AppCompatActivity() {
 
     private var email: String = ""
     private var password: String = ""
-    private var role: String = ""
     private var phone: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,7 +46,6 @@ class SignUpNameActivity : AppCompatActivity() {
 
         email    = intent.getStringExtra(EXTRA_EMAIL) ?: ""
         password = intent.getStringExtra(EXTRA_PASSWORD) ?: ""
-        role     = intent.getStringExtra(EXTRA_ROLE) ?: ""
         phone    = intent.getStringExtra(EXTRA_PHONE) ?: ""
 
         etFirstName = findViewById(R.id.et_signup_first_name)
@@ -82,7 +79,6 @@ class SignUpNameActivity : AppCompatActivity() {
                         putExtra(SignUpContactsActivity.EXTRA_NAME, event.name)
                         putExtra(SignUpContactsActivity.EXTRA_EMAIL, event.email)
                         putExtra(SignUpContactsActivity.EXTRA_PASSWORD, event.password)
-                        putExtra(SignUpContactsActivity.EXTRA_ROLE, role)
                         putExtra(SignUpContactsActivity.EXTRA_PHONE, phone)
                     }
                 )

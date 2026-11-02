@@ -35,14 +35,26 @@ the app together. Pairing comes first: SMS depends on it.
   Where: [`database-rules.md`](database-rules.md) §4 and §7, CLAUDE.md "Alert data" (D4)
 
 - [ ] 🟥 **SMS alerts to emergency contacts** · *firmware + app team*
-  The band (Air780E) texts the wearer's emergency contacts on a panic. The
-  decision so far: SMS stays with the band, not the phone.
-  - Get the contacts onto the band after pairing:
-    `users/{uid}/emergency_contacts`, already stored in E.164 (`+639…`).
-  - Agree the message wording and what it may include (a location link is
-    sensitive).
-  - If the phone ever sends SMS instead, that adds `SEND_SMS` to the release
-    manifest and needs the owner's (James's) approval first.
+  **Direction (2 Nov 2026):** the band writes the panic to Firebase and the
+  wearer's phone sends the text, replacing the plan where the band's Air780E
+  sends it. No Bluetooth. The accepted trade-off: a dead modem, or a phone
+  that is off or missing, means no text.
+  **No SMS in any build until pairing ships.** `SmsPanicSender` is parked with
+  no caller, and `SEND_SMS` is out of the manifest. When pairing lands:
+  - Each phone watches only its own band, and only that band can write to it.
+    With the shared, open band, any panic from anyone would text real contacts.
+  - Add a claim on each panic, so one account on two phones sends one text.
+  - Only the wearer's phone sends; a guardian's never does.
+  - Add a guard so a Mock Sender panic cannot text real contacts.
+  - `SEND_SMS` needs the owner's (James's) approval, then a runtime prompt.
+  - Decide the link (the Google Maps link FR-05 asks for needs no new page) and
+    who gets texted. Agree the wording (a location link is sensitive), including
+    a panic with no GPS fix.
+  - Handle a failed send, and don't let the band's lights or the app imply that
+    someone was texted when only Firebase got the alert.
+  - Change the Privacy Notice (it says the band sends these, not the app),
+    `CONSENT_VERSION` and the README's "no smartphone needed" claim in the same
+    commit that turns sending on.
   - The Privacy Notice says the numbers are collected for this, and that the
     Emergency star only sorts and labels the list. If the star ever decides
     who gets texted, the notice changes (and its version) in the same commit.

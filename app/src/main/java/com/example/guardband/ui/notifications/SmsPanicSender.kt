@@ -10,8 +10,18 @@ import androidx.core.content.ContextCompat
 import com.example.guardband.R
 
 /**
- * Dispatches emergency SMS messages containing live location tracking links
- * when a real (non-simulated) panic alert is triggered.
+ * Sends an emergency SMS containing a location link.
+ *
+ * **Parked until device pairing ships: nothing calls it, and the release
+ * manifest does not declare `SEND_SMS`, so it cannot send.** With one shared,
+ * world-writable band, any panic from anyone would text real contacts.
+ *
+ * Before it is called again: pairing, James's approval of `SEND_SMS`, a runtime
+ * permission prompt, a guard so a Mock Sender panic cannot text real contacts,
+ * and the Privacy Notice and `CONSENT_VERSION` in the same commit. It also needs
+ * a real link (the host below is not this project's, and `/track` does not
+ * exist), a decision on who gets texted, wording for a panic with no fix, and
+ * handling for a failed send. See `docs/team-checklist.md`.
  */
 class SmsPanicSender(private val context: Context) {
 

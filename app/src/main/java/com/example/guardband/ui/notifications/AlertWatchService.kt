@@ -9,19 +9,13 @@ import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import com.example.guardband.data.DeviceConstants
-import com.example.guardband.data.FirebaseProvider
 import com.example.guardband.data.RepositoryProvider
-import com.example.guardband.data.model.Alert
-import com.example.guardband.data.model.AlertType
-import com.example.guardband.data.model.Role
 import com.example.guardband.data.repository.AlertRepository
 import com.example.guardband.ui.track.Clock
-import com.google.firebase.database.ServerValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 /**
@@ -43,8 +37,6 @@ import kotlinx.coroutines.launch
 class AlertWatchService : Service() {
 
     private var scope: CoroutineScope? = null
-    private val smsPanicSender by lazy { SmsPanicSender(this) }
-    private var cachedRole: Role? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -102,66 +94,13 @@ class AlertWatchService : Service() {
                     )
                     if (emission.isSuccess) firstSinceStart = false
 
-                    plan.toPost.forEach { alert ->
-                        notifier.post(alert)
-                        if (alert.alertType() == AlertType.PANIC && !alert.simulated) {
-                            scope.launch {
-                                if (getRole() == Role.DEPENDENT) {
-                                    startLiveSessionAndSendSms(alert, deviceId)
-                                }
-                            }
-                        }
-                    }
+                    plan.toPost.forEach(notifier::post)
                     notifier.postSummary(plan.summaryCount)
                     val newMark = plan.newMark
                     if (newMark != null && newMark != mark) {
                         prefs.setLastNotifiedSequenceId(deviceId, newMark)
                     }
                 }
-        }
-    }
-
-    private suspend fun getRole(): Role? {
-        if (cachedRole != null) return cachedRole
-        val uid = RepositoryProvider.authRepository.currentUser()?.id ?: return null
-        val role = RepositoryProvider.userProfileRepository.fetchProfile(uid).getOrNull()?.role
-        cachedRole = role
-        return role
-    }
-
-    private suspend fun getGuardianPhone(): String? {
-        val contacts = RepositoryProvider.contactRepository.observeContacts()
-            .firstOrNull()?.getOrNull().orEmpty()
-        val guardian = contacts.find { it.isEmergency }
-            ?: contacts.find { it.relationship.equals("Guardian", ignoreCase = true) }
-            ?: contacts.firstOrNull()
-        return guardian?.phone
-    }
-
-    private suspend fun startLiveSessionAndSendSms(alert: Alert, deviceId: String) {
-        val sessionId = "session_${alert.sequenceId}"
-        val panicSeq = alert.sequenceId
-        val sessionPayload = mapOf(
-            "sessionId" to sessionId,
-            "panicSeq" to panicSeq,
-            "startedAt" to ServerValue.TIMESTAMP,
-            "active" to true
-        )
-        try {
-            val db = FirebaseProvider.database
-            db.getReference("devices").child(deviceId).child("sessions").child(panicSeq.toString())
-                .setValue(sessionPayload)
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to record live session in RTDB", e)
-        }
-
-        val phone = getGuardianPhone()
-        if (!phone.isNullOrBlank()) {
-            val lat = alert.location?.lat ?: 0.0
-            val lng = alert.location?.lng ?: 0.0
-            smsPanicSender.sendPanicSms(phone, lat, lng, sessionId)
-        } else {
-            Log.w(TAG, "No guardian contact found; emergency SMS skipped.")
         }
     }
 

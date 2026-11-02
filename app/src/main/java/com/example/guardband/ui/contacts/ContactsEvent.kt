@@ -13,4 +13,12 @@ sealed interface ContactsEvent {
      * which is the only difference between the two uses of one dialog (D6).
      */
     data class ShowContactEditor(val contact: EmergencyContact?) : ContactsEvent
+
+    /**
+     * Open the phone's dialer on [phone], the guardian card's Call button.
+     *
+     * The dialer only fills the number in; the user still places the call,
+     * so the app needs no phone permission.
+     */
+    data class Dial(val phone: String) : ContactsEvent
 }

@@ -195,7 +195,7 @@ class AlertParserTest {
         assertEquals("", alert?.deviceId)
     }
 
-    // ── New fields: status and simulated ──────────────────────────────────────
+    // ── Status ────────────────────────────────────────────────────────────────
 
     @Test
     fun `status absent defaults to ACTIVE`() {
@@ -219,17 +219,5 @@ class AlertParserTest {
     fun `an unknown status value defaults to ACTIVE`() {
         val alert = AlertParser.parse(payload() + ("status" to "CLOSED"))
         assertEquals(AlertStatus.ACTIVE, alert?.status)
-    }
-
-    @Test
-    fun `simulated absent defaults to false`() {
-        val alert = AlertParser.parse(payload())
-        assertEquals(false, alert?.simulated)
-    }
-
-    @Test
-    fun `simulated true is read`() {
-        val alert = AlertParser.parse(payload() + ("simulated" to true))
-        assertEquals(true, alert?.simulated)
     }
 }

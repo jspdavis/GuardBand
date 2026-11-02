@@ -135,8 +135,6 @@
     <string name="label_map_layer_satellite">Satellite</string>
     <string name="label_map_layer_outdoor">Outdoor</string>
     <string name="label_map_layer_topo">Topo</string>
-    <!-- REQ-PHONE-05: shown when a contact's phone matches the user's own phone. -->
-    <string name="error_contact_phone_is_self">Guardian phone number cannot be the same as the dependent\'s phone number.</string>
     <string name="cd_track_map_credits">Show map credits</string>
     <!-- The MapTiler logo on the Track map; a link to maptiler.com. -->
     <string name="cd_track_map_logo">MapTiler</string>
@@ -433,34 +431,14 @@
     <string name="label_incident_no_position">This panic has no position to show.</string>
     <!-- TalkBack, on a tappable panic row: what the row shows, then what a tap does. -->
     <string name="cd_alert_open_incident">%1$s. Opens the incident.</string>
-    <!-- Roles, SMS & Alert Status -->
-    <string name="label_alert_status_active">Active</string>
-    <string name="label_alert_status_acknowledged">Acknowledged</string>
-    <string name="label_alert_status_resolved">Resolved</string>
-    <string name="action_acknowledge">Acknowledge</string>
-    <string name="action_resolve">Resolve</string>
-    <string name="dialog_update_status_title">Update Alert Status</string>
-    <string name="dialog_update_status_msg">Choose a new status for this alert:</string>
+    <!-- Own phone, and the parked panic SMS -->
     <string name="sms_panic_body">[GuardBand Alert] EMERGENCY: Panic button activated! Track live location here: %1$s (Lat: %2$f, Lng: %3$f)</string>
-    <string name="permission_sms_rationale">GuardBand needs SMS permission so the dependent\'s phone can send live tracking coordinates to the guardian during a panic emergency.</string>
-    <string name="role_guardian_title">Guardian</string>
-    <string name="role_guardian_desc">I am caring for and tracking a family member or dependent wearing a GuardBand.</string>
-    <string name="role_dependent_title">Dependent</string>
-    <string name="role_dependent_desc">I wear the GuardBand and share my real-time safety status with my guardian.</string>
-    <string name="role_selection_title">Choose your role</string>
-    <string name="role_selection_subtitle">Select how you will be using GuardBand</string>
-    <string name="role_alignment_hint">Guardians track dependents; dependents share safety status with guardians.</string>
-    <string name="error_role_required">Please select a role to continue.</string>
     <string name="label_field_own_phone">Your phone number</string>
     <string name="hint_own_phone">+63 9XX XXX XXXX</string>
-    <string name="error_own_phone_invalid">Please enter a valid phone number (e.g. +639XXXXXXXXX).</string>
-    <string name="tab_dependent">Dependent</string>
-    <string name="tab_guardian">Guardian</string>
-    <string name="btn_test_panic">TEST PANIC ALERT (SIMULATION)</string>
-    <string name="toast_simulated_panic_sent">Simulated panic alert sent (SMS safely skipped).</string>
-    <string name="label_dependent_status_title">Dependent Status</string>
-    <string name="label_guardian_details_title">Assigned Guardian</string>
-    <string name="btn_call_guardian">Call Guardian</string>
-    <string name="label_no_guardian_assigned">No emergency guardian contact found.</string>
-    <string name="label_guardian_sms_notice">When a panic alert is triggered from your GuardBand, an automated emergency SMS with live tracking will be sent to your primary guardian.</string>
+    <!-- Contacts tab: the assigned guardian, the first starred contact. -->
+    <string name="label_contacts_guardian_title">Assigned guardian</string>
+    <string name="label_contacts_guardian_empty">Star a contact to make them your guardian.</string>
+    <string name="btn_contacts_guardian_call">Call</string>
+    <!-- TalkBack, on the Call button: who it calls. -->
+    <string name="cd_contacts_guardian_call">Call %1$s</string>
 </resources>

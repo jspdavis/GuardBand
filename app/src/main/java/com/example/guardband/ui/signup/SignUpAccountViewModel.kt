@@ -1,14 +1,13 @@
 package com.example.guardband.ui.signup
 
 import androidx.lifecycle.ViewModel
-import com.example.guardband.data.model.Role
 import com.example.guardband.utils.InputValidator
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 
 /**
- * Sign-Up Step 1 — role, own phone, email, password and confirmation.
+ * Sign-Up Step 1 — own phone, email, password and confirmation.
  *
  * Flow: SignUpAccountActivity → SignUpNameActivity
  */
@@ -24,11 +23,9 @@ class SignUpAccountViewModel : ViewModel() {
         email: String,
         password: String,
         confirmPassword: String,
-        role: Role? = Role.DEPENDENT,
         phone: String = ""
     ) {
         val error = when {
-            role == null -> MSG_ROLE_REQUIRED
             phone.isNotBlank() && InputValidator.normalizePhoneToE164(phone) == null -> MSG_PHONE_INVALID
             InputValidator.isBlank(email) -> MSG_EMAIL_REQUIRED
             !InputValidator.isValidEmail(email.trim()) -> MSG_EMAIL_INVALID
@@ -53,14 +50,12 @@ class SignUpAccountViewModel : ViewModel() {
             SignUpAccountEvent.NavigateToName(
                 email = email.trim(),
                 password = password,
-                role = role ?: Role.DEPENDENT,
                 ownPhone = normalizedPhone
             )
         )
     }
 
     companion object {
-        const val MSG_ROLE_REQUIRED = "Please select a role (Guardian or Dependent)."
         const val MSG_PHONE_INVALID = "Please enter a valid phone number (e.g. +639XXXXXXXXX)."
         const val MSG_EMAIL_REQUIRED = "Please enter your email address."
         const val MSG_EMAIL_INVALID = "That email address doesn't look right."

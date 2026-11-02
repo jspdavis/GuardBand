@@ -1,44 +1,37 @@
 package com.example.guardband.ui.home
 
-import com.example.guardband.data.model.Role
-
 /**
  * The Home host's destinations, by Fragment tag, and how a saved tag is read
  * back after a restore. Pure, so the restore rule is a plain JVM test;
  * [HomeActivity] owns everything that touches a view or a menu id.
+ *
+ * Three tabs on the bottom bar - Track, Contacts, Device - and three pushed
+ * screens that hide the bar: Settings, Notifications and Alert history. The
+ * Alert tab was removed on 2026-10-19; its screen is now [ALERT_HISTORY],
+ * opened from Track's recent-alerts panel.
  */
 internal object HomeDestinations {
 
     const val TRACK = "home_track"
     const val CONTACTS = "home_contacts"
-    /** The band and the account behind it. */
+    /** The band and the account behind it. The Profile tab (`home_profile`) until 2026-10-27. */
     const val DEVICE = "home_device"
-
-    /** Guardian's Dependent status tab. */
-    const val DEPENDENT = "home_dependent"
-    /** Dependent's assigned Guardian info tab. */
-    const val GUARDIAN = "home_guardian"
 
     const val SETTINGS = "home_settings"
     const val NOTIFICATIONS = "home_notifications"
     const val ALERT_HISTORY = "home_alert_history"
 
-    /** One panic's Incident view (2026-10-27). */
+    /**
+     * One panic's Incident view (2026-10-27). **The one destination that is
+     * not added once:** a new Fragment, the panic in its arguments, is added
+     * each time one opens and removed when it closes, so its live listener
+     * ends with it. Back returns to the screen that opened it
+     * ([restoreIncidentReturn]), not to the last tab.
+     */
     const val INCIDENT = "home_incident"
 
-    /** The default bottom bar destinations. */
+    /** The bottom bar's destinations, in bar order. */
     val TABS: List<String> = listOf(TRACK, CONTACTS, DEVICE)
-
-    val GUARDIAN_TABS: List<String> = listOf(TRACK, DEPENDENT, CONTACTS)
-    val DEPENDENT_TABS: List<String> = listOf(DEVICE, GUARDIAN, CONTACTS)
-
-    fun tabsFor(role: Role?): List<String> = when (role) {
-        Role.DEPENDENT -> DEPENDENT_TABS
-        Role.GUARDIAN -> GUARDIAN_TABS
-        null -> TABS
-    }
-
-    val ALL_TABS: Set<String> = (TABS + GUARDIAN_TABS + DEPENDENT_TABS).toSet()
 
     /**
      * Reached from a tab, never from the bar; Back returns to the last tab,
@@ -47,25 +40,29 @@ internal object HomeDestinations {
     val PUSHED: Set<String> = setOf(SETTINGS, NOTIFICATIONS, ALERT_HISTORY, INCIDENT)
 
     /** Where an Incident view can be opened from, and so where its Back returns. */
-    private val INCIDENT_OPENERS: Set<String> = ALL_TABS + ALERT_HISTORY
+    private val INCIDENT_OPENERS: Set<String> = TABS.toSet() + ALERT_HISTORY
 
-    fun isTab(tag: String): Boolean = tag in ALL_TABS
+    fun isTab(tag: String): Boolean = tag in TABS
 
     /**
-     * The screen to show for a saved `currentTag`.
+     * The screen to show for a saved `currentTag`. Anything this build does
+     * not host - the removed Alert tab's `home_alert`, the renamed Profile
+     * tab's `home_profile`, or nothing saved at all - is Track, never a crash.
      */
     fun restoreCurrent(saved: String?): String =
-        saved?.takeIf { it in ALL_TABS || it in PUSHED } ?: TRACK
+        saved?.takeIf { it in TABS || it in PUSHED } ?: TRACK
 
     /**
-     * The tab Back returns to, from a saved `lastTabTag`.
+     * The tab Back returns to, from a saved `lastTabTag`. Only a tab will do,
+     * so a pushed screen or the removed Alert tab is Track.
      */
     fun restoreLastTab(saved: String?): String =
-        saved?.takeIf { it in ALL_TABS } ?: TRACK
+        saved?.takeIf { it in TABS } ?: TRACK
 
     /**
      * The screen Back from an Incident view returns to: [current] when it is
-     * one that opens incidents (a tab or Alert history), else Track.
+     * one that opens incidents (a tab or Alert history), else Track. Used
+     * both when an incident opens and when the saved value is read back.
      */
     fun restoreIncidentReturn(current: String?): String =
         current?.takeIf { it in INCIDENT_OPENERS } ?: TRACK

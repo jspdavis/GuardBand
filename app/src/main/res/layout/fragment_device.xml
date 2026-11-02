@@ -423,55 +423,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Dependent Simulation Panic Test Trigger -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_device_simulation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/alert_panic_container"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/alert_panic_outline"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/poppins_semibold"
-                        android:text="Panic Simulation &amp; Test"
-                        android:textAppearance="@style/TextAppearance.GuardBand.TitleSmall"
-                        android:textColor="@color/alert_panic" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:fontFamily="@font/poppins_extralight"
-                        android:text="Trigger a simulated panic alert to test the guardian dashboard and live tracking pipeline safely without sending an emergency SMS."
-                        android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
-                        android:textColor="@color/text_secondary" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_trigger_panic_simulation"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="12dp"
-                        android:backgroundTint="@color/alert_panic"
-                        android:fontFamily="@font/poppins_semibold"
-                        android:text="@string/btn_test_panic"
-                        android:textAllCaps="true"
-                        android:textColor="@android:color/white"
-                        app:cornerRadius="24dp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
             <!-- c) The account connected to the band. DESIGN: Jul -->
             <TextView
                 android:layout_width="match_parent"

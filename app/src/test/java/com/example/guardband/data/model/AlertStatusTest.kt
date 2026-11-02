@@ -32,10 +32,4 @@ class AlertStatusTest {
         val alert = Alert(sequenceId = 1, type = "PANIC", timestamp = "2026-10-01T00:00:00Z")
         assertEquals(AlertStatus.ACTIVE, alert.status)
     }
-
-    @Test
-    fun `simulated defaults to false on a newly constructed Alert`() {
-        val alert = Alert(sequenceId = 1, type = "PANIC", timestamp = "2026-10-01T00:00:00Z")
-        assertEquals(false, alert.simulated)
-    }
 }

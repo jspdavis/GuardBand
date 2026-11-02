@@ -27,13 +27,7 @@ data class Alert(
      * band never sends one; [AlertParser] overlays a guardian-written status from
      * `devices/{id}/status/{seq}` when present. See [AlertStatus].
      */
-    val status: AlertStatus = AlertStatus.ACTIVE,
-    /**
-     * True only for a panic fired by the debug panic-test trigger. The band
-     * never sets it. The SMS path skips a simulated panic (D6), so a simulation
-     * can never send a real emergency SMS; history rendering ignores it.
-     */
-    val simulated: Boolean = false
+    val status: AlertStatus = AlertStatus.ACTIVE
 ) {
     data class Location(
         val lat: Double = 0.0,

@@ -89,10 +89,20 @@ interface AlertRepository {
         limit: Int = INCIDENT_WINDOW
     ): Flow<Result<AlertHistory>>
 
+    /**
+     * Alert status (Active, Acknowledged, Resolved) at `devices/{id}/status`.
+     *
+     * **Parked since 2026-11-02, with no caller:** the screens used it only
+     * behind a GUARDIAN role, and roles were rolled back. Nothing shows a
+     * status chip or offers Acknowledge/Resolve until the status decision is
+     * made, including who may change a status on a shared, world-writable band.
+     */
     fun observeStatuses(): Flow<Result<Map<Long, AlertStatus>>>
 
+    /** Parked, no caller: see [observeStatuses]. */
     suspend fun acknowledge(sequenceId: Long): Result<Unit>
 
+    /** Parked, no caller: see [observeStatuses]. */
     suspend fun resolve(sequenceId: Long): Result<Unit>
 
     companion object {

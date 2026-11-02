@@ -76,9 +76,8 @@ interface UserProfileRepository {
      * Writes the profile, [contacts] and the consent record for a brand-new
      * account in **one** atomic commit (D5).
      *
-     * [role] is stored at `users/{uid}/role` in the same commit. [ownPhone] is
-     * stored at `users/{uid}/phone` in the same commit and is used downstream
-     * to block a guardian contact whose phone matches the dependent's own.
+     * [ownPhone] is stored at `users/{uid}/phone` in the same commit and is
+     * used to refuse a contact whose phone matches the user's own.
      *
      * [consentVersion] is stored alongside a server timestamp. A ticked box
      * that leaves no trace is no use as a consent record, and putting it in
@@ -98,7 +97,6 @@ interface UserProfileRepository {
         uid: String,
         name: String,
         email: String,
-        role: com.example.guardband.data.model.Role,
         ownPhone: String,
         contacts: List<EmergencyContact>,
         consentVersion: String

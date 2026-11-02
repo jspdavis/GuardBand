@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 /**
  * Sign-Up Step 3 of 3 — the emergency contacts.
  *
- * Receives [EXTRA_NAME], [EXTRA_EMAIL], [EXTRA_PASSWORD], [EXTRA_ROLE], [EXTRA_PHONE]
+ * Receives [EXTRA_NAME], [EXTRA_EMAIL], [EXTRA_PASSWORD], [EXTRA_PHONE]
  * and passes them on to Consent.
  *
  * Flow: SignUpContactsActivity → SignUpConsentActivity
@@ -37,7 +37,6 @@ class SignUpContactsActivity : AppCompatActivity() {
         const val EXTRA_NAME = "extra_name"
         const val EXTRA_EMAIL = "extra_email"
         const val EXTRA_PASSWORD = "extra_password"
-        const val EXTRA_ROLE = "extra_role"
         const val EXTRA_PHONE = "extra_phone"
         const val EXTRA_COMPLETE_PROFILE = "extra_complete_profile"
     }
@@ -53,7 +52,6 @@ class SignUpContactsActivity : AppCompatActivity() {
     private var userName: String = ""
     private var email: String = ""
     private var password: String = ""
-    private var role: String = ""
     private var phone: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,7 +61,6 @@ class SignUpContactsActivity : AppCompatActivity() {
         userName = intent.getStringExtra(EXTRA_NAME) ?: ""
         email    = intent.getStringExtra(EXTRA_EMAIL) ?: ""
         password = intent.getStringExtra(EXTRA_PASSWORD) ?: ""
-        role     = intent.getStringExtra(EXTRA_ROLE) ?: ""
         phone    = intent.getStringExtra(EXTRA_PHONE) ?: ""
 
         viewModel.ownPhone = phone
@@ -133,7 +130,6 @@ class SignUpContactsActivity : AppCompatActivity() {
                         putExtra(SignUpConsentActivity.EXTRA_NAME, event.name)
                         putExtra(SignUpConsentActivity.EXTRA_EMAIL, event.email)
                         putExtra(SignUpConsentActivity.EXTRA_PASSWORD, event.password)
-                        putExtra(SignUpConsentActivity.EXTRA_ROLE, role)
                         putExtra(SignUpConsentActivity.EXTRA_PHONE, phone)
                         putExtra(
                             SignUpConsentActivity.EXTRA_COMPLETE_PROFILE,

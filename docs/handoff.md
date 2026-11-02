@@ -65,7 +65,7 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 | FR-02 | Real-time location and incident status | Location **done** (live marker). Incident status: the **Incident view** shows a panic, its path since, how many tracking updates and how recent the last one is. There is still no notion of an incident being acknowledged or resolved (§3, item 4). |
 | FR-03 | Panic detected within 1 s | **Firmware.** Not started. |
 | FR-04 | GPS fix within 5–10 s | **Firmware.** Not started. |
-| FR-05 | Automated SMS with a Google Maps link | **Firmware** sends it. The app stores the contacts, but nothing gets them onto the band yet (needs pairing). |
+| FR-05 | Automated SMS with a Google Maps link | **Not built; waits for pairing.** The wearer's phone is to send it (§3, item 3). |
 | FR-06 | Contact management | **Done.** |
 | FR-07 | Real-time sync to Firebase | Payload contract (`SCHEMA.md` v1.0) and rules are done; the mock sender writes it; the firmware has to. |
 | FR-08 | Incident history log | **Done** (Alert history, inbox). |
@@ -138,18 +138,32 @@ says what it depends on and what it would touch.
    wearer (their face is on the marker) and also the watcher. A guardian
    watching someone else's band needs sharing or invites on top of pairing.
    `TrackViewModel.markerFace()` is already the one place that decides whose
-   face is shown.
-3. **Getting contacts to the band (FR-05).** After pairing: a band-readable
-   copy of the emergency numbers, plus an agreed SMS wording. A location link
-   in a text is sensitive, so the wording is a privacy decision. SMS stays on
-   the band; the phone sending SMS would need `SEND_SMS` and James's approval.
+   face is shown. **Roles stay fluid (decided 2026-11-02):** one person can
+   watch someone and wear a band at the same time, so there is no stored
+   GUARDIAN/DEPENDENT and no per-role dashboard. A roles build (`e97e15b`)
+   was rolled back: everyone has the three tabs, sign-up has no role picker,
+   and its Assigned Guardian card is now the top of the Contacts tab (the
+   first starred contact, with Call). Who watches whom should come from
+   pairing and sharing, per band, not from a label on the account.
+3. **Panic SMS (FR-05).** Direction since 2026-11-02: the band writes the panic
+   to Firebase and the wearer's phone sends the text, so a dead modem or a
+   missing phone means no text. **No SMS in any build until pairing ships.**
+   `SmsPanicSender` is parked with no caller and `SEND_SMS` is out of the
+   manifest (§4, "Parked code"). What pairing must then deliver is in
+   [`team-checklist.md`](team-checklist.md). The Privacy Notice, the README and
+   §1 above still describe the band sending; they change in the commit that
+   turns sending on.
 
 ### App-only, buildable now
 
 4. **Incident status: acknowledge or resolve.** A guardian marks a panic "I'm
    on it" or "resolved", so other guardians (and the history) know. Needs a
    place to write that is **not** `devices/` (e.g. under the user, or a new
-   node with its own rules), and a decision on who can see it.
+   node with its own rules), and a decision on who can see it. `e97e15b`
+   built it on `devices/{id}/status`, behind the GUARDIAN role; since the
+   roles rollback (2026-11-02) its repository methods are parked with no
+   caller and the screens show no status. What to fix before reusing it is
+   in §4, "Parked code".
 5. **A demo mode / demo script.** The project is presented without hardware.
    A scripted mock-sender run (panic → tracking → check-in → low
    battery) would make demos reliable.
@@ -269,6 +283,55 @@ list; the step-by-step checklists live in each doc:
 | **Server-side enforcement of verification** | Only if ever wanted. A rule requiring `auth.token.email_verified` on `users/$uid` would fail every sign-up, because the profile is written before the email can be opened. |
 | **Sweep finished deletions' markers** | Optional. Each completed Delete account leaves `users/{uid}: { deletion_pending: true }` under a uid no account owns. A human can delete them from the Console. |
 | **A Terms page** | Only if the course needs one: a hosted `/terms`, `HostedPages.terms`, and a `CONSENT_VERSION` bump. |
+
+### Parked code
+
+In the tree with no caller, kept on purpose so it can be reused. Both came in
+with `e97e15b` and were parked on 2026-11-02. Nothing here runs; revive it
+only through the decision it waits on, and fix what is listed first.
+
+**Alert status** (Active, Acknowledged, Resolved; §3 item 4). Waits on where
+it is stored and who may change it.
+- In the tree: `data/model/AlertStatus.kt`; `Alert.status`; `AlertParser`'s
+  `status` field; `AlertRepository.observeStatuses`, `acknowledge` and
+  `resolve` (Firebase and in-memory); the `FirebaseAuth` that
+  `FirebaseAlertRepository` takes only to fill `updatedBy`;
+  `FakeAlertRepository`'s `emitStatuses`, `failStatuses`,
+  `requestedAcknowledge` and `requestedResolve` (no test uses them);
+  `AlertStatusTest` (5) and 4 status cases in `AlertParserTest`. The chips and
+  the Acknowledge/Resolve dialog were removed; `e97e15b` still has them.
+- **Move it off `devices/{id}/status`.** That node is the old ESP32 LED test
+  (`led`, `online`, `lastUpdate`, and it still holds that data), it is
+  world-readable and world-writable, so anyone could resolve a panic, and the
+  main app may not write to `devices/` at all.
+- **No uid in a world-readable node.** `updatedBy` stores one. Recording who
+  acknowledged, and when, needs a Privacy Notice change and a
+  `CONSENT_VERSION` bump.
+- **One source.** The parser reads `status` from inside the history payload,
+  which nothing writes (`SCHEMA.md` has no such field, and history is
+  append-only), while `Alert.status`'s KDoc says it comes from
+  `status/{seq}`. Neither is right yet.
+- **Panics only,** so check-ins and low-battery alerts do not read "Active"
+  forever.
+- **Show failures.** The old screens dropped the `Result`, and an offline
+  write waits forever, so it needs a timeout like the consent write's.
+- Who may change it comes from pairing and sharing (§3 items 1 and 2), not a
+  role. Decide how it fits the Incident view (does Resolved end one?), and
+  change `SCHEMA.md` or `RTDBS-RULES.md`, the inbox, Track's sheet and Alert
+  history in the same pass.
+
+**Panic SMS sender** (FR-05; §3 item 3). Waits on pairing.
+- In the tree: `ui/notifications/SmsPanicSender.kt`, whose KDoc lists the
+  conditions; `SmsPanicSenderTest` (one blank-number case); the
+  `sms_panic_body` string. `SEND_SMS` is out of the manifest.
+- Before it is called: pairing; James's approval of `SEND_SMS`; a runtime
+  permission prompt; a guard so a Mock Sender panic cannot text real
+  contacts; a real link through `HostedPages` (the hard-coded
+  `guardband.web.app/track/…` is not this project's host, and `/track` does
+  not exist); who gets texted; wording for a panic with no fix (it would send
+  0.0, 0.0); handling for a failed send; and the Privacy Notice and
+  `CONSENT_VERSION` in the same commit. [`team-checklist.md`](team-checklist.md)
+  has what pairing must deliver.
 
 ### Small cleanups
 

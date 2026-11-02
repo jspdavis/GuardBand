@@ -1,5 +1,8 @@
 package com.example.guardband.ui.contacts
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -12,6 +15,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -22,6 +26,7 @@ import com.example.guardband.R
 import com.example.guardband.data.model.EmergencyContact
 import com.example.guardband.ui.home.HomeViewModel
 import com.example.guardband.utils.InputValidator
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -44,9 +49,17 @@ import kotlinx.coroutines.launch
  * plain String so existing records (possibly with free-text values) are never
  * broken.
  *
+ * **The assigned guardian card** sits above the list: the first starred
+ * contact ([ContactsUiState.guardian]) with a Call button that opens the
+ * dialer. It replaced the Dependent's Guardian tab when roles were rolled back
+ * (2026-11-02): anyone can be a guardian and a wearer at once, so the card is
+ * for everyone.
+ *
  * View ids: ib_contacts_settings, ib_contacts_notifications, tv_contacts_title,
  * et_contacts_search, ib_contacts_search_clear, contacts_chip_group,
- * contacts_min_notice, progress_contacts, ll_contacts_empty, tv_contacts_empty,
+ * cv_contacts_guardian, tv_contacts_guardian_title, tv_contacts_guardian_name,
+ * tv_contacts_guardian_relationship, tv_contacts_guardian_phone,
+ * tv_contacts_guardian_empty, btn_contacts_guardian_call, contacts_min_notice, progress_contacts, ll_contacts_empty, tv_contacts_empty,
  * rv_contacts, contacts_add_button.
  */
 class ContactsFragment : Fragment(R.layout.fragment_contacts) {
@@ -59,6 +72,12 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
     private lateinit var tvEmpty: TextView
     private lateinit var tvMinNotice: TextView
     private lateinit var btnAdd: FloatingActionButton
+    private lateinit var cvGuardian: MaterialCardView
+    private lateinit var tvGuardianName: TextView
+    private lateinit var tvGuardianRelationship: TextView
+    private lateinit var tvGuardianPhone: TextView
+    private lateinit var tvGuardianEmpty: TextView
+    private lateinit var btnCallGuardian: View
     private lateinit var adapter: ContactAdapter
 
     /**
@@ -91,6 +110,14 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
         tvEmpty       = view.findViewById(R.id.tv_contacts_empty)
         tvMinNotice   = view.findViewById(R.id.contacts_min_notice)
         btnAdd        = view.findViewById(R.id.contacts_add_button)
+
+        cvGuardian             = view.findViewById(R.id.cv_contacts_guardian)
+        tvGuardianName         = view.findViewById(R.id.tv_contacts_guardian_name)
+        tvGuardianRelationship = view.findViewById(R.id.tv_contacts_guardian_relationship)
+        tvGuardianPhone        = view.findViewById(R.id.tv_contacts_guardian_phone)
+        tvGuardianEmpty        = view.findViewById(R.id.tv_contacts_guardian_empty)
+        btnCallGuardian        = view.findViewById(R.id.btn_contacts_guardian_call)
+        btnCallGuardian.setOnClickListener { viewModel.onCallGuardianClicked() }
 
         adapter = ContactAdapter(
             onEditClicked      = viewModel::onEditClicked,
@@ -194,6 +221,7 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
             )
         }
 
+        renderGuardian(state)
         syncChipSelection(state.selectedRelationship)
 
         val reason = state.emptyReason
@@ -212,12 +240,42 @@ class ContactsFragment : Fragment(R.layout.fragment_contacts) {
         adapter.submitList(state.filteredContacts)
     }
 
+    private fun renderGuardian(state: ContactsUiState) {
+        cvGuardian.isVisible = state.showGuardianCard
+        val guardian = state.guardian
+
+        tvGuardianName.isVisible = guardian != null
+        tvGuardianPhone.isVisible = guardian != null
+        btnCallGuardian.isVisible = guardian != null
+        tvGuardianEmpty.isVisible = guardian == null
+        tvGuardianRelationship.isVisible = guardian?.relationship?.isNotBlank() == true
+
+        if (guardian != null) {
+            tvGuardianName.text = guardian.name
+            tvGuardianRelationship.text = guardian.relationship
+            tvGuardianPhone.text = guardian.phone
+            btnCallGuardian.contentDescription =
+                getString(R.string.cd_contacts_guardian_call, guardian.name)
+        }
+    }
+
     private fun handleEvent(event: ContactsEvent) {
         when (event) {
             is ContactsEvent.ShowMessage ->
                 Toast.makeText(requireContext(), event.text, Toast.LENGTH_SHORT).show()
 
             is ContactsEvent.ShowContactEditor -> showEditor(event.contact)
+
+            is ContactsEvent.Dial -> dial(event.phone)
+        }
+    }
+
+    /** ACTION_DIAL fills the number in; the user places the call, so no permission. */
+    private fun dial(phone: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", phone, null)))
+        } catch (e: ActivityNotFoundException) {
+            viewModel.onDialerUnavailable()
         }
     }
 

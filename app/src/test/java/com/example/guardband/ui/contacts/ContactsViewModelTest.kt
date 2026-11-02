@@ -316,6 +316,76 @@ class ContactsViewModelTest {
         assertTrue(filtered.first().isEmergency)
     }
 
+    // ── Guardian card ─────────────────────────────────────────────────────────
+
+    private val unstarred = EmergencyContact(id = "1", name = "Sam", phone = "+639181234567", relationship = "Friend")
+    private val starredFirst = EmergencyContact(id = "2", name = "Alex", phone = "+639171234567", relationship = "Parent", isEmergency = true)
+    private val starredSecond = EmergencyContact(id = "3", name = "Riley", phone = "+639191234567", relationship = "Sibling", isEmergency = true)
+
+    @Test
+    fun `no starred contact means no guardian, never an arbitrary contact`() = runTest {
+        val vm = viewModel(FakeContactRepository(listOf(unstarred)))
+
+        val state = vm.uiState.first { !it.isLoading }
+
+        assertNull(state.guardian)
+        assertTrue(state.showGuardianCard)
+    }
+
+    @Test
+    fun `the guardian is the first starred contact`() = runTest {
+        val vm = viewModel(FakeContactRepository(listOf(unstarred, starredFirst, starredSecond)))
+
+        val state = vm.uiState.first { !it.isLoading }
+
+        assertEquals("Alex", state.guardian?.name)
+    }
+
+    @Test
+    fun `a search or a chip hides the card but never changes the guardian`() = runTest {
+        val vm = viewModel(FakeContactRepository(listOf(unstarred, starredFirst)))
+        vm.uiState.first { !it.isLoading }
+
+        vm.onSearchChanged("Sam")
+        assertFalse(vm.uiState.value.showGuardianCard)
+        assertEquals("Alex", vm.uiState.value.guardian?.name)
+
+        vm.onSearchChanged("")
+        vm.onRelationshipFilterSelected(ContactRelationshipFilter.Specific("Friend"))
+        assertFalse(vm.uiState.value.showGuardianCard)
+        assertEquals("Alex", vm.uiState.value.guardian?.name)
+
+        vm.onRelationshipFilterSelected(ContactRelationshipFilter.All)
+        assertTrue(vm.uiState.value.showGuardianCard)
+    }
+
+    @Test
+    fun `the card waits for the first read`() {
+        assertFalse(ContactsUiState(isLoading = true).showGuardianCard)
+    }
+
+    @Test
+    fun `call opens the dialer on the guardian's number`() = runTest {
+        val vm = viewModel(FakeContactRepository(listOf(unstarred, starredFirst)))
+        vm.uiState.first { !it.isLoading }
+
+        vm.onCallGuardianClicked()
+
+        assertEquals(ContactsEvent.Dial("+639171234567"), vm.events.first())
+    }
+
+    @Test
+    fun `call with no guardian does nothing`() = runTest {
+        val vm = viewModel(FakeContactRepository(listOf(unstarred)))
+        vm.uiState.first { !it.isLoading }
+
+        vm.onCallGuardianClicked()
+        vm.onDialerUnavailable()
+
+        // The first event is the later message, so the call sent nothing.
+        assertEquals(ContactsViewModel.MSG_NO_DIALER, firstMessage(vm))
+    }
+
     private suspend fun firstMessage(vm: ContactsViewModel): String =
         (vm.events.first() as ContactsEvent.ShowMessage).text
 }

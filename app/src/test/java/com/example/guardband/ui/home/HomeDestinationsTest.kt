@@ -1,6 +1,5 @@
 package com.example.guardband.ui.home
 
-import com.example.guardband.data.model.Role
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -25,27 +24,20 @@ class HomeDestinationsTest {
     }
 
     @Test
-    fun `role dashboard tabs match role definitions`() {
-        assertEquals(
-            listOf(HomeDestinations.TRACK, HomeDestinations.DEPENDENT, HomeDestinations.CONTACTS),
-            HomeDestinations.tabsFor(Role.GUARDIAN)
-        )
-        assertEquals(
-            listOf(HomeDestinations.DEVICE, HomeDestinations.GUARDIAN, HomeDestinations.CONTACTS),
-            HomeDestinations.tabsFor(Role.DEPENDENT)
-        )
-        assertEquals(
-            HomeDestinations.TABS,
-            HomeDestinations.tabsFor(null)
-        )
-        assertTrue(HomeDestinations.isTab(HomeDestinations.DEPENDENT))
-        assertTrue(HomeDestinations.isTab(HomeDestinations.GUARDIAN))
-    }
-
-    @Test
     fun `the renamed Profile tab's saved tag restores to Track, never a crash`() {
         assertEquals(HomeDestinations.TRACK, HomeDestinations.restoreCurrent("home_profile"))
         assertEquals(HomeDestinations.TRACK, HomeDestinations.restoreLastTab("home_profile"))
+    }
+
+    /** Tabs a build with roles (e97e15b, rolled back 2026-11-02) could have saved. */
+    @Test
+    fun `the rolled-back role tabs restore to Track, never a crash`() {
+        for (tag in listOf("home_dependent", "home_guardian")) {
+            assertFalse(HomeDestinations.isTab(tag))
+            assertEquals(HomeDestinations.TRACK, HomeDestinations.restoreCurrent(tag))
+            assertEquals(HomeDestinations.TRACK, HomeDestinations.restoreLastTab(tag))
+            assertEquals(HomeDestinations.TRACK, HomeDestinations.restoreIncidentReturn(tag))
+        }
     }
 
     @Test

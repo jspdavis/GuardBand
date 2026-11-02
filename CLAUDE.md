@@ -85,7 +85,9 @@ com/example/guardband/
 │   │                 BandStatus + OsmdroidConfig (pure helpers; see "Track and map")
 │   │                 BandMarkerFace (pure: photo or initials) + BandMarkerIcon (draws the band's marker)
 │   ├── contacts/       Contacts tab: search, relationship filter chips (in memory, ContactsUiState.filteredContacts),
-│   │                 add/edit dialog, the Emergency star, delete (trash icon or long-press the row)
+│   │                 add/edit dialog, the Emergency star, delete (trash icon or long-press the row);
+│   │                 the Assigned guardian card on top (first starred contact; Call opens the dialer).
+│   │                 No roles: everyone gets the same three tabs (rolled back 2026-11-02)
 │   ├── alert/          AlertHistoryFragment (pushed from Track's See all): latest status + incident history;
 │   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel
 │   ├── device/         Device tab (the Profile tab until 2026-10-27): account header, band card,

@@ -120,6 +120,27 @@ data class ContactsUiState(
             return result
         }
 
+    /**
+     * The assigned guardian: the first starred (Emergency) contact, or null
+     * when none is starred. There is no fallback to an unstarred contact, so
+     * the card never names someone the user did not choose.
+     *
+     * Read from the raw [contacts], so a search or a chip never changes who
+     * the guardian is. Being the guardian changes nothing stored or sent: the
+     * star still only sorts and badges (Privacy Notice 1.2).
+     */
+    val guardian: EmergencyContact?
+        get() = contacts.firstOrNull { it.isEmergency }
+
+    /**
+     * The guardian card shows only over the unfiltered list, once it has
+     * loaded, so a search result never has an unrelated card above it.
+     */
+    val showGuardianCard: Boolean
+        get() = !isLoading &&
+            query.isBlank() &&
+            selectedRelationship == ContactRelationshipFilter.All
+
     /** Drives the "n of MIN minimum" notice; hidden once the user is at or above it. */
     val showMinimumNotice: Boolean
         get() = !isLoading && contacts.size < InputValidator.MIN_CONTACTS

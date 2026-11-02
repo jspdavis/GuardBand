@@ -5,7 +5,10 @@
 
     View ids: ib_contacts_settings, ib_contacts_notifications,
     tv_contacts_title, et_contacts_search, ib_contacts_search_clear,
-    contacts_chip_group, contacts_min_notice, progress_contacts,
+    contacts_chip_group, cv_contacts_guardian, tv_contacts_guardian_title,
+    tv_contacts_guardian_name, tv_contacts_guardian_relationship,
+    tv_contacts_guardian_phone, tv_contacts_guardian_empty,
+    btn_contacts_guardian_call, contacts_min_notice, progress_contacts,
     tv_contacts_empty, rv_contacts, contacts_add_button.
     DESIGN: Jul (spacing, chip colours, search-bar styling)
 -->
@@ -187,6 +190,100 @@
             android:paddingTop="4dp"
             android:paddingEnd="24dp"
             android:paddingBottom="88dp">
+
+            <!-- Assigned guardian: the first starred contact, with a Call
+                 button that opens the dialer. Shown over the unfiltered list
+                 only (ContactsUiState.showGuardianCard). With no star, the
+                 name, phone and button are gone and the empty line shows.
+                 DESIGN: Jul (card styling, icon, spacing) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cv_contacts_guardian"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/surface_card"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_alert_type_badge"
+                        android:importantForAccessibility="no"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_group"
+                        app:tint="@color/brand_primary" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tv_contacts_guardian_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/label_contacts_guardian_title"
+                            android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                            android:textColor="@color/text_secondary" />
+
+                        <TextView
+                            android:id="@+id/tv_contacts_guardian_name"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.GuardBand.TitleMedium"
+                            android:textColor="@color/text_primary"
+                            tools:text="Jordan Lee" />
+
+                        <TextView
+                            android:id="@+id/tv_contacts_guardian_relationship"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.GuardBand.BodySmall"
+                            android:textColor="@color/brand_primary"
+                            tools:text="Parent" />
+
+                        <TextView
+                            android:id="@+id/tv_contacts_guardian_phone"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                            android:textColor="@color/text_primary"
+                            tools:text="+639171234567" />
+
+                        <TextView
+                            android:id="@+id/tv_contacts_guardian_empty"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/label_contacts_guardian_empty"
+                            android:textAppearance="@style/TextAppearance.GuardBand.BodyMedium"
+                            android:textColor="@color/text_secondary"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_contacts_guardian_call"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:backgroundTint="@color/brand_primary"
+                        android:text="@string/btn_contacts_guardian_call"
+                        android:textColor="@color/white"
+                        app:cornerRadius="24dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- "n of 1 minimum" notice, shown until the user reaches the floor. -->
             <TextView

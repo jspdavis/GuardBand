@@ -38,8 +38,7 @@ import com.example.guardband.ui.incident.IncidentEntry
  */
 class AlertHistoryAdapter(
     private val timeStyle: AlertTimeStyle,
-    private val onPanicClick: ((Alert) -> Unit)? = null,
-    private val onStatusClick: ((AlertRow) -> Unit)? = null
+    private val onPanicClick: ((Alert) -> Unit)? = null
 ) : ListAdapter<AlertListItem, RecyclerView.ViewHolder>(AlertDiff) {
 
     override fun getItemViewType(position: Int): Int =
@@ -53,11 +52,7 @@ class AlertHistoryAdapter(
         return if (viewType == VIEW_TYPE_DAY) {
             DayViewHolder(inflater.inflate(R.layout.item_alert_day_header, parent, false))
         } else {
-            AlertViewHolder(
-                inflater.inflate(R.layout.item_alert, parent, false),
-                onPanicClick,
-                onStatusClick
-            )
+            AlertViewHolder(inflater.inflate(R.layout.item_alert, parent, false), onPanicClick)
         }
     }
 
@@ -71,18 +66,12 @@ class AlertHistoryAdapter(
     /** Binds one `item_alert.xml` row; a panic's is tappable when [onPanicClick] is given. */
     class AlertViewHolder(
         itemView: View,
-        private val onPanicClick: ((Alert) -> Unit)?,
-        private val onStatusClick: ((AlertRow) -> Unit)? = null
+        private val onPanicClick: ((Alert) -> Unit)?
     ) : RecyclerView.ViewHolder(itemView) {
         private val views = AlertCardViews.ofItem(itemView)
-        private val statusBadge: View? = itemView.findViewById(R.id.tv_item_alert_status)
 
         fun bind(row: AlertRow, style: AlertTimeStyle) {
             views.bind(row, style)
-
-            statusBadge?.setOnClickListener {
-                onStatusClick?.invoke(row)
-            }
 
             // Reset on every bind: a recycled card can stop being a panic.
             val onClick = onPanicClick?.takeIf { IncidentEntry.opensIncident(row.alert) }

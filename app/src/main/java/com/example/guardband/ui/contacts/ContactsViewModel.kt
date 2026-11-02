@@ -147,6 +147,26 @@ class ContactsViewModel(
         }
     }
 
+    // ── Guardian card ─────────────────────────────────────────────────────────
+
+    /**
+     * The guardian card's Call button: opens the dialer on the guardian's
+     * number. Does nothing when no contact is starred; the card then shows
+     * no button to press.
+     */
+    fun onCallGuardianClicked() {
+        val guardian = _uiState.value.guardian ?: return
+        _events.trySend(ContactsEvent.Dial(guardian.phone))
+    }
+
+    /**
+     * No app on the phone can dial (a tablet, say). The wording lives here
+     * with every other message rather than in the Fragment.
+     */
+    fun onDialerUnavailable() {
+        _events.trySend(ContactsEvent.ShowMessage(MSG_NO_DIALER))
+    }
+
     // ── Delete ────────────────────────────────────────────────────────────────
 
     /** Called after the user confirms the delete dialog. */
@@ -220,6 +240,7 @@ class ContactsViewModel(
         const val MSG_REFUSED = "You don't have permission to change these contacts."
         const val MSG_SESSION_EXPIRED = "You are no longer signed in. Please sign in again."
         const val MSG_GENERIC_FAILURE = "Something went wrong. Try again."
+        const val MSG_NO_DIALER = "No app on this phone can make calls."
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer { ContactsViewModel(RepositoryProvider.contactRepository) }

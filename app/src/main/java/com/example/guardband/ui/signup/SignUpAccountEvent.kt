@@ -1,18 +1,19 @@
 package com.example.guardband.ui.signup
 
-import com.example.guardband.data.model.Role
-
 /** One-shot events emitted by [SignUpAccountViewModel]. */
 sealed interface SignUpAccountEvent {
     data class ShowMessage(val text: String) : SignUpAccountEvent
 
     /**
-     * Carries the credentials, selected role, and own-phone to the next step.
+     * Carries the credentials and the user's own phone to the next step.
+     *
+     * They are only *collected* here. No Firebase account exists until the
+     * Consent screen submits, so abandoning the wizard leaves nothing behind
+     * and a half-finished sign-up can never occupy an address.
      */
     data class NavigateToName(
         val email: String,
         val password: String,
-        val role: Role = Role.DEPENDENT,
         val ownPhone: String = ""
     ) : SignUpAccountEvent
 }

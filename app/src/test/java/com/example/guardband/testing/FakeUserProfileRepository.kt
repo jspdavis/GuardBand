@@ -77,7 +77,7 @@ class FakeUserProfileRepository(
 
         val record = saved[uid] ?: return Result.success(null)
         return Result.success(
-            User(id = uid, name = record.first, email = record.second, role = finalizedRoles[uid])
+            User(id = uid, name = record.first, email = record.second)
         )
     }
 
@@ -135,9 +135,6 @@ class FakeUserProfileRepository(
         return markDeletionPendingResult
     }
 
-    /** uid → the role passed to [finalizeSignUp]. */
-    val finalizedRoles = mutableMapOf<String, com.example.guardband.data.model.Role>()
-
     /** uid → the own-phone passed to [finalizeSignUp]. */
     val finalizedOwnPhones = mutableMapOf<String, String>()
 
@@ -149,7 +146,6 @@ class FakeUserProfileRepository(
         uid: String,
         name: String,
         email: String,
-        role: com.example.guardband.data.model.Role,
         ownPhone: String,
         contacts: List<EmergencyContact>,
         consentVersion: String
@@ -157,7 +153,6 @@ class FakeUserProfileRepository(
         finalizeSignUpCalls++
         if (finalizeSignUpResult.isSuccess) {
             saved[uid] = Pair(name, email)
-            finalizedRoles[uid] = role
             finalizedOwnPhones[uid] = ownPhone
             finalizedContacts[uid] = contacts
             recordedConsent[uid] = consentVersion

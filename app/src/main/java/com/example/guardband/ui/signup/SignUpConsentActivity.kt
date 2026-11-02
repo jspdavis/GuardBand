@@ -16,8 +16,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.data.model.EmergencyContact
-import com.example.guardband.data.model.Role
-
 import com.google.android.material.checkbox.MaterialCheckBox
 import kotlinx.coroutines.launch
 
@@ -33,7 +31,6 @@ class SignUpConsentActivity : AppCompatActivity() {
         const val EXTRA_EMAIL = "extra_email"
         const val EXTRA_PASSWORD = "extra_password"
         const val EXTRA_CONTACTS = "extra_contacts"
-        const val EXTRA_ROLE = "extra_role"
         const val EXTRA_PHONE = "extra_phone"
         const val EXTRA_COMPLETE_PROFILE = "extra_complete_profile"
 
@@ -51,7 +48,6 @@ class SignUpConsentActivity : AppCompatActivity() {
     private var userName: String = ""
     private var email: String = ""
     private var password: String = ""
-    private var role: Role = Role.DEPENDENT
     private var ownPhone: String = ""
     private var completeProfile: Boolean = false
     private var contacts: List<EmergencyContact> = emptyList()
@@ -63,8 +59,6 @@ class SignUpConsentActivity : AppCompatActivity() {
         userName        = intent.getStringExtra(EXTRA_NAME) ?: ""
         email           = intent.getStringExtra(EXTRA_EMAIL) ?: ""
         password        = intent.getStringExtra(EXTRA_PASSWORD) ?: ""
-        val roleStr     = intent.getStringExtra(EXTRA_ROLE)
-        role            = Role.fromWire(roleStr) ?: Role.DEPENDENT
         ownPhone        = intent.getStringExtra(EXTRA_PHONE) ?: ""
         completeProfile = intent.getBooleanExtra(EXTRA_COMPLETE_PROFILE, false)
         contacts        = readContacts()
@@ -105,7 +99,6 @@ class SignUpConsentActivity : AppCompatActivity() {
         password = password,
         contacts = contacts,
         completeProfile = completeProfile,
-        role = role,
         ownPhone = ownPhone
     )
 

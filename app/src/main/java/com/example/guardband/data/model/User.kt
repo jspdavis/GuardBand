@@ -11,14 +11,10 @@ package com.example.guardband.data.model
  * @param photoUrl The session's profile photo link as Firebase Auth reports
  *   it, or null. Display only: it is never written to the database, and
  *   whether it is shown at all is `ui/avatar/AvatarPhoto`'s decision.
- * @param role The user's [Role], or null before sign-up is finalized (a thin
- *   provisioned profile has none; the gate routes such a user to complete the
- *   wizard). The database is the source of truth; this is the read-back view.
  */
 data class User(
     val id: String = "",
     val name: String = "",
     val email: String = "",
-    val photoUrl: String? = null,
-    val role: Role? = null
+    val photoUrl: String? = null
 )

@@ -44,9 +44,4 @@ sealed interface HomeEvent {
      * tabs are never shown to it.
      */
     object RequireConsent : HomeEvent
-
-    /**
-     * The account is missing a chosen role or full profile.
-     */
-    object RequireCompleteProfile : HomeEvent
 }

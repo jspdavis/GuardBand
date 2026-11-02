@@ -1,7 +1,6 @@
 package com.example.guardband.ui.alert
 
 import com.example.guardband.data.model.Alert
-import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.data.model.Place
 import com.example.guardband.ui.track.Elapsed
 import java.util.Locale
@@ -55,6 +54,5 @@ internal object AlertPlaces {
 data class AlertRow(
     val alert: Alert,
     val placeName: String? = null,
-    val elapsed: Elapsed? = null,
-    val status: AlertStatus = alert.status
+    val elapsed: Elapsed? = null
 )

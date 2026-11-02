@@ -7,7 +7,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.model.EmergencyContact
-import com.example.guardband.data.model.Role
 import com.example.guardband.data.repository.AuthError
 import com.example.guardband.data.repository.AuthRepository
 import com.example.guardband.data.repository.UserProfileRepository
@@ -99,8 +98,7 @@ class SignUpConsentViewModel(
         password: String,
         contacts: List<EmergencyContact>,
         completeProfile: Boolean,
-        // TODO T9/T11: pass the role + own-phone captured by the role/account steps.
-        role: Role = Role.DEPENDENT,
+        // TODO T9: the Google complete-profile path does not capture the own phone yet.
         ownPhone: String = ""
     ) {
         val state = _uiState.value
@@ -123,7 +121,6 @@ class SignUpConsentViewModel(
                 uid = user.id,
                 name = name.trim().ifEmpty { user.name },
                 email = user.email,
-                role = role,
                 ownPhone = ownPhone,
                 contacts = contacts
             )
@@ -133,7 +130,7 @@ class SignUpConsentViewModel(
         if (state.accountCreated) {
             // A previous attempt got the account made and the write failed.
             // Resuming at the write is the whole point of the split.
-            retryFinalize(name, contacts, role, ownPhone)
+            retryFinalize(name, contacts, ownPhone)
             return
         }
 
@@ -149,7 +146,6 @@ class SignUpConsentViewModel(
                         // attempt and every retry write the identical record.
                         name = name.trim().ifEmpty { user.name },
                         email = user.email,
-                        role = role,
                         ownPhone = ownPhone,
                         contacts = contacts
                     )
@@ -185,7 +181,7 @@ class SignUpConsentViewModel(
      * signed the user out between attempts, which is reported rather than
      * written past.
      */
-    private fun retryFinalize(name: String, contacts: List<EmergencyContact>, role: Role, ownPhone: String) {
+    private fun retryFinalize(name: String, contacts: List<EmergencyContact>, ownPhone: String) {
         val user = authRepository.currentUser()
         if (user == null) {
             _events.trySend(SignUpConsentEvent.ShowMessage(MSG_SESSION_EXPIRED))
@@ -195,7 +191,6 @@ class SignUpConsentViewModel(
             uid = user.id,
             name = name.trim().ifEmpty { user.name },
             email = user.email,
-            role = role,
             ownPhone = ownPhone,
             contacts = contacts
         )
@@ -205,13 +200,12 @@ class SignUpConsentViewModel(
         uid: String,
         name: String,
         email: String,
-        role: Role,
         ownPhone: String,
         contacts: List<EmergencyContact>
     ) {
         _uiState.update { it.copy(isLoading = true, canRetry = false) }
         viewModelScope.launch {
-            finalizeNow(uid, name, email, role, ownPhone, contacts)
+            finalizeNow(uid, name, email, ownPhone, contacts)
         }
     }
 
@@ -225,7 +219,6 @@ class SignUpConsentViewModel(
         uid: String,
         name: String,
         email: String,
-        role: Role,
         ownPhone: String,
         contacts: List<EmergencyContact>
     ) {
@@ -233,7 +226,6 @@ class SignUpConsentViewModel(
             uid = uid,
             name = name.trim(),
             email = email,
-            role = role,
             ownPhone = ownPhone,
             contacts = contacts,
             consentVersion = UserProfileRepository.CONSENT_VERSION
