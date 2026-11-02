@@ -1,0 +1,25 @@
+<!-- The Track tab's icon: a location pin standing on a ring. Outlined,
+     drawn with strokes on the 24 grid. Replaced ic_map in the bottom nav
+     on 2026-11-02; ic_map is kept. DESIGN: Jul -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:tint="?attr/colorControlNormal"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- The pin's outline: a circle drawn down to a point. -->
+    <path
+        android:pathData="M12,17.9L7.633,10.909A5.15,5.15 0,1 1,16.367 10.909Z"
+        android:strokeWidth="2"
+        android:strokeColor="@android:color/white"
+        android:strokeLineJoin="miter" />
+    <!-- The dot inside the pin. -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,5.46a1.8,1.8 0,1 1,0 3.6a1.8,1.8 0,1 1,0 -3.6z" />
+    <!-- The ring on the ground, open at the back where the pin stands. -->
+    <path
+        android:pathData="M8,15.906A9.17,2.66 0,1 0,16 15.906"
+        android:strokeWidth="2"
+        android:strokeColor="@android:color/white" />
+</vector>

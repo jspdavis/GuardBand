@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Contacts tab's icon: two smiling figures, the back one cut away
+     by a 1dp gap around the front one. The gap is drawn into the back
+     figure's outline (arcs of the front figure's circles grown by 1dp),
+     not painted over it, so the icon stays a single tintable shape.
+     DESIGN: Jul -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:tint="?attr/colorControlNormal"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
+        android:pathData="M3.75,11.25a4.5,4.5 0,1 0,9 0a4.5,4.5 0,1 0,-9 0z
+            M5.05,12.85L11.45,12.85A3.2,2 0,0 1,5.05 12.85z
+            M2.184,21.25A6.3,6.3 0,0 1,14.316 21.25z
+            M13.75,11.281A4.5,4.5 0,1 0,11.288 6.665A5.5,5.5 0,0 1,13.199 8.85L18.95,8.85A3.2,2 0,0 1,13.68 10.375A5.5,5.5 0,0 1,13.75 11.281z
+            M21.816,17.25L12.811,17.25A7.3,7.3 0,0 0,10.815 16.115A5.5,5.5 0,0 0,13.432 13.092A6.3,6.3 0,0 1,21.816 17.25z" />
+</vector>
