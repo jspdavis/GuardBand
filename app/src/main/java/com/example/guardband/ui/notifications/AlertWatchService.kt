@@ -8,14 +8,17 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
-import com.example.guardband.data.DeviceConstants
 import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.repository.AlertRepository
+import com.example.guardband.data.repository.BandSelection
 import com.example.guardband.ui.track.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -81,27 +84,41 @@ class AlertWatchService : Service() {
         return START_STICKY
     }
 
+    /**
+     * Follows the account's watched band ([BandSelection]); a change of band
+     * cancels the old band's listener and starts on the new one, with its own
+     * high-water mark. No band posts nothing. Notifying for every band the
+     * account watches is a later pairing step.
+     */
     private fun watch(scope: CoroutineScope, prefs: AlertNotificationPrefs, notifier: AlertNotifier) {
-        val deviceId = DeviceConstants.DEFAULT_DEVICE_ID
-        var firstSinceStart = true
         scope.launch {
-            RepositoryProvider.alertRepository
-                .observeAlertHistory(AlertRepository.DEFAULT_HISTORY_WINDOW)
-                .collect { emission ->
-                    val mark = prefs.lastNotifiedSequenceId(deviceId)
-                    val plan = AlertNotificationDecider.decide(
-                        mark, emission, firstSinceStart, Clock.SYSTEM.nowMillis()
-                    )
-                    if (emission.isSuccess) firstSinceStart = false
-
-                    plan.toPost.forEach(notifier::post)
-                    notifier.postSummary(plan.summaryCount)
-                    val newMark = plan.newMark
-                    if (newMark != null && newMark != mark) {
-                        prefs.setLastNotifiedSequenceId(deviceId, newMark)
-                    }
+            RepositoryProvider.bandRepository.observeBands()
+                .map(BandSelection::watchedBandOf)
+                .distinctUntilChanged()
+                .collectLatest { deviceId ->
+                    if (deviceId != null) watchBand(deviceId, prefs, notifier)
                 }
         }
+    }
+
+    private suspend fun watchBand(deviceId: String, prefs: AlertNotificationPrefs, notifier: AlertNotifier) {
+        var firstSinceStart = true
+        RepositoryProvider.alertRepositoryFor(deviceId)
+            .observeAlertHistory(AlertRepository.DEFAULT_HISTORY_WINDOW)
+            .collect { emission ->
+                val mark = prefs.lastNotifiedSequenceId(deviceId)
+                val plan = AlertNotificationDecider.decide(
+                    mark, emission, firstSinceStart, Clock.SYSTEM.nowMillis()
+                )
+                if (emission.isSuccess) firstSinceStart = false
+
+                plan.toPost.forEach(notifier::post)
+                notifier.postSummary(plan.summaryCount)
+                val newMark = plan.newMark
+                if (newMark != null && newMark != mark) {
+                    prefs.setLastNotifiedSequenceId(deviceId, newMark)
+                }
+            }
     }
 
     override fun onDestroy() {

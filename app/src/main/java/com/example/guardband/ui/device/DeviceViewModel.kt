@@ -8,6 +8,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.model.SignInProvider
 import com.example.guardband.data.repository.AuthRepository
+import com.example.guardband.data.repository.BandRepository
+import com.example.guardband.data.repository.BandSelection
 import com.example.guardband.data.repository.UserProfileRepository
 import com.example.guardband.ui.account.EmailVerification
 import com.example.guardband.ui.alert.AlertPlaces
@@ -19,6 +21,8 @@ import com.example.guardband.ui.track.BandStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -43,21 +47,22 @@ import kotlinx.coroutines.launch
  * synchronously; the `users/{uid}` record then replaces the name and email,
  * as the Profile tab did. That one-shot read is the only call this makes.
  *
- * **Pairing is a shape, not logic.** [DeviceUiState.pairing] is always
- * [DevicePairing.Paired] with [bandId], the one band every install watches.
+ * **The tab is the account's own band.** [bandRepository] says which band
+ * the account wears ([BandSelection.ownBandOf]): none is
+ * [DevicePairing.Unpaired], even when it watches friends' bands, which
+ * belong to Track. The id is for display only; which band the alert screens
+ * read is the repository's wiring, never this ViewModel's. Today every
+ * account wears the one hard-coded band, which answers without a listener.
  *
  * No events: the contacts row and the Settings row navigate through
  * [HomeViewModel][com.example.guardband.ui.home.HomeViewModel]. Nothing here
  * logs: the state holds the band's position (as a place name), an email and
  * a photo link.
- *
- * @param bandId the band's id, for display only: which band is read is the
- *   repository's wiring ([RepositoryProvider.watchedBandId]), never this.
  */
 class DeviceViewModel(
     private val authRepository: AuthRepository,
     private val userProfileRepository: UserProfileRepository,
-    private val bandId: String
+    private val bandRepository: BandRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(sessionState())
@@ -66,20 +71,64 @@ class DeviceViewModel(
     /** What the band's reports add up to, by Track's rules. */
     private var band: BandReport = BandReport.NONE
 
+    /** Whether the account's bands have been read at all. */
+    private var bandsKnown = false
+
+    /** The band the account wears, or null. */
+    private var ownBandId: String? = null
+
+    /** The alert screens' last state, so a band arriving later has a card at once. */
+    private var lastAlerts: AlertUiState? = null
+
     init {
         loadProfile()
+        observeOwnBand()
     }
 
     /**
      * The alert screens' state changed: a read, a place name, or their 30 s
      * tick. A read still loading (the first, or a retry) changes nothing, so
      * a retry never blanks the card; a loaded window with no entries is the
-     * band never having reported.
+     * band never having reported. With no band of its own the account's
+     * alerts are a watched band's, and are ignored here.
      */
     fun onAlertsChanged(alerts: AlertUiState) {
-        if (!alerts.isLoading) band = band.after(alerts.newestReport)
-        val card = bandCard(alerts)
-        _uiState.update { it.copy(pairing = DevicePairing.Paired(bandId, card)) }
+        lastAlerts = alerts
+        if (ownBandId != null && !alerts.isLoading) band = band.after(alerts.newestReport)
+        renderPairing()
+    }
+
+    /**
+     * A different band starts from nothing: its reports are not the old
+     * one's. The alert screens follow the same band ([BandSelection] puts the
+     * worn band first), so what they last said is folded in straight away.
+     */
+    private fun observeOwnBand() {
+        viewModelScope.launch {
+            bandRepository.observeBands()
+                .map(BandSelection::ownBandOf)
+                .distinctUntilChanged()
+                .collect { bandId ->
+                    bandsKnown = true
+                    ownBandId = bandId
+                    band = BandReport.NONE
+                    val alerts = lastAlerts
+                    if (bandId != null && alerts != null && !alerts.isLoading) {
+                        band = band.after(alerts.newestReport)
+                    }
+                    renderPairing()
+                }
+        }
+    }
+
+    private fun renderPairing() {
+        val bandId = ownBandId
+        val pairing = when {
+            !bandsKnown -> DevicePairing.Loading
+            bandId == null -> DevicePairing.Unpaired
+            else -> DevicePairing.Paired(bandId, lastAlerts?.let(::bandCard) ?: BandCard())
+        }
+        _uiState.update { it.copy(pairing = pairing) }
     }
 
     /**
@@ -163,7 +212,7 @@ class DeviceViewModel(
                 email = user?.email.orEmpty(),
                 face = BandMarkerFace.of(user, providers)
             ),
-            pairing = DevicePairing.Paired(bandId, BandCard()),
+            pairing = DevicePairing.Loading,
             account = ConnectedAccount(
                 signInMethod = signInMethodOf(providers),
                 emailVerified = EmailVerification.of(providers, authRepository.isEmailVerified()).verified
@@ -192,7 +241,7 @@ class DeviceViewModel(
                 DeviceViewModel(
                     RepositoryProvider.authRepository,
                     RepositoryProvider.userProfileRepository,
-                    RepositoryProvider.watchedBandId
+                    RepositoryProvider.bandRepository
                 )
             }
         }

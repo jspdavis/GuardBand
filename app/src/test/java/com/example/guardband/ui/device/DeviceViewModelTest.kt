@@ -7,6 +7,9 @@ import com.example.guardband.data.model.User
 import com.example.guardband.data.repository.AuthError
 import com.example.guardband.testing.FakeAlertRepository.Companion.alert
 import com.example.guardband.testing.FakeAuthRepository
+import com.example.guardband.testing.FakeBandRepository
+import com.example.guardband.testing.FakeBandRepository.Companion.watcher
+import com.example.guardband.testing.FakeBandRepository.Companion.wearer
 import com.example.guardband.testing.FakeUserProfileRepository
 import com.example.guardband.testing.MainDispatcherRule
 import com.example.guardband.ui.alert.AlertPlaces
@@ -41,6 +44,12 @@ class DeviceViewModelTest {
 
     private val profiles = FakeUserProfileRepository()
 
+    private val bands = FakeBandRepository()
+
+    /**
+     * Built, then run up to idle, so the band list (and the profile read)
+     * have landed as they would before the first frame on a phone.
+     */
     private fun viewModel(
         providers: Set<SignInProvider> = setOf(SignInProvider.PASSWORD),
         emailVerified: Boolean = true,
@@ -54,8 +63,10 @@ class DeviceViewModelTest {
             user = user
         ),
         profiles,
-        bandId = BAND_ID
-    )
+        bands
+    ).also { settle() }
+
+    private fun settle() = mainDispatcherRule.dispatcher.scheduler.advanceUntilIdle()
 
     private val DeviceViewModel.band: BandCard
         get() = (uiState.value.pairing as DevicePairing.Paired).band
@@ -83,12 +94,85 @@ class DeviceViewModelTest {
     // ── Pairing ───────────────────────────────────────────────────────────────
 
     @Test
-    fun `the band is always paired, with the watched band's id`() {
+    fun `the band the account wears is paired, with its id`() {
         val vm = viewModel()
 
         val pairing = vm.uiState.value.pairing
         assertTrue(pairing is DevicePairing.Paired)
         assertEquals(BAND_ID, (pairing as DevicePairing.Paired).bandId)
+    }
+
+    @Test
+    fun `before the bands are read the tab is loading, not unpaired`() {
+        val vm = DeviceViewModel(FakeAuthRepository(), profiles, bands)
+
+        assertEquals(DevicePairing.Loading, vm.uiState.value.pairing)
+    }
+
+    @Test
+    fun `an account with no band is unpaired`() {
+        bands.bands.value = emptyList()
+
+        assertEquals(DevicePairing.Unpaired, viewModel().uiState.value.pairing)
+    }
+
+    @Test
+    fun `watching a friend's band is not wearing one`() {
+        bands.bands.value = listOf(watcher("friend-band"))
+
+        assertEquals(DevicePairing.Unpaired, viewModel().uiState.value.pairing)
+    }
+
+    @Test
+    fun `the own band is shown even when watched bands come first`() {
+        bands.bands.value = listOf(watcher("friend-band"), wearer("my-band"))
+
+        val pairing = viewModel().uiState.value.pairing as DevicePairing.Paired
+
+        assertEquals("my-band", pairing.bandId)
+    }
+
+    @Test
+    fun `alerts arriving while unpaired change nothing`() {
+        bands.bands.value = listOf(watcher("friend-band"))
+        val vm = viewModel()
+
+        vm.onAlertsChanged(loaded(newestReport = alert(5, "PANIC", timestamp = "2026-10-27T11:58:00Z")))
+
+        assertEquals(DevicePairing.Unpaired, vm.uiState.value.pairing)
+    }
+
+    @Test
+    fun `pairing a band mid-session shows what the alert screens already have`() {
+        bands.bands.value = emptyList()
+        val vm = viewModel()
+        val checkIn = alert(3, "CHECKIN", timestamp = "2026-10-27T11:59:00Z")
+        vm.onAlertsChanged(loaded(newestReport = checkIn, latest = checkIn))
+
+        bands.bands.value = listOf(wearer("new-band"))
+        settle()
+
+        val pairing = vm.uiState.value.pairing as DevicePairing.Paired
+        assertEquals("new-band", pairing.bandId)
+        assertTrue(pairing.band.hasReported)
+        assertEquals(3L, pairing.band.lastAlert?.alert?.sequenceId)
+    }
+
+    @Test
+    fun `a different band starts from its own reports, not the old one's`() {
+        val vm = viewModel()
+        val panic = alert(5, "PANIC", timestamp = "2026-10-27T11:58:00Z")
+        vm.onAlertsChanged(loaded(newestReport = panic, latest = panic))
+        assertEquals(64, vm.band.battery?.percent)
+
+        // The alert screens are still loading the new band when it arrives.
+        vm.onAlertsChanged(AlertUiState(isLoading = true, nowMillis = now))
+        bands.bands.value = listOf(wearer("other-band"))
+        settle()
+
+        assertEquals("other-band", (vm.uiState.value.pairing as DevicePairing.Paired).bandId)
+        assertFalse(vm.band.hasReported)
+        assertNull(vm.band.battery)
     }
 
     // ── Paired, no data ───────────────────────────────────────────────────────
@@ -404,6 +488,6 @@ class DeviceViewModelTest {
     }
 
     private companion object {
-        const val BAND_ID = "guardband-001"
+        const val BAND_ID = FakeBandRepository.BAND_ID
     }
 }

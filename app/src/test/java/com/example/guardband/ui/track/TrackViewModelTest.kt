@@ -543,6 +543,7 @@ class TrackViewModelTest {
             AlertError.PermissionDenied to TrackViewModel.MSG_PERMISSION_DENIED,
             AlertError.NotSignedIn to TrackViewModel.MSG_NOT_SIGNED_IN,
             AlertError.ParseFailure to TrackViewModel.MSG_UNREADABLE,
+            AlertError.NoBand to TrackViewModel.MSG_NO_BAND,
             AlertError.Unknown(code = null) to TrackViewModel.MSG_LOAD_FAILED
         )
 

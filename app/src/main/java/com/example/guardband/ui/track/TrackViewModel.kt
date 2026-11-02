@@ -394,6 +394,7 @@ class TrackViewModel(
         AlertError.PermissionDenied -> MSG_PERMISSION_DENIED
         AlertError.NotSignedIn -> MSG_NOT_SIGNED_IN
         AlertError.ParseFailure -> MSG_UNREADABLE
+        AlertError.NoBand -> MSG_NO_BAND
         else -> MSG_LOAD_FAILED
     }
 
@@ -412,6 +413,8 @@ class TrackViewModel(
         const val MSG_PERMISSION_DENIED = "You don't have access to this band's location."
         const val MSG_NOT_SIGNED_IN = "Please sign in again to see your band's location."
         const val MSG_UNREADABLE = "Your band sent a position we couldn't read."
+        /** Unreachable until pairing exists: every account wears the one band. */
+        const val MSG_NO_BAND = "No band is linked to your account yet."
 
         /** The real ticker. A plain loop, so nothing schedules work when unused. */
         private fun defaultStaleTicks(): Flow<Unit> = flow {

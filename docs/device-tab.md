@@ -14,9 +14,10 @@ removed on 2026-10-28; the bar is the way in.
 | **Tests** | `DeviceViewModelTest` (27), `BandReportTest` (16), plus `HomeViewModelTest`, `HomeDestinationsTest`, `AlertViewModelTest` additions |
 | **Related** | [home-host-and-bottom-nav.md](home-host-and-bottom-nav.md), [alert-data.md](alert-data.md), CLAUDE.md "Track and map" |
 
-**Pairing is not part of this.** The tab watches the one hard-coded band,
-`DeviceConstants.DEFAULT_DEVICE_ID`, like every other screen, and `devices/`
-is unchanged. Nothing here writes anything.
+**Pairing is not part of this.** The tab shows the band the account wears,
+from `BandRepository` (2026-11-02), which today gives every account the one
+hard-coded band, `DeviceConstants.DEFAULT_DEVICE_ID`. `devices/` is
+unchanged. Nothing here writes anything. Pairing: [device-pairing.md](device-pairing.md).
 
 ---
 
@@ -44,7 +45,7 @@ that already listen, and makes one one-shot read of its own.
 |---|---|---|
 | Name, email | The session (`AuthRepository.currentUser()`), then `users/{uid}` (`fetchProfile`, one-shot) | As Profile did: the stored record replaces the session's values; a missing record or a failed read keeps them. |
 | Avatar | `BandMarkerFace.of(user, providers)`: `AvatarPhoto.urlFor` + the marker's initials | The same face as the band's marker on Track. Shown by `ui/avatar/AvatarImage`, which gained an initials overlay. Same 288 px photo link, so it shares Coil's cache with the marker. |
-| Band id | `RepositoryProvider.watchedBandId` (= `DEFAULT_DEVICE_ID`) | Display only. Which band is read is the repository's wiring, never the ViewModel's (D4). |
+| Band id | `RepositoryProvider.bandRepository` through `BandSelection.ownBandOf` (today `DEFAULT_DEVICE_ID`) | Display only. Which band is read is the repository's wiring, never the ViewModel's (D4). The fixed repository answers at once with no listener. |
 | Reporting / Last seen | `BandReport` fed `AlertUiState.newestReport` | See §3. "Now" is `AlertUiState.nowMillis`, which `AlertViewModel` moves on every 30 s, so "Last seen" ages with no ticker in this tab. |
 | Battery | `BandReport.battery`, retained across reports without one; orange when `BandReport.isBatteryLow` | Symbol and colour from `AlertFormatting.batteryIcon` / `batteryColor`, the alert rows' own. |
 | Last alert | `AlertUiState.latest` (D2: newest non-tracking), `placeNameFor` | Type label, colour and symbol from `AlertFormatting`; time from `AlertFormatting.relativeTime`. No name yet: "Place name not available", never coordinates. |
@@ -124,16 +125,21 @@ positions, this is the one function to change: `DeviceViewModel.positionOf`.
 
 ## 5. Pairing: Unpaired and Paired
 
-`DeviceUiState.pairing` is a sealed `DevicePairing`:
+`DeviceUiState.pairing` is a sealed `DevicePairing`, decided by the
+ViewModel from `BandRepository.observeBands()` through
+`BandSelection.ownBandOf` (2026-11-02):
 
+- `Loading`: the bands have not been read. Never seen today: the fixed band
+  answers before the first frame. The card shows its spinner.
+- `Unpaired`: the account wears no band, even if it watches friends' (those
+  belong to Track's selector). The band card says "Coming soon" and hides its
+  details. Unreachable today.
 - `Paired(bandId, band: BandCard)`: **always this today**, with the
-  hard-coded band.
-- `Unpaired`: unreachable. The Fragment renders it (the band card says
-  "Coming soon" and hides its details) so the `when` is exhaustive.
+  hard-coded band. A different band starts its card from nothing.
 
-When pairing exists, the ViewModel decides between them from the account's
-paired band, the Factory supplies that band's id, and the "Pair a band" row
-gets a real action. Nothing on the screen needs reshaping.
+When pairing exists, `FirebaseBandRepository` replaces the fixed one and the
+"Pair a band" row gets a real action ([device-pairing.md](device-pairing.md)
+§3). Nothing on the screen needs reshaping.
 
 ---
 

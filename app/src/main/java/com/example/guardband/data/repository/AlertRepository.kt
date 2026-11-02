@@ -28,9 +28,9 @@ data class AlertHistory(
 /**
  * Alerts written by the paired band, read live.
  *
- * The device id is fixed inside the implementation (see
- * [com.example.guardband.data.DeviceConstants]) so pairing can replace it
- * later without touching ViewModels.
+ * Which band is read is the implementation's wiring, never the caller's:
+ * [WatchedBandAlertRepository] follows the account's bands through
+ * [BandRepository], so pairing changes the band without touching ViewModels.
  *
  * Both flows emit once the first read completes and again on every change.
  * A failed read is emitted as `Result.failure(`[AlertError]`)` rather than

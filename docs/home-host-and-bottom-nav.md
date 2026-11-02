@@ -290,6 +290,8 @@ val alertRepository: AlertRepository by lazy {
 ```
 
 `DeviceConstants.DEFAULT_DEVICE_ID = "guardband-001"` should be read only here.
+(Since 2026-11-02 it seeds `FixedBandRepository` instead, and the alert
+repository follows the account's bands: [device-pairing.md](device-pairing.md).)
 
 ---
 

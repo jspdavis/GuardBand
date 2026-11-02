@@ -33,6 +33,14 @@ sealed class AlertError : Exception() {
     object ParseFailure : AlertError()
 
     /**
+     * The account has no band to read: it neither wears nor watches one.
+     * Not a failed read, so a screen words it as an empty state, not an
+     * error. Unreachable until pairing exists (every account wears the one
+     * hard-coded band).
+     */
+    object NoBand : AlertError()
+
+    /**
      * Anything unmapped. [code] is the Realtime Database's numeric error code
      * when there was one; it is never shown to the user and never logged.
      */

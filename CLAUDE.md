@@ -47,10 +47,14 @@ View ↔ ViewModel ↔ Repository. Pre-auth screens are Activities. After login,
 com/example/guardband/
 ├── data/
 │   ├── model/            User, EmergencyContact, Alert (+ AlertType), CheckIn, ConsentRecord, ProfileState,
-│   │                     SignInProvider, GoogleSignInOutcome, Place (plain data classes; no passwords)
+│   │                     SignInProvider, GoogleSignInOutcome, Place, PairedBand (+ BandRelation)
+│   │                     (plain data classes; no passwords)
 │   ├── repository/       AuthRepository (suspend, Result<T>)
 │   │                     ContactRepository (observe = Flow<Result<T>>; CRUD = suspend)
 │   │                     AlertRepository (Flow<Result<T>>, live reads)
+│   │                     BandRepository (the account's bands; FixedBandRepository until pairing),
+│   │                     BandSelection (pure: which band is shown), WatchedBandAlertRepository
+│   │                     (the AlertRepository that follows it; see docs/device-pairing.md)
 │   │                     UserProfileRepository (reads/writes users/{uid}, incl. the atomic finalize)
 │   │                     AuthError + FirebaseAuthErrorMapper (typed auth failures)
 │   │                     ContactError + AlertError + FirebaseDatabaseErrorMapper (typed RTDB failures)
@@ -59,7 +63,8 @@ com/example/guardband/
 │   │                     ProfileProvisioning (when a sign-in may write users/{uid}; both paths)
 │   │                     PlaceRepository → GeocoderPlaceRepository (alert coordinates → place names)
 │   │                     Firebase* = live; InMemory* + InMemoryStore = test doubles
-│   ├── DeviceConstants.kt      DEFAULT_DEVICE_ID = "guardband-001" (until pairing exists)
+│   ├── DeviceConstants.kt      DEFAULT_DEVICE_ID = "guardband-001" (until pairing exists; read by
+│   │                           RepositoryProvider's fixed band, the mock sender and the test seed only)
 │   ├── FirebaseProvider.kt     the one FirebaseAuth / FirebaseDatabase instance
 │   └── RepositoryProvider.kt   manual wiring; swap implementations here
 ├── ui/
@@ -620,7 +625,7 @@ Track's recent-alerts panel and the Alert history screen read `devices/{deviceId
 - **D1** — `PANIC`, `CHECKIN` and `LOW_BATTERY` are shown and colour-coded. `TRACKING_UPDATE` is hidden from the Alert list. An **unrecognised** type is *not* hidden: it is shown as "Unknown alert", so a type a future firmware adds still appears.
 - **D2** — the latest-alert card is the newest **non-tracking** entry derived from history. It deliberately does **not** read `devices/{id}/latest`, because every payload overwrites that node, tracking updates included, so the card would read "Location update" while a panic sat one row below it. `observeLatestAlert` still exists, unsubscribed, for the Track tab.
 - **D3** — read a window of 100 raw entries, drop tracking updates, show at most 50. The window is over *raw* entries, so a chatty band yields fewer than 50 displayable alerts. `AlertHistory` therefore carries `rawCount` and `malformedCount`, which is what lets the empty state say *which* kind of empty it is instead of implying the band is silent.
-- **D4** — one device id, `DeviceConstants.DEFAULT_DEVICE_ID`, supplied through `RepositoryProvider`. No pairing yet, and ViewModels never see a device id.
+- **D4** — ViewModels never see a device id for reading. `RepositoryProvider.alertRepository` is a `WatchedBandAlertRepository`, which follows the account's bands (`BandRepository`) through `BandSelection.watchedBandOf` and never captures an id, so one instance serves every account a process signs in; no band is `AlertError.NoBand`. Until pairing, `FixedBandRepository` gives every account the one band `DeviceConstants.DEFAULT_DEVICE_ID`. Pairing: [docs/device-pairing.md](docs/device-pairing.md).
 - **D5** — `schemaVersion` is parsed as a String, so both `"1.0"` and a bare `1` work.
 
 **Repository contract.** `AlertRepository` exposes `observeLatestAlert()` and `observeAlertHistory(limit)`, both `Flow<Result<T>>`. A failed read is `Result.failure(AlertError)` — never null, never an empty list — and the flow **stays open**, so a reconnect or a rules fix can make the next emission succeed. `AlertError` is mapped from `DatabaseError.getCode()` through `FirebaseDatabaseErrorMapper`, never from a message, and carries no message of its own.
@@ -904,10 +909,13 @@ Profile. Four things are easy to break:
   reads "On the move". The Privacy Notice covers the geocoder for alert
   positions only, so naming a tracking point needs a notice change and a
   `CONSENT_VERSION` bump first.
-- **Pairing is a shape, not logic.** `DevicePairing` is `Paired` or
-  `Unpaired`; it is always `Paired` with `RepositoryProvider.watchedBandId`,
-  which the Factory passes for display only. No band nickname: new stored
-  data needs the notice first.
+- **It is the account's own band.** `DevicePairing` is `Loading`, `Unpaired`
+  or `Paired`, from `RepositoryProvider.bandRepository` through
+  `BandSelection.ownBandOf` (the band it *wears*; watched bands belong to
+  Track). Today it is always `Paired` with `guardband-001`, which the fixed
+  repository answers without a listener; a real one will be the tab's one
+  listener. The id is for display only. No band nickname: new stored data
+  needs the notice first.
 - **The contacts row** navigates through `HomeViewModel` (`ShowContacts`),
   which `show()`s the tab. Settings' Device information row, which opened
   this tab, was removed on 2026-10-28 (with `ShowDevice`); the bar is the
@@ -974,6 +982,10 @@ pairing and roles.
   time, a 30-minute window on the first emission after a restart, a
   re-baseline when history is reset, never `TRACKING_UPDATE`, at most 3 per
   emission plus a summary.
+- **It watches the band `BandSelection.watchedBandOf` picks** (2026-11-02),
+  read through `RepositoryProvider.alertRepositoryFor(id)` so the mark's key
+  and the reads are always the same band; a change of band restarts the
+  read, and no band posts nothing.
 - **The wording never carries a location, a name, the photo or the device
   id.** Every alert is `VISIBILITY_PRIVATE` with an empty public version and
   one shared status-bar icon (`ic_stat_alert`). **The panic channel is

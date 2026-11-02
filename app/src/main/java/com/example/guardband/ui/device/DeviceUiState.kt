@@ -13,10 +13,9 @@ data class DeviceUiState(
     val header: DeviceHeader,
 
     /**
-     * Whether a band is paired, and if so what it says. **Always
-     * [DevicePairing.Paired] today**, with the one hard-coded band; the
-     * sealed shape is there so pairing can add [DevicePairing.Unpaired]
-     * without reshaping the screen.
+     * The account's **own** band (the one it wears), and what it says.
+     * Bands it only watches are not shown here. **[DevicePairing.Paired] in
+     * practice today**, with the one hard-coded band every account wears.
      */
     val pairing: DevicePairing,
 
@@ -38,10 +37,22 @@ data class DeviceHeader(
     val face: BandMarkerFace
 )
 
-/** Pairing's two cases. No pairing logic exists yet; see [DeviceUiState.pairing]. */
+/**
+ * Whether the account wears a band, from [BandRepository][com.example.guardband.data.repository.BandRepository]
+ * through [BandSelection.ownBandOf][com.example.guardband.data.repository.BandSelection.ownBandOf].
+ */
 sealed interface DevicePairing {
 
-    /** No band linked to this account. Unreachable until pairing exists. */
+    /**
+     * The account's bands have not been read yet. Never seen today: the
+     * fixed band answers before the first frame.
+     */
+    object Loading : DevicePairing
+
+    /**
+     * The account wears no band (it may still watch friends'). Unreachable
+     * until pairing exists.
+     */
     object Unpaired : DevicePairing
 
     /**

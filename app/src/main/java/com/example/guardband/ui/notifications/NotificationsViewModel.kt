@@ -190,6 +190,7 @@ class NotificationsViewModel(
         AlertError.PermissionDenied -> MSG_PERMISSION_DENIED
         AlertError.NotSignedIn -> MSG_NOT_SIGNED_IN
         AlertError.ParseFailure -> MSG_UNREADABLE
+        AlertError.NoBand -> MSG_NO_BAND
         else -> MSG_LOAD_FAILED
     }
 
@@ -210,6 +211,8 @@ class NotificationsViewModel(
         const val MSG_PERMISSION_DENIED = "You don't have access to this band's alerts."
         const val MSG_NOT_SIGNED_IN = "Please sign in again to see your notifications."
         const val MSG_UNREADABLE = "Your band sent something we couldn't read."
+        /** Unreachable until pairing exists: every account wears the one band. */
+        const val MSG_NO_BAND = "No band is linked to your account yet."
         const val MSG_EMPTY_NO_ALERTS = "No alerts from your band yet."
         const val MSG_EMPTY_ONLY_TRACKING =
             "No incidents yet — your band has only been sending location updates."

@@ -22,17 +22,18 @@ the app together. Pairing comes first: SMS depends on it.
 
 - [ ] 🟥 **Device pairing** · *app team + firmware*
   Today every install watches one hard-coded band, `guardband-001`, and
-  `devices/` in the database is open to anyone. Pairing links a band to an
-  account.
-  - A device id per account instead of `DeviceConstants.DEFAULT_DEVICE_ID`,
-    and a way to add or remove a band in the app.
-  - An auth token for the band, so it can write without the rules being open.
-  - Close `devices/` in `RTDBS-RULES.md` and publish it; teach the mock sender
-    to send `?auth=`.
-  - Give the Device tab real pairing (its "Pair a band" row is a placeholder).
-  - Decide roles: who wears the band and who watches it.
+  `devices/` in the database is open to anyone. Pairing links bands to
+  accounts, many-to-many: anyone can wear a band and watch friends' bands.
+  - [x] Step 1 (2 Nov): the app reads the account's bands from one place
+    (`BandRepository`); everyone still wears `guardband-001`.
+  - [ ] Band identity: each band signs in as a Firebase anonymous user and
+    writes with `?auth=` (prototype firmware and mock sender); rules close
+    writes on every new band id.
+  - [ ] Claim a band with a code from the Serial Monitor; "Pair a band" works.
+  - [ ] Watchers: the wearer invites friends; Track's My band / friend / All.
+  - [ ] Close reads and retire `guardband-001`.
 
-  Where: [`database-rules.md`](database-rules.md) §4 and §7, CLAUDE.md "Alert data" (D4)
+  Where: [`device-pairing.md`](device-pairing.md), [`database-rules.md`](database-rules.md) §4 and §7
 
 - [ ] 🟥 **SMS alerts to emergency contacts** · *firmware + app team*
   **Direction (2 Nov 2026):** the band writes the panic to Firebase and the

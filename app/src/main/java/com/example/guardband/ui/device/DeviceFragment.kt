@@ -189,6 +189,7 @@ class DeviceFragment : Fragment(R.layout.fragment_device) {
         tvEmail.text = state.header.email
 
         when (val pairing = state.pairing) {
+            DevicePairing.Loading -> renderBandsLoading()
             // Unreachable until pairing exists; the card still says something.
             DevicePairing.Unpaired -> renderUnpaired()
             is DevicePairing.Paired -> renderBand(pairing)
@@ -213,6 +214,15 @@ class DeviceFragment : Fragment(R.layout.fragment_device) {
             is ContactsSummary.Counted ->
                 getString(R.string.label_device_contacts, contacts.total, contacts.starred)
         }
+    }
+
+    /** Which band the account wears is not known yet: the card's own spinner. */
+    private fun renderBandsLoading() {
+        tvBandId.text = ""
+        tvBandStatus.isVisible = false
+        progressBand.isVisible = true
+        llBandDetails.isVisible = false
+        tvBandMessage.isVisible = false
     }
 
     private fun renderUnpaired() {

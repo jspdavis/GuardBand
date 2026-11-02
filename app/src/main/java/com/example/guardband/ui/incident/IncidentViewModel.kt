@@ -150,6 +150,7 @@ class IncidentViewModel(
         AlertError.Network -> MSG_NETWORK
         AlertError.PermissionDenied -> MSG_PERMISSION_DENIED
         AlertError.NotSignedIn -> MSG_NOT_SIGNED_IN
+        AlertError.NoBand -> MSG_NO_BAND
         else -> MSG_LOAD_FAILED
     }
 
@@ -164,6 +165,8 @@ class IncidentViewModel(
         const val MSG_NETWORK = "Couldn't reach your band. Check your connection."
         const val MSG_PERMISSION_DENIED = "You don't have access to this band's alerts."
         const val MSG_NOT_SIGNED_IN = "Please sign in again to see your band's alerts."
+        /** Unreachable until pairing exists: every account wears the one band. */
+        const val MSG_NO_BAND = "No band is linked to your account yet."
         const val MSG_NOT_FOUND = "This panic is no longer in your band's history."
 
         /** The factory for the panic numbered [panicSequenceId], from the Fragment's arguments. */

@@ -120,20 +120,20 @@ says what it depends on and what it would touch.
 
 ### Unlocks the most
 
-1. **Device pairing.** Link a band to an account instead of the hard-coded
-   id. Unlocks closing the open `devices/` rules, multiple bands, the Device
-   information screen, and getting contacts onto the band for SMS (FR-05).
-   - Needs: a device id per account (`users/{uid}/devices` or similar), a way
-     to add a band (QR code or typed id), and **a way for the band to
-     authenticate** without a server. One Spark-compatible option is a
-     Firebase Auth account per band, signed in through the Auth REST API, so
-     rules can say `auth.uid == band's uid`. Custom tokens would need a server.
-   - Touches: `RTDBS-RULES.md` (Jul's pending `devices/` decision,
-     [`database-rules.md`](database-rules.md) §4), the mock sender (send
-     `?auth=`), `RepositoryProvider` (`watchedBandId`), the notice. The
-     Device tab is ready for it: `DevicePairing` already has `Unpaired`, and
-     the disabled "Pair a band" row is where adding a band would start
-     ([`device-tab.md`](device-tab.md) §5).
+1. **Device pairing. Started 2026-11-02; the plan is
+   [`device-pairing.md`](device-pairing.md).** Link bands to accounts instead
+   of the hard-coded id, many-to-many: anyone can wear a band and watch
+   friends' at once, and Track gets a My band / friend / All selector. The
+   goal is closing the world writes on `devices/`, then reads; it is also
+   what SMS (FR-05) waits on.
+   - Decided: each band is a Firebase **anonymous** user whose uid is its
+     device id; the wearer claims it with a one-time code printed on the
+     **Serial Monitor**; the wearer invites watchers.
+   - **Step 1 is built:** `BandRepository` (the account's bands; every
+     account still wears `guardband-001`), `BandSelection`, and a
+     `WatchedBandAlertRepository` that follows them, with `AlertError.NoBand`.
+     No visible change. Next: band identity in the prototype firmware and
+     the mock sender, with rules closing writes on every new band id.
 2. **Roles: wearer and guardian.** Today the signed-in user is implicitly the
    wearer (their face is on the marker) and also the watcher. A guardian
    watching someone else's band needs sharing or invites on top of pairing.
@@ -276,7 +276,7 @@ list; the step-by-step checklists live in each doc:
 
 | | Notes |
 |---|---|
-| **Close `devices/`** | Needs pairing (§3, item 1). Close it before any public demo. |
+| **Close `devices/`** | Needs pairing (§3, item 1; [`device-pairing.md`](device-pairing.md) steps 2 and 6). Close it before any public demo. |
 | **Rename `applicationId` off `com.example.*`** | Only if publishing (§3, item 12). |
 | **Device tab avatar is slow to come back** | Reported 2026-10-28. The square-corner bug is fixed (the avatar is a plain `ImageView` clipped to a circle outline in `ui/avatar/AvatarImage`, no longer a `ShapeableImageView`), and the avatar is now shaped properly. But after the Fragment or Activity is destroyed and rebuilt (checked by switching display modes) the Google photo takes a while to reappear, showing the initials meanwhile. **Not investigated.** Leads, unverified: `AvatarImage.show` puts the icon back first and Coil only checks its memory cache once the view has been measured, and the cache key includes the size and the circle-crop transformation; a key that misses means a disk read and a decode. Check whether the photo comes from Coil's memory cache on a recreate before changing anything. The contact rows' avatars (`item_contact.xml`) are still `ShapeableImageView`s and could show square corners after a theme switch the same way. |
 | **No re-consent flow** | Accounts keep the version they agreed to. Building one means deciding what happens to an account that declines. `ConsentGate.needsConsent` is where a version rule would go. |
@@ -383,6 +383,7 @@ in the app under Settings → Changelog. Headlines:
 | How alerts are read from RTDB | [`alert-data.md`](alert-data.md) |
 | The Incident view: grouping, its read, its ways in | [`incident-view.md`](incident-view.md) |
 | The Device tab: where each value comes from, pairing's shape | [`device-tab.md`](device-tab.md) |
+| **Device pairing:** the vision, band identity, claiming, watchers, the steps | [`device-pairing.md`](device-pairing.md) |
 | The band viewer: frames, their folder and spec, the placeholder | [`band-viewer.md`](band-viewer.md) |
 | Alert notifications | [`notifications.md`](notifications.md), [`notifications-test-cases.md`](notifications-test-cases.md) |
 | The sign-up wizard | [`signup-flow.md`](signup-flow.md) |

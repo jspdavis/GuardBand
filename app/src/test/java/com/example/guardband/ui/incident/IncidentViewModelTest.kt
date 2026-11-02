@@ -226,6 +226,16 @@ class IncidentViewModelTest {
     }
 
     @Test
+    fun `an account with no band is told so, not that the read failed`() = runTest {
+        val repository = FakeAlertRepository()
+        val vm = viewModel(repository)
+        repository.failIncident(AlertError.NoBand)
+        advanceUntilIdle()
+
+        assertEquals(IncidentViewModel.MSG_NO_BAND, vm.uiState.value.errorMessage)
+    }
+
+    @Test
     fun `a failure with the path on screen keeps it and says so once`() = runTest {
         val repository = FakeAlertRepository()
         val vm = viewModel(repository)

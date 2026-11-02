@@ -113,6 +113,11 @@ yields fewer than 50 displayable alerts, and in the worst case none. See
 `DeviceConstants.DEFAULT_DEVICE_ID = "guardband-001"`, supplied through
 `RepositoryProvider`. Pairing doesn't exist yet. ViewModels never see a device
 id, so adding pairing later is a change to the wiring, not to the screens.
+**Since 2026-11-02 that wiring is in place:** `RepositoryProvider.alertRepository`
+is a `WatchedBandAlertRepository` that follows the account's bands
+(`BandRepository`, through `BandSelection.watchedBandOf`) instead of capturing
+an id, and an account with no band reads `AlertError.NoBand`. Every account
+still gets `guardband-001`. [device-pairing.md](device-pairing.md) §8.
 
 **D5 — `schemaVersion` is read as a String.**
 `"1.0"` and a bare `1` both parse. It is read with `toString()`, so a firmware

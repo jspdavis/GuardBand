@@ -338,6 +338,7 @@ class AlertViewModelTest {
             AlertError.PermissionDenied to AlertViewModel.MSG_PERMISSION_DENIED,
             AlertError.NotSignedIn to AlertViewModel.MSG_NOT_SIGNED_IN,
             AlertError.ParseFailure to AlertViewModel.MSG_UNREADABLE,
+            AlertError.NoBand to AlertViewModel.MSG_NO_BAND,
             AlertError.Unknown(-9) to AlertViewModel.MSG_LOAD_FAILED
         )
 

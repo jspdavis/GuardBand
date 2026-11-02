@@ -8,9 +8,10 @@ import android.content.SharedPreferences
  * user turned them on, and the newest `sequenceId` already handled for a
  * device. Nothing else: no alert content, no account.
  *
- * Per phone, not per account. The band is shared until pairing exists
- * (`DeviceConstants`), so another account signing in on the same phone is
- * watching the same band.
+ * Per phone, not per account, and the mark is keyed by device id. Until
+ * pairing exists every account watches the same band, so another account
+ * signing in on the same phone resumes from the same mark; once accounts
+ * watch different bands, each band keeps its own.
  */
 interface AlertNotificationPrefs {
     var watchEnabled: Boolean
