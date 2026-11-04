@@ -37,6 +37,31 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-11-04",
+            title = "Bands sign in as themselves; the database only lets a band write its own alerts",
+            changes = listOf(
+                "The band prototype and the Mock Sender each sign in to Firebase as their own band, with a band id of their own that they keep across restarts. Every alert they send carries that sign-in. This is the second step of pairing a band to an account.",
+                "The database rules now let a band write alerts only under its own band id, so nobody else can send fake alerts in its name. The shared demo band, guardband-001, stays open until bands can be paired, so the demo works exactly as before.",
+                "The Mock Sender shows its band id, can switch to sending under that id instead of the shared demo band, and can start over as a new band. Its status line says whether each alert was sent signed in.",
+                "The band prototype now checks that it is really talking to Google's servers before it sends anything, using Google's root certificates.",
+                "Nothing changes in the app itself: it still shows the shared demo band."
+            ),
+            commit = "2492b8b"
+        ),
+        ChangelogEntry(
+            date = "2026-11-02",
+            title = "One set of tabs for everyone again; new Track and Contacts icons; groundwork for pairing bands to accounts",
+            changes = listOf(
+                "Guardian and wearer roles, tried on 1 November, were taken out again: anyone can wear a band and watch others at the same time, so everyone gets the same three tabs, sign-up has no role step, and no account is locked out of the app. Who watches whom will come from pairing bands to accounts.",
+                "The Contacts tab opens with your assigned guardian: the first contact you starred, with a Call button that opens the dialer.",
+                "The test panic button and the Acknowledge and Resolve options on alerts are gone for now. Texting emergency contacts from the phone waits until bands can be paired, so no build sends an SMS.",
+                "New icons on the bottom bar: a location pin for Track and a pair of people for Contacts.",
+                "Groundwork for pairing: the app now reads which band to show from one place, ready for accounts with their own bands and friends' bands. Nothing on screen changed.",
+                "Housekeeping: a stray copy of the project that had been committed by mistake was removed from the repository."
+            ),
+            commit = "875255a"
+        ),
+        ChangelogEntry(
             date = "2026-10-28",
             title = "The first band prototype sends real alerts; a place for the band on the Device tab; tidier Device tab; filter chips in GuardBand colours",
             changes = listOf(
