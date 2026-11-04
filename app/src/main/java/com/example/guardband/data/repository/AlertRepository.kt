@@ -105,9 +105,17 @@ interface AlertRepository {
     /** Parked, no caller: see [observeStatuses]. */
     suspend fun resolve(sequenceId: Long): Result<Unit>
 
+    /**
+     * Wipes the alert history log for the watched band.
+     */
+    suspend fun clearAlertHistory(): Result<Unit>
+
     companion object {
         /** D3's raw read window. */
         const val DEFAULT_HISTORY_WINDOW = 100
+
+        /** Unlimited history read window for viewing full logs. */
+        const val UNLIMITED_HISTORY_WINDOW = Int.MAX_VALUE
 
         /**
          * How many raw entries an Incident view reads from its panic on: 30

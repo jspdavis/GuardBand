@@ -141,4 +141,15 @@ class WatchedBandAlertRepositoryTest {
         assertEquals(AlertError.NoBand, repository.resolve(4).exceptionOrNull())
         assertEquals(listOf(3L), bandA.requestedAcknowledge)
     }
+
+    @Test
+    fun `clearAlertHistory goes to the watched band, and fails with no band`() = runTest {
+        assertTrue(repository.clearAlertHistory().isSuccess)
+        assertEquals(1, bandA.clearAlertHistoryCalls)
+
+        bands.bands.value = emptyList()
+
+        assertEquals(AlertError.NoBand, repository.clearAlertHistory().exceptionOrNull())
+        assertEquals(1, bandA.clearAlertHistoryCalls)
+    }
 }

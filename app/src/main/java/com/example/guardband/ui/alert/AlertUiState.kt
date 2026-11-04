@@ -27,7 +27,7 @@ data class AlertUiState(
 
     /**
      * Incident history (FR-08), newest first: tracking updates removed (D1)
-     * and capped at [AlertViewModel.MAX_HISTORY] (D3).
+     * and unlimited so all historical logs can be viewed seamlessly.
      */
     val history: List<Alert> = emptyList(),
 

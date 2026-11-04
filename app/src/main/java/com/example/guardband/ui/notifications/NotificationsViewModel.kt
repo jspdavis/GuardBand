@@ -88,7 +88,7 @@ class NotificationsViewModel(
     private fun observe() {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
-            alertRepository.observeAlertHistory(AlertRepository.DEFAULT_HISTORY_WINDOW)
+            alertRepository.observeAlertHistory(AlertRepository.UNLIMITED_HISTORY_WINDOW)
                 .collect { result ->
                     result
                         .onSuccess { render(it) }
@@ -101,7 +101,6 @@ class NotificationsViewModel(
         // Drop tracking updates; the inbox is for incidents, not location pings.
         val displayable = history.alerts
             .filter { it.alertType() != AlertType.TRACKING_UPDATE }
-            .take(MAX_INBOX)
 
         _uiState.update {
             it.copy(

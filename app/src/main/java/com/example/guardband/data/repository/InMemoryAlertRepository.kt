@@ -43,8 +43,9 @@ class InMemoryAlertRepository(
         observeDeviceAlerts().map { alerts ->
             // takeLast then sort, so the window is the newest `limit` entries
             // rather than the first ones found - the same thing
-            // `limitToLast` does on the server.
-            val window = alerts.sortedBy { it.sequenceId }.takeLast(limit)
+            // `limitToLast` does on the server. If unlimited, return all.
+            val sorted = alerts.sortedBy { it.sequenceId }
+            val window = if (limit <= 0 || limit == Int.MAX_VALUE) sorted else sorted.takeLast(limit)
             Result.success(
                 AlertHistory(
                     alerts = window.sortedByDescending { it.sequenceId },
@@ -83,6 +84,11 @@ class InMemoryAlertRepository(
 
     override suspend fun resolve(sequenceId: Long): Result<Unit> {
         statusesFlow.value = statusesFlow.value + (sequenceId to AlertStatus.RESOLVED)
+        return Result.success(Unit)
+    }
+
+    override suspend fun clearAlertHistory(): Result<Unit> {
+        InMemoryStore.clearAlerts(deviceId)
         return Result.success(Unit)
     }
 

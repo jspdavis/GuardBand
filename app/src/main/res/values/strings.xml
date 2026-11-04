@@ -225,6 +225,11 @@
 
     <!-- Alert history, and the rows Track's recent-alerts panel shares -->
     <string name="label_alert_title">Alert history</string>
+    <!-- Clear alert history added by ishi -->
+    <string name="cd_clear_alert_history">Clear alert history</string>
+    <string name="dialog_clear_alert_history_title">Clear alert history?</string>
+    <string name="dialog_clear_alert_history_message">This will remove all recorded alert logs from your band. This action cannot be undone.</string>
+    <string name="btn_clear_history">Clear history</string>
     <string name="label_alert_latest">Current status</string>
     <string name="label_alert_history">History</string>
     <string name="btn_alert_retry">Try again</string>

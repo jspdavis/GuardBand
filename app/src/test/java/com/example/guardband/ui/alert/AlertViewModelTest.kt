@@ -154,27 +154,18 @@ class AlertViewModelTest {
         assertEquals(0, repository.latestSubscriptions)
     }
 
-    // ── D3: the display cap ───────────────────────────────────────────────────
+    // ── Unlimited history ──────────────────────────────────────────────────────
 
     @Test
-    fun `the history list is capped`() = runTest {
+    fun `the history list is uncapped and shows all alerts`() = runTest {
         val many = (1..80L).map { alert(it, "PANIC") }.toTypedArray()
         val repository = FakeAlertRepository(history(*many))
 
         val state = viewModel(repository).uiState.first { !it.isLoading }
 
-        assertEquals(AlertViewModel.MAX_HISTORY, state.history.size)
-    }
-
-    @Test
-    fun `the cap keeps the newest alerts`() = runTest {
-        val many = (1..80L).map { alert(it, "PANIC") }.toTypedArray()
-        val repository = FakeAlertRepository(history(*many))
-
-        val state = viewModel(repository).uiState.first { !it.isLoading }
-
+        assertEquals(80, state.history.size)
         assertEquals(80L, state.history.first().sequenceId)
-        assertEquals(80L - AlertViewModel.MAX_HISTORY + 1, state.history.last().sequenceId)
+        assertEquals(1L, state.history.last().sequenceId)
     }
 
     @Test
@@ -403,5 +394,23 @@ class AlertViewModelTest {
 
         assertTrue(vm.uiState.value.isLoading)
         assertNull(vm.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `clearing history wipes the alerts and sends a message event`() = runTest {
+        val repository = FakeAlertRepository(history(alert(1, "PANIC"), alert(2, "CHECKIN")))
+        val vm = viewModel(repository)
+        vm.uiState.first { it.history.isNotEmpty() }
+
+        vm.onClearHistoryClicked()
+
+        val state = vm.uiState.first { it.history.isEmpty() }
+        assertTrue(state.recent.isEmpty())
+        assertNull(state.latest)
+        assertEquals(AlertViewModel.MSG_EMPTY_NO_ALERTS, state.emptyMessage)
+        assertEquals(1, repository.clearAlertHistoryCalls)
+        val event = vm.events.first()
+        assertTrue(event is AlertEvent.ShowMessage)
+        assertEquals(AlertViewModel.MSG_HISTORY_CLEARED, (event as AlertEvent.ShowMessage).text)
     }
 }

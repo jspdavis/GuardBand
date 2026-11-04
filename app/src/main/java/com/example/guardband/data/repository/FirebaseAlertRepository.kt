@@ -63,11 +63,14 @@ class FirebaseAlertRepository(
             }
         }
 
-    override fun observeAlertHistory(limit: Int): Flow<Result<AlertHistory>> =
-        deviceRef.child(PATH_HISTORY)
-            .orderByKey()
-            .limitToLast(limit)
-            .asFlow { snapshot -> Result.success(snapshot.toHistory()) }
+    override fun observeAlertHistory(limit: Int): Flow<Result<AlertHistory>> {
+        val query = if (limit <= 0 || limit == Int.MAX_VALUE) {
+            deviceRef.child(PATH_HISTORY).orderByKey()
+        } else {
+            deviceRef.child(PATH_HISTORY).orderByKey().limitToLast(limit)
+        }
+        return query.asFlow { snapshot -> Result.success(snapshot.toHistory()) }
+    }
 
     /**
      * The same history query as [observeAlertHistory], so it shares its
@@ -112,6 +115,19 @@ class FirebaseAlertRepository(
 
     override suspend fun resolve(sequenceId: Long): Result<Unit> =
         writeStatus(sequenceId, AlertStatus.RESOLVED)
+
+    override suspend fun clearAlertHistory(): Result<Unit> =
+        suspendCancellableCoroutine { continuation ->
+            deviceRef.child(PATH_HISTORY).removeValue { error, _ ->
+                if (continuation.isActive) {
+                    if (error != null) {
+                        continuation.resume(Result.failure(FirebaseDatabaseErrorMapper.mapToAlertError(error)))
+                    } else {
+                        continuation.resume(Result.success(Unit))
+                    }
+                }
+            }
+        }
 
     private suspend fun writeStatus(sequenceId: Long, status: AlertStatus): Result<Unit> =
         suspendCancellableCoroutine { continuation ->

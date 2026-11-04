@@ -70,4 +70,8 @@ class WatchedBandAlertRepository(
     override suspend fun resolve(sequenceId: Long): Result<Unit> =
         watchedBand().first()?.let { forBand(it).resolve(sequenceId) }
             ?: Result.failure(AlertError.NoBand)
+
+    override suspend fun clearAlertHistory(): Result<Unit> =
+        watchedBand().first()?.let { forBand(it).clearAlertHistory() }
+            ?: Result.failure(AlertError.NoBand)
 }

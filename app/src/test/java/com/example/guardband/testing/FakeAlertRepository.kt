@@ -124,6 +124,16 @@ class FakeAlertRepository(
         return Result.success(Unit)
     }
 
+    var clearAlertHistoryCalls = 0
+        private set
+
+    override suspend fun clearAlertHistory(): Result<Unit> {
+        clearAlertHistoryCalls++
+        emitHistory(AlertHistory(emptyList(), 0, 0))
+        emitLatest(null)
+        return Result.success(Unit)
+    }
+
     fun emitStatuses(statuses: Map<Long, AlertStatus>) {
         statusesFlow.tryEmit(Result.success(statuses))
     }

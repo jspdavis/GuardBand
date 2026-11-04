@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
 import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 /**
@@ -55,6 +56,7 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
     private lateinit var latestCard: MaterialCardView
     private lateinit var latestViews: AlertCardViews
     private lateinit var tvEmpty: TextView
+    private lateinit var btnClearHistory: ImageButton
 
     /** A panic row opens its Incident view, through the host's one opener. */
     private val historyAdapter = AlertHistoryAdapter(AlertTimeStyle.CLOCK) {
@@ -73,6 +75,7 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
 
+        btnClearHistory   = view.findViewById(R.id.ib_alert_history_clear)
         progressBar       = view.findViewById(R.id.alert_progress)
         errorView         = view.findViewById(R.id.alert_error_view)
         tvErrorMessage    = view.findViewById(R.id.alert_error_message)
@@ -94,6 +97,7 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
         view.findViewById<RecyclerView>(R.id.alert_history_list).adapter = historyAdapter
 
         btnRetry.setOnClickListener { viewModel.onRetryClicked() }
+        btnClearHistory.setOnClickListener { showClearConfirmationDialog() }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -124,7 +128,20 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
         tvEmpty.visibility = if (empty == null) View.GONE else View.VISIBLE
         if (empty != null) tvEmpty.text = empty
 
+        btnClearHistory.visibility = if (state.history.isNotEmpty()) View.VISIBLE else View.GONE
+
         historyAdapter.submitList(state.historyItems())
+    }
+
+    private fun showClearConfirmationDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.dialog_clear_alert_history_title)
+            .setMessage(R.string.dialog_clear_alert_history_message)
+            .setNegativeButton(R.string.btn_cancel, null)
+            .setPositiveButton(R.string.btn_clear_history) { _, _ ->
+                viewModel.onClearHistoryClicked()
+            }
+            .show()
     }
 
     private fun handleEvent(event: AlertEvent) {

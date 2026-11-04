@@ -191,4 +191,12 @@ internal object InMemoryStore {
             battery = Alert.Battery(percent = battery, isCharging = false),
             sequenceId = sequenceId
         )
+
+    fun clearAlerts(deviceId: String? = null) {
+        if (deviceId == null) {
+            _alerts.value = emptyList()
+        } else {
+            _alerts.value = _alerts.value.filterNot { it.deviceId == deviceId }
+        }
+    }
 }

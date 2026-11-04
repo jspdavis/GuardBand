@@ -116,6 +116,31 @@ class AlertViewModel(
         observeHistory()
     }
 
+    /**
+     * Clears all alert history records for the current band.
+     */
+    fun onClearHistoryClicked() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = alertRepository.clearAlertHistory()
+            result.onSuccess {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        latest = null,
+                        history = emptyList(),
+                        recent = emptyList(),
+                        emptyMessage = MSG_EMPTY_NO_ALERTS
+                    )
+                }
+                _events.send(AlertEvent.ShowMessage(MSG_HISTORY_CLEARED))
+            }.onFailure { error ->
+                _uiState.update { it.copy(isLoading = false) }
+                reportFailure(error)
+            }
+        }
+    }
+
     private fun observeHistory() {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
@@ -129,10 +154,9 @@ class AlertViewModel(
     }
 
     private fun render(history: AlertHistory) {
-        // D1 then D3: drop tracking updates, then cap what is left.
+        // D1: drop tracking updates; uncapped so full history logs are viewed.
         val displayable = history.alerts
             .filter { it.alertType() != AlertType.TRACKING_UPDATE }
-            .take(MAX_HISTORY)
 
         _uiState.update {
             it.copy(
@@ -269,6 +293,7 @@ class AlertViewModel(
         const val MSG_EMPTY_ONLY_TRACKING =
             "No incidents recently — your band has only been sending location updates."
         const val MSG_EMPTY_UNREADABLE = "Your band's recent alerts couldn't be read."
+        const val MSG_HISTORY_CLEARED = "Alert history cleared."
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
