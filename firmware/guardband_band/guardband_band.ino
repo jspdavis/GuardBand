@@ -14,6 +14,14 @@
 // Payloads follow SCHEMA.md v1.0. Each alert is one PUT to
 // /devices/{id}/history/{sequenceId}, then one to /devices/{id}/latest.
 //
+// Band identity (docs/device-pairing.md §2): with FIREBASE_API_KEY in
+// secrets.h, the band signs up once as a Firebase anonymous user, keeps that
+// identity in flash across reboots, and every write carries its sign-in
+// (?auth=). The user's uid is the band's own id. WRITE_TO_OWN_ID decides
+// where it writes; by default it is still guardband-001, which the app reads.
+// Every HTTPS call checks the server's certificate against Google's roots
+// (gts_roots.h).
+//
 // Wiring: red LED GPIO25, yellow GPIO26, green GPIO27, each through a
 // resistor to GND; the button from GPIO33 to GND (internal pull-up).
 //
@@ -27,16 +35,20 @@
 //   GPS,10.3157,123.8854[,8.5]   a fix (accuracy in metres, default 10)
 //   NOFIX                        forget the fix
 //   BATT,85                      battery percent
-//   STATUS                       what the band has right now
+//   STATUS                       what the band has right now, and its band id
+//   RESETID                      forget the band identity; a new one (a new band) is made
 //
 // See the "Band firmware (prototype)" section of the root README.md for setup and how to check an alert end to end.
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <Preferences.h>
 #include <atomic>
 #include <sys/time.h>
 #include <time.h>
+
+#include "gts_roots.h"
 
 #if __has_include("secrets.h")
 #include "secrets.h"
@@ -50,6 +62,29 @@ const char* DB_URL = "https://guardband-aae65-default-rtdb.asia-southeast1.fireb
 // The one band every install of the app watches, until pairing exists
 // (DeviceConstants.DEFAULT_DEVICE_ID). Any other id and nothing shows up.
 const char* DEVICE_ID = "guardband-001";
+
+// ---------- Band identity ----------
+// The web API key from secrets.h; without it (or with the placeholder) the
+// band does not sign in, and writes to DEVICE_ID unsigned, as before.
+#ifdef FIREBASE_API_KEY
+const char* API_KEY = FIREBASE_API_KEY;
+#else
+const char* API_KEY = "";
+#endif
+// false: write to DEVICE_ID, signed in when it can be. The app reads it, and
+// the rules leave it open, so a failed sign-in never stops an alert.
+// true: write to devices/<this band's own id>. Only this band may write
+// there once the rules are published, and the app does not read it until a
+// band can be paired (docs/device-pairing.md, step 3); check it in the
+// Firebase Console instead. Needs FIREBASE_API_KEY.
+const bool WRITE_TO_OWN_ID = false;
+// Where the identity is kept in flash (NVS); survives reboots and re-flashing.
+const char* IDENTITY_NAMESPACE = "gb_identity";
+// Sign in again this long before the 1 h ID token runs out.
+const uint32_t TOKEN_MARGIN_MS = 5UL * 60UL * 1000UL;
+// After a failed sign-in, wait this long before the next try, so a project
+// with anonymous sign-in off does not slow every alert down.
+const uint32_t SIGN_IN_BACKOFF_MS = 60UL * 1000UL;
 
 // ---------- Pins ----------
 const int PIN_RED = 25, PIN_YELLOW = 26, PIN_GREEN = 27, PIN_BUTTON = 33;
@@ -123,6 +158,10 @@ std::atomic<bool> panicLanded{false};   // set by the sender when a PANIC's hist
 std::atomic<bool> panicGaveUp{false};   // set when a PANIC failed MAX_ATTEMPTS times
 std::atomic<bool> sendFailing{false};   // set on a failed send, cleared on the next good one
 std::atomic<int> trackingQueued{0};     // TRACKING_UPDATEs waiting, so they never pile up
+std::atomic<bool> resetIdentityRequested{false};  // RESETID, done by the sender before its next call
+// The band id for STATUS: written by the sender, then bandIdKnown is set.
+char shownBandId[64] = "";
+std::atomic<bool> bandIdKnown{false};
 
 // ---------- loop() only ----------
 bool hasFix = false;
@@ -152,6 +191,16 @@ int lineLen = 0;
 
 // ---------- Sender task only ----------
 unsigned long nextSequenceId = 0;  // 0 until seeded from the server
+String seededFor;                  // the band id nextSequenceId belongs to
+
+// The band identity (set in setup() before the sender starts, then the
+// sender's alone). Tokens are never printed: they let anyone write as the band.
+String bandUid;         // the anonymous user's uid: this band's own id
+String refreshToken;    // long-lived; kept in flash
+String idToken;         // valid for an hour; kept in memory only
+uint32_t idTokenExpiresAt = 0;
+bool identityTried = false;  // the sender has tried to sign in at least once
+uint32_t nextSignInAt = 0;   // no sign-in before this (after a failure)
 
 // =====================================================================
 // Capturing alerts (loop)
@@ -334,6 +383,13 @@ void printStatus() {
     batteryPercent,
     tracking ? "tracking" : (panicPending ? "panic waiting to send" : "idle"),
     sendFailing ? ", last send FAILED" : "");
+  if (!identityEnabled()) {
+    Serial.println("Band identity: off (no FIREBASE_API_KEY in secrets.h); writing to guardband-001 unsigned");
+    return;
+  }
+  Serial.printf("Band id: %s; writing to %s\n",
+    bandIdKnown ? shownBandId : "none yet (made once Wi-Fi and the clock are ready)",
+    WRITE_TO_OWN_ID ? "its own band id" : DEVICE_ID);
 }
 
 void handleLine(char* line) {
@@ -358,8 +414,15 @@ void handleLine(char* line) {
     setBattery(atoi(line + 5));
   } else if (strcasecmp(line, "STATUS") == 0) {
     printStatus();
+  } else if (strcasecmp(line, "RESETID") == 0) {
+    if (!identityEnabled()) {
+      Serial.println("Band identity is off (no FIREBASE_API_KEY in secrets.h)");
+      return;
+    }
+    resetIdentityRequested = true;
+    Serial.println("The band identity will be forgotten and a new one made: this is a new band now");
   } else {
-    Serial.println("Commands: GPS,lat,lng[,acc]  NOFIX  BATT,n  STATUS");
+    Serial.println("Commands: GPS,lat,lng[,acc]  NOFIX  BATT,n  STATUS  RESETID");
   }
 }
 
@@ -518,7 +581,7 @@ void formatTimestamp(uint32_t atMillis, char* out, size_t size) {
   snprintf(out, size, "%s.%03dZ", base, (int)(atMs % 1000));
 }
 
-String buildPayload(const Alert& alert, unsigned long sequenceId) {
+String buildPayload(const Alert& alert, unsigned long sequenceId, const String& deviceId) {
   char timestamp[32];
   formatTimestamp(alert.atMillis, timestamp, sizeof(timestamp));
 
@@ -534,26 +597,41 @@ String buildPayload(const Alert& alert, unsigned long sequenceId) {
     "{\"schemaVersion\":\"1.0\",\"deviceId\":\"%s\",\"type\":\"%s\","
     "\"timestamp\":\"%s\",%s"
     "\"battery\":{\"percent\":%d,\"isCharging\":false},\"sequenceId\":%lu}",
-    DEVICE_ID, typeName(alert.type), timestamp, location, alert.batteryPercent, sequenceId);
+    deviceId.c_str(), typeName(alert.type), timestamp, location, alert.batteryPercent, sequenceId);
   return String(buf);
 }
 
-// Prototype only: setInsecure() skips the certificate check.
+// Every HTTPS call checks the server against Google's root certificates
+// (gts_roots.h). The check reads the clock, which is why nothing is sent, and
+// no sign-in tried, before NTP has synced.
 void beginHttp(HTTPClient& http, WiFiClientSecure& client, const String& url) {
-  client.setInsecure();
+  client.setCACert(GTS_ROOTS);
   http.setConnectTimeout(HTTP_TIMEOUT_MS);
   http.setTimeout(HTTP_TIMEOUT_MS);
   http.begin(client, url);
 }
 
-bool putJson(const String& path, const String& body) {
+bool isSuccess(int code) { return code >= 200 && code < 300; }
+
+// The URL's query: [first] and the band's sign-in, if any, joined with &.
+String query(const String& first, const String& authParam) {
+  String joined = first;
+  if (authParam.length() > 0) {
+    if (joined.length() > 0) joined += "&";
+    joined += authParam;
+  }
+  return joined.length() > 0 ? String("?") + joined : String("");
+}
+
+// Returns the HTTP code (negative when the request never got an answer).
+// Prints the path only, never the URL: the URL carries the band's sign-in.
+int putJson(const String& path, const String& body, const String& authParam) {
   WiFiClientSecure client;
   HTTPClient http;
-  beginHttp(http, client, String(DB_URL) + path + ".json");
+  beginHttp(http, client, String(DB_URL) + path + ".json" + query("", authParam));
   http.addHeader("Content-Type", "application/json");
   int code = http.PUT(body);
-  bool ok = code >= 200 && code < 300;
-  if (ok) {
+  if (isSuccess(code)) {
     Serial.printf("PUT %s -> %d\n", path.c_str(), code);
   } else if (code > 0) {
     Serial.printf("PUT %s -> %d %s\n", path.c_str(), code, http.getString().c_str());
@@ -561,7 +639,7 @@ bool putJson(const String& path, const String& body) {
     Serial.printf("PUT %s failed: %s\n", path.c_str(), http.errorToString(code).c_str());
   }
   http.end();
-  return ok;
+  return code;
 }
 
 // The highest integer key under history, 0 when there is none, -1 when the
@@ -570,10 +648,10 @@ bool putJson(const String& path, const String& body) {
 // shallow=true returns the keys alone, as {"1":true,"2":true}, so every quoted
 // string in the body is a key; a key that is not a plain number is skipped,
 // as the Mock Sender skips it.
-long readHighestHistoryKey() {
+long readHighestHistoryKey(const String& deviceId, const String& authParam) {
   WiFiClientSecure client;
   HTTPClient http;
-  beginHttp(http, client, String(DB_URL) + "/devices/" + DEVICE_ID + "/history.json?shallow=true");
+  beginHttp(http, client, String(DB_URL) + "/devices/" + deviceId + "/history.json" + query("shallow=true", authParam));
   int code = http.GET();
   if (code != 200) {
     Serial.printf("Reading history keys failed: %d\n", code);
@@ -602,10 +680,184 @@ long readHighestHistoryKey() {
   return highest;
 }
 
+// =====================================================================
+// Band identity (sender task; loadIdentity() runs in setup() first)
+// =====================================================================
+
+bool identityEnabled() {
+  return strlen(API_KEY) > 0 && strcmp(API_KEY, "YOUR_FIREBASE_WEB_API_KEY") != 0;
+}
+
+// The value of "key":"..." in a JSON reply, or "" when it is not there. The
+// Auth replies are flat, and ids, tokens and error codes hold no quotes or
+// escapes, so this is enough without a JSON library. String values only.
+String jsonString(const String& body, const char* key) {
+  String needle = String("\"") + key + "\"";
+  int at = body.indexOf(needle);
+  if (at < 0) return "";
+  int colon = body.indexOf(':', at + needle.length());
+  if (colon < 0) return "";
+  int open = body.indexOf('"', colon + 1);
+  if (open < 0) return "";
+  int close = body.indexOf('"', open + 1);
+  if (close < 0) return "";
+  return body.substring(open + 1, close);
+}
+
+// STATUS reads the band id from loop(), so it gets a copy of its own.
+void showBandId() {
+  bandIdKnown = false;
+  strlcpy(shownBandId, bandUid.c_str(), sizeof(shownBandId));
+  bandIdKnown = bandUid.length() > 0;
+}
+
+void loadIdentity() {
+  Preferences prefs;
+  prefs.begin(IDENTITY_NAMESPACE, false);  // read-write: a read-only open fails when it does not exist yet
+  bandUid = prefs.getString("uid", "");
+  refreshToken = prefs.getString("refresh", "");
+  prefs.end();
+  showBandId();
+}
+
+void saveIdentity() {
+  Preferences prefs;
+  prefs.begin(IDENTITY_NAMESPACE, false);
+  prefs.putString("uid", bandUid);
+  prefs.putString("refresh", refreshToken);
+  prefs.end();
+}
+
+void forgetIdentity() {
+  Preferences prefs;
+  prefs.begin(IDENTITY_NAMESPACE, false);
+  prefs.clear();
+  prefs.end();
+  bandUid = "";
+  refreshToken = "";
+  idToken = "";
+  idTokenExpiresAt = 0;
+  nextSignInAt = 0;
+  showBandId();
+  Serial.println("Band identity forgotten: a new one is made now, or once Wi-Fi is back");
+}
+
+// POSTs to the Auth REST API; the reply's body (or the error) goes to reply.
+int postAuth(const String& url, const String& body, const char* contentType, String& reply) {
+  WiFiClientSecure client;
+  HTTPClient http;
+  beginHttp(http, client, url);
+  http.addHeader("Content-Type", contentType);
+  int code = http.POST(body);
+  reply = code > 0 ? http.getString() : http.errorToString(code);
+  http.end();
+  return code;
+}
+
+// Prints the reason Firebase gave (an error code, never a token) and, for
+// the two failures with a known cause, what to do about it.
+void reportAuthFailure(const char* what, int code, const String& reply) {
+  String reason = code > 0 ? jsonString(reply, "message") : reply;
+  Serial.printf("%s failed: %d %s\n", what, code, reason.c_str());
+  if (reason.startsWith("OPERATION_NOT_ALLOWED") || reason.startsWith("ADMIN_ONLY_OPERATION")) {
+    Serial.println("  Anonymous sign-in is off for the project: Firebase Console > Authentication > "
+      "Sign-in method > Anonymous.");
+  } else if (reason.startsWith("TOKEN_EXPIRED") || reason.startsWith("USER_NOT_FOUND") ||
+             reason.startsWith("USER_DISABLED") || reason.startsWith("INVALID_REFRESH_TOKEN")) {
+    Serial.println("  This band's identity no longer works. Send RESETID to make a new one (a new band).");
+  }
+}
+
+void setIdToken(const String& token, const String& expiresIn) {
+  long seconds = expiresIn.toInt();
+  if (seconds <= 0) seconds = 3600;
+  idToken = token;
+  idTokenExpiresAt = millis() + (uint32_t)seconds * 1000UL;
+}
+
+// First boot: a new anonymous user, whose uid becomes the band's own id.
+bool signUp() {
+  String reply;
+  int code = postAuth(String("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=") + API_KEY,
+    "{\"returnSecureToken\":true}", "application/json", reply);
+  if (code != 200) {
+    reportAuthFailure("Creating the band identity", code, reply);
+    return false;
+  }
+  String uid = jsonString(reply, "localId");
+  String token = jsonString(reply, "idToken");
+  String refresh = jsonString(reply, "refreshToken");
+  if (uid.length() == 0 || token.length() == 0 || refresh.length() == 0) {
+    Serial.println("Creating the band identity: the reply was not what Firebase sends");
+    return false;
+  }
+  bandUid = uid;
+  refreshToken = refresh;
+  setIdToken(token, jsonString(reply, "expiresIn"));
+  saveIdentity();
+  showBandId();
+  Serial.printf("Band identity created. Band id: %s\n", bandUid.c_str());
+  return true;
+}
+
+// Every later boot, and every hour: a fresh ID token from the refresh token.
+bool refreshIdToken() {
+  String reply;
+  int code = postAuth(String("https://securetoken.googleapis.com/v1/token?key=") + API_KEY,
+    String("grant_type=refresh_token&refresh_token=") + refreshToken,
+    "application/x-www-form-urlencoded", reply);
+  if (code != 200) {
+    reportAuthFailure("Signing the band in", code, reply);
+    return false;
+  }
+  String token = jsonString(reply, "id_token");
+  if (token.length() == 0) {
+    Serial.println("Signing the band in: the reply was not what Firebase sends");
+    return false;
+  }
+  setIdToken(token, jsonString(reply, "expires_in"));
+  String refresh = jsonString(reply, "refresh_token");
+  if (refresh.length() > 0 && refresh != refreshToken) {
+    refreshToken = refresh;
+    saveIdentity();
+  }
+  return true;
+}
+
+bool idTokenFresh() {
+  return idToken.length() > 0 && (int32_t)(idTokenExpiresAt - millis()) > (int32_t)TOKEN_MARGIN_MS;
+}
+
+// A signed-in ID token for the next call, signing up or in as needed.
+// Needs Wi-Fi and a synced clock. A failure is not retried for
+// SIGN_IN_BACKOFF_MS, so alerts to the shared band keep going meanwhile.
+bool ensureIdToken() {
+  if (!identityEnabled()) return false;
+  if (resetIdentityRequested.exchange(false)) forgetIdentity();
+  identityTried = true;
+  if (idTokenFresh()) return true;
+  if ((int32_t)(nextSignInAt - millis()) > 0) return false;
+
+  bool ok = (bandUid.length() == 0 || refreshToken.length() == 0) ? signUp() : refreshIdToken();
+  if (!ok) {
+    idToken = "";
+    nextSignInAt = millis() + SIGN_IN_BACKOFF_MS;
+  }
+  return ok;
+}
+
+// =====================================================================
+// Sending one alert (sender task)
+// =====================================================================
+
 // History first, then latest, as the Mock Sender does: the app's alert
 // screens read history, so an alert that got that far is still seen, and
 // only latest (the map) is left stale. The id is used up the moment its
 // history row lands, so a retry can never overwrite a good row.
+//
+// The sign-in is required to write the band's own id, and best effort for
+// the shared one, which the rules leave open: a band that cannot sign in
+// still raises its alerts where the app reads them.
 SendResult sendAlert(const Alert& alert) {
   const char* type = typeName(alert.type);
   if (!ensureWifi()) {
@@ -616,28 +868,55 @@ SendResult sendAlert(const Alert& alert) {
     Serial.printf("%s: clock not synced yet\n", type);
     return SendResult::NotSent;
   }
+
+  bool signedIn = ensureIdToken();
+  if (WRITE_TO_OWN_ID && !signedIn) {
+    Serial.printf("%s: not signed in, so it cannot write to the band's own id\n", type);
+    return SendResult::NotSent;
+  }
+  String deviceId = WRITE_TO_OWN_ID ? bandUid : String(DEVICE_ID);
+  String authParam = signedIn ? String("auth=") + idToken : String("");
+
+  // Each band id has its own history, so switching ids reads its keys afresh.
+  if (seededFor != deviceId) {
+    nextSequenceId = 0;
+    seededFor = deviceId;
+  }
   if (nextSequenceId == 0) {
-    long highest = readHighestHistoryKey();
+    long highest = readHighestHistoryKey(deviceId, authParam);
     if (highest < 0) return SendResult::NotSent;
     nextSequenceId = highest + 1;
   }
 
   unsigned long sequenceId = nextSequenceId;
-  String payload = buildPayload(alert, sequenceId);
-  String base = String("/devices/") + DEVICE_ID;
+  String payload = buildPayload(alert, sequenceId, deviceId);
+  String base = String("/devices/") + deviceId;
 
-  if (!putJson(base + "/history/" + sequenceId, payload)) {
+  int historyCode = putJson(base + "/history/" + sequenceId, payload, authParam);
+  if (!isSuccess(historyCode)) {
+    if (historyCode == 401 && signedIn) idToken = "";  // sign in afresh before the retry
     nextSequenceId = 0;  // read the keys again: someone else may have taken this id
     return SendResult::NotSent;
   }
   nextSequenceId = sequenceId + 1;
 
-  bool latestOk = putJson(base + "/latest", payload);
+  int latestCode = putJson(base + "/latest", payload, authParam);
+  if (latestCode == 401 && signedIn) idToken = "";
+  bool latestOk = isSuccess(latestCode);
   const char* position = !alert.hasLocation ? "no location"
     : alert.simulated ? "SIMULATED position: no GPS fix, send GPS,lat,lng" : "GPS fix";
-  Serial.printf("%s sent as #%lu (%s)%s\n", type, sequenceId, position,
-    latestOk ? "" : ", latest not updated");
+  Serial.printf("%s sent as #%lu (%s, %s)%s\n", type, sequenceId, position,
+    signedIn ? "signed in" : "not signed in", latestOk ? "" : ", latest not updated");
   return latestOk ? SendResult::Sent : SendResult::HistoryOnly;
+}
+
+// While idle: sign in once Wi-Fi and the clock are ready, so the band id is
+// known (and printed) before the first alert, and carry out a RESETID.
+void signInWhileIdle() {
+  if (!identityEnabled()) return;
+  if (identityTried && !resetIdentityRequested) return;
+  if (WiFi.status() != WL_CONNECTED || !clockSynced()) return;
+  ensureIdToken();
 }
 
 // One alert at a time, in order. A panic, check-in or low-battery alert is
@@ -646,7 +925,10 @@ SendResult sendAlert(const Alert& alert) {
 void senderTask(void*) {
   Alert alert;
   for (;;) {
-    if (xQueueReceive(alertQueue, &alert, portMAX_DELAY) != pdTRUE) continue;
+    if (xQueueReceive(alertQueue, &alert, pdMS_TO_TICKS(1000)) != pdTRUE) {
+      signInWhileIdle();
+      continue;
+    }
     if (alert.type == AlertType::TrackingUpdate) trackingQueued--;
 
     for (int attempt = 1;; attempt++) {
@@ -710,11 +992,22 @@ void setup() {
 
   configTime(0, 0, "pool.ntp.org", "time.google.com");  // UTC
 
+  // Before the sender starts: from here on the identity is the sender's.
+  if (identityEnabled()) loadIdentity();
+
   alertQueue = xQueueCreate(QUEUE_LENGTH, sizeof(Alert));
   // Core 0, beside the Wi-Fi stack; loop() runs on core 1. TLS wants a big stack.
   xTaskCreatePinnedToCore(senderTask, "sender", 16384, nullptr, 1, nullptr, 0);
 
-  Serial.printf("GuardBand ready as %s. Commands: GPS,lat,lng[,acc]  NOFIX  BATT,n  STATUS\n", DEVICE_ID);
+  Serial.printf("GuardBand ready as %s. Commands: GPS,lat,lng[,acc]  NOFIX  BATT,n  STATUS  RESETID\n",
+    WRITE_TO_OWN_ID ? "its own band id" : DEVICE_ID);
+  if (!identityEnabled()) {
+    Serial.println("Band identity: off (no FIREBASE_API_KEY in secrets.h); writing unsigned");
+  } else if (bandUid.length() > 0) {
+    Serial.printf("Band id: %s (signs in once Wi-Fi and the clock are ready)\n", bandUid.c_str());
+  } else {
+    Serial.println("Band id: none yet; the band signs up once Wi-Fi and the clock are ready");
+  }
   Serial.println(SIMULATE_WITHOUT_FIX
     ? "No GPS fix yet: positions are simulated near Cebu City until you send GPS,lat,lng"
     : "No GPS fix yet: alerts carry no location until you send GPS,lat,lng");

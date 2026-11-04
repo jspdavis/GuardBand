@@ -13,9 +13,11 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
+import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.lifecycleScope
@@ -71,7 +73,14 @@ import kotlinx.coroutines.launch
  * Location permissions are declared only in `app/src/debug/AndroidManifest.xml`
  * so release builds stay clean. The receiver app never requests location.
  *
- * View IDs: btnBand, tvTracking, tvBattery, sbBattery, tvStatus, tvGpsStatus.
+ * **Band identity (docs/device-pairing.md §2):** the harness signs in as its
+ * own band on opening ([AlertSender.signIn]) and shows its band id. Sends go
+ * to `guardband-001`, signed in when possible; the switch sends them to the
+ * band's own id instead (the app does not read it until pairing). "New band
+ * id" forgets the identity, like the firmware's RESETID.
+ *
+ * View IDs: btnBand, tvTracking, tvBattery, sbBattery, tvBandId, swOwnBandId,
+ * btnNewBandId, tvStatus, tvGpsStatus.
  */
 class MockSenderActivity : AppCompatActivity() {
 
@@ -79,10 +88,16 @@ class MockSenderActivity : AppCompatActivity() {
     private lateinit var tvTracking: TextView
     private lateinit var tvBattery: TextView
     private lateinit var sbBattery: SeekBar
+    private lateinit var tvBandId: TextView
+    private lateinit var swOwnBandId: SwitchCompat
+    private lateinit var btnNewBandId: Button
     private lateinit var tvStatus: TextView
     private lateinit var tvGpsStatus: TextView
 
-    private val alertSender = AlertSender()
+    private val alertSender by lazy { AlertSender(applicationContext) }
+
+    /** Why the last sign-in failed, or null when signed in (or not tried yet). */
+    private var signInFailure: String? = null
 
     // ── The band's button and battery ─────────────────────────────────────────
 
@@ -171,6 +186,7 @@ class MockSenderActivity : AppCompatActivity() {
         initViews()
         setUpBandButton()
         setUpBatterySlider()
+        setUpBandIdentity()
         requestLocationPermissionIfNeeded()
     }
 
@@ -215,8 +231,57 @@ class MockSenderActivity : AppCompatActivity() {
         tvTracking = findViewById(R.id.tvTracking)
         tvBattery = findViewById(R.id.tvBattery)
         sbBattery = findViewById(R.id.sbBattery)
+        tvBandId = findViewById(R.id.tvBandId)
+        swOwnBandId = findViewById(R.id.swOwnBandId)
+        btnNewBandId = findViewById(R.id.btnNewBandId)
         tvStatus = findViewById(R.id.tvStatus)
         tvGpsStatus = findViewById(R.id.tvGpsStatus)
+    }
+
+    /**
+     * Signs in straight away, so the band id shows before the first alert.
+     * The switch is read on the next send; it stops any tracking, so one
+     * panic's path never splits across two band ids.
+     */
+    private fun setUpBandIdentity() {
+        renderBandId(signingIn = true)
+        lifecycleScope.launch {
+            signInFailure = alertSender.signIn()
+            renderBandId()
+        }
+
+        swOwnBandId.setOnCheckedChangeListener { _, checked ->
+            alertSender.writeToOwnId = checked
+            if (trackingJob != null) {
+                stopTracking()
+                tvTracking.text = getString(R.string.mock_sender_tracking_switched)
+            }
+        }
+
+        btnNewBandId.setOnClickListener {
+            if (trackingJob != null) {
+                stopTracking()
+                tvTracking.text = getString(R.string.mock_sender_tracking_switched)
+            }
+            renderBandId(signingIn = true)
+            lifecycleScope.launch {
+                alertSender.forgetBandId()
+                signInFailure = alertSender.signIn()
+                renderBandId()
+                tvStatus.text = getString(R.string.mock_sender_band_id_replaced)
+            }
+        }
+    }
+
+    private fun renderBandId(signingIn: Boolean = false) {
+        val id = alertSender.bandId
+        val failure = signInFailure
+        tvBandId.text = when {
+            signingIn -> getString(R.string.mock_sender_signing_in)
+            failure != null -> getString(R.string.mock_sender_sign_in_failed, failure)
+            id != null -> getString(R.string.mock_sender_band_id, id)
+            else -> getString(R.string.mock_sender_band_id_none)
+        }
     }
 
     /**
@@ -487,7 +552,7 @@ class MockSenderActivity : AppCompatActivity() {
     }
 
     /** Sends one alert at the GPS fix and the slider's battery, and reports it. */
-    private suspend fun send(type: AlertType): Result<Int> {
+    private suspend fun send(type: AlertType): Result<AlertSender.Sent> {
         tvStatus.text = "Sending ${type.name}..."
         val fix = lastFix
         val battery = batteryPercent
@@ -501,12 +566,17 @@ class MockSenderActivity : AppCompatActivity() {
             isCharging = false
         )
 
-        result.onSuccess { sequenceId ->
+        result.onSuccess { sent ->
+            if (sent.signedIn) signInFailure = null
             val source = if (fix != null) "real GPS" else "simulated"
-            tvStatus.text = "✓ Sent ${type.name} as #$sequenceId ($source · 🔋$battery%)"
+            val signIn = if (sent.signedIn) "signed in" else "not signed in"
+            val where = if (sent.toOwnId) " · own band id" else ""
+            tvStatus.text = "✓ Sent ${type.name} as #${sent.sequenceId} ($source · 🔋$battery% · $signIn$where)"
         }.onFailure { error ->
             tvStatus.text = "✗ Failed: ${error.message}"
         }
+        // The first send may be the one that signed the band up.
+        renderBandId()
         return result
     }
 

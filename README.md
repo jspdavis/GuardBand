@@ -205,6 +205,10 @@ rule. If any of the three changes, change the others to match.
 2. Copy `firmware/guardband_band/secrets.example.h` to
    `firmware/guardband_band/secrets.h` and put in your Wi-Fi name and password
    (**2.4 GHz only**). `secrets.h` is gitignored, so it stays on your machine.
+   For the band to sign in as itself (see "Band identity" below), also add the
+   `#define FIREBASE_API_KEY` line from `secrets.example.h`, with the
+   `current_key` from `app/google-services.json`. Without it the band works
+   as before, unsigned.
 3. In the IDE: **File → Open → `firmware/guardband_band/guardband_band.ino`**,
    board **ESP32 Dev Module** (or your board), then pick the port and Upload.
 4. Open the **Serial Monitor** at **115200** baud. Any line ending works; a
@@ -251,7 +255,30 @@ shows on the map within a minute. It is `TRACKING_INTERVAL_MS`.
 | `GPS,10.3157,123.8854` or `GPS,10.3157,123.8854,8.5` | Sets the fix (the last number is accuracy in metres, default 10) |
 | `NOFIX` | Forgets the fix |
 | `BATT,85` | Battery percent, used by every alert from then on |
-| `STATUS` | Wi-Fi, clock, fix, battery, panic or tracking state |
+| `STATUS` | Wi-Fi, clock, fix, battery, panic or tracking state, and the band id |
+| `RESETID` | Forgets the band identity and makes a new one: from then on it is a new band |
+
+### Band identity
+
+With `FIREBASE_API_KEY` in `secrets.h`, the band signs in to Firebase as
+itself ([docs/device-pairing.md](docs/device-pairing.md) §2, step 2 of
+pairing):
+
+- **Once Wi-Fi and the clock are ready, it signs up as a Firebase anonymous
+  user.** That user's uid is the band's own id, printed as `Band identity
+  created. Band id: …` and shown by `STATUS`. The identity is kept in the
+  ESP32's flash, so a reboot or a new upload is the same band; `RESETID`
+  makes a new one.
+- **Every write carries the sign-in** (`?auth=`), renewed before its hour
+  runs out. Each send says `signed in` or `not signed in`.
+- **It still writes to `guardband-001`**, which the app reads, and a failed
+  sign-in only means that alert goes out unsigned. Set `WRITE_TO_OWN_ID` to
+  `true` to write to `devices/<band id>` instead. Under the proposed rules
+  only this band can write there, and the app does not read it until a band
+  can be paired, so check it in the Firebase Console.
+- **Anonymous sign-in must be on** in the Firebase Console (Authentication →
+  Sign-in method → Anonymous). If it is off, the band says so on Serial.
+- Tokens are never printed. The band id is, because pairing will need it.
 
 ### The laptop's own position
 
@@ -302,10 +329,12 @@ fix lasts until `NOFIX` or a reset, so send `GPS,` again after every upload.
   panic, the next 1.5 s hold sends a new one.
 - **Nothing is sent until the clock has synced over NTP.** The timestamp is
   the time of the press, not of the send, so a retried panic keeps its time.
-- **Writes are unauthenticated** and rely on the open `devices/` rules
-  (`RTDBS-RULES.md`). Pairing will change that.
-- **`setInsecure()`** skips the TLS certificate check. That is fine for a
-  prototype and not for a real band.
+- **Writes are signed in when the band can sign in** (see "Band identity").
+  Writes to `guardband-001` still rely on its open rules (`RTDBS-RULES.md`)
+  until bands can be paired.
+- **Every HTTPS call checks the server's certificate** against Google's four
+  root certificates in `gts_roots.h` (valid until 2036). The check needs the
+  clock, which is one more reason nothing is sent before NTP has synced.
 - **No coordinates on Serial.** `STATUS` only says whether there is a fix.
 
 ### Wi-Fi log
@@ -328,7 +357,8 @@ Every line about the connection starts with `Wi-Fi:`.
    `STATUS` should read `Wi-Fi connected, clock synced`.
 2. Optionally type `GPS,<your lat>,<your lng>`.
 3. Double-press. The Serial Monitor should show `PUT /devices/guardband-001/history/N -> 200`,
-   then the same for `/latest`, then `CHECKIN sent as #N`.
+   then the same for `/latest`, then `CHECKIN sent as #N (…, signed in)`
+   (`not signed in` without `FIREBASE_API_KEY`, or with anonymous sign-in off).
 4. In the Firebase Console (Realtime Database), `devices/guardband-001/history/N`
    should be there. In the app, the Track tab's check-in card should read
    "Last check-in: just now".
@@ -440,9 +470,10 @@ The NEO-6M is not wired in yet. The laptop's Windows location stands in for
 it over USB. It is about 100–150 m accurate, estimated from nearby Wi-Fi.
 
 **Is it secure?**
-Not yet, and we know where. The band's data in Firebase is open to anyone
-until pairing exists, and the prototype skips the server's certificate check.
-Both are listed as next steps.
+Not yet, and we know where. The band now signs in to Firebase as itself and
+checks the server's certificate, but the shared band id the demo uses
+(`guardband-001`) stays open to anyone until bands can be paired to
+accounts, which is the next step.
 
 **Why every 5 s, when FR-09 says 60 s?**
 A demo pace, so a path appears within a minute. It is one constant in the

@@ -1,5 +1,6 @@
 package com.example.guardband.ui.mocksender
 
+import android.content.Context
 import com.example.guardband.data.DeviceConstants
 import com.example.guardband.data.FirebaseProvider
 import com.example.guardband.data.model.AlertType
@@ -40,10 +41,36 @@ import kotlin.random.Random
  * that layering, and the alternative was a hardcoded URL, which is forbidden
  * everywhere. The device id and [AlertType] both come from the production
  * `data/` classes, so the harness cannot drift from what the app reads.
+ *
+ * **It signs in as its own band** ([BandIdentity], docs/device-pairing.md
+ * §2) and every call carries `?auth=`. By default it still writes to the
+ * shared `guardband-001`, which the app reads and the rules leave open, so a
+ * failed sign-in only means the alert goes out unsigned. With
+ * [writeToOwnId] it writes to `devices/<its own band id>` instead, which
+ * needs the sign-in and which the app does not read until pairing.
  */
-class AlertSender {
+class AlertSender(context: Context) {
 
     private val client = OkHttpClient()
+
+    private val identity = BandIdentity(
+        client = client,
+        apiKey = FirebaseProvider.auth.app.options.apiKey,
+        prefs = context.getSharedPreferences(BandIdentity.PREFS_NAME, Context.MODE_PRIVATE)
+    )
+
+    /**
+     * Write to this band's own id rather than `guardband-001`. Read once per
+     * send, so a change takes effect on the next one.
+     */
+    @Volatile
+    var writeToOwnId: Boolean = false
+
+    /** This band's own id, or null before the first sign-up. Shown, never logged. */
+    val bandId: String? get() = identity.bandId
+
+    /** The band id [nextSequenceId] was seeded for: each id has its own history. */
+    private var seededFor: String? = null
 
     /**
      * One send at a time. A check-in pressed while a tracking step is in
@@ -67,6 +94,29 @@ class AlertSender {
         FirebaseProvider.database.reference.toString().trimEnd('/')
     }
 
+    /** What one send did: the history key, the band it went to, and whether it was signed in. */
+    data class Sent(val sequenceId: Int, val deviceId: String, val signedIn: Boolean) {
+        val toOwnId: Boolean get() = deviceId != DEVICE_ID
+    }
+
+    /**
+     * Signs in now, so the band id is known before the first alert.
+     *
+     * @return the failure's wording, or null when signed in
+     */
+    suspend fun signIn(): String? = sendLock.withLock {
+        withContext(Dispatchers.IO) {
+            runCatching { identity.idToken() }.exceptionOrNull()?.let { it.message ?: "Not signed in" }
+        }
+    }
+
+    /** Forgets this band id; the next sign-in makes a new one (a new band). */
+    suspend fun forgetBandId() = sendLock.withLock {
+        identity.forget()
+        seededFor = null
+        nextSequenceId = null
+    }
+
     /**
      * Writes one alert of [type].
      *
@@ -84,7 +134,7 @@ class AlertSender {
      * [android.os.BatteryManager]. When null, random values are used as a
      * fallback so the payload remains valid (battery is required by SCHEMA.md).
      *
-     * @return the sequenceId that was written, or the failure that stopped it
+     * @return what was written, or the failure that stopped it
      */
     suspend fun sendAlert(
         type: AlertType,
@@ -93,7 +143,7 @@ class AlertSender {
         accuracy: Double? = null,
         batteryPercent: Int? = null,
         isCharging: Boolean? = null
-    ): Result<Int> {
+    ): Result<Sent> {
         val resolvedLat = lat ?: (CEBU_LAT + Random.nextDouble(-0.01, 0.01))
         val resolvedLng = lng ?: (CEBU_LNG + Random.nextDouble(-0.01, 0.01))
         val resolvedAccuracy = accuracy ?: Random.nextDouble(5.0, 15.0)
@@ -122,7 +172,7 @@ class AlertSender {
         originLng: Double = LOOP_ORIGIN_LNG,
         batteryPercent: Int? = null,
         isCharging: Boolean? = null
-    ): Result<Int> {
+    ): Result<Sent> {
         val resolvedBattery = batteryPercent ?: max(LOOP_BATTERY_FLOOR, LOOP_BATTERY_START - trackingStep / 2)
         val resolvedCharging = isCharging ?: false
 
@@ -176,7 +226,7 @@ class AlertSender {
         batteryPercent: Int,
         isCharging: Boolean,
         accuracyMeters: Double
-    ): Result<Int> = sendLock.withLock { sendNow(lat, lng, type, batteryPercent, isCharging, accuracyMeters) }
+    ): Result<Sent> = sendLock.withLock { sendNow(lat, lng, type, batteryPercent, isCharging, accuracyMeters) }
 
     private suspend fun sendNow(
         lat: Double,
@@ -185,19 +235,47 @@ class AlertSender {
         batteryPercent: Int,
         isCharging: Boolean,
         accuracyMeters: Double
-    ): Result<Int> = withContext(Dispatchers.IO) {
+    ): Result<Sent> = withContext(Dispatchers.IO) {
         try {
-            val sequenceId = nextSequenceId ?: (readHighestHistoryKey() + 1)
-            val payload = buildPayload(type, sequenceId, lat, lng, batteryPercent, isCharging, accuracyMeters)
+            // The sign-in is required for the band's own id, and best effort
+            // for the shared one, which the rules leave open.
+            val ownId = writeToOwnId
+            val token = if (ownId) identity.idToken() else runCatching { identity.idToken() }.getOrNull()
+            val deviceId = if (ownId) {
+                identity.bandId ?: throw IOException("No band id yet")
+            } else {
+                DEVICE_ID
+            }
 
-            putJson("devices/$DEVICE_ID/history/$sequenceId.json", payload)
+            if (seededFor != deviceId) {
+                nextSequenceId = null
+                seededFor = deviceId
+            }
+            val sequenceId = nextSequenceId ?: (readHighestHistoryKey(deviceId, token) + 1)
+            val payload = buildPayload(type, sequenceId, deviceId, lat, lng, batteryPercent, isCharging, accuracyMeters)
+
+            putJson("devices/$deviceId/history/$sequenceId.json", payload, token)
             nextSequenceId = sequenceId + 1
-            putJson("devices/$DEVICE_ID/latest.json", payload)
+            putJson("devices/$deviceId/latest.json", payload, token)
 
-            Result.success(sequenceId)
+            Result.success(Sent(sequenceId, deviceId, signedIn = token != null))
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    /** The database URL for [path], with the band's sign-in when there is one. */
+    private fun urlFor(path: String, token: String?, shallow: Boolean = false) =
+        "$databaseUrl/$path".toHttpUrl().newBuilder()
+            .apply {
+                if (shallow) addQueryParameter("shallow", "true")
+                if (token != null) addQueryParameter("auth", token)
+            }
+            .build()
+
+    /** A refused token (HTTP 401) is dropped, so the next send signs in afresh. */
+    private fun noteRefusal(code: Int, token: String?) {
+        if (code == 401 && token != null) identity.invalidate()
     }
 
     /**
@@ -216,14 +294,12 @@ class AlertSender {
      * read failure throws - and that is worth failing the send for, because
      * the PUT was about to fail the same way.
      */
-    private fun readHighestHistoryKey(): Int {
-        val url = "$databaseUrl/devices/$DEVICE_ID/history.json".toHttpUrl()
-            .newBuilder()
-            .addQueryParameter("shallow", "true")
-            .build()
+    private fun readHighestHistoryKey(deviceId: String, token: String?): Int {
+        val url = urlFor("devices/$deviceId/history.json", token, shallow = true)
 
         client.newCall(Request.Builder().url(url).get().build()).execute().use { response ->
             if (!response.isSuccessful) {
+                noteRefusal(response.code, token)
                 throw IOException("HTTP ${response.code} reading the history keys")
             }
             val body = response.body?.string()?.trim()
@@ -240,16 +316,17 @@ class AlertSender {
     }
 
     /** PUTs [json] to [path] under the database root, throwing on any non-2xx. */
-    private fun putJson(path: String, json: String) {
+    private fun putJson(path: String, json: String, token: String?) {
         val request = Request.Builder()
-            .url("$databaseUrl/$path")
+            .url(urlFor(path, token))
             .put(json.toRequestBody(JSON))
             .build()
 
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                // The path, not the full URL: the status line has to stay short
-                // enough to read on a phone.
+                noteRefusal(response.code, token)
+                // The path, not the full URL: the URL carries the sign-in, and
+                // the status line has to stay short enough to read on a phone.
                 throw IOException("HTTP ${response.code} on PUT /$path: ${response.message}")
             }
         }
@@ -258,6 +335,7 @@ class AlertSender {
     private fun buildPayload(
         type: AlertType,
         sequenceId: Int,
+        deviceId: String,
         lat: Double,
         lng: Double,
         batteryPercent: Int,
@@ -267,7 +345,7 @@ class AlertSender {
         return """
         {
             "schemaVersion": "1.0",
-            "deviceId": "$DEVICE_ID",
+            "deviceId": "$deviceId",
             "type": "${type.name}",
             "timestamp": "${isoUtcNow()}",
             "location": {

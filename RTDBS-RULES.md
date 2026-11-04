@@ -2,12 +2,7 @@
   "//": [
     "GuardBand Realtime Database Security Rules.",
     "",
-    "STATUS 2026-10-19: PROPOSED, NOT DEPLOYED. The devices block below is",
-    "Option A+ from docs/database-rules.md section 4, PENDING JUL'S",
-    "DECISION. The users block is unchanged from the rules deployed on",
-    "2026-10-11. Until this is published, the live ruleset is the",
-    "2026-10-11 text kept in docs/database-rules.md section 9, which is also",
-    "the rollback. Once published, delete this STATUS paragraph.",
+    "DEPLOYED 2026-11-04 (Jul): this file, stripped, is the live ruleset.",
     "",
     "This file, with every '//' key stripped, is meant to BE the live",
     "ruleset. The Console rejects the '//' keys, so strip them before",
@@ -61,7 +56,7 @@
     "first; do not add the rule as a quick fix."
   ],
   "// devices": [
-    "PENDING JUL'S DECISION: the block below is Option A+ (recommended).",
+    "DECIDED (Jul, 2026-11-04): Option A+, which is already live.",
     "Options A, A+, B and C, what each breaks, and the full text of each",
     "devices block are in docs/database-rules.md section 4. Switching",
     "options means replacing the whole \"devices\" block with that one.",
@@ -81,6 +76,13 @@
     "Closing it needs pairing: a device id per account, an auth token for the",
     "band, and AlertSender taught to send ?auth=. That is a separate piece of",
     "work, and tightening the rules without it breaks both ends.",
+    "",
+    "BAND IDENTITY (2026-11-02, docs/device-pairing.md section 2): a band",
+    "signs in as a Firebase anonymous user, and that uid is its own band id.",
+    "So latest and history are writable by anyone ONLY under guardband-001,",
+    "the shared band the app and the demo still use; under every other id",
+    "only the band whose uid it is may write (auth.uid == $deviceId). The",
+    "firmware and the mock sender send ?auth= either way. Reads stay open.",
     "",
     "Until then the Privacy Notice says plainly that this data is open."
   ],
@@ -212,7 +214,7 @@
       "$deviceId": {
         "latest": {
           ".read": true,
-          ".write": true,
+          ".write": "$deviceId === 'guardband-001' || (auth != null && auth.uid === $deviceId)",
           ".validate": "newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
           "type": {
             ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
@@ -252,10 +254,13 @@
               "The key must be a whole number: the app orders by key and",
               "relies on integer-like keys (CLAUDE.md, 'Alert data'). The",
               "field checks are latest's, which every valid payload already",
-              "passes there."
+              "passes there.",
+              "",
+              "Who may add one is latest's rule: anyone under guardband-001,",
+              "only the band itself under any other id."
             ],
             ".read": true,
-            ".write": "!data.exists()",
+            ".write": "!data.exists() && ($deviceId === 'guardband-001' || (auth != null && auth.uid === $deviceId))",
             ".validate": "$sequenceId.matches(/^[0-9]+$/) && newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
             "type": {
               ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"

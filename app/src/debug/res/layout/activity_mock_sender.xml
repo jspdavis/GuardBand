@@ -91,6 +91,36 @@
             android:max="100"
             android:minHeight="48dp" />
 
+        <!-- The band identity (docs/device-pairing.md section 2): its own id,
+             where it writes, and a way to start over as a new band. -->
+        <TextView
+            android:id="@+id/tvBandId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/poppins_extralight"
+            android:textIsSelectable="true"
+            android:textSize="13sp"
+            tools:text="Band id: Xy12AbCdEfGhIjKlMnOpQrStUv34" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/swOwnBandId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/poppins_extralight"
+            android:minHeight="48dp"
+            android:text="@string/mock_sender_own_id_switch"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btnNewBandId"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:text="@string/mock_sender_new_band_id" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

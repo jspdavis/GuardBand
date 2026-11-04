@@ -1,15 +1,15 @@
 # Device pairing
 
 How a band gets linked to the people who wear and watch it, and how
-`devices/` stops being writable by anyone. **Step 1 (the app groundwork) is
-built; everything from step 2 on is a proposal.** Each open point says who
-decides it.
+`devices/` stops being writable by anyone. **Steps 1 and 2 are built;
+everything from step 3 on is a proposal.** Each open point says who decides
+it.
 
 | | |
 |---|---|
-| **State** | 2026-11-02: step 1 built (§8). No rules, firmware, mock sender or Privacy Notice change yet: every account still wears `guardband-001`. |
-| **Code** | `data/model/PairedBand.kt`, `data/repository/BandRepository.kt` (+ `FixedBandRepository`), `BandSelection.kt`, `WatchedBandAlertRepository.kt`, `RepositoryProvider` |
-| **Tests** | `BandSelectionTest`, `WatchedBandAlertRepositoryTest`, `DeviceViewModelTest` (pairing cases) |
+| **State** | 2026-11-02: step 1 (app groundwork) and step 2 (band identity) built (§8). Its rules were published on 2026-11-04 (Jul); it still waits on Anonymous sign-in being turned on in the Console. Every account still wears `guardband-001`; no Privacy Notice change yet. |
+| **Code** | App: `data/model/PairedBand.kt`, `data/repository/BandRepository.kt` (+ `FixedBandRepository`), `BandSelection.kt`, `WatchedBandAlertRepository.kt`, `RepositoryProvider`. Mock sender: `BandIdentity.kt`, `AlertSender.kt`. Firmware: `guardband_band.ino`, `gts_roots.h`. Rules: `RTDBS-RULES.md`'s `devices/` writes |
+| **Tests** | `BandSelectionTest`, `WatchedBandAlertRepositoryTest`, `DeviceViewModelTest` (pairing cases), `BandAuthRepliesTest` (testDebug); the rules: 18 emulator cases (§6) |
 | **Related** | [database-rules.md](database-rules.md) §4 (the `devices/` options), [team-checklist.md](team-checklist.md) (SMS), [device-tab.md](device-tab.md) §5, [`../SCHEMA.md`](../SCHEMA.md), [`../README.md`](../README.md#band-firmware-prototype) (the prototype firmware) |
 
 ---
@@ -59,25 +59,51 @@ Nobody creates accounts by hand, and no server is involved.
    `POST https://securetoken.googleapis.com/v1/token?key=<web API key>` with
    `grant_type=refresh_token`.
 4. **Every write carries it:** `PUT …/devices/<localId>/history/<n>.json?auth=<idToken>`.
-5. **The certificate check comes back in the same pass.** The prototype calls
-   `setInsecure()`; a band holding a long-lived refresh token must verify the
-   server.
+5. **It checks the server's certificate.** Every HTTPS call is verified
+   against Google's four GTS root certificates, embedded in `gts_roots.h`
+   (valid until 2036), instead of `setInsecure()`. On 2026-11-02 the database
+   chained to GTS Root R1 and the two Auth hosts to R4; all three verified
+   against those four roots alone with `openssl s_client`.
 
-**The mock sender does the same** over OkHttp, keeping its identity in its
-own SharedPreferences, so a debug phone is one more band.
+### As built (step 2, 2026-11-02)
 
-**Human steps:** enable the **Anonymous** provider (Console → Authentication
-→ Sign-in method). The web API key is already public (it is in
-`google-services.json`); it identifies the project and protects nothing.
+**Where it writes.** Both bands still write to **`guardband-001` by
+default**, so the app and the demo are unchanged; there the sign-in is best
+effort, because the rules leave that id open. A switch writes to
+`devices/<band id>` instead, which needs the sign-in and which the app does
+not read until a band can be claimed (step 3): `WRITE_TO_OWN_ID` in the
+sketch, the "own id" switch in the mock sender. Changing the band id re-reads
+that id's history keys, so each band numbers its own history.
+
+**Firmware.** The web API key goes in the gitignored `secrets.h`
+(`#define FIREBASE_API_KEY`); without it the band does not sign in and works
+as before. The identity lives in NVS namespace `gb_identity` (`uid`,
+`refresh`). The band signs in as soon as Wi-Fi and the clock are ready, so
+its id is printed before the first alert; `STATUS` shows it; `RESETID`
+forgets it and makes a new band. A failed sign-in is not retried for 60 s,
+so alerts to the shared id never wait on it, and a 401 drops the ID token so
+the next attempt signs in afresh. Tokens are never printed.
+
+**Mock sender.** `BandIdentity` (REST, OkHttp) keeps the uid and refresh
+token in SharedPreferences `mock_sender_band` and the ID token in memory. It
+never touches the app's `FirebaseAuth` session. The screen shows the band
+id, the switch and **New band id**; the status line says `signed in` or not.
+The key comes from the Firebase app's own options. `BandAuthReplies` (pure,
+`BandAuthRepliesTest`) reads the replies.
+
+**Human steps:** turn on the **Anonymous** provider (Console →
+Authentication → Sign-in method → Anonymous). Until then both bands say so
+and send unsigned to `guardband-001`. **Do not turn on automatic clean-up of
+anonymous accounts** (an Identity Platform option): it would delete a band's
+identity after 30 days. The web API key identifies the project and protects
+nothing; it ships in every APK.
 
 **What anonymous auth lets anyone do:** create an anonymous user and write
-its **own** `devices/<their uid>`, which is a fake band nobody watches. It can
-never write another band's node. It also gives that user a `users/<uid>`
-record it could write, which any email sign-up can already do.
-
-**Open (firmware teammate):** where the web API key lives in the sketch
-(`secrets.h`, beside the Wi-Fi password), and what the band does while it has
-no valid token (queue and retry, as it does for a dropped connection).
+its **own** `devices/<their uid>`, which is a fake band nobody watches. Any
+signed-in app account can do the same under its own uid. Neither can write
+another band's node, and nobody sees such a band until it is claimed with the
+band's code (step 3). It also gives that user a `users/<uid>` record it could
+write, which any email sign-up can already do.
 
 ---
 
@@ -155,12 +181,22 @@ whether notifications cover every watched band or only some.
 
 ## 6. Rules sketch
 
-Proposal only; [database-rules.md](database-rules.md) §4 stays the decision
-record for `devices/`, and the rollout is its §7.
+[database-rules.md](database-rules.md) §4 stays the decision record for
+`devices/`, and the rollout is its §7.
+
+**The writes are in `RTDBS-RULES.md` since step 2 (2026-11-02), not yet
+published:** `latest` and new `history` rows may be written by anyone under
+`guardband-001`, and under any other id only by `auth.uid == $deviceId`.
+They passed 18 cases in the local Database Emulator (`demo-guardband`, never
+the real project): the shared id open but still append-only; a band writing
+its own `latest` and new rows; its own rows still not rewritable or
+deletable; unsigned writes, another band's, and an app account's all refused
+on a band's id; payload validation unchanged; reads open; `users/`
+unchanged. The rest is a sketch:
 
 ```
 devices/$deviceId
-  .write   auth != null && auth.uid == $deviceId          ← closes the world writes
+  .write   auth != null && auth.uid == $deviceId          ← closes the world writes (step 2)
            (+ $deviceId == 'guardband-001' during the transition)
   .read    the wearer or a watcher in device_members      ← step 6
 device_secrets/$deviceId
@@ -201,7 +237,7 @@ their account.
 | # | Step | Touches |
 |---|---|---|
 | **1** | **Groundwork (built 2026-11-02).** `BandRepository` lists the account's bands (`FixedBandRepository`: everyone wears `guardband-001`); `BandSelection` picks the shown band; `WatchedBandAlertRepository` follows it, so one process can serve several accounts; `AlertError.NoBand`; the alert watch and the Device tab read the band from it. No visible change. | app only |
-| 2 | **Band identity.** Anonymous auth in the prototype firmware and the mock sender; writes with `?auth=`; rules close writes on every band id except `guardband-001`. | firmware, mock sender, rules |
+| **2** | **Band identity (built 2026-11-02; §2 "As built").** Anonymous auth in the prototype firmware and the mock sender; every write with `?auth=`; both still write to `guardband-001` unless switched to their own id; the firmware checks certificates. The rules close writes on every band id except `guardband-001` (emulator-tested; published 2026-11-04). Waits on: Anonymous sign-in in the Console. | firmware, mock sender, rules |
 | 3 | **Claim over Serial.** `PAIR`, `device_secrets`, `device_members`, `users/{uid}/bands`; `FirebaseBandRepository` replaces `FixedBandRepository`; Pair a band works. Notice and `CONSENT_VERSION`. | app, firmware, rules, notice |
 | 4 | **Watcher invites.** Invite, redeem, remove, leave. | app, rules, notice |
 | 5 | **Track's selector and All.** | app |

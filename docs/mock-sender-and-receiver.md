@@ -30,9 +30,19 @@ own `AndroidManifest.xml` entry, so a release build contains neither its code
 nor its icon. OkHttp is `debugImplementation` for the same reason.
 
 **The sender needs no account.** It writes to the Realtime Database over
-unauthenticated REST, so a phone that only plays the band never has to log in.
-The receiver does need an account, because `HomeActivity` is behind the auth
-gate.
+REST, so a phone that only plays the band never has to log in. The receiver
+does need an account, because `HomeActivity` is behind the auth gate.
+
+**It signs in as its own band (2026-11-02).** On opening, the sender signs
+up once as a Firebase **anonymous** user (the band identity,
+[device-pairing.md](device-pairing.md) §2) and shows that user's uid as
+"Band id". Every write carries the sign-in (`?auth=`), and the status line
+says `signed in` or `not signed in`. It still writes to `guardband-001`,
+which the receiver reads, so with anonymous sign-in off in the Console the
+writes simply go out unsigned. The **own id** switch writes to
+`devices/<band id>` instead, which the receiver does not read until pairing
+exists (check it in the Console), and **New band id** starts over as a new
+band. None of this touches whoever is signed in to the receiver screens.
 
 ---
 
@@ -396,7 +406,10 @@ payloads, missing fields and unknown types — see §9.
 | Symptom | Cause |
 |---|---|
 | `✗ Failed: HTTP 401 on PUT /devices/…/history/…` | Under the append-only rules (Option A+, [`database-rules.md`](database-rules.md) §4), that history id already exists: an earlier send landed but its reply was lost, or a second sender is running. Relaunch the sender; it re-reads the keys and moves past them. |
-| `✗ Failed: HTTP 401 reading the history keys` | The rules require sign-in to read `devices/` (Option B or C). The sender reads unauthenticated; it would need an `?auth=` token. |
+| `✗ Failed: HTTP 401 reading the history keys` | The rules require sign-in to read `devices/` (Option B or C) and the band is not signed in (see "Band id: Not signed in" above the status). |
+| `Not signed in: … OPERATION_NOT_ALLOWED (turn on Anonymous sign-in …)` | Anonymous sign-in is off in the Firebase Console (Authentication → Sign-in method → Anonymous). Sends to `guardband-001` still go out, unsigned; the own-id switch cannot send. |
+| `✗ Failed: HTTP 401 on PUT /devices/<band id>/…` with the own-id switch on | The rules in the Console are older than the band-identity ones and refuse writes to a new band id, or the sign-in was refused. Turn the switch off for the demo. |
+| `… this band id no longer works: tap New band id` | The anonymous user behind the band id was deleted or disabled. **New band id** makes a new one. |
 | `✗ Failed: HTTP 400 …` | A `.validate` rejected the payload — check the enum name, `percent` 0–100, and all six required children. |
 | `✗ Failed:` a network error | No connectivity, or the database URL from `google-services.json` is wrong. |
 | **GPS badge stuck on "Acquiring…"** | Indoors or no satellite view. Sends fall back to Cebu City automatically — there is nothing to fix. |

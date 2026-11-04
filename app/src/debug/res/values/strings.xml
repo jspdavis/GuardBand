@@ -34,6 +34,18 @@
     <string name="mock_sender_battery_low">Battery: %1$d%% (low battery alert sent)</string>
     <string name="mock_sender_battery_cd">Band battery level</string>
 
+    <string name="mock_sender_tracking_switched">Tracking stopped: the band id changed</string>
+
+    <!-- The band identity (docs/device-pairing.md section 2). The id is shown
+         so pairing can use it; the tokens never are. -->
+    <string name="mock_sender_signing_in">Band id: signing in…</string>
+    <string name="mock_sender_band_id">Band id: %1$s</string>
+    <string name="mock_sender_band_id_none">Band id: none yet</string>
+    <string name="mock_sender_sign_in_failed">Not signed in: %1$s\nAlerts to guardband-001 still go out, unsigned.</string>
+    <string name="mock_sender_own_id_switch">Write to this band\'s own id instead of guardband-001 (the app does not read it until pairing)</string>
+    <string name="mock_sender_new_band_id">New band id</string>
+    <string name="mock_sender_band_id_replaced">Old band id forgotten: this phone is a new band now</string>
+
     <string name="mock_sender_status_heading">Status:</string>
     <string name="mock_sender_ready">Ready. Hold the band button for a panic, double-press for a check-in.</string>
 

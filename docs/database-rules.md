@@ -6,9 +6,9 @@ Every path the app touches, what the rules allow on each, the open decision on
 | | |
 |---|---|
 | **Rules file** | [`../RTDBS-RULES.md`](../RTDBS-RULES.md): JSON with `"//"` comment keys; stripped, it is the ruleset |
-| **Live rules** | Deployed **2026-10-11**. Their text is §9, which is also the rollback |
-| **Proposed** | 2026-10-19 (`feature/rules-and-logo`): `users/` **unchanged**; `devices/` is **Option A+, pending Jul's decision** (§4). **Not deployed** |
-| **Tested** | All four `devices/` options against the test list in §5, in the local Database Emulator under a `demo-` project id (§6). Never against the real project |
+| **Live rules** | **Option A+ with band identity**, published by Jul on **2026-11-04**: append-only history, and any band id but `guardband-001` writable only by that band (§4.1). Their text is §9 |
+| **Proposed** | Nothing pending: `RTDBS-RULES.md`, stripped, is the live ruleset |
+| **Tested** | All four `devices/` options against the test list in §5, in the local Database Emulator under a `demo-` project id (§6); the band-identity writes on 2026-11-02 (§6). Never against the real project |
 | **Related** | [`privacy-and-consent.md`](privacy-and-consent.md) §3 (the legacy nodes), [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md), [`../SCHEMA.md`](../SCHEMA.md) (the payload), [`../CLAUDE.md`](../CLAUDE.md) |
 
 **Nobody but a human deploys rules.** An agent edits `RTDBS-RULES.md` and
@@ -22,9 +22,11 @@ The rules already match what the app does: everything the app and the mock
 sender do is allowed, and nothing else under `users/` is. Root, `users` as a
 list, and the three legacy nodes are all denied by default. The one real gap
 is `devices/`, which is world-readable and world-writable by design until
-device pairing exists. The proposal leaves it open, but makes `history`
+device pairing exists. The live rules (A+) leave it open, but make `history`
 **append-only**: anyone can still add an entry, but nobody can rewrite or
-delete one, which today anyone can. Whether to go further is Jul's call (§4).
+delete one. The proposal (§4.1, 2026-11-02) also lets only a band write its
+**own** id (its Firebase anonymous uid), leaving just the shared
+`guardband-001` open to anyone.
 
 ---
 
@@ -43,7 +45,8 @@ uid; nothing reads or writes another user's record.
 | `users/{uid}/emergency_contacts/{pushId}/{name, phone, relationship}` | (inside the node above) | `.finalizeSignUp`, one path per contact | owner | Sign-up Consent step |
 | `users/{uid}/consent/{accepted, acceptedAt, version}` | `.consentRecord` (`HomeViewModel`'s consent gate) | `.finalizeSignUp`; `.recordConsent` (`ConsentRequiredViewModel`). Same three paths, `acceptedAt` a server timestamp | owner | Home gate, Before you continue |
 | `users/{uid}/deletion_pending` | `.profileState` | `.markDeletionPending` | owner | Account information |
-| `devices/guardband-001/latest` | `FirebaseAlertRepository.observeLatestAlert` (`TrackViewModel`: the map marker) | **mock sender** `AlertSender.send`: `PUT latest.json`, **second**; the band, once firmware exists | read: a signed-in receiver, though the rules ask for none. Write: **unauthenticated** REST | Track tab; Mock Sender (debug only) |
+| `devices/guardband-001/latest` | `FirebaseAlertRepository.observeLatestAlert` (`TrackViewModel`: the map marker) | **mock sender** `AlertSender.send`: `PUT latest.json`, **second**; the band, once firmware exists | read: a signed-in receiver, though the rules ask for none. Write: REST, signed in as the band (`?auth=`) when it can be, else unauthenticated (since 2026-11-02) | Track tab; Mock Sender (debug only) |
+| `devices/<band id>/latest`, `/history/{n}` | nobody in the app yet (pairing step 3) | the mock sender with its "own id" switch on; the firmware with `WRITE_TO_OWN_ID`. Always signed in as that band | the band itself (`auth.uid == $deviceId`) | Mock Sender, prototype firmware |
 | `devices/guardband-001/history` (the list) | `.observeAlertHistory(100)`: `orderByKey().limitToLast(100)`, shared by Track's recent-alerts panel, Alert history (`AlertViewModel`) and the Check-in pill (`observeLatestCheckIn`); **mock sender** `readHighestHistoryKey`: `GET history.json?shallow=true` | (none at list level) | read: receiver signed in; mock sender **unauthenticated** | Track, Alert history, Mock Sender |
 | `devices/guardband-001/history/{sequenceId}` | (inside the list) | **mock sender** `PUT history/{n}.json`, **first**; the band | **unauthenticated** | Mock Sender |
 | `devices/{id}/command`, `devices/{id}/status` | **nobody** | **nobody** | | No reference in `app/`, `SCHEMA.md` or the README |
@@ -76,7 +79,7 @@ no `$other` at that level (CLAUDE.md, "Account deletion").
 | 2 | History entries are checked less than `latest`: no check on `sequenceId` or `battery` (test 27 lets a 150% battery through). | **Fixed in A+**: the same checks as `latest`. |
 | 3 | A history key can be anything (test 26). The app orders by key and relies on whole-number keys. | **Fixed in A+**: `$sequenceId.matches(/^[0-9]+$/)`. |
 | 4 | **Anyone can read the wearer's position history.** | **The decision in §4.** |
-| 5 | Any device id can be written (test 33), so anyone can create `devices/<anything>`. | Not changed. Pinning `$deviceId` to `guardband-001` would hard-code the one id that pairing removes. Listed so it is a choice. |
+| 5 | Any device id can be written (test 33), so anyone can create `devices/<anything>`. | **Fixed since 2026-11-02** (§4.1): any id but `guardband-001` is writable only by the band whose uid it is. A signed-in user can still create `devices/<their own uid>`, a band nobody sees until it is claimed. |
 | 6 | `users/{uid}` accepts any extra child from its owner (no `$other`); `name` may be an empty string; `email` has no format check. | Not changed: owner-only, so the owner can only clutter their own record. **Adding a `$other` at `users/$uid` needs a rule for `deletion_pending` first**, or Delete account fails at step 2. |
 | 7 | `emergency_contacts/$contactId` repeats its parent's `.read` and `.write`. | Not changed. Redundant and harmless; RTDB grants cascade down. |
 
@@ -110,17 +113,36 @@ this pass.
 | **Privacy Notice** | accurate ("can be read, and written, without signing in") | accurate | **overstates the exposure**: reads would need an account. Reword in the next deploy | needs rewording |
 | Real protection | none | stops anyone erasing or rewriting the history | little: sign-up is open, so anyone can make an account and read | real, for reads; writes stay open until the band has a token |
 
-**Recommendation: A+, pending Jul's decision.** It breaks neither end of the
+**Decided: A+ (Jul, 2026-11-04), live with the band-identity writes of §4.1
+since that day** (§9). Why A+: it breaks neither end of the
 demo, keeps the notice accurate, and closes the worst write (erasing a panic).
 B costs the mock sender for little gain while anyone can sign up. C is the
 right end state, but it belongs with device pairing: a pairing record the
 app writes, a token for the band, and `AlertSender` sending `?auth=`. A+
 leaves B and C as one-block swaps.
 
+### 4.1 Band identity: who may write (2026-11-02, every option)
+
+Bands now sign in as Firebase **anonymous** users whose uid is their band id
+([device-pairing.md](device-pairing.md) §2). So the `.write` on `latest` and
+on `history/$sequenceId` becomes, under A+, B and C alike:
+
+```
+latest:              $deviceId === 'guardband-001' || (auth != null && auth.uid === $deviceId)
+history/$sequenceId: !data.exists() && (the same)
+```
+
+`guardband-001`, the one band the app reads and the demo uses, stays
+writable by anyone until it is retired (pairing step 6); every other id can
+be written only by its own band. It breaks nothing: the mock sender and the
+firmware still write to `guardband-001` by default, signed in when they can
+be. `command` and `status` are not changed. The B and C blocks below carry
+the same lines. The live rules (A+ without §4.1, §9) do not; they are the rollback.
+
 **Switching is one block.** Replace the whole `"devices"` block in
 `RTDBS-RULES.md` with the option's block below; for C, also add the
 `"device_members"` block beside `"users"` and `"devices"`. Option A's block is
-the `"devices"` block of §9. A+ is what `RTDBS-RULES.md` holds now. The
+in git history (`6ade00c`); §9 is A+ as live. A+ with §4.1 is what `RTDBS-RULES.md` holds now. The
 `"//"` comments inside the file's A+ block go with it.
 
 <details>
@@ -133,7 +155,7 @@ A+ with every `".read": true` under `devices/` changed to `"auth != null"`.
   "$deviceId": {
     "latest": {
       ".read": "auth != null",
-      ".write": true,
+      ".write": "$deviceId === 'guardband-001' || (auth != null && auth.uid === $deviceId)",
       ".validate": "newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
       "type": {
         ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
@@ -148,7 +170,7 @@ A+ with every `".read": true` under `devices/` changed to `"auth != null"`.
       ".read": "auth != null",
       "$sequenceId": {
         ".read": "auth != null",
-        ".write": "!data.exists()",
+        ".write": "!data.exists() && ($deviceId === 'guardband-001' || (auth != null && auth.uid === $deviceId))",
         ".validate": "$sequenceId.matches(/^[0-9]+$/) && newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
         "type": {
           ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
@@ -190,7 +212,7 @@ future server) can pair an account; a user may read only their own row.
   "$deviceId": {
     "latest": {
       ".read": "auth != null && root.child('device_members').child($deviceId).child(auth.uid).val() === true",
-      ".write": true,
+      ".write": "$deviceId === 'guardband-001' || (auth != null && auth.uid === $deviceId)",
       ".validate": "newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
       "type": {
         ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
@@ -205,7 +227,7 @@ future server) can pair an account; a user may read only their own row.
       ".read": "auth != null && root.child('device_members').child($deviceId).child(auth.uid).val() === true",
       "$sequenceId": {
         ".read": "auth != null && root.child('device_members').child($deviceId).child(auth.uid).val() === true",
-        ".write": "!data.exists()",
+        ".write": "!data.exists() && ($deviceId === 'guardband-001' || (auth != null && auth.uid === $deviceId))",
         ".validate": "$sequenceId.matches(/^[0-9]+$/) && newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
         "type": {
           ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
@@ -312,6 +334,16 @@ the legacy nodes they are the same under all four.
 | 30 | read | `/devices/guardband-001/history` | AUTH_UID | | allow | **allow** | allow | allow ² |
 | 31 | read | `/devices/guardband-001/latest` | OTHER_UID | | allow | **allow** | allow | deny ² |
 | 34 | write | `/device_members/guardband-001/OTHER_UID` | OTHER_UID | `true` | deny | **deny** | deny | deny |
+| 36 | write | `/devices/BAND_UID/latest` | BAND_UID | `P` with `"deviceId":"BAND_UID"` | allow | **allow** | allow | allow |
+| 37 | write | same | unauth | same | allow | **deny** | deny | deny |
+| 38 | write | same | OTHER_UID | same | allow | **deny** | deny | deny |
+| 39 | write | `/devices/BAND_UID/history/999999` | BAND_UID | `P` with `"deviceId":"BAND_UID"` | allow | **allow** | allow | allow |
+| 40 | write | same | unauth | same | allow | **deny** | deny | deny |
+| 41 | write | `/devices/guardband-001/history/999998` | BAND_UID | `P` with `"sequenceId":999998` | allow | **allow** | allow | allow |
+
+Tests 36 to 41 are band identity (§4.1, 2026-11-02). `BAND_UID` is any uid
+that is not `guardband-001`, authenticated as itself (the Playground cannot
+mark it anonymous, and the rule does not ask).
 
 ¹ RTDB rules cannot count children; the repository refuses the 4th contact
 (and the last one's deletion). This row shows the rule does not, so nobody
@@ -340,6 +372,17 @@ single contact delete are allowed; the mock sender's
 and C; the receiver's `orderBy="$key"&limitToLast=100` query is allowed for
 a signed-in user under A, A+ and B, and under C only for a paired one; a write
 to `devices/not-a-band/latest` and to `command/led` are allowed under all four.
+
+**2026-11-02, band identity (§4.1):** the A+ block as it now stands in
+`RTDBS-RULES.md`, same emulator and recipe, 18 cases, all as expected:
+`guardband-001` still writable unsigned and by a signed-in band, and still
+append-only; a band writing its own `latest` and new history rows; its own
+rows not rewritable or deletable; on a band's id, unsigned writes, another
+band's, and an app account's all refused; a bad `type` still refused; reads
+of a band's `latest` and its `shallow` keys open; `users/` unchanged. So the
+`devices/not-a-band/latest` write above is now refused under A+ unless made
+by `not-a-band` itself. The B and C blocks carry the same writes and were not
+re-run.
 
 The recipe is in [`handoff.md`](handoff.md) §6 ("Test rules without touching
 production") and its traps in §7. The harness itself was a scratch script and
@@ -410,10 +453,17 @@ from clients.
 
 ---
 
-## 9. The live rules (deployed 2026-10-11): rollback text
+## 9. The live rules (published 2026-11-04)
 
-This is `RTDBS-RULES.md` as committed before 2026-10-19 (`6ade00c`), with its
-`"//"` keys stripped. Its `"devices"` block is **Option A**.
+Published by Jul on 2026-11-04, and checked the same day against the stripped
+`RTDBS-RULES.md` and the ruleset the 18 emulator cases of §6 ran on:
+identical to both.
+
+**Rolling back** to what was live just before (A+ without band identity, as
+read from the Console that morning) is three edits to this text: `latest`'s
+`.write` back to `true`, `history/$sequenceId`'s back to `"!data.exists()"`,
+and the `favorite` block under `emergency_contacts` removed. The rules
+deployed on 2026-10-11 (Option A) are in git history (`6ade00c`).
 
 ```json
 {
@@ -442,6 +492,12 @@ This is `RTDBS-RULES.md` as committed before 2026-10-19 (`6ade00c`), with its
             "relationship": {
               ".validate": "newData.isString() && newData.val().length <= 50"
             },
+            "emergency": {
+              ".validate": "newData.isBoolean()"
+            },
+            "favorite": {
+              ".validate": "newData.isBoolean()"
+            },
             "$other": {
               ".validate": false
             }
@@ -468,7 +524,7 @@ This is `RTDBS-RULES.md` as committed before 2026-10-19 (`6ade00c`), with its
       "$deviceId": {
         "latest": {
           ".read": true,
-          ".write": true,
+          ".write": "$deviceId === 'guardband-001' || (auth != null && auth.uid === $deviceId)",
           ".validate": "newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
           "type": {
             ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
@@ -489,10 +545,21 @@ This is `RTDBS-RULES.md` as committed before 2026-10-19 (`6ade00c`), with its
           ".read": true,
           "$sequenceId": {
             ".read": true,
-            ".write": true,
-            ".validate": "newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
+            ".write": "!data.exists() && ($deviceId === 'guardband-001' || (auth != null && auth.uid === $deviceId))",
+            ".validate": "$sequenceId.matches(/^[0-9]+$/) && newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
             "type": {
               ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
+            },
+            "sequenceId": {
+              ".validate": "newData.isNumber()"
+            },
+            "battery": {
+              "percent": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+              },
+              "isCharging": {
+                ".validate": "newData.isBoolean()"
+              }
             }
           }
         },

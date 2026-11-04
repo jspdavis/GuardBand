@@ -26,9 +26,13 @@ the app together. Pairing comes first: SMS depends on it.
   accounts, many-to-many: anyone can wear a band and watch friends' bands.
   - [x] Step 1 (2 Nov): the app reads the account's bands from one place
     (`BandRepository`); everyone still wears `guardband-001`.
-  - [ ] Band identity: each band signs in as a Firebase anonymous user and
-    writes with `?auth=` (prototype firmware and mock sender); rules close
-    writes on every new band id.
+  - [x] Band identity (2 Nov): the prototype firmware and the mock sender
+    sign in as Firebase anonymous users and write with `?auth=`; the firmware
+    checks certificates; `RTDBS-RULES.md` closes writes on every band id but
+    `guardband-001`. Still to do by hand: turn on **Anonymous** sign-in in
+    the Console (James), add
+    `FIREBASE_API_KEY` to each `secrets.h` (firmware), flash and check it on
+    the board.
   - [ ] Claim a band with a code from the Serial Monitor; "Pair a band" works.
   - [ ] Watchers: the wearer invites friends; Track's My band / friend / All.
   - [ ] Close reads and retire `guardband-001`.
@@ -159,9 +163,9 @@ Use the debug mock sender to produce alerts.
 
 ## Decisions and setup
 
-- [ ] 🗳️ **Pick the `devices/` rules and publish** · *Jul*
-  Choose option A, A+ (recommended), B or C, run the Playground tests, then
-  publish. `RTDBS-RULES.md` is ahead of the live rules until then.
+- [x] 🗳️ **Publish the band-identity rules** · *Jul, 4 Nov*
+  A+ with band identity is live; `RTDBS-RULES.md`, stripped, matches the
+  Console.
   Where: [`database-rules.md`](database-rules.md) §4–§7
 
 - [ ] 🗳️ **MapTiler key for each developer** · *Jul*

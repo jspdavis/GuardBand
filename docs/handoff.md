@@ -132,8 +132,13 @@ says what it depends on and what it would touch.
    - **Step 1 is built:** `BandRepository` (the account's bands; every
      account still wears `guardband-001`), `BandSelection`, and a
      `WatchedBandAlertRepository` that follows them, with `AlertError.NoBand`.
-     No visible change. Next: band identity in the prototype firmware and
-     the mock sender, with rules closing writes on every new band id.
+     No visible change.
+   - **Step 2 is built:** the prototype firmware and the mock sender sign in
+     as anonymous users and write with `?auth=` (still to `guardband-001` by
+     default); the firmware checks certificates (`gts_roots.h`);
+     `RTDBS-RULES.md` closes writes on every band id but `guardband-001`
+     (emulator-tested, published 2026-11-04). Waits on Anonymous sign-in in
+     the Console. Next: claiming a band over Serial (step 3).
 2. **Roles: wearer and guardian.** Today the signed-in user is implicitly the
    wearer (their face is on the marker) and also the watcher. A guardian
    watching someone else's band needs sharing or invites on top of pairing.
@@ -234,7 +239,7 @@ says what it depends on and what it would touch.
 
 | | Who | Notes |
 |---|---|---|
-| **Decide `devices/` and publish the rules** | Jul | Pick A, A+ (recommended), B or C ([`database-rules.md`](database-rules.md) §4). B breaks the mock sender; C breaks every receiver until pairing. `RTDBS-RULES.md` is ahead of the Console until then: do not describe it as the live ruleset. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
+| **Rules: nothing pending** | Jul | **A+ with band identity is live** (published 2026-11-04, [`database-rules.md`](database-rules.md) §9); `RTDBS-RULES.md`, stripped, matches the Console. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
 | **MapTiler key** | Jul | A dedicated key restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), shared privately, in each `local.properties` as `MAPTILER_API_KEY`. Without it Track says "Map unavailable". [`osmdroid.md`](osmdroid.md) §4.4. |
 | **The Privacy Notice still says "Profile tab"** | James | Its Google profile picture row says the picture shows "on the Profile tab and on the map". It is now the Device tab. Nothing about the data changed, so it is a wording fix for a human to make (and decide whether it needs a version bump); the agent was told not to edit the hosted notice. |
 | **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. The ⓘ collapse follows OSMF's guidelines, not a MapTiler statement. [`osmdroid.md`](osmdroid.md) §4.6. |
@@ -242,7 +247,7 @@ says what it depends on and what it would touch.
 | **Remove the stray `Guardband-MVVM` gitlink** | Jehan, then anyone | A nested clone in Jehan's tree was committed as a gitlink to `9448b3c`, which exists only on her machine. Check nothing is stranded in that inner copy ([`guardband-mvvm-folder.md`](guardband-mvvm-folder.md)), then remove the entry. |
 | **Each teammate's fingerprints** | each developer | Debug **SHA-1** in the Firebase Console (else Google sign-in fails on their build); debug **SHA-256** in `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else reset and verification links open the browser). Four SHA-256s are live (James's and three teammates'). Release keystore's before any signed build. |
 | **Band model and turntable frames** | Jul (design and modelling) | The Device tab's band viewer plays a placeholder. Jul models the band in Blender from the concept image (charcoal gray composite strap, neon green perforated liner, brushed steel double-ring clasp, three round buttons with green LEDs, OLED strip) and renders 36 to 72 transparent WebP frames into the viewer's frame folder; no code change is needed. Decide first what the three round elements on the concept are: the concept labels them an HR/SpO2 sensor array, but the requirements and SCHEMA.md contain no heart-rate or blood-oxygen data, and showing one would imply collecting health data (Privacy Notice change and a CONSENT_VERSION bump). A real-time .glb viewer is a possible later replacement behind the same BandViewer interface and would need a dependency check against compileSdk 34 and a release manifest re-check. Folder and frame spec: [`band-viewer.md`](band-viewer.md) §2 and §3. Not started. |
-| **Band firmware** | firmware teammate | Write exactly `SCHEMA.md`'s payload: `history/{sequenceId}` first, then `latest`; a double-press within 2 s is a `CHECKIN` (FR-10); a **1.5 s hold is a `PANIC`**, fired while still held; during a panic a **5 s hold cancels** it (stops tracking, sends a `CHECKIN`), and a check-in alone does not; tracking every 60 s for 30 min after an alert (FR-09); low battery at 20% (FR-11). The Mock Sender copies these gestures (`BandButtonDecoder`): change both together. **Started (2026-10-28):** the Wi-Fi prototype in [`../firmware/`](../README.md#band-firmware-prototype) does all of this (tracking at the Mock Sender's 5 s demo pace), with the laptop standing in for the GPS and battery. Still to do: the NEO-6M, the Air780E (4G and SMS, FR-05), a real battery reading, and authenticated writes once pairing exists. |
+| **Band firmware** | firmware teammate | Write exactly `SCHEMA.md`'s payload: `history/{sequenceId}` first, then `latest`; a double-press within 2 s is a `CHECKIN` (FR-10); a **1.5 s hold is a `PANIC`**, fired while still held; during a panic a **5 s hold cancels** it (stops tracking, sends a `CHECKIN`), and a check-in alone does not; tracking every 60 s for 30 min after an alert (FR-09); low battery at 20% (FR-11). The Mock Sender copies these gestures (`BandButtonDecoder`): change both together. **Started (2026-10-28):** the Wi-Fi prototype in [`../firmware/`](../README.md#band-firmware-prototype) does all of this (tracking at the Mock Sender's 5 s demo pace), with the laptop standing in for the GPS and battery. Since 2 Nov it signs in as its own band (anonymous auth, `?auth=`) and checks certificates. Still to do: the NEO-6M, the Air780E (4G and SMS, FR-05), a real battery reading, and claiming over Serial (pairing step 3). |
 
 ### Phone checks
 
