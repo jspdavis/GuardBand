@@ -124,6 +124,11 @@ class DeviceFragment : Fragment(R.layout.fragment_device) {
 
         rowContacts.setOnClickListener { homeViewModel.onContactsSummaryClicked() }
 
+        view.findViewById<View>(R.id.row_device_pair).setOnClickListener {
+            InviteCodeDialogFragment()
+                .show(childFragmentManager, InviteCodeDialogFragment.TAG)
+        }
+
         bandViewer = BandViewer.create(requireContext()).also { viewer ->
             view.findViewById<FrameLayout>(R.id.fl_device_band_viewer).addView(
                 viewer.view,

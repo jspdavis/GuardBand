@@ -5,7 +5,7 @@ features come first; each item says who it is waiting on and where its
 details live in the repo. Finished items are at the bottom. The full record
 is [`handoff.md`](handoff.md) §4.
 
-As of 27 Oct 2026 · `mvvm-main` and `main` · 741 unit tests passing · lint
+As of 5 Nov 2026 Â· `mvvm-main` Â· unit tests passing Â· lint passes with no errors.
 passes with no errors.
 
 **Types:** 🟥 heavy feature · 🟩 feature · 🔧 fix · 📱 phone check · 🗳️ decision / setup
@@ -210,6 +210,21 @@ Use the debug mock sender to produce alerts.
 ---
 
 ## Done since 20 Oct
+
+- [x] u{1F7E9} **Incident status: Acknowledge / Resolve** Â· *5 Nov*
+  Guardians can mark a panic "I'm on it" (Acknowledged) or Resolved from the
+  Alert History screen and the Incident view. Coloured status chips appear only
+  on PANIC alerts. Writes use a 10 s timeout; failures toast. No PII stored.
+  `AlertViewModel`, `IncidentViewModel`, `NotificationsViewModel` all observe
+  live statuses. Full unit test coverage added.
+- [x] u{1F7E9} **Date grouping ("Yesterday") and unlimited alert history** Â· *5 Nov, Jehan*
+  Alert history groups by Today / Yesterday / specific date; the display limit
+  is removed (Track's compact panel still shows 3). `AlertDays.On` and
+  `AlertFormatting` updated.
+- [x] u{1F7E9} **Clear alert history** Â· *5 Nov, Jehan*
+  A trash-can button in the Alert History top bar clears the band's full history
+  after a confirmation dialog. `AlertRepository.clearAlertHistory` wired through
+  all implementations, `AlertViewModel.onClearHistoryClicked`, and strings added.
 
 - [x] 🟩 **Notifications inbox with real data** · *21 Oct, jspdavis*
   The bell shows the band's alerts (tracking updates left out) by day, with

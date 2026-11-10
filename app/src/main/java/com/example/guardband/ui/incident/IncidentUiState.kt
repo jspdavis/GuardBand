@@ -1,6 +1,7 @@
 package com.example.guardband.ui.incident
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.ui.track.BandStatus
 import com.example.guardband.ui.track.Elapsed
 import com.example.guardband.ui.track.MapLayer
@@ -19,6 +20,9 @@ data class IncidentUiState(
 
     /** The panic and its tracking updates, once read. */
     val incident: Incident? = null,
+
+    /** The panic's resolution status (Active, Acknowledged, Resolved). */
+    val status: AlertStatus = AlertStatus.ACTIVE,
 
     /**
      * Non-null when there is nothing to show and why: the read failed with

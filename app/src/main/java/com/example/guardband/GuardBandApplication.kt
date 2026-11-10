@@ -1,6 +1,7 @@
 package com.example.guardband
 
 import android.app.Application
+import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.ui.display.DisplayPrefs
 
 /**
@@ -14,5 +15,6 @@ class GuardBandApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         DisplayPrefs.applySaved(this)
+        RepositoryProvider.init(this)
     }
 }

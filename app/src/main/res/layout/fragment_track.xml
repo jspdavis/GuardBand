@@ -44,6 +44,89 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 
+        <!-- Life360-Style Top Bar Switcher:
+             Shows currently selected wearer's name, live status badge (Safe / Panic Alert / Offline),
+             and dropdown arrow. Tapping opens the wearer switcher menu with all monitored wearers
+             and "+ Connect New Wearer". -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/track_wearer_switcher"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/surface_elevated"
+            app:strokeColor="@color/divider"
+            app:strokeWidth="1dp"
+            app:layout_constraintHorizontal_bias="0.5"
+            app:layout_constraintStart_toEndOf="@id/ib_track_settings"
+            app:layout_constraintEnd_toStartOf="@id/ib_track_notifications"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="10dp">
+
+                <!-- Live status dot -->
+                <View
+                    android:id="@+id/view_wearer_status_dot"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_avatar_icon"
+                    android:backgroundTint="@color/alert_checkin" />
+
+                <!-- Status text badge (Safe, Panic Alert, Offline) -->
+                <TextView
+                    android:id="@+id/tv_wearer_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/status_wearer_safe"
+                    android:textAppearance="@style/TextAppearance.GuardBand.LabelSmall"
+                    android:textColor="@color/alert_checkin"
+                    android:textStyle="bold" />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="14dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@color/divider" />
+
+                <!-- Selected wearer's name -->
+                <TextView
+                    android:id="@+id/tv_wearer_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxWidth="130dp"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:text="@string/label_track_my_band"
+                    android:textAppearance="@style/TextAppearance.GuardBand.TitleSmall"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold" />
+
+                <!-- Dropdown arrow -->
+                <ImageView
+                    android:id="@+id/iv_wearer_dropdown_arrow"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="2dp"
+                    android:src="@drawable/ic_arrow_drop_down"
+                    android:importantForAccessibility="no"
+                    app:tint="@color/text_secondary" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Shown instead of a marker when there is no position: the band has
              never reported, it has reported with no fix, or the read failed. -->
 

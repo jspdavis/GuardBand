@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.guardband.R
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.ui.alert.AlertFormatting
 import com.example.guardband.ui.alert.AlertRow
 import com.example.guardband.ui.track.Elapsed
@@ -25,6 +26,7 @@ import com.example.guardband.ui.track.MapAttribution
 import com.example.guardband.ui.track.MapTilerMap
 import com.example.guardband.ui.track.MapTilerTileSource
 import com.example.guardband.ui.track.OsmdroidConfig
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
@@ -56,8 +58,8 @@ import org.osmdroid.views.overlay.Polyline
  * incident_map_view, incident_map_empty, incident_map_attribution,
  * incident_map_attribution_info, incident_map_logo, incident_progress,
  * incident_error_view, incident_error_message, incident_retry_button,
- * incident_summary, iv_incident_icon, tv_incident_type, tv_incident_time,
- * ll_incident_place, tv_incident_place, ll_incident_battery,
+ * incident_summary, iv_incident_icon, tv_incident_type, tv_incident_status,
+ * tv_incident_time, ll_incident_place, tv_incident_place, ll_incident_battery,
  * iv_incident_battery_icon, tv_incident_battery, tv_incident_updates,
  * tv_incident_latest_update, tv_incident_no_updates.
  */
@@ -80,6 +82,7 @@ class IncidentFragment : Fragment(R.layout.fragment_incident) {
     private lateinit var tvError: TextView
     private lateinit var summary: View
     private lateinit var ivIcon: ImageView
+    private lateinit var tvStatus: TextView
     private lateinit var tvTime: TextView
     private lateinit var placeRow: View
     private lateinit var tvPlace: TextView
@@ -117,6 +120,7 @@ class IncidentFragment : Fragment(R.layout.fragment_incident) {
         tvError = view.findViewById(R.id.incident_error_message)
         summary = view.findViewById(R.id.incident_summary)
         ivIcon = view.findViewById(R.id.iv_incident_icon)
+        tvStatus = view.findViewById(R.id.tv_incident_status)
         tvTime = view.findViewById(R.id.tv_incident_time)
         placeRow = view.findViewById(R.id.ll_incident_place)
         tvPlace = view.findViewById(R.id.tv_incident_place)
@@ -143,6 +147,10 @@ class IncidentFragment : Fragment(R.layout.fragment_incident) {
 
         bindPanicBadge()
         setUpMap()
+
+        tvStatus.setOnClickListener {
+            showStatusDialog(viewModel.uiState.value.status)
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -221,7 +229,6 @@ class IncidentFragment : Fragment(R.layout.fragment_incident) {
     private fun drawIncident(incident: Incident) {
         if (incident == drawnIncident) return
         drawnIncident = incident
-
         val panicPoint = incident.panicLocation?.toGeoPoint()
         panicMarker?.apply {
             if (panicPoint != null) position = panicPoint
@@ -302,6 +309,30 @@ class IncidentFragment : Fragment(R.layout.fragment_incident) {
         val panic = incident.panic
         tvTime.text = timeText(panic, state.panicElapsed)
 
+        // Status chip for this panic
+        val status = state.status
+        tvStatus.isVisible = true
+        when (status) {
+            AlertStatus.ACTIVE -> {
+                tvStatus.setText(R.string.label_alert_status_active)
+                tvStatus.setTextColor(context.getColor(R.color.alert_panic))
+                tvStatus.backgroundTintList =
+                    ColorStateList.valueOf(ColorUtils.setAlphaComponent(context.getColor(R.color.alert_panic), BADGE_ALPHA))
+            }
+            AlertStatus.ACKNOWLEDGED -> {
+                tvStatus.setText(R.string.label_alert_status_acknowledged)
+                tvStatus.setTextColor(context.getColor(R.color.alert_low_battery))
+                tvStatus.backgroundTintList =
+                    ColorStateList.valueOf(ColorUtils.setAlphaComponent(context.getColor(R.color.alert_low_battery), BADGE_ALPHA))
+            }
+            AlertStatus.RESOLVED -> {
+                tvStatus.setText(R.string.label_alert_status_resolved)
+                tvStatus.setTextColor(context.getColor(R.color.brand_primary))
+                tvStatus.backgroundTintList =
+                    ColorStateList.valueOf(ColorUtils.setAlphaComponent(context.getColor(R.color.brand_primary), BADGE_ALPHA))
+            }
+        }
+
         val location = panic.location
         placeRow.isVisible = location != null
         if (location != null) tvPlace.text = AlertFormatting.locationText(context, location, state.placeName)
@@ -338,6 +369,29 @@ class IncidentFragment : Fragment(R.layout.fragment_incident) {
             )
         }
         tvNoUpdates.isVisible = state.showsNoUpdates
+    }
+
+    private fun showStatusDialog(currentStatus: AlertStatus) {
+        val options = arrayOf(
+            getString(R.string.action_status_active),
+            getString(R.string.action_acknowledge),
+            getString(R.string.action_resolve)
+        )
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.dialog_update_status_title)
+            .setItems(options) { _, which ->
+                val newStatus = when (which) {
+                    0 -> AlertStatus.ACTIVE
+                    1 -> AlertStatus.ACKNOWLEDGED
+                    2 -> AlertStatus.RESOLVED
+                    else -> return@setItems
+                }
+                if (newStatus != currentStatus) {
+                    viewModel.onUpdateStatus(newStatus)
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     /**

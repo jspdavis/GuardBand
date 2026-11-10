@@ -413,4 +413,70 @@ class AlertViewModelTest {
         assertTrue(event is AlertEvent.ShowMessage)
         assertEquals(AlertViewModel.MSG_HISTORY_CLEARED, (event as AlertEvent.ShowMessage).text)
     }
+
+    // -- Incident status ----------------------------------------------------------
+
+    @Test
+    fun `statuses emitted by the repository reach the ui state`() = runTest {
+        val repository = FakeAlertRepository(history(alert(1, "PANIC")))
+        val vm = viewModel(repository)
+        vm.uiState.first { !it.isLoading }
+
+        repository.emitStatuses(mapOf(1L to com.example.guardband.data.model.AlertStatus.ACKNOWLEDGED))
+        advanceUntilIdle()
+
+        assertEquals(
+            com.example.guardband.data.model.AlertStatus.ACKNOWLEDGED,
+            vm.uiState.value.statuses[1L]
+        )
+    }
+
+    @Test
+    fun `onAcknowledge calls repository with ACKNOWLEDGED status`() = runTest {
+        val repository = FakeAlertRepository(history(alert(1, "PANIC")))
+        val vm = viewModel(repository)
+        vm.uiState.first { !it.isLoading }
+
+        vm.onAcknowledge(1L)
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(1L to com.example.guardband.data.model.AlertStatus.ACKNOWLEDGED),
+            repository.requestedStatusUpdates
+        )
+    }
+
+    @Test
+    fun `onResolve calls repository with RESOLVED status`() = runTest {
+        val repository = FakeAlertRepository(history(alert(1, "PANIC")))
+        val vm = viewModel(repository)
+        vm.uiState.first { !it.isLoading }
+
+        vm.onResolve(1L)
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(1L to com.example.guardband.data.model.AlertStatus.RESOLVED),
+            repository.requestedStatusUpdates
+        )
+    }
+
+    @Test
+    fun `onUpdateStatus failure sends ShowMessage event`() = runTest {
+        val repository = FakeAlertRepository(history(alert(1, "PANIC")))
+        repository.updateStatusResult =
+            Result.failure(com.example.guardband.data.repository.AlertError.Network)
+        val vm = viewModel(repository)
+        vm.uiState.first { !it.isLoading }
+
+        vm.onUpdateStatus(1L, com.example.guardband.data.model.AlertStatus.ACKNOWLEDGED)
+        advanceUntilIdle()
+
+        val event = vm.events.first()
+        assertTrue(event is AlertEvent.ShowMessage)
+        assertEquals(
+            AlertViewModel.MSG_STATUS_UPDATE_FAILED,
+            (event as AlertEvent.ShowMessage).text
+        )
+    }
 }

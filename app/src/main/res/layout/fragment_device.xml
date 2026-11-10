@@ -510,14 +510,14 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- d) Pairing placeholder: disabled until pairing exists. DESIGN: Jul -->
+            <!-- d) Pairing row: tap opens the invite-code dialog. -->
             <LinearLayout
                 android:id="@+id/row_device_pair"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:alpha="0.5"
-                android:enabled="false"
+                android:alpha="1"
+                android:enabled="true"
                 android:gravity="center_vertical"
                 android:minHeight="56dp"
                 android:orientation="horizontal"
@@ -545,7 +545,8 @@
                     android:layout_height="wrap_content"
                     android:text="@string/label_device_coming_soon"
                     android:textAppearance="@style/TextAppearance.GuardBand.LabelSmall"
-                    android:textColor="@color/text_secondary" />
+                    android:textColor="@color/text_secondary"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <!-- e) How the band works: plain copy. DESIGN: Jul -->

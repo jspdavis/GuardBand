@@ -26,6 +26,9 @@ import com.example.guardband.ui.alert.AlertFormatting
 import com.example.guardband.ui.alert.AlertRow
 import com.example.guardband.ui.alert.AlertViewModel
 import com.example.guardband.ui.home.HomeViewModel
+import com.example.guardband.ui.device.InviteCodeDialogFragment
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
@@ -100,6 +103,11 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     private lateinit var tvEmpty: TextView
     private lateinit var btnNavigate: FloatingActionButton
     private lateinit var tvCheckIn: TextView
+    private lateinit var cardWearerSwitcher: MaterialCardView
+    private lateinit var viewWearerStatusDot: View
+    private lateinit var tvWearerStatus: TextView
+    private lateinit var tvWearerName: TextView
+    private var lastState: TrackUiState? = null
     private var cardCheckIn: View? = null
     private var ivCheckInStatus: ImageView? = null
     private var flCheckInIndicator: View? = null
@@ -172,8 +180,16 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         super.onViewCreated(view, savedInstanceState)
 
         mapView            = view.findViewById(R.id.track_map_view)
-        tvEmpty            = view.findViewById(R.id.track_empty_view)
-        btnNavigate        = view.findViewById(R.id.track_navigate_button)
+        tvEmpty             = view.findViewById(R.id.track_empty_view)
+        cardWearerSwitcher  = view.findViewById(R.id.track_wearer_switcher)
+        viewWearerStatusDot = view.findViewById(R.id.view_wearer_status_dot)
+        tvWearerStatus      = view.findViewById(R.id.tv_wearer_status)
+        tvWearerName        = view.findViewById(R.id.tv_wearer_name)
+        btnNavigate         = view.findViewById(R.id.track_navigate_button)
+
+        cardWearerSwitcher.setOnClickListener {
+            lastState?.let { showWearerSwitcherDialog(it) }
+        }
         cardCheckIn        = view.findViewById(R.id.card_track_checkin)
         tvCheckIn          = view.findViewById(R.id.track_checkin_pill)
         ivCheckInStatus    = view.findViewById(R.id.iv_track_checkin_status)
@@ -475,6 +491,8 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     // ── Rendering ─────────────────────────────────────────────────────────────
 
     private fun render(state: TrackUiState) {
+        lastState = state
+        renderWearerSwitcher(state)
         // D7: a layer change swaps the tile source. Done before showFix so the
         // marker redraws on the new base map; applied only on change so a
         // position-only update never reloads the tiles.
@@ -644,6 +662,84 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
         tvEmpty.visibility = if (message == null) View.GONE else View.VISIBLE
         if (message != null) tvEmpty.text = message
+    }
+
+    // ── Wearer switcher (Life360 style) ───────────────────────────────────────
+
+    /**
+     * Renders the top-bar wearer switcher pill with the active wearer's name
+     * and live status indicator (Safe / Panic Alert / Offline).
+     */
+    private fun renderWearerSwitcher(state: TrackUiState) {
+        tvWearerName.text = state.currentWearerName ?: getString(R.string.label_track_my_band)
+
+        val context = requireContext()
+        when (state.currentWearerStatus) {
+            WearerLiveStatus.PANIC -> {
+                tvWearerStatus.setText(R.string.status_wearer_panic)
+                tvWearerStatus.setTextColor(context.getColor(R.color.alert_panic))
+                viewWearerStatusDot.backgroundTintList =
+                    ColorStateList.valueOf(context.getColor(R.color.alert_panic))
+            }
+            WearerLiveStatus.OFFLINE -> {
+                tvWearerStatus.setText(R.string.status_wearer_offline)
+                tvWearerStatus.setTextColor(context.getColor(R.color.text_secondary))
+                viewWearerStatusDot.backgroundTintList =
+                    ColorStateList.valueOf(context.getColor(R.color.text_secondary))
+            }
+            WearerLiveStatus.SAFE -> {
+                tvWearerStatus.setText(R.string.status_wearer_safe)
+                tvWearerStatus.setTextColor(context.getColor(R.color.alert_checkin))
+                viewWearerStatusDot.backgroundTintList =
+                    ColorStateList.valueOf(context.getColor(R.color.alert_checkin))
+            }
+        }
+    }
+
+    /**
+     * Opens the Life360-style dropdown dialog showing all wearers linked to this
+     * watcher, with the active selection marked, and a quick action button
+     * "+ Connect New Wearer" at the bottom.
+     */
+    private fun showWearerSwitcherDialog(state: TrackUiState) {
+        val items = mutableListOf<CharSequence>()
+        val uids = mutableListOf<String?>()
+
+        // 1. My Band (the account's own band / default rule)
+        items.add(getString(R.string.label_track_my_band))
+        uids.add(null)
+
+        // 2. All connected wearers
+        for (wearer in state.connectedWearers) {
+            val name = wearer.displayName.ifEmpty { getString(R.string.label_track_wearer_unknown) }
+            items.add(name)
+            uids.add(wearer.wearerUid)
+        }
+
+        // 3. Quick action item at the bottom: "+ Connect New Wearer"
+        val connectNewIndex = items.size
+        items.add(getString(R.string.action_connect_new_wearer))
+
+        // Find currently checked item
+        val checkedIndex = if (state.selectedWearerUid == null) {
+            0
+        } else {
+            val idx = uids.indexOf(state.selectedWearerUid)
+            if (idx >= 0) idx else 0
+        }
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.title_wearer_switcher)
+            .setSingleChoiceItems(items.toTypedArray(), checkedIndex) { dialog, which ->
+                dialog.dismiss()
+                if (which == connectNewIndex) {
+                    InviteCodeDialogFragment().show(childFragmentManager, InviteCodeDialogFragment.TAG)
+                } else {
+                    viewModel.onWearerSelected(uids[which])
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     // ── Events ────────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.graphics.ColorUtils
 import com.example.guardband.R
+import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.data.model.AlertType
 import com.google.android.material.card.MaterialCardView
 
@@ -20,6 +21,8 @@ enum class AlertTimeStyle { RELATIVE, CLOCK }
  * - The type's symbol sits on a circle of a pale shade of its colour.
  * - A panic's card is pale red with a red outline; every other card is grey.
  *   A recycled card is reset each time, since a row can stop being a panic.
+ * - A panic displays its resolution status badge (Active, Acknowledged, Resolved).
+ *   Non-panic alerts hide the status badge.
  * - The place shows with a pin, the battery with a symbol for its level
  *   ([AlertFormatting.batteryIcon]). TalkBack reads "Battery 64%" rather
  *   than the bare "64%" beside the symbol.
@@ -33,7 +36,8 @@ internal class AlertCardViews(
     private val place: TextView,
     private val batteryRow: View,
     private val batteryIcon: ImageView,
-    private val battery: TextView
+    private val battery: TextView,
+    private val statusBadge: TextView? = null
 ) {
 
     fun bind(row: AlertRow, style: AlertTimeStyle) {
@@ -48,6 +52,35 @@ internal class AlertCardViews(
         icon.backgroundTintList =
             ColorStateList.valueOf(ColorUtils.setAlphaComponent(color, BADGE_ALPHA))
         time.text = AlertFormatting.timeText(context, row, style)
+
+        if (statusBadge != null) {
+            val status = row.status
+            if (alertType == AlertType.PANIC && status != null) {
+                statusBadge.visibility = View.VISIBLE
+                when (status) {
+                    AlertStatus.ACTIVE -> {
+                        statusBadge.setText(R.string.label_alert_status_active)
+                        statusBadge.setTextColor(context.getColor(R.color.alert_panic))
+                        statusBadge.backgroundTintList =
+                            ColorStateList.valueOf(ColorUtils.setAlphaComponent(context.getColor(R.color.alert_panic), BADGE_ALPHA))
+                    }
+                    AlertStatus.ACKNOWLEDGED -> {
+                        statusBadge.setText(R.string.label_alert_status_acknowledged)
+                        statusBadge.setTextColor(context.getColor(R.color.alert_low_battery))
+                        statusBadge.backgroundTintList =
+                            ColorStateList.valueOf(ColorUtils.setAlphaComponent(context.getColor(R.color.alert_low_battery), BADGE_ALPHA))
+                    }
+                    AlertStatus.RESOLVED -> {
+                        statusBadge.setText(R.string.label_alert_status_resolved)
+                        statusBadge.setTextColor(context.getColor(R.color.brand_primary))
+                        statusBadge.backgroundTintList =
+                            ColorStateList.valueOf(ColorUtils.setAlphaComponent(context.getColor(R.color.brand_primary), BADGE_ALPHA))
+                    }
+                }
+            } else {
+                statusBadge.visibility = View.GONE
+            }
+        }
 
         val panic = alertType == AlertType.PANIC
         card.setCardBackgroundColor(
@@ -96,7 +129,8 @@ internal class AlertCardViews(
             place = view.findViewById(R.id.tv_item_alert_location),
             batteryRow = view.findViewById(R.id.ll_item_alert_battery),
             batteryIcon = view.findViewById(R.id.iv_item_alert_battery_icon),
-            battery = view.findViewById(R.id.tv_item_alert_battery)
+            battery = view.findViewById(R.id.tv_item_alert_battery),
+            statusBadge = view.findViewById(R.id.tv_item_alert_status)
         )
     }
 }

@@ -8,6 +8,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.repository.BandSelectionStore
+import com.example.guardband.data.repository.WearerConnectionRepository
 import com.example.guardband.data.model.AlertType
 import com.example.guardband.data.model.CheckIn
 import com.example.guardband.data.repository.AlertError
@@ -77,7 +79,9 @@ class TrackViewModel(
     private val authRepository: AuthRepository,
     private val layerPrefs: MapLayerPrefs,
     private val clock: Clock = Clock.SYSTEM,
-    private val staleTicks: Flow<Unit> = defaultStaleTicks()
+    private val staleTicks: Flow<Unit> = defaultStaleTicks(),
+    private val wearerConnectionRepository: WearerConnectionRepository? = null,
+    private val bandSelectionStore: BandSelectionStore? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -122,6 +126,63 @@ class TrackViewModel(
         viewModelScope.launch {
             staleTicks.collect { recomputeStaleness() }
         }
+        wearerConnectionRepository?.let { repo ->
+            viewModelScope.launch {
+                repo.observeConnectedWearers().collect { result ->
+                    // Surface permission errors so the user knows rules aren't published.
+                    if (result.isFailure) {
+                        val err = result.exceptionOrNull()
+                        if (err is com.example.guardband.data.repository.WearerConnectionError.PermissionDenied) {
+                            _events.trySend(TrackEvent.ShowMessage(
+                                "Couldn't load connected wearers. Have the Firebase Rules been published?"
+                            ))
+                        }
+                        return@collect
+                    }
+                    val wearers = result.getOrElse { emptyList() }
+                    val currentWearers = _uiState.value.connectedWearers
+                    val currentSelected = _uiState.value.selectedWearerUid
+
+                    // Detect newly added wearers (live connection during this session).
+                    val newlyAdded = wearers.firstOrNull { w ->
+                        currentWearers.none { it.wearerUid == w.wearerUid }
+                    }
+                    // Detect first load: we had no wearers yet and now we do.
+                    val firstLoad = currentWearers.isEmpty() && wearers.isNotEmpty()
+
+                    // Decide who to show in the pill:
+                    // 1. Keep the explicit selection if still valid.
+                    // 2. Switch to a newly added wearer (live pairing).
+                    // 3. Auto-select the first wearer on startup (first load).
+                    // 4. Otherwise show My Band (null = default rule).
+                    val targetWearer = when {
+                        currentSelected != null && wearers.any { it.wearerUid == currentSelected } ->
+                            wearers.first { it.wearerUid == currentSelected }
+                        newlyAdded != null -> newlyAdded
+                        firstLoad -> wearers.first()
+                        else -> null
+                    }
+
+                    // If the target changed, update BandSelectionStore so the
+                    // alert/map reads follow the same wearer.
+                    if (targetWearer != null && targetWearer.wearerUid != currentSelected) {
+                        val deviceId = targetWearer.deviceId ?: targetWearer.wearerUid
+                        bandSelectionStore?.select(deviceId)
+                        if (newlyAdded != null || firstLoad) {
+                            val name = targetWearer.displayName.ifEmpty { "connected wearer" }
+                            _events.trySend(TrackEvent.ShowMessage("Now watching: $name"))
+                        }
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            connectedWearers = wearers,
+                            selectedWearerUid = targetWearer?.wearerUid
+                        )
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -135,6 +196,24 @@ class TrackViewModel(
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         observeLatest()
         observeCheckIns()
+    }
+
+    /**
+     * Called when the user taps a wearer chip in the Track-tab switcher.
+     * Persists the selection via [BandSelectionStore] so the alert and map
+     * reads switch to that wearer's band.
+     *
+     * @param wearerUid the uid of the selected wearer, or null to go back to
+     *   the default rule (the account's own band first).
+     */
+    fun onWearerSelected(wearerUid: String?) {
+        val deviceId = if (wearerUid == null) {
+            null
+        } else {
+            _uiState.value.connectedWearers.firstOrNull { it.wearerUid == wearerUid }?.deviceId ?: wearerUid
+        }
+        bandSelectionStore?.select(deviceId)
+        _uiState.update { it.copy(selectedWearerUid = wearerUid) }
     }
 
     /**
@@ -429,7 +508,9 @@ class TrackViewModel(
                 TrackViewModel(
                     RepositoryProvider.alertRepository,
                     RepositoryProvider.authRepository,
-                    MapLayerPrefs.from(checkNotNull(this[APPLICATION_KEY]))
+                    MapLayerPrefs.from(checkNotNull(this[APPLICATION_KEY])),
+                    wearerConnectionRepository = RepositoryProvider.wearerConnectionRepository,
+                    bandSelectionStore = RepositoryProvider.bandSelectionStore
                 )
             }
         }

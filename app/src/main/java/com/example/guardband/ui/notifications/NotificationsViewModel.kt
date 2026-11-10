@@ -64,6 +64,7 @@ class NotificationsViewModel(
     val events: Flow<NotificationsEvent> = _events.receiveAsFlow()
 
     private var observeJob: Job? = null
+    private var observeStatusesJob: Job? = null
 
     /** Place keys already requested or being requested; never asked twice. */
     private val placesRequested = mutableSetOf<String>()
@@ -93,6 +94,16 @@ class NotificationsViewModel(
                     result
                         .onSuccess { render(it) }
                         .onFailure { reportFailure(it) }
+                }
+        }
+
+        observeStatusesJob?.cancel()
+        observeStatusesJob = viewModelScope.launch {
+            alertRepository.observeStatuses()
+                .collect { result ->
+                    result.onSuccess { statuses ->
+                        _uiState.update { it.copy(statuses = statuses) }
+                    }
                 }
         }
     }

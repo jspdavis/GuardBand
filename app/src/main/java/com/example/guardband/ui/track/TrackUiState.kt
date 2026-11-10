@@ -96,7 +96,21 @@ data class TrackUiState(
      * the tracking updates that follow it, and goes when a check-in or a
      * low-battery alert arrives. The way to a panic whose pin the face hides.
      */
-    val bandPanic: Alert? = null
+    val bandPanic: Alert? = null,
+
+    /**
+     * The wearers this watcher is monitoring. Empty when only the account's
+     * own band is linked, or while loading. The switcher chips are hidden when
+     * this list has one or fewer entries.
+     */
+    val connectedWearers: List<com.example.guardband.data.model.ConnectedWearer> = emptyList(),
+
+    /**
+     * The uid of the wearer whose band is currently shown. Null means the
+     * account's own band (or the default fallback). The switcher highlights
+     * the chip whose wearer matches this uid.
+     */
+    val selectedWearerUid: String? = null
 ) {
     /** Whether there is a position to put a marker on (D3, D4). */
     val hasFix: Boolean get() = location != null
@@ -106,6 +120,29 @@ data class TrackUiState(
      * to. Named for its view id, `track_navigate_button`.
      */
     val navigateEnabled: Boolean get() = location != null
+
+    /** The computed live status of the currently selected wearer. */
+    val currentWearerStatus: WearerLiveStatus
+        get() = when {
+            bandPanic != null -> WearerLiveStatus.PANIC
+            !isOnline -> WearerLiveStatus.OFFLINE
+            else -> WearerLiveStatus.SAFE
+        }
+
+    /** The display name of the currently selected wearer, or null for default "My Band". */
+    val currentWearerName: String?
+        get() = if (selectedWearerUid == null) {
+            null
+        } else {
+            connectedWearers.firstOrNull { it.wearerUid == selectedWearerUid }?.displayName?.ifEmpty { null }
+        }
+}
+
+/** Live status options for the Life360-style wearer switcher. */
+enum class WearerLiveStatus {
+    SAFE,
+    PANIC,
+    OFFLINE
 }
 
 /**

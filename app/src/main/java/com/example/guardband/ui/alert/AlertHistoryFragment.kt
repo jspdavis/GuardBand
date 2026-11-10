@@ -14,6 +14,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.example.guardband.R
+import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertStatus
+import com.example.guardband.data.model.AlertType
 import com.example.guardband.ui.home.HomeViewModel
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -35,10 +38,10 @@ import kotlinx.coroutines.launch
  *
  * View ids: ib_alert_history_back, tv_alert_history_title, alert_progress,
  * alert_error_view, alert_error_message, alert_retry_button,
- * alert_latest_card, alert_latest_icon, alert_latest_type, alert_latest_time,
- * alert_latest_place_row, alert_latest_location, alert_latest_battery_row,
- * alert_latest_battery_icon, alert_latest_battery, alert_empty_view,
- * alert_history_list, tv_alert_latest_label, tv_alert_history_label.
+ * alert_latest_card, alert_latest_icon, alert_latest_type, alert_latest_status,
+ * alert_latest_time, alert_latest_place_row, alert_latest_location,
+ * alert_latest_battery_row, alert_latest_battery_icon, alert_latest_battery,
+ * alert_empty_view, alert_history_list, tv_alert_latest_label, tv_alert_history_label.
  *
  * The latest card is its own block rather than an `<include>` of
  * `item_alert.xml`: an include cannot rename its children, so sharing the
@@ -58,10 +61,12 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
     private lateinit var tvEmpty: TextView
     private lateinit var btnClearHistory: ImageButton
 
-    /** A panic row opens its Incident view, through the host's one opener. */
-    private val historyAdapter = AlertHistoryAdapter(AlertTimeStyle.CLOCK) {
-        homeViewModel.onOpenIncident(it)
-    }
+    /** A panic row opens its Incident view, and status badge taps update status. */
+    private val historyAdapter = AlertHistoryAdapter(
+        timeStyle = AlertTimeStyle.CLOCK,
+        onPanicClick = { homeViewModel.onOpenIncident(it) },
+        onStatusClick = { alert -> showStatusDialog(alert) }
+    )
 
     // Host-scoped: the one instance the Track tab shares. See AlertViewModel.
     private val viewModel: AlertViewModel by activityViewModels { AlertViewModel.Factory }
@@ -91,8 +96,13 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
             place = view.findViewById(R.id.alert_latest_location),
             batteryRow = view.findViewById(R.id.alert_latest_battery_row),
             batteryIcon = view.findViewById(R.id.alert_latest_battery_icon),
-            battery = view.findViewById(R.id.alert_latest_battery)
+            battery = view.findViewById(R.id.alert_latest_battery),
+            statusBadge = view.findViewById(R.id.alert_latest_status)
         )
+
+        view.findViewById<View>(R.id.alert_latest_status)?.setOnClickListener {
+            viewModel.uiState.value.latestRow()?.alert?.let { showStatusDialog(it) }
+        }
 
         view.findViewById<RecyclerView>(R.id.alert_history_list).adapter = historyAdapter
 
@@ -118,10 +128,10 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
         errorView.visibility = if (error == null) View.GONE else View.VISIBLE
         if (error != null) tvErrorMessage.text = error
 
-        val latest = state.latest
-        latestCard.visibility = if (latest == null) View.GONE else View.VISIBLE
-        if (latest != null) {
-            latestViews.bind(state.rowsOf(listOf(latest)).single(), AlertTimeStyle.RELATIVE)
+        val latestRow = state.latestRow()
+        latestCard.visibility = if (latestRow == null) View.GONE else View.VISIBLE
+        if (latestRow != null) {
+            latestViews.bind(latestRow, AlertTimeStyle.RELATIVE)
         }
 
         val empty = state.emptyMessage
@@ -131,6 +141,31 @@ class AlertHistoryFragment : Fragment(R.layout.fragment_alert_history) {
         btnClearHistory.visibility = if (state.history.isNotEmpty()) View.VISIBLE else View.GONE
 
         historyAdapter.submitList(state.historyItems())
+    }
+
+    private fun showStatusDialog(alert: Alert) {
+        if (alert.alertType() != AlertType.PANIC) return
+        val currentStatus = alert.status
+        val options = arrayOf(
+            getString(R.string.action_status_active),
+            getString(R.string.action_acknowledge),
+            getString(R.string.action_resolve)
+        )
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.dialog_update_status_title)
+            .setItems(options) { _, which ->
+                val newStatus = when (which) {
+                    0 -> AlertStatus.ACTIVE
+                    1 -> AlertStatus.ACKNOWLEDGED
+                    2 -> AlertStatus.RESOLVED
+                    else -> return@setItems
+                }
+                if (newStatus != currentStatus) {
+                    viewModel.onUpdateStatus(alert.sequenceId, newStatus)
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun showClearConfirmationDialog() {

@@ -1,0 +1,143 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || root.child('wearer_watchers').child($uid).child(auth.uid).exists())",
+        ".write": "auth != null && auth.uid == $uid",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "email": {
+          ".validate": "newData.isString() && newData.val().length <= 254"
+        },
+        "emergency_contacts": {
+          "$contactId": {
+            ".read": "auth != null && (auth.uid == $uid || root.child('wearer_watchers').child($uid).child(auth.uid).exists())",
+            ".write": "auth != null && auth.uid == $uid",
+            ".validate": "newData.hasChildren(['name','phone'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100"
+            },
+            "phone": {
+              ".validate": "newData.isString() && newData.val().matches(/^\\+(639[0-9]{9}|[0-57-9][0-9]{7,14}|6[0-24-9][0-9]{6,13})$/)"
+            },
+            "relationship": {
+              ".validate": "newData.isString() && newData.val().length <= 50"
+            },
+            "emergency": {
+              ".validate": "newData.isBoolean()"
+            },
+            "favorite": {
+              ".validate": "newData.isBoolean()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "consent": {
+          ".validate": "newData.hasChildren(['accepted','acceptedAt','version'])",
+          "accepted": {
+            ".validate": "newData.isBoolean() && newData.val() == true"
+          },
+          "acceptedAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "version": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9]{1,3}\\.[0-9]{1,3}$/)"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "devices": {
+      "$deviceId": {
+        "latest": {
+          ".read": true,
+          ".write": "$deviceId === 'guardband-001' || (auth != null && auth.uid === $deviceId)",
+          ".validate": "newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
+          "type": {
+            ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
+          },
+          "sequenceId": {
+            ".validate": "newData.isNumber()"
+          },
+          "battery": {
+            "percent": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+            },
+            "isCharging": {
+              ".validate": "newData.isBoolean()"
+            }
+          }
+        },
+        "history": {
+          ".read": true,
+          "$sequenceId": {
+            ".read": true,
+            ".write": "!data.exists() && ($deviceId === 'guardband-001' || (auth != null && auth.uid === $deviceId))",
+            ".validate": "$sequenceId.matches(/^[0-9]+$/) && newData.hasChildren(['schemaVersion','deviceId','type','timestamp','battery','sequenceId'])",
+            "type": {
+              ".validate": "newData.val() === 'PANIC' || newData.val() === 'CHECKIN' || newData.val() === 'LOW_BATTERY' || newData.val() === 'TRACKING_UPDATE'"
+            },
+            "sequenceId": {
+              ".validate": "newData.isNumber()"
+            },
+            "battery": {
+              "percent": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+              },
+              "isCharging": {
+                ".validate": "newData.isBoolean()"
+              }
+            }
+          }
+        },
+        "command": {
+          ".read": true,
+          ".write": true,
+          "led": {
+            ".validate": "newData.isBoolean()"
+          }
+        },
+        "status": {
+          ".read": true,
+          ".write": true,
+          "led": {
+            ".validate": "newData.isBoolean()"
+          },
+          "online": {
+            ".validate": "newData.isBoolean()"
+          },
+          "lastUpdate": {
+            ".validate": "newData.isNumber()"
+          }
+        }
+      }
+    },
+    "invite_codes": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "wearer_watchers": {
+      "$wearer_uid": {
+        "$watcher_uid": {
+          ".read": "auth != null && (auth.uid == $wearer_uid || auth.uid == $watcher_uid)",
+          ".write": "auth != null && (auth.uid == $watcher_uid || auth.uid == $wearer_uid)"
+        }
+      }
+    },
+    "watcher_wearers": {
+      "$watcher_uid": {
+        ".read": "auth != null && auth.uid == $watcher_uid",
+        "$wearer_uid": {
+          ".write": "auth != null && (auth.uid == $watcher_uid || auth.uid == $wearer_uid)"
+        }
+      }
+    }
+  }
+}

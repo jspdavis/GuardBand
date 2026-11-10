@@ -90,20 +90,18 @@ interface AlertRepository {
     ): Flow<Result<AlertHistory>>
 
     /**
-     * Alert status (Active, Acknowledged, Resolved) at `devices/{id}/status`.
-     *
-     * **Parked since 2026-11-02, with no caller:** the screens used it only
-     * behind a GUARDIAN role, and roles were rolled back. Nothing shows a
-     * status chip or offers Acknowledge/Resolve until the status decision is
-     * made, including who may change a status on a shared, world-writable band.
+     * Alert status (Active, Acknowledged, Resolved) for panic emergencies at `devices/{id}/status`.
      */
     fun observeStatuses(): Flow<Result<Map<Long, AlertStatus>>>
 
-    /** Parked, no caller: see [observeStatuses]. */
+    /** Marks the panic numbered [sequenceId] as [AlertStatus.ACKNOWLEDGED]. */
     suspend fun acknowledge(sequenceId: Long): Result<Unit>
 
-    /** Parked, no caller: see [observeStatuses]. */
+    /** Marks the panic numbered [sequenceId] as [AlertStatus.RESOLVED]. */
     suspend fun resolve(sequenceId: Long): Result<Unit>
+
+    /** Updates the resolution status of the panic numbered [sequenceId]. */
+    suspend fun updateStatus(sequenceId: Long, status: AlertStatus): Result<Unit>
 
     /**
      * Wipes the alert history log for the watched band.

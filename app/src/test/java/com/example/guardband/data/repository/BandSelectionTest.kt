@@ -37,4 +37,22 @@ class BandSelectionTest {
         assertNull(BandSelection.ownBandOf(listOf(watcher("friend-1"))))
         assertNull(BandSelection.ownBandOf(emptyList()))
     }
+
+    @Test
+    fun `explicit selection is used when it identifies a band in the list`() {
+        val bands = listOf(watcher("friend-1"), wearer("mine"), watcher("friend-2"))
+        assertEquals("friend-2", BandSelection.watchedBandOf(bands, explicit = "friend-2"))
+    }
+
+    @Test
+    fun `explicit selection falls back to default when band is not in list`() {
+        val bands = listOf(watcher("friend-1"), wearer("mine"))
+        assertEquals("mine", BandSelection.watchedBandOf(bands, explicit = "gone"))
+    }
+
+    @Test
+    fun `explicit null uses default rule`() {
+        val bands = listOf(watcher("friend-1"), wearer("mine"))
+        assertEquals("mine", BandSelection.watchedBandOf(bands, explicit = null))
+    }
 }

@@ -1,6 +1,8 @@
 package com.example.guardband.ui.alert
 
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertStatus
+import com.example.guardband.data.model.AlertType
 import com.example.guardband.ui.track.BandStatus
 import java.util.TimeZone
 
@@ -75,6 +77,11 @@ data class AlertUiState(
     val placeNames: Map<String, String> = emptyMap(),
 
     /**
+     * Resolution statuses observed from `devices/{id}/status`, keyed by sequenceId.
+     */
+    val statuses: Map<Long, AlertStatus> = emptyMap(),
+
+    /**
      * The clock when the list was last read or last ticked
      * ([AlertViewModel.TICK_INTERVAL_MS]): what "5 min ago" and "Today" are
      * measured from, so both move on while the list stays the same.
@@ -85,13 +92,45 @@ data class AlertUiState(
     fun placeNameFor(alert: Alert): String? =
         alert.location?.let { placeNames[AlertPlaces.keyOf(it)] }
 
-    /** [alerts] as rows, each with its place name if known and how long ago it was. */
+    /** [alerts] as rows, each with its place name if known, how long ago it was, and its status for panics. */
     fun rowsOf(alerts: List<Alert>): List<AlertRow> = alerts.map { alert ->
+        val resolvedStatus = if (alert.alertType() == AlertType.PANIC) {
+            statuses[alert.sequenceId] ?: alert.status
+        } else {
+            null
+        }
+        val resolvedAlert = if (resolvedStatus != null && alert.status != resolvedStatus) {
+            alert.copy(status = resolvedStatus)
+        } else {
+            alert
+        }
         AlertRow(
-            alert,
-            placeNameFor(alert),
-            BandStatus.parseIsoUtcMillis(alert.timestamp)
-                ?.let { BandStatus.elapsedSince(it, nowMillis) }
+            alert = resolvedAlert,
+            placeName = placeNameFor(alert),
+            elapsed = BandStatus.parseIsoUtcMillis(alert.timestamp)
+                ?.let { BandStatus.elapsedSince(it, nowMillis) },
+            status = resolvedStatus
+        )
+    }
+
+    /** [latest] as an [AlertRow], with overlaid resolution status if it is a panic. */
+    fun latestRow(): AlertRow? = latest?.let { alert ->
+        val resolvedStatus = if (alert.alertType() == AlertType.PANIC) {
+            statuses[alert.sequenceId] ?: alert.status
+        } else {
+            null
+        }
+        val resolvedAlert = if (resolvedStatus != null && alert.status != resolvedStatus) {
+            alert.copy(status = resolvedStatus)
+        } else {
+            alert
+        }
+        AlertRow(
+            alert = resolvedAlert,
+            placeName = placeNameFor(alert),
+            elapsed = BandStatus.parseIsoUtcMillis(alert.timestamp)
+                ?.let { BandStatus.elapsedSince(it, nowMillis) },
+            status = resolvedStatus
         )
     }
 

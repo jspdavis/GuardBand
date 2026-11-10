@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.data.repository.AlertHistory
 import com.example.guardband.data.repository.AlertRepository
@@ -66,8 +67,9 @@ class IncidentViewModel(
     private val _events = Channel<IncidentEvent>(Channel.BUFFERED)
     val events: Flow<IncidentEvent> = _events.receiveAsFlow()
 
-    /** The live read, cancelled and replaced on retry. */
+    /** The live reads, cancelled and replaced on retry. */
     private var observeJob: Job? = null
+    private var observeStatusesJob: Job? = null
 
     /** Whether the panic point's name has been asked for, or is being. */
     private var placeRequested = false
@@ -88,6 +90,23 @@ class IncidentViewModel(
         observe()
     }
 
+    fun onAcknowledge() {
+        onUpdateStatus(AlertStatus.ACKNOWLEDGED)
+    }
+
+    fun onResolve() {
+        onUpdateStatus(AlertStatus.RESOLVED)
+    }
+
+    fun onUpdateStatus(status: AlertStatus) {
+        viewModelScope.launch {
+            alertRepository.updateStatus(panicSequenceId, status)
+                .onFailure {
+                    _events.send(IncidentEvent.ShowMessage(MSG_STATUS_UPDATE_FAILED))
+                }
+        }
+    }
+
     private fun observe() {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
@@ -95,6 +114,16 @@ class IncidentViewModel(
                 result
                     .onSuccess { history -> render(history) }
                     .onFailure { error -> reportFailure(error) }
+            }
+        }
+
+        observeStatusesJob?.cancel()
+        observeStatusesJob = viewModelScope.launch {
+            alertRepository.observeStatuses().collect { result ->
+                result.onSuccess { statuses ->
+                    val status = statuses[panicSequenceId] ?: AlertStatus.ACTIVE
+                    _uiState.update { it.copy(status = status) }
+                }
             }
         }
     }
@@ -168,6 +197,7 @@ class IncidentViewModel(
         /** Unreachable until pairing exists: every account wears the one band. */
         const val MSG_NO_BAND = "No band is linked to your account yet."
         const val MSG_NOT_FOUND = "This panic is no longer in your band's history."
+        const val MSG_STATUS_UPDATE_FAILED = "Couldn't update incident status. Check your connection."
 
         /** The factory for the panic numbered [panicSequenceId], from the Fragment's arguments. */
         fun factory(panicSequenceId: Long): ViewModelProvider.Factory = viewModelFactory {

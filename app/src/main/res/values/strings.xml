@@ -436,6 +436,18 @@
     <string name="label_incident_no_position">This panic has no position to show.</string>
     <!-- TalkBack, on a tappable panic row: what the row shows, then what a tap does. -->
     <string name="cd_alert_open_incident">%1$s. Opens the incident.</string>
+    <!-- Incident & Alert Status (Active, Acknowledged, Resolved) -->
+    <string name="label_alert_status_active">Active</string>
+    <string name="label_alert_status_acknowledged">Acknowledged</string>
+    <string name="label_alert_status_resolved">Resolved</string>
+    <string name="action_status_active">Mark as Active</string>
+    <string name="action_acknowledge">Acknowledge</string>
+    <string name="action_resolve">Resolve</string>
+    <string name="dialog_update_status_title">Update Incident Status</string>
+    <string name="dialog_update_status_msg">Choose a new status for this incident:</string>
+    <string name="toast_status_updated">Status updated to %1$s</string>
+    <string name="error_update_status_failed">Couldn\'t update incident status. Check your connection.</string>
+
     <!-- Own phone, and the parked panic SMS -->
     <string name="sms_panic_body">[GuardBand Alert] EMERGENCY: Panic button activated! Track live location here: %1$s (Lat: %2$f, Lng: %3$f)</string>
     <string name="label_field_own_phone">Your phone number</string>
@@ -446,4 +458,27 @@
     <string name="btn_contacts_guardian_call">Call</string>
     <!-- TalkBack, on the Call button: who it calls. -->
     <string name="cd_contacts_guardian_call">Call %1$s</string>
+
+    <!-- Invite / pairing strings -->
+    <string name="title_invite_dialog">Connect</string>
+    <string name="btn_invite_tab_enter">Watch someone</string>
+    <string name="btn_invite_tab_share">Share my code</string>
+    <string name="hint_invite_code">6-character code</string>
+    <string name="btn_invite_enter_code">Connect</string>
+    <string name="btn_invite_generate_code">Generate code</string>
+    <string name="label_invite_expires">Valid for 1 hour</string>
+    <string name="btn_invite_copy_code">Copy code</string>
+    <string name="toast_code_copied">Code copied to clipboard</string>
+    <string name="toast_connected_success">Successfully connected! You are now watching this wearer.</string>
+    <string name="hint_tap_to_copy">Tap code to copy</string>
+    <string name="label_track_wearer_unknown">Wearer</string>
+
+    <!-- Wearer switcher strings -->
+    <string name="status_wearer_safe">Safe</string>
+    <string name="status_wearer_panic">Panic Alert</string>
+    <string name="status_wearer_offline">Offline</string>
+    <string name="label_track_my_band">My Band</string>
+    <string name="action_connect_new_wearer">+ Connect New Wearer</string>
+    <string name="title_wearer_switcher">Switch Wearer</string>
+
 </resources>

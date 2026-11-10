@@ -77,13 +77,14 @@ class InMemoryAlertRepository(
     override fun observeStatuses(): Flow<Result<Map<Long, AlertStatus>>> =
         statusesFlow.asStateFlow().map { Result.success(it) }
 
-    override suspend fun acknowledge(sequenceId: Long): Result<Unit> {
-        statusesFlow.value = statusesFlow.value + (sequenceId to AlertStatus.ACKNOWLEDGED)
-        return Result.success(Unit)
-    }
+    override suspend fun acknowledge(sequenceId: Long): Result<Unit> =
+        updateStatus(sequenceId, AlertStatus.ACKNOWLEDGED)
 
-    override suspend fun resolve(sequenceId: Long): Result<Unit> {
-        statusesFlow.value = statusesFlow.value + (sequenceId to AlertStatus.RESOLVED)
+    override suspend fun resolve(sequenceId: Long): Result<Unit> =
+        updateStatus(sequenceId, AlertStatus.RESOLVED)
+
+    override suspend fun updateStatus(sequenceId: Long, status: AlertStatus): Result<Unit> {
+        statusesFlow.value = statusesFlow.value + (sequenceId to status)
         return Result.success(Unit)
     }
 

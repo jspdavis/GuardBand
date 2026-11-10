@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
 import com.example.guardband.data.model.Alert
+import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.data.model.AlertType
 import com.example.guardband.data.repository.AlertError
 import com.example.guardband.data.repository.AlertHistory
@@ -88,8 +89,9 @@ class AlertViewModel(
     private val _events = Channel<AlertEvent>(Channel.BUFFERED)
     val events: Flow<AlertEvent> = _events.receiveAsFlow()
 
-    /** The live subscription, cancelled and replaced on retry. */
+    /** The live subscriptions, cancelled and replaced on retry. */
     private var observeJob: Job? = null
+    private var observeStatusesJob: Job? = null
 
     /** Place keys asked about, or being asked about; never asked twice. */
     private val placesRequested = mutableSetOf<String>()
@@ -141,6 +143,23 @@ class AlertViewModel(
         }
     }
 
+    fun onAcknowledge(sequenceId: Long) {
+        onUpdateStatus(sequenceId, AlertStatus.ACKNOWLEDGED)
+    }
+
+    fun onResolve(sequenceId: Long) {
+        onUpdateStatus(sequenceId, AlertStatus.RESOLVED)
+    }
+
+    fun onUpdateStatus(sequenceId: Long, status: AlertStatus) {
+        viewModelScope.launch {
+            alertRepository.updateStatus(sequenceId, status)
+                .onFailure {
+                    _events.send(AlertEvent.ShowMessage(MSG_STATUS_UPDATE_FAILED))
+                }
+        }
+    }
+
     private fun observeHistory() {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
@@ -149,6 +168,16 @@ class AlertViewModel(
                     result
                         .onSuccess { history -> render(history) }
                         .onFailure { error -> reportFailure(error) }
+                }
+        }
+
+        observeStatusesJob?.cancel()
+        observeStatusesJob = viewModelScope.launch {
+            alertRepository.observeStatuses()
+                .collect { result ->
+                    result.onSuccess { statuses ->
+                        _uiState.update { it.copy(statuses = statuses) }
+                    }
                 }
         }
     }
@@ -294,6 +323,7 @@ class AlertViewModel(
             "No incidents recently — your band has only been sending location updates."
         const val MSG_EMPTY_UNREADABLE = "Your band's recent alerts couldn't be read."
         const val MSG_HISTORY_CLEARED = "Alert history cleared."
+        const val MSG_STATUS_UPDATE_FAILED = "Couldn't update incident status. Check your connection."
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

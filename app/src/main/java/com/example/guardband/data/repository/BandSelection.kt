@@ -20,6 +20,17 @@ object BandSelection {
         (bands.firstOrNull { it.relation == BandRelation.WEARER } ?: bands.firstOrNull())
             ?.deviceId
 
+    /**
+     * The band to show when the user has made an explicit choice in the
+     * Track-tab switcher. Uses [explicit] when it identifies a band in
+     * [bands]; falls back to the default rule otherwise. Null means no
+     * bands at all.
+     */
+    fun watchedBandOf(bands: List<PairedBand>, explicit: String?): String? {
+        if (explicit != null && bands.any { it.deviceId == explicit }) return explicit
+        return watchedBandOf(bands)
+    }
+
     /** The account's own band, or null when it wears none. The Device tab's band. */
     fun ownBandOf(bands: List<PairedBand>): String? =
         bands.firstOrNull { it.relation == BandRelation.WEARER }?.deviceId

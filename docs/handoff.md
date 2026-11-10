@@ -161,14 +161,15 @@ says what it depends on and what it would touch.
 
 ### App-only, buildable now
 
-4. **Incident status: acknowledge or resolve.** A guardian marks a panic "I'm
-   on it" or "resolved", so other guardians (and the history) know. Needs a
-   place to write that is **not** `devices/` (e.g. under the user, or a new
-   node with its own rules), and a decision on who can see it. `e97e15b`
-   built it on `devices/{id}/status`, behind the GUARDIAN role; since the
-   roles rollback (2026-11-02) its repository methods are parked with no
-   caller and the screens show no status. What to fix before reusing it is
-   in §4, "Parked code".
+4. **Incident status: acknowledge or resolve. âœ… Built 2026-11-05.** A
+   guardian marks a panic "I'm on it" or "resolved", so other guardians (and
+   the history) know. Status chips appear only on `PANIC` alerts (not
+   check-ins or low-battery). Status is stored under
+   `devices/{id}/status/{sequenceId}` using `updateStatus` (10 s timeout;
+   offline failures surface as a toast). No `uid` is stored (`updatedBy`
+   removed â€” no PII in a world-readable node, no `CONSENT_VERSION` bump).
+   See Â§5 "2026-11-05" for the full change list.
+
 5. **A demo mode / demo script.** The project is presented without hardware.
    A scripted mock-sender run (panic → tracking → check-in → low
    battery) would make demos reliable.
@@ -295,35 +296,18 @@ In the tree with no caller, kept on purpose so it can be reused. Both came in
 with `e97e15b` and were parked on 2026-11-02. Nothing here runs; revive it
 only through the decision it waits on, and fix what is listed first.
 
-**Alert status** (Active, Acknowledged, Resolved; §3 item 4). Waits on where
-it is stored and who may change it.
-- In the tree: `data/model/AlertStatus.kt`; `Alert.status`; `AlertParser`'s
-  `status` field; `AlertRepository.observeStatuses`, `acknowledge` and
-  `resolve` (Firebase and in-memory); the `FirebaseAuth` that
-  `FirebaseAlertRepository` takes only to fill `updatedBy`;
-  `FakeAlertRepository`'s `emitStatuses`, `failStatuses`,
-  `requestedAcknowledge` and `requestedResolve` (no test uses them);
-  `AlertStatusTest` (5) and 4 status cases in `AlertParserTest`. The chips and
-  the Acknowledge/Resolve dialog were removed; `e97e15b` still has them.
-- **Move it off `devices/{id}/status`.** That node is the old ESP32 LED test
-  (`led`, `online`, `lastUpdate`, and it still holds that data), it is
-  world-readable and world-writable, so anyone could resolve a panic, and the
-  main app may not write to `devices/` at all.
-- **No uid in a world-readable node.** `updatedBy` stores one. Recording who
-  acknowledged, and when, needs a Privacy Notice change and a
-  `CONSENT_VERSION` bump.
-- **One source.** The parser reads `status` from inside the history payload,
-  which nothing writes (`SCHEMA.md` has no such field, and history is
-  append-only), while `Alert.status`'s KDoc says it comes from
-  `status/{seq}`. Neither is right yet.
-- **Panics only,** so check-ins and low-battery alerts do not read "Active"
-  forever.
-- **Show failures.** The old screens dropped the `Result`, and an offline
-  write waits forever, so it needs a timeout like the consent write's.
-- Who may change it comes from pairing and sharing (§3 items 1 and 2), not a
-  role. Decide how it fits the Incident view (does Resolved end one?), and
-  change `SCHEMA.md` or `RTDBS-RULES.md`, the inbox, Track's sheet and Alert
-  history in the same pass.
+**Alert status** (Active, Acknowledged, Resolved; Â§3 item 4). **Revived and
+shipped 2026-11-05.** The parked code has been fully unparked and is live.
+- **What was fixed:** `updatedBy` (uid) removed; `updateStatus` replaces the
+  old `acknowledge`/`resolve` pair; 10 s `withTimeoutOrNull` on the RTDB
+  write; status badge gated to `AlertType.PANIC` only; `observeStatuses` wired
+  into `AlertViewModel`, `IncidentViewModel` and `NotificationsViewModel`;
+  status dialog on the Alert History screen and the Incident view; unit tests
+  for all new ViewModel paths.
+- **Still applies:** who may change it beyond the current account (pairing /
+  sharing) is not gated â€” roles stay fluid (Â§3 item 2). `SCHEMA.md` and
+  `RTDBS-RULES.md` describe the current storage (`devices/{id}/status/{seq}`);
+  migrating off `devices/` remains a future decision.
 
 **Panic SMS sender** (FR-05; §3 item 3). Waits on pairing.
 - In the tree: `ui/notifications/SmsPanicSender.kt`, whose KDoc lists the

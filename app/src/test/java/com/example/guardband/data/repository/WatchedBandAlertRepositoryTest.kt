@@ -36,14 +36,17 @@ class WatchedBandAlertRepositoryTest {
     /** Every band id a per-band repository was built for, in order. */
     private val built = mutableListOf<String>()
 
-    private val repository = WatchedBandAlertRepository(bands) { id ->
-        built += id
-        when (id) {
-            "band-a" -> bandA
-            "band-b" -> bandB
-            else -> error("no fake for $id")
+    private val repository = WatchedBandAlertRepository(
+        bands = bands,
+        forBand = { id ->
+            built += id
+            when (id) {
+                "band-a" -> bandA
+                "band-b" -> bandB
+                else -> error("no fake for $id")
+            }
         }
-    }
+    )
 
     @Test
     fun `reads go to the watched band`() = runTest {
@@ -140,6 +143,37 @@ class WatchedBandAlertRepositoryTest {
         assertEquals(AlertError.NoBand, repository.acknowledge(4).exceptionOrNull())
         assertEquals(AlertError.NoBand, repository.resolve(4).exceptionOrNull())
         assertEquals(listOf(3L), bandA.requestedAcknowledge)
+    }
+
+    @Test
+    fun `switching selectionStore switches repository to the selected band`() = runTest {
+        val selectionStore = com.example.guardband.testing.FakeBandSelectionStore()
+        bands.bands.value = listOf(wearer("band-a"), watcher("band-b"))
+
+        val repoWithStore = WatchedBandAlertRepository(
+            bands = bands,
+            forBand = { id ->
+                when (id) {
+                    "band-a" -> bandA
+                    "band-b" -> bandB
+                    else -> error("no fake for $id")
+                }
+            },
+            selectionStore = selectionStore
+        )
+
+        val seen = mutableListOf<Result<AlertHistory>>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            repoWithStore.observeAlertHistory(AlertRepository.DEFAULT_HISTORY_WINDOW).toList(seen)
+        }
+        runCurrent()
+
+        assertEquals("band-a", seen.last().getOrThrow().alerts.single().deviceId)
+
+        selectionStore.select("band-b")
+        runCurrent()
+
+        assertEquals("band-b", seen.last().getOrThrow().alerts.single().deviceId)
     }
 
     @Test

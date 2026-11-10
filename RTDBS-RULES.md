@@ -99,7 +99,7 @@
           "There is deliberately NO rule requiring a consent child. See the",
           "'Why consent is not required here' note at the top of this file."
         ],
-        ".read": "auth != null && auth.uid == $uid",
+        ".read": "auth != null && (auth.uid == $uid || root.child('wearer_watchers').child($uid).child(auth.uid).exists())",
         ".write": "auth != null && auth.uid == $uid",
         "name": {
           ".validate": "newData.isString() && newData.val().length <= 100"
@@ -115,7 +115,7 @@
               "job (there is no upper cap). These rules only police the",
               "shape of one contact."
             ],
-            ".read": "auth != null && auth.uid == $uid",
+            ".read": "auth != null && (auth.uid == $uid || root.child('wearer_watchers').child($uid).child(auth.uid).exists())",
             ".write": "auth != null && auth.uid == $uid",
             ".validate": "newData.hasChildren(['name','phone'])",
             "name": {
@@ -297,6 +297,41 @@
           "lastUpdate": {
             ".validate": "newData.isNumber()"
           }
+        }
+      }
+    },
+    "invite_codes": {
+      "//": [
+        "Any signed-in account may read a code (to redeem it) and write one",
+        "(to generate it). Multiple watchers may redeem the same code within",
+        "its one-hour window. Used codes are not deleted; they expire by expires_at."
+      ],
+      "$code": {
+        ".read":  "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "wearer_watchers": {
+      "//": [
+        "Readable and writable by either side of the link: the wearer (to see",
+        "who is watching and to remove a watcher) or the watcher (to add themselves)."
+      ],
+      "$wearer_uid": {
+        "$watcher_uid": {
+          ".read":  "auth != null && (auth.uid == $wearer_uid || auth.uid == $watcher_uid)",
+          ".write": "auth != null && (auth.uid == $watcher_uid || auth.uid == $wearer_uid)"
+        }
+      }
+    },
+    "watcher_wearers": {
+      "//": [
+        "Only the watcher reads their own list; both sides may write (the",
+        "watcher adds themselves on redemption, the wearer removes them on revoke)."
+      ],
+      "$watcher_uid": {
+        "$wearer_uid": {
+          ".read":  "auth != null && auth.uid == $watcher_uid",
+          ".write": "auth != null && (auth.uid == $watcher_uid || auth.uid == $wearer_uid)"
         }
       }
     }

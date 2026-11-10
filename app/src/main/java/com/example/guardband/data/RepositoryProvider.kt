@@ -1,16 +1,20 @@
 package com.example.guardband.data
 
+import android.content.Context
 import com.example.guardband.data.repository.AlertRepository
 import com.example.guardband.data.repository.AuthRepository
 import com.example.guardband.data.repository.BandRepository
+import com.example.guardband.data.repository.BandSelectionStore
 import com.example.guardband.data.repository.ContactRepository
 import com.example.guardband.data.repository.FirebaseAlertRepository
 import com.example.guardband.data.repository.FirebaseAuthRepository
+import com.example.guardband.data.repository.FirebaseBandRepository
 import com.example.guardband.data.repository.FirebaseContactRepository
 import com.example.guardband.data.repository.FirebaseUserProfileRepository
-import com.example.guardband.data.repository.FixedBandRepository
+import com.example.guardband.data.repository.FirebaseWearerConnectionRepository
 import com.example.guardband.data.repository.UserProfileRepository
 import com.example.guardband.data.repository.WatchedBandAlertRepository
+import com.example.guardband.data.repository.WearerConnectionRepository
 
 /**
  * Manual wiring for repositories (no DI framework).
@@ -21,8 +25,27 @@ import com.example.guardband.data.repository.WatchedBandAlertRepository
  * doubles and are deliberately not wired here. Firebase instances
  * come from [FirebaseProvider], so this object has no Firebase imports of its
  * own.
+ *
+ * [bandSelectionStore] requires the application [Context] for
+ * SharedPreferences; call [init] once in Application.onCreate before any
+ * repository is used.
  */
 object RepositoryProvider {
+
+    private lateinit var _bandSelectionStore: BandSelectionStore
+
+    /**
+     * Must be called in Application.onCreate before any lazy val below is
+     * first accessed. Safe to call more than once (idempotent after the
+     * first call).
+     */
+    fun init(context: Context) {
+        if (!::_bandSelectionStore.isInitialized) {
+            _bandSelectionStore = BandSelectionStore(
+                context.getSharedPreferences("band_selection", Context.MODE_PRIVATE)
+            )
+        }
+    }
 
     val userProfileRepository: UserProfileRepository by lazy {
         FirebaseUserProfileRepository(FirebaseProvider.database)
@@ -37,11 +60,21 @@ object RepositoryProvider {
     }
 
     /**
-     * The bands the account wears or watches. Until pairing exists every
-     * account wears the one hard-coded band (D4); a Firebase implementation
-     * replaces this one (docs/device-pairing.md).
+     * The bands the account wears or watches, read live from Firebase.
+     * Replaces FixedBandRepository now that pairing exists.
      */
-    val bandRepository: BandRepository = FixedBandRepository(DeviceConstants.DEFAULT_DEVICE_ID)
+    val bandRepository: BandRepository by lazy {
+        FirebaseBandRepository(FirebaseProvider.database, FirebaseProvider.auth)
+    }
+
+    /** The watcher's explicit Track-tab band choice, persisted across restarts. */
+    val bandSelectionStore: BandSelectionStore
+        get() = _bandSelectionStore
+
+    /** Invite-code pairing between wearer and watcher accounts. */
+    val wearerConnectionRepository: WearerConnectionRepository by lazy {
+        FirebaseWearerConnectionRepository(FirebaseProvider.database, FirebaseProvider.auth)
+    }
 
     /**
      * Follows [bandRepository] rather than capturing a band id, so one
@@ -50,7 +83,7 @@ object RepositoryProvider {
      * to read.
      */
     val alertRepository: AlertRepository by lazy {
-        WatchedBandAlertRepository(bandRepository, ::alertRepositoryFor)
+        WatchedBandAlertRepository(bandRepository, ::alertRepositoryFor, _bandSelectionStore)
     }
 
     /**

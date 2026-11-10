@@ -23,6 +23,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -307,5 +308,97 @@ class IncidentViewModelTest {
         advanceUntilIdle()
 
         assertEquals(0, repository.activeIncidentCollectors)
+    }
+
+    // -- Incident status ----------------------------------------------------------
+
+    @Test
+    fun `status defaults to ACTIVE before any statuses arrive`() = runTest {
+        val repository = FakeAlertRepository()
+        val vm = viewModel(repository)
+
+        assertEquals(
+            com.example.guardband.data.model.AlertStatus.ACTIVE,
+            vm.uiState.value.status
+        )
+    }
+
+    @Test
+    fun `status updates to ACKNOWLEDGED when repository emits it for this panic`() = runTest {
+        val repository = FakeAlertRepository()
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+
+        repository.emitStatuses(mapOf(10L to com.example.guardband.data.model.AlertStatus.ACKNOWLEDGED))
+        advanceUntilIdle()
+
+        assertEquals(
+            com.example.guardband.data.model.AlertStatus.ACKNOWLEDGED,
+            vm.uiState.value.status
+        )
+    }
+
+    @Test
+    fun `status for a different sequenceId does not affect this incident`() = runTest {
+        val repository = FakeAlertRepository()
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+
+        repository.emitStatuses(mapOf(99L to com.example.guardband.data.model.AlertStatus.RESOLVED))
+        advanceUntilIdle()
+
+        assertEquals(
+            com.example.guardband.data.model.AlertStatus.ACTIVE,
+            vm.uiState.value.status
+        )
+    }
+
+    @Test
+    fun `onAcknowledge calls repository with ACKNOWLEDGED for this panic`() = runTest {
+        val repository = FakeAlertRepository()
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+
+        vm.onAcknowledge()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(10L to com.example.guardband.data.model.AlertStatus.ACKNOWLEDGED),
+            repository.requestedStatusUpdates
+        )
+    }
+
+    @Test
+    fun `onResolve calls repository with RESOLVED for this panic`() = runTest {
+        val repository = FakeAlertRepository()
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+
+        vm.onResolve()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(10L to com.example.guardband.data.model.AlertStatus.RESOLVED),
+            repository.requestedStatusUpdates
+        )
+    }
+
+    @Test
+    fun `onUpdateStatus failure sends ShowMessage event`() = runTest {
+        val repository = FakeAlertRepository()
+        repository.updateStatusResult =
+            Result.failure(com.example.guardband.data.repository.AlertError.Network)
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+
+        vm.onUpdateStatus(com.example.guardband.data.model.AlertStatus.ACKNOWLEDGED)
+        advanceUntilIdle()
+
+        val event = vm.events.first()
+        assertTrue(event is IncidentEvent.ShowMessage)
+        assertEquals(
+            IncidentViewModel.MSG_STATUS_UPDATE_FAILED,
+            (event as IncidentEvent.ShowMessage).text
+        )
     }
 }

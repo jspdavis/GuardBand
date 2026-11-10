@@ -36,6 +36,8 @@ class FakeAlertRepository(
 
     val requestedAcknowledge = mutableListOf<Long>()
     val requestedResolve = mutableListOf<Long>()
+    val requestedStatusUpdates = mutableListOf<Pair<Long, AlertStatus>>()
+    var updateStatusResult: Result<Unit> = Result.success(Unit)
 
     init {
         historyFlow.tryEmit(Result.success(history))
@@ -114,14 +116,20 @@ class FakeAlertRepository(
 
     override fun observeStatuses(): Flow<Result<Map<Long, AlertStatus>>> = statusesFlow
 
-    override suspend fun acknowledge(sequenceId: Long): Result<Unit> {
-        requestedAcknowledge += sequenceId
-        return Result.success(Unit)
-    }
+    override suspend fun acknowledge(sequenceId: Long): Result<Unit> =
+        updateStatus(sequenceId, AlertStatus.ACKNOWLEDGED)
 
-    override suspend fun resolve(sequenceId: Long): Result<Unit> {
-        requestedResolve += sequenceId
-        return Result.success(Unit)
+    override suspend fun resolve(sequenceId: Long): Result<Unit> =
+        updateStatus(sequenceId, AlertStatus.RESOLVED)
+
+    override suspend fun updateStatus(sequenceId: Long, status: AlertStatus): Result<Unit> {
+        requestedStatusUpdates += sequenceId to status
+        when (status) {
+            AlertStatus.ACKNOWLEDGED -> requestedAcknowledge += sequenceId
+            AlertStatus.RESOLVED -> requestedResolve += sequenceId
+            else -> Unit
+        }
+        return updateStatusResult
     }
 
     var clearAlertHistoryCalls = 0

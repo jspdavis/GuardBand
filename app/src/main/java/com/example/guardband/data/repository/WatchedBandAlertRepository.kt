@@ -5,6 +5,7 @@ import com.example.guardband.data.model.AlertStatus
 import com.example.guardband.data.model.CheckIn
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -35,13 +36,20 @@ import kotlinx.coroutines.flow.map
 @OptIn(ExperimentalCoroutinesApi::class)
 class WatchedBandAlertRepository(
     private val bands: BandRepository,
-    private val forBand: (String) -> AlertRepository
+    private val forBand: (String) -> AlertRepository,
+    private val selectionStore: BandSelectionStore? = null
 ) : AlertRepository {
 
     private fun watchedBand(): Flow<String?> =
-        bands.observeBands()
-            .map(BandSelection::watchedBandOf)
-            .distinctUntilChanged()
+        if (selectionStore == null) {
+            bands.observeBands()
+                .map { bandList -> BandSelection.watchedBandOf(bandList, null) }
+                .distinctUntilChanged()
+        } else {
+            combine(bands.observeBands(), selectionStore.selected) { bandList, explicit ->
+                BandSelection.watchedBandOf(bandList, explicit)
+            }.distinctUntilChanged()
+        }
 
     private fun <T> followBand(read: AlertRepository.() -> Flow<Result<T>>): Flow<Result<T>> =
         watchedBand().flatMapLatest { id ->
@@ -69,6 +77,10 @@ class WatchedBandAlertRepository(
 
     override suspend fun resolve(sequenceId: Long): Result<Unit> =
         watchedBand().first()?.let { forBand(it).resolve(sequenceId) }
+            ?: Result.failure(AlertError.NoBand)
+
+    override suspend fun updateStatus(sequenceId: Long, status: AlertStatus): Result<Unit> =
+        watchedBand().first()?.let { forBand(it).updateStatus(sequenceId, status) }
             ?: Result.failure(AlertError.NoBand)
 
     override suspend fun clearAlertHistory(): Result<Unit> =

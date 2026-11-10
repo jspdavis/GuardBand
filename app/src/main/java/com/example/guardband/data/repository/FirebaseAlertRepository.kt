@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 
 /**
@@ -111,33 +112,33 @@ class FirebaseAlertRepository(
         }
 
     override suspend fun acknowledge(sequenceId: Long): Result<Unit> =
-        writeStatus(sequenceId, AlertStatus.ACKNOWLEDGED)
+        updateStatus(sequenceId, AlertStatus.ACKNOWLEDGED)
 
     override suspend fun resolve(sequenceId: Long): Result<Unit> =
-        writeStatus(sequenceId, AlertStatus.RESOLVED)
+        updateStatus(sequenceId, AlertStatus.RESOLVED)
+
+    override suspend fun updateStatus(sequenceId: Long, status: AlertStatus): Result<Unit> =
+        withTimeoutOrNull(STATUS_WRITE_TIMEOUT_MS) {
+            suspendCancellableCoroutine { continuation ->
+                val payload = mapOf(
+                    KEY_STATUS to status.name,
+                    KEY_UPDATED_AT to ServerValue.TIMESTAMP
+                )
+                deviceRef.child(PATH_STATUS).child(sequenceId.toString()).setValue(payload) { error, _ ->
+                    if (continuation.isActive) {
+                        if (error != null) {
+                            continuation.resume(Result.failure(FirebaseDatabaseErrorMapper.mapToAlertError(error)))
+                        } else {
+                            continuation.resume(Result.success(Unit))
+                        }
+                    }
+                }
+            }
+        } ?: Result.failure(AlertError.Network)
 
     override suspend fun clearAlertHistory(): Result<Unit> =
         suspendCancellableCoroutine { continuation ->
             deviceRef.child(PATH_HISTORY).removeValue { error, _ ->
-                if (continuation.isActive) {
-                    if (error != null) {
-                        continuation.resume(Result.failure(FirebaseDatabaseErrorMapper.mapToAlertError(error)))
-                    } else {
-                        continuation.resume(Result.success(Unit))
-                    }
-                }
-            }
-        }
-
-    private suspend fun writeStatus(sequenceId: Long, status: AlertStatus): Result<Unit> =
-        suspendCancellableCoroutine { continuation ->
-            val uid = auth?.currentUser?.uid.orEmpty()
-            val payload = mapOf(
-                KEY_STATUS to status.name,
-                KEY_UPDATED_AT to ServerValue.TIMESTAMP,
-                KEY_UPDATED_BY to uid
-            )
-            deviceRef.child(PATH_STATUS).child(sequenceId.toString()).setValue(payload) { error, _ ->
                 if (continuation.isActive) {
                     if (error != null) {
                         continuation.resume(Result.failure(FirebaseDatabaseErrorMapper.mapToAlertError(error)))
@@ -188,6 +189,6 @@ class FirebaseAlertRepository(
         const val PATH_STATUS = "status"
         const val KEY_STATUS = "status"
         const val KEY_UPDATED_AT = "updatedAt"
-        const val KEY_UPDATED_BY = "updatedBy"
+        const val STATUS_WRITE_TIMEOUT_MS = 10_000L
     }
 }
