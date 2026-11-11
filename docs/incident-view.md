@@ -169,3 +169,29 @@ the Mock Sender on screen: its tracking stops when the phone locks.
 - [ ] TalkBack on a panic row reads it and "Opens the incident."
 - [ ] Log Out from Settings with an incident opened earlier; RTDB traffic
       stops.
+
+---
+
+## 6. Status chip (2026-11-10)
+
+`5f0b254` (jspdavis) added a status chip to the summary, beside the type:
+`tv_incident_status`, Active (red), Acknowledged (orange) or Resolved
+(green), always shown. `IncidentViewModel` opens a second listener,
+`AlertRepository.observeStatuses()`, and keeps this panic's entry in
+`IncidentUiState.status` (`ACTIVE` when there is none). Tapping the chip
+opens "Update Incident Status" (Mark as Active, Acknowledge, Resolve);
+`onUpdateStatus` writes through `updateStatus`, and a failure is a toast,
+"Couldn't update incident status."
+
+- The status is stored at `devices/{id}/status/{sequenceId}`, which anyone can
+  write. Who may change it, and where it should live, waits on pairing.
+  [alert-data.md](alert-data.md) §13 has the list of what is still wrong.
+- **Resolved does not end the incident.** `IncidentGrouper` still ties
+  tracking updates to the panic by `sequenceId` and 30 minutes; a resolved
+  panic keeps drawing its path. Decide whether it should.
+- The status listener ends with the Fragment, like the history one (the view
+  is removed, not hidden, when anything else is shown).
+- Phone checks: the chip on a new panic reads Active; Acknowledge and Resolve
+  change it here, in Alert history and on a second phone within a second or
+  two; offline, the change fails after 10 s with the toast; the chip's colours
+  in dark mode.

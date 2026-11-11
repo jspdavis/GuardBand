@@ -21,7 +21,7 @@ Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targ
 ./gradlew lint
 ```
 
-On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 917 JVM unit tests (2026-10-28), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
+On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 990 JVM unit tests (2026-11-11), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
 
 `app/google-services.json` is required for the `com.google.gms.google-services` plugin. It points at the Firebase project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan, so there are no Cloud Functions).
 
@@ -47,14 +47,17 @@ View ↔ ViewModel ↔ Repository. Pre-auth screens are Activities. After login,
 com/example/guardband/
 ├── data/
 │   ├── model/            User, EmergencyContact, Alert (+ AlertType), CheckIn, ConsentRecord, ProfileState,
-│   │                     SignInProvider, GoogleSignInOutcome, Place, PairedBand (+ BandRelation)
-│   │                     (plain data classes; no passwords)
+│   │                     SignInProvider, GoogleSignInOutcome, Place, PairedBand (+ BandRelation),
+│   │                     ConnectedWearer (plain data classes; no passwords)
 │   ├── repository/       AuthRepository (suspend, Result<T>)
 │   │                     ContactRepository (observe = Flow<Result<T>>; CRUD = suspend)
 │   │                     AlertRepository (Flow<Result<T>>, live reads)
-│   │                     BandRepository (the account's bands; FixedBandRepository until pairing),
-│   │                     BandSelection (pure: which band is shown), WatchedBandAlertRepository
-│   │                     (the AlertRepository that follows it; see docs/device-pairing.md)
+│   │                     BandRepository (the account's bands; FirebaseBandRepository since 2026-11-10,
+│   │                     FixedBandRepository kept but unwired), BandSelection (pure: which band is
+│   │                     shown), BandSelectionStore (the Track switcher's choice, per phone),
+│   │                     WatchedBandAlertRepository (the AlertRepository that follows them)
+│   │                     WearerConnectionRepository (invite codes, account-to-account watchers);
+│   │                     see docs/device-pairing.md §9
 │   │                     UserProfileRepository (reads/writes users/{uid}, incl. the atomic finalize)
 │   │                     AuthError + FirebaseAuthErrorMapper (typed auth failures)
 │   │                     ContactError + AlertError + FirebaseDatabaseErrorMapper (typed RTDB failures)
@@ -64,7 +67,7 @@ com/example/guardband/
 │   │                     PlaceRepository → GeocoderPlaceRepository (alert coordinates → place names)
 │   │                     Firebase* = live; InMemory* + InMemoryStore = test doubles
 │   ├── DeviceConstants.kt      DEFAULT_DEVICE_ID = "guardband-001" (until pairing exists; read by
-│   │                           RepositoryProvider's fixed band, the mock sender and the test seed only)
+│   │                           FirebaseBandRepository's fallback, the mock sender and the test seed)
 │   ├── FirebaseProvider.kt     the one FirebaseAuth / FirebaseDatabase instance
 │   └── RepositoryProvider.kt   manual wiring; swap implementations here
 ├── ui/
@@ -89,14 +92,17 @@ com/example/guardband/
 │   │                 layers button (MapLayer: Auto / Street / Satellite / Outdoor / Topo), Check-in pill, and the recent-alerts bottom sheet (RecentAlertsPanel; See all → Alert history)
 │   │                 BandStatus + OsmdroidConfig (pure helpers; see "Track and map")
 │   │                 BandMarkerFace (pure: photo or initials) + BandMarkerIcon (draws the band's marker)
+│   │                 The wearer switcher pill (2026-11-10): My Band or a connected wearer, Safe/Panic/Offline
 │   ├── contacts/       Contacts tab: search, relationship filter chips (in memory, ContactsUiState.filteredContacts),
 │   │                 add/edit dialog, the Emergency star, delete (trash icon or long-press the row);
 │   │                 the Assigned guardian card on top (first starred contact; Call opens the dialer).
 │   │                 No roles: everyone gets the same three tabs (rolled back 2026-11-02)
 │   ├── alert/          AlertHistoryFragment (pushed from Track's See all): latest status + incident history;
-│   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel
+│   │                 AlertViewModel is host-scoped and also feeds Track's recent-alerts panel;
+│   │                 panic status chips and Clear history (2026-11-05/10; docs/alert-data.md §13)
 │   ├── device/         Device tab (the Profile tab until 2026-10-27): account header, band card,
-│   │                 connected account + contacts count, pairing placeholder (see "Device tab")
+│   │                 connected account + contacts count, Pair a band → InviteCodeDialogFragment
+│   │                 (Connect: share or redeem an invite code; see "Device tab")
 │   ├── bandviewer/     BandViewer (the interface the Device tab knows) + TurntableBandView: the band
 │   │                 on a turntable of frames from assets/band_turntable/; TurntableMotion (pure maths)
 │   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row.
@@ -160,7 +166,7 @@ Project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan — so no Cl
 - **Password reset happens in the app, not in a browser.** `sendPasswordResetEmail` still sends Firebase's own email, but the link in it is an Android App Link onto `ResetPasswordActivity`, so the new password is set inside GuardBand. Nothing like `otpPlain` or `pendingPassword` is ever written, and there is still **no typed verification code** — see "Forgot password" below.
 - **No PII in logs.** Never log a uid, an email, a token or Firebase error text.
 - **Never overwrite `app/google-services.json` from another branch,** and don't touch it, `.firebaserc` or any signing config as a side effect of other work.
-- **The Security Rules are deployed (2026-10-11), and `RTDBS-RULES.md` is the source of truth.** That file with every `"//"` key stripped *is* the live ruleset; the Console rejects the `"//"` keys. Change the file first, then paste the whole stripped file and publish, so the two cannot drift. **Since 2026-11-04 the Console runs Option A+ with band identity** (Jul's choice and publish): `devices/.../history` is append-only, and any band id but `guardband-001` can be written only by that band (`auth.uid == $deviceId`). The file and the Console match again, and [docs/database-rules.md](docs/database-rules.md) has the path inventory, the `devices/` options, the Rules Playground tests (the only test suite rules get; the project has no emulator suite), the rollout and the live text to roll back to. Its `devices/` block is deliberately world-readable and world-writable; closing it needs device pairing. **`history` needs its own `.read`**, not just `$sequenceId`'s: a child's read never grants the parent, and the alert screens and the mock sender both read the list. Before the deploy that line was missing and both got 401.
+- **The Security Rules are deployed (2026-10-11), and `RTDBS-RULES.md` is the source of truth.** That file with every `"//"` key stripped *is* the live ruleset; the Console rejects the `"//"` keys. Change the file first, then paste the whole stripped file and publish, so the two cannot drift. **Since 2026-11-04 the Console runs Option A+ with band identity** (Jul's choice and publish): `devices/.../history` is append-only, and any band id but `guardband-001` can be written only by that band (`auth.uid == $deviceId`). **Since 2026-11-10 that is uncertain:** `5f0b254` added watcher reads on `users/$uid` and the `invite_codes`, `wearer_watchers` and `watcher_wearers` nodes, plus a second copy, `RTDBS-RULES-CONSOLE.json`, which differs from the `.md` in one rule (the Console copy is the working one), and nobody recorded a publish (database-rules.md §10). Keep **one** source: fix the `.md`, then delete or regenerate the JSON. [docs/database-rules.md](docs/database-rules.md) has the path inventory, the `devices/` options, the Rules Playground tests (the only test suite rules get; the project has no emulator suite), the rollout and the live text to roll back to. Its `devices/` block is deliberately world-readable and world-writable; closing it needs device pairing. **`history` needs its own `.read`**, not just `$sequenceId`'s: a child's read never grants the parent, and the alert screens and the mock sender both read the list. Before the deploy that line was missing and both got 401.
 
 ## Google sign-in
 
@@ -615,7 +621,7 @@ The band (or the mock sender) PUTs to the RTDB REST API, and Security Rules vali
 
 `data/model/Alert.kt` mirrors it and `data/repository/AlertParser.kt` reads it — see "Alert data" below for how. Check the field names against the deployed Security Rules before relying on them.
 
-**A check-in (FR-10) is a `CHECKIN` alert, and the main app never writes one.** It is the wearer's double-press on the band, sent with the payload above to `history` and `latest`; there is no separate check-in node. Nothing under `app/src/main` may write a check-in, or anything else, to `devices/` — only the band does, and the debug mock sender stands in for it. See "Check-in status" below.
+**A check-in (FR-10) is a `CHECKIN` alert, and the main app never writes one.** It is the wearer's double-press on the band, sent with the payload above to `history` and `latest`; there is no separate check-in node. Nothing under `app/src/main` may write a check-in, or anything else, to `devices/` — only the band does, and the debug mock sender stands in for it. See "Check-in status" below. **Two writes broke this rule in November and are open items, not precedents:** Alert history's Clear history (`removeValue` on `history`, which the append-only rules refuse) and the panic status chip (`devices/{id}/status/{seq}`, world-writable). See docs/alert-data.md §13.
 
 ## Alert data
 
@@ -624,8 +630,8 @@ Track's recent-alerts panel and the Alert history screen read `devices/{deviceId
 **The locked decisions behind the alert screens:**
 - **D1** — `PANIC`, `CHECKIN` and `LOW_BATTERY` are shown and colour-coded. `TRACKING_UPDATE` is hidden from the Alert list. An **unrecognised** type is *not* hidden: it is shown as "Unknown alert", so a type a future firmware adds still appears.
 - **D2** — the latest-alert card is the newest **non-tracking** entry derived from history. It deliberately does **not** read `devices/{id}/latest`, because every payload overwrites that node, tracking updates included, so the card would read "Location update" while a panic sat one row below it. `observeLatestAlert` still exists, unsubscribed, for the Track tab.
-- **D3** — read a window of 100 raw entries, drop tracking updates, show at most 50. The window is over *raw* entries, so a chatty band yields fewer than 50 displayable alerts. `AlertHistory` therefore carries `rawCount` and `malformedCount`, which is what lets the empty state say *which* kind of empty it is instead of implying the band is silent.
-- **D4** — ViewModels never see a device id for reading. `RepositoryProvider.alertRepository` is a `WatchedBandAlertRepository`, which follows the account's bands (`BandRepository`) through `BandSelection.watchedBandOf` and never captures an id, so one instance serves every account a process signs in; no band is `AlertError.NoBand`. Until pairing, `FixedBandRepository` gives every account the one band `DeviceConstants.DEFAULT_DEVICE_ID`. Pairing: [docs/device-pairing.md](docs/device-pairing.md).
+- **D3** — read a window of 100 raw entries, drop tracking updates, show at most 50. The window is over *raw* entries, so a chatty band yields fewer than 50 displayable alerts. `AlertHistory` therefore carries `rawCount` and `malformedCount`, which is what lets the empty state say *which* kind of empty it is instead of implying the band is silent. **Since 2026-11-05** Alert history no longer cuts at 50 (`MAX_HISTORY` is unused) and the inbox reads with `UNLIMITED_HISTORY_WINDOW`, i.e. the whole history with no `limitToLast`; that unbounded listener is an open item (docs/alert-data.md §13).
+- **D4** — ViewModels never see a device id for reading. `RepositoryProvider.alertRepository` is a `WatchedBandAlertRepository`, which follows the account's bands (`BandRepository`) through `BandSelection.watchedBandOf` and never captures an id, so one instance serves every account a process signs in; no band is `AlertError.NoBand`. **Since 2026-11-10** `FirebaseBandRepository` is wired instead of `FixedBandRepository`, and the Track switcher's `BandSelectionStore` choice overrides the rule. With nothing written under `users/{uid}/bands`, it gives each account its **own uid** as its first band, then `guardband-001`, so by default every screen reads an empty `devices/<uid>`: an open item, [docs/device-pairing.md](docs/device-pairing.md) §9.
 - **D5** — `schemaVersion` is parsed as a String, so both `"1.0"` and a bare `1` work.
 
 **Repository contract.** `AlertRepository` exposes `observeLatestAlert()` and `observeAlertHistory(limit)`, both `Flow<Result<T>>`. A failed read is `Result.failure(AlertError)` — never null, never an empty list — and the flow **stays open**, so a reconnect or a rules fix can make the next emission succeed. `AlertError` is mapped from `DatabaseError.getCode()` through `FirebaseDatabaseErrorMapper`, never from a message, and carries no message of its own.
@@ -912,9 +918,11 @@ Profile. Four things are easy to break:
 - **It is the account's own band.** `DevicePairing` is `Loading`, `Unpaired`
   or `Paired`, from `RepositoryProvider.bandRepository` through
   `BandSelection.ownBandOf` (the band it *wears*; watched bands belong to
-  Track). Today it is always `Paired` with `guardband-001`, which the fixed
-  repository answers without a listener; a real one will be the tab's one
-  listener. The id is for display only. No band nickname: new stored data
+  Track). Since 2026-11-10 the repository is `FirebaseBandRepository`, so
+  the tab has one listener, and with no `users/{uid}/bands` it shows the
+  **account's uid** as the band id and "No data from the band yet"
+  (docs/device-tab.md §5). "Pair a band" opens the invite-code dialog
+  (`InviteCodeDialogFragment`), not a claim. The id is for display only. No band nickname: new stored data
   needs the notice first.
 - **The contacts row** navigates through `HomeViewModel` (`ShowContacts`),
   which `show()`s the tab. Settings' Device information row, which opened
@@ -985,7 +993,8 @@ pairing and roles.
 - **It watches the band `BandSelection.watchedBandOf` picks** (2026-11-02),
   read through `RepositoryProvider.alertRepositoryFor(id)` so the mark's key
   and the reads are always the same band; a change of band restarts the
-  read, and no band posts nothing.
+  read, and no band posts nothing. It ignores the Track switcher's choice
+  (2026-11-10), and the rule now picks `devices/<account uid>`.
 - **The wording never carries a location, a name, the photo or the device
   id.** Every alert is `VISIBILITY_PRIVATE` with an empty public version and
   one shared status-bar icon (`ic_stat_alert`). **The panic channel is

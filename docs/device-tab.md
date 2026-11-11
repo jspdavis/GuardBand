@@ -31,7 +31,7 @@ A scrolling column, top to bottom:
 | **Band viewer** (2026-10-28) | The band on a turntable: drag to turn it. A still placeholder until the rendered frames exist. Visual only; the tab knows it only as a `BandViewer`. [band-viewer.md](band-viewer.md). |
 | **b) Band card** | "GuardBand" and the band's id; a status chip, **"Reporting"** or **"Last seen 5 min ago"**; battery with the alert rows' battery symbol, orange at 20% or below; the last alert (type in its colour and symbol, "5 min ago", place name); the last known position as a place name. **"No data from the band yet"** when the band has never reported. No map, no coordinates. |
 | **c) Connected account** | Sign-in method (Email and password, Google, or both); email Verified / Not verified; **"Emergency contacts: N, M starred"**, which switches to the Contacts tab. |
-| **d) Pair a band** | Disabled, "Coming soon". |
+| **d) Pair a band** | Since 2026-11-10: enabled, and opens the **Connect** dialog (share an invite code, or enter someone else's to watch them). It does not claim a band. [device-pairing.md](device-pairing.md) §9. |
 | **e) How the band works** | Three plain lines: panic, double-press check-in, low battery at 20%. DESIGN: Jul. |
 
 ---
@@ -140,6 +140,17 @@ ViewModel from `BandRepository.observeBands()` through
 When pairing exists, `FirebaseBandRepository` replaces the fixed one and the
 "Pair a band" row gets a real action ([device-pairing.md](device-pairing.md)
 §3). Nothing on the screen needs reshaping.
+
+**2026-11-10: this happened early, in a different shape**
+([device-pairing.md](device-pairing.md) §9). `FirebaseBandRepository` is
+wired, and with nothing written under `users/{uid}/bands` it gives the
+account **two** worn bands, its own uid first, then `guardband-001`.
+`ownBandOf` takes the first, so the card is `Paired` with the **account's
+uid as the band id** (printed in `tv_device_band_id`) and "No data from the
+band yet", because nothing writes to `devices/<account uid>`. The "Pair a
+band" row opens the invite-code dialog rather than a claim. Showing a uid on
+screen is not logging it, but it is an internal identifier the tab was never
+meant to show.
 
 ---
 

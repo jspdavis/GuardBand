@@ -1,15 +1,16 @@
 # Device pairing
 
 How a band gets linked to the people who wear and watch it, and how
-`devices/` stops being writable by anyone. **Steps 1 and 2 are built;
-everything from step 3 on is a proposal.** Each open point says who decides
-it.
+`devices/` stops being writable by anyone. **Steps 1 and 2 are built.
+Watchers and a Track switcher were built on 2026-11-10 in a different
+shape from steps 4 and 5 below, without step 3 (§9).** Everything else is a
+proposal. Each open point says who decides it.
 
 | | |
 |---|---|
-| **State** | 2026-11-02: step 1 (app groundwork) and step 2 (band identity) built (§8). Its rules were published on 2026-11-04 (Jul); it still waits on Anonymous sign-in being turned on in the Console. Every account still wears `guardband-001`; no Privacy Notice change yet. |
-| **Code** | App: `data/model/PairedBand.kt`, `data/repository/BandRepository.kt` (+ `FixedBandRepository`), `BandSelection.kt`, `WatchedBandAlertRepository.kt`, `RepositoryProvider`. Mock sender: `BandIdentity.kt`, `AlertSender.kt`. Firmware: `guardband_band.ino`, `gts_roots.h`. Rules: `RTDBS-RULES.md`'s `devices/` writes |
-| **Tests** | `BandSelectionTest`, `WatchedBandAlertRepositoryTest`, `DeviceViewModelTest` (pairing cases), `BandAuthRepliesTest` (testDebug); the rules: 18 emulator cases (§6) |
+| **State** | 2026-11-02: step 1 (app groundwork) and step 2 (band identity) built (§8). Its rules were published on 2026-11-04 (Jul); it still waits on Anonymous sign-in being turned on in the Console. **2026-11-10 (jspdavis, `5f0b254`): account-to-account watchers by invite code, a Track switcher, and `FirebaseBandRepository` in place of the fixed one (§9).** Since then an account reads `devices/<its own uid>` by default, not `guardband-001`, so the app shows an empty band until §9's open points are settled. No Privacy Notice change yet. |
+| **Code** | App: `data/model/PairedBand.kt`, `ConnectedWearer.kt`, `data/repository/BandRepository.kt` (`FirebaseBandRepository`; `FixedBandRepository` kept, unwired), `BandSelection.kt`, `BandSelectionStore.kt`, `WatchedBandAlertRepository.kt`, `WearerConnectionRepository.kt` (+ `Firebase…`), `RepositoryProvider`, `ui/device/InviteCode*`, the switcher in `ui/track/`. Mock sender: `BandIdentity.kt`, `AlertSender.kt`. Firmware: `guardband_band.ino`, `gts_roots.h`. Rules: `RTDBS-RULES.md`'s `devices/` writes and its three watcher nodes |
+| **Tests** | `BandSelectionTest`, `WatchedBandAlertRepositoryTest`, `DeviceViewModelTest` (pairing cases), `InviteCodeViewModelTest`, `BandAuthRepliesTest` (testDebug); the rules: 18 emulator cases (§6), none yet for the watcher nodes. `FirebaseBandRepository`, `FirebaseWearerConnectionRepository` and the switcher's selection logic in `TrackViewModel` have no tests |
 | **Related** | [database-rules.md](database-rules.md) §4 (the `devices/` options), [team-checklist.md](team-checklist.md) (SMS), [device-tab.md](device-tab.md) §5, [`../SCHEMA.md`](../SCHEMA.md), [`../README.md`](../README.md#band-firmware-prototype) (the prototype firmware) |
 
 ---
@@ -238,9 +239,9 @@ their account.
 |---|---|---|
 | **1** | **Groundwork (built 2026-11-02).** `BandRepository` lists the account's bands (`FixedBandRepository`: everyone wears `guardband-001`); `BandSelection` picks the shown band; `WatchedBandAlertRepository` follows it, so one process can serve several accounts; `AlertError.NoBand`; the alert watch and the Device tab read the band from it. No visible change. | app only |
 | **2** | **Band identity (built 2026-11-02; §2 "As built").** Anonymous auth in the prototype firmware and the mock sender; every write with `?auth=`; both still write to `guardband-001` unless switched to their own id; the firmware checks certificates. The rules close writes on every band id except `guardband-001` (emulator-tested; published 2026-11-04). Waits on: Anonymous sign-in in the Console. | firmware, mock sender, rules |
-| 3 | **Claim over Serial.** `PAIR`, `device_secrets`, `device_members`, `users/{uid}/bands`; `FirebaseBandRepository` replaces `FixedBandRepository`; Pair a band works. Notice and `CONSENT_VERSION`. | app, firmware, rules, notice |
-| 4 | **Watcher invites.** Invite, redeem, remove, leave. | app, rules, notice |
-| 5 | **Track's selector and All.** | app |
+| 3 | **Claim over Serial.** `PAIR`, `device_secrets`, `device_members`, `users/{uid}/bands`; Pair a band works. Notice and `CONSENT_VERSION`. (`FirebaseBandRepository` is already wired, 2026-11-10, reading a `users/{uid}/bands` that nothing writes yet; §9.) | app, firmware, rules, notice |
+| 4 | **Watcher invites.** Invite, redeem, remove, leave. **Partly built 2026-11-10, per account rather than per band (§9);** remove and leave have repository methods but no screen. | app, rules, notice |
+| 5 | **Track's selector and All.** **Partly built 2026-11-10:** "My Band" or one connected wearer, no All (§9). | app |
 | 6 | **Close reads, retire `guardband-001`.** | rules, notice |
 | 7 | **SMS** (FR-05), on the conditions in [team-checklist.md](team-checklist.md). | app, notice, `SEND_SMS` approval |
 
@@ -268,3 +269,110 @@ their account.
 - **Still reading `DeviceConstants.DEFAULT_DEVICE_ID`:** `RepositoryProvider`
   (the fixed band), the mock sender and the firmware (they *are* the band),
   and `InMemoryStore`'s test seed.
+
+---
+
+## 9. As built: connected accounts (2026-11-10)
+
+What `5f0b254` (jspdavis) added, how it reads the database, where it departs
+from §3 to §5, and what is open. Read from the code on 2026-11-11.
+
+### What a user sees
+
+- **Device tab → Pair a band** is enabled (its "Coming soon" is hidden) and
+  opens **Connect** (`ui/device/InviteCodeDialogFragment`,
+  `dialog_invite_code.xml`, `InviteCodeViewModel`), with two tabs:
+  - **Share my code:** Generate code makes a 6-character code (A-Z and 0-9,
+    no character twice), valid for an hour; tap it or Copy code to copy it.
+  - **Watch someone:** type the code and Connect. Failures: not found,
+    expired, your own code, network, and "permission denied", worded for a
+    developer ("Have the invite_codes rules been published?").
+- **Track** has a pill at the top (`track_wearer_switcher`): the shown
+  wearer's name ("My Band" by default) and a status: **Safe** (green),
+  **Panic Alert** (red, while `TrackUiState.bandPanic` is set) or
+  **Offline** (grey, not reporting within 180 s). Tapping it opens
+  **Switch Wearer**: My Band, each connected wearer by name ("Wearer" when the
+  name is blank), and **+ Connect New Wearer**, which opens Connect.
+- When Track first loads with connected wearers, or a new one appears while
+  it is open, it **switches to that wearer by itself** and toasts "Now
+  watching: <name>".
+
+### Data
+
+```
+invite_codes/{code}                         { wearer_uid, created_at (server), expires_at, used: false }
+wearer_watchers/{wearer_uid}/{watcher_uid}  true
+watcher_wearers/{watcher_uid}/{wearer_uid}  true
+users/{uid}/bands/{deviceId}                read, never written
+```
+
+- **Redeem** reads the code, checks `expires_at` (the generating phone's clock
+  plus one hour) against the redeeming phone's clock, refuses your own code,
+  then writes both link rows in one multi-path update. `used` is never set,
+  so a code works for anyone, any number of times, within its hour. Codes are
+  never deleted.
+- `removeWatcher` and `stopWatching` delete both rows. **Nothing calls them
+  yet**: there is no screen to remove a watcher or stop watching.
+
+### Which band an account reads
+
+`FirebaseBandRepository` is now `RepositoryProvider.bandRepository`. It lists:
+
+- **Own bands (WEARER):** the keys under `users/{uid}/bands`. When there are
+  none, which is always today, **two: the account's own uid, then
+  `guardband-001`.**
+- **Watched bands (WATCHER):** for each wearer in `watcher_wearers/{uid}`,
+  their `users/{wearer}/bands` keys plus the wearer's uid itself.
+
+`BandSelection.watchedBandOf` takes the first WEARER band, so **every
+account's default band is `devices/<its own uid>`**, and a connected
+wearer's is `devices/<their uid>` (`ConnectedWearer.deviceId` falls back to
+the uid). **Nothing writes to either.** The mock sender and the firmware write
+to `guardband-001` or to their own *anonymous* band uid, never to an
+account's uid. So by default Track, Alert history, the inbox, the Device tab
+(which also prints the account's uid as the band id) and alert notifications
+all show an empty band, and `guardband-001` cannot be chosen in the switcher.
+The unit tests use fakes, so they cannot see this.
+
+**The switcher's choice** is `BandSelectionStore`: SharedPreferences
+`band_selection`, key `selected_band_id`, per phone, not cleared on sign-out.
+`RepositoryProvider.init` creates it from `GuardBandApplication`.
+`WatchedBandAlertRepository` combines it with the band list through
+`BandSelection.watchedBandOf(bands, explicit)`, which uses the choice when it
+is in the list. **`AlertWatchService` still uses the one-argument rule**, so
+notifications follow My Band whatever Track shows.
+
+### Where it departs from the plan
+
+| Plan (§3 to §5) | Built |
+|---|---|
+| Claim a band first (step 3) | No claim. `users/{uid}/bands` is read, never written. |
+| A watcher watches a **band** (`device_members/{deviceId}/{uid}`) | A watcher watches an **account** (`wearer_watchers`), then that account's bands |
+| A rule accepts a watcher row only against a live invite | Any signed-in account may write `wearer_watchers/{anyone}/{itself}`. The code is checked only in the app. |
+| Watchers see the band | The rules also let a watcher read the wearer's whole `users/{uid}`: name, email, **emergency contacts**, consent |
+| Invite expiry and single use: open (James) | Multi-use for an hour, on the phones' clocks |
+| The wearer's name and photo: notice first | The name shows in the switcher; no notice change |
+| My band, a friend, **All** | My band or one friend |
+
+### Open before it can be demoed
+
+1. **What an account with no claimed band reads.** Put `guardband-001` first
+   (or alone) in the fallback, so the shared demo band is back by default;
+   or build the claim (step 3) first. *(James)*
+2. **Rules:** accept a watcher row only against a live invite, and narrow
+   what a watcher may read to what the switcher needs (the name and the bands
+   index). [database-rules.md](database-rules.md) §10. *(Jul)*
+3. **Which watcher rules are live:** `RTDBS-RULES.md` and
+   `RTDBS-RULES-CONSOLE.json` differ ([database-rules.md](database-rules.md)
+   §10). *(Jul)*
+4. **Privacy Notice and `CONSENT_VERSION`:** a wearer's name and alerts are
+   now shared with other accounts, and the rules expose their contacts. *(James)*
+5. **Screens to remove a watcher and to stop watching**; the alert watch
+   following the switcher.
+6. **Smaller:** `FirebaseBandRepository`'s `readOnce` never completes on a
+   read error, so the band list can stall instead of falling back;
+   `FirebaseWearerConnectionRepository` maps unknown failures by matching
+   message text (CLAUDE.md: map by code only) and imports `android.util.Log`
+   without using it; the two "permission denied" messages are developer
+   wording on a user's screen; no tests cover the two Firebase repositories or
+   `TrackViewModel`'s switcher logic.

@@ -1,11 +1,13 @@
 # Handoff
 
-**As of 2026-10-28 · `mvvm-main` at `9500c09` (Device tab polish, after the
-band viewer at `21fcf18`, placeholder only) plus its Changelog/handoff
-commit, pushed · `main` fast-forwarded to the same commit
-(`git push origin mvvm-main:main`) · 917 JVM unit tests, 0 failures ·
-`./gradlew lint` passes with no errors · plus the Wi-Fi band prototype in `firmware/` · nothing in flight.** Run `git status -sb` and `git log origin/mvvm-main -1` before
-trusting any hash here.
+**As of 2026-11-11 · `mvvm-main` at `5f0b254` (jspdavis: connected accounts
+and incident status, 10 Nov), after `653f29f` (Jehan: alert history by date
+and Clear history, 5 Nov), plus this docs pass, all pushed · `main`
+fast-forwarded to the same commit on 2026-11-11 · 990 JVM unit tests, 0 failures · `./gradlew lint` last clean
+on 27 Oct, not re-run since · plus the Wi-Fi band prototype in `firmware/`.**
+**The 10 Nov merge left the app showing an empty band by default; read §3,
+"Next steps", before demoing anything.** Run `git status -sb` and
+`git log origin/mvvm-main -1` before trusting any hash here.
 
 This file is the entry point for anyone picking the project up cold,
 including a chat that is deciding **what to build next**. §1 says what the
@@ -49,11 +51,11 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 |---|---|
 | **Accounts** | Email/password sign-up wizard (Account → Name → Contacts → Consent), Google sign-in, login, in-app password reset via the email link (App Link), email verification with a gate that locks unverified password accounts out, Change password, Delete account (re-auth, then a resumable two-step delete), Log Out. |
 | **Consent and privacy** | A recorded consent (`accepted`, timestamp, version `1.3`) for every account; a gate that sends any account without one to the consent screen. Hosted Privacy Notice (1.3) and delete-account page, published as final. No analytics. |
-| **Track tab** (default) | A MapTiler map (five layers: Auto/Street/Satellite/Outdoor/Topo, dark map in dark mode, choice remembered) with the band's last known position as a face marker (Google photo or initials); small pins under it for the newest ten panics, check-ins and low-battery alerts (one per spot, a panic always keeping its spot; colour-coded; a panic pin opens its Incident view, the others show "Check-in, 5 min ago"); the face's bubble offers "View incident" after a panic; a re-centre button; a "Last check-in: 5 min ago" status card; a draggable bottom sheet with the newest three alerts and "See all". |
-| **Alerts** | Alert history (pushed screen): latest alert card plus the list by day, colour-coded by type (panic, check-in, low battery, unknown), with place names instead of coordinates (Android Geocoder), battery level and "5 min ago" times. Tracking updates are hidden from lists. **Incident view** (pushed screen): a panic row, a panic pin or the face's "View incident" opens the panic on a map with the tracking updates after it drawn as a path, plus its time, place, latest battery and update count. |
+| **Track tab** (default) | A MapTiler map (five layers: Auto/Street/Satellite/Outdoor/Topo, dark map in dark mode, choice remembered) with the band's last known position as a face marker (Google photo or initials); small pins under it for the newest ten panics, check-ins and low-battery alerts (one per spot, a panic always keeping its spot; colour-coded; a panic pin opens its Incident view, the others show "Check-in, 5 min ago"); the face's bubble offers "View incident" after a panic; a re-centre button; a "Last check-in: 5 min ago" status card; a draggable bottom sheet with the newest three alerts and "See all". **Since 10 Nov** a **wearer switcher** at the top: "My Band" or a connected wearer, with Safe / Panic Alert / Offline ([`device-pairing.md`](device-pairing.md) §9). |
+| **Alerts** | Alert history (pushed screen): latest alert card plus the list by day (Today, Yesterday, then each date), colour-coded by type (panic, check-in, low battery, unknown), with place names instead of coordinates (Android Geocoder), battery level and "5 min ago" times. Tracking updates are hidden from lists. **Incident view** (pushed screen): a panic row, a panic pin or the face's "View incident" opens the panic on a map with the tracking updates after it drawn as a path, plus its time, place, latest battery and update count. **Since 10 Nov** every panic has a **status chip** (Active / Acknowledged / Resolved), changeable from Alert history and the Incident view. **Since 5 Nov** Alert history has a **Clear history** button, which the rules refuse ([`alert-data.md`](alert-data.md) §13). |
 | **Notifications** | The bell opens an inbox of the band's alerts by day. Opt-in **alert notifications** (Settings): a foreground service keeps the listener open and posts each new alert as a system notification, panic silent for the wearer's discretion, nothing identifying on the lock screen. |
 | **Contacts tab** | Emergency contacts: add/edit (tap a card)/delete (trash or hold), search, relationship filter chips, an Emergency star that sorts and badges. At least one contact always; phone numbers stored as E.164. |
-| **Device tab** (was Profile) | A compact header (photo or initials, name, email); the band: "Reporting" or "Last seen 5 min ago", battery (orange at 20%), last alert with time and place name, last known position as a place name ("On the move" while tracking); the connected account (sign-in method, email verification, "Emergency contacts: N, M starred" opening Contacts); "Pair a band" (Coming soon); how the band works. Always shows the one hard-coded band. [`device-tab.md`](device-tab.md). At the top, a **band viewer**: the band on a turntable to drag round, built to play rendered frames, **showing a still placeholder** until the frames exist (§3, item 14). [`band-viewer.md`](band-viewer.md). |
+| **Device tab** (was Profile) | A compact header (photo or initials, name, email); the band: "Reporting" or "Last seen 5 min ago", battery (orange at 20%), last alert with time and place name, last known position as a place name ("On the move" while tracking); the connected account (sign-in method, email verification, "Emergency contacts: N, M starred" opening Contacts); "Pair a band", which since 10 Nov opens **Connect** (share an invite code, or redeem one to watch someone); how the band works. Since 10 Nov it shows the account's uid as its band, with no data ([`device-tab.md`](device-tab.md) §5). At the top, a **band viewer**: the band on a turntable to drag round, built to play rendered frames, **showing a still placeholder** until the frames exist (§3, item 14). [`band-viewer.md`](band-viewer.md). |
 | **Settings** | Account information (details, verification status, Change password, Delete account), Alert notifications, Display (Light/Dark/System), About (version, Privacy Notice), Changelog, Log Out. |
 | **Mock sender** (debug builds only) | Plays the band with its one button: hold 1.5 s = panic (then tracking every 5 s for 30 min), double-press = check-in, hold 5 s during a panic = cancel (sends a check-in). A battery slider sets the level reported and sends a low-battery alert at 20%. |
 
@@ -62,7 +64,7 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 | FR | Requirement | State |
 |---|---|---|
 | FR-01 | Auth (email/password, Google) | **Done** in the app. |
-| FR-02 | Real-time location and incident status | Location **done** (live marker). Incident status: the **Incident view** shows a panic, its path since, how many tracking updates and how recent the last one is. There is still no notion of an incident being acknowledged or resolved (§3, item 4). |
+| FR-02 | Real-time location and incident status | Location **done** (live marker). Incident status: the **Incident view** shows a panic, its path since, how many tracking updates and how recent the last one is, and since 10 Nov a status chip (Active / Acknowledged / Resolved) that anyone can change, stored on the world-writable `devices/{id}/status` (§4). |
 | FR-03 | Panic detected within 1 s | **Firmware.** Not started. |
 | FR-04 | GPS fix within 5–10 s | **Firmware.** Not started. |
 | FR-05 | Automated SMS with a Google Maps link | **Not built; waits for pairing.** The wearer's phone is to send it (§3, item 3). |
@@ -75,6 +77,8 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 
 **In short:** the app side of nearly every requirement is built. What is
 missing is the band, and the link between a band and an account (pairing).
+Pairing was half-built on 10 Nov in a different shape from the plan, and in
+doing so moved every account off the shared demo band (§3).
 
 ---
 
@@ -85,12 +89,17 @@ These are hard rules, from CLAUDE.md and from decisions already taken.
 - **No server code.** Spark plan: no Cloud Functions, no Admin SDK, no FCM
   sending. Anything that needs a trusted server (typed reset codes, push to
   phones, custom tokens) is out unless the plan changes, which costs money.
-- **One hard-coded band.** Every install watches `devices/guardband-001`
-  (`DeviceConstants.DEFAULT_DEVICE_ID`), and `devices/` is open to anyone,
-  read and write, until pairing exists. The Privacy Notice says so.
+- **One shared demo band.** Every install was meant to watch
+  `devices/guardband-001` (`DeviceConstants.DEFAULT_DEVICE_ID`) until a band
+  can be claimed, and `devices/` reads are open to anyone until pairing
+  exists. The Privacy Notice says so. **Since 10 Nov the code no longer does
+  this by default** (§3, step A).
 - **The app never writes to `devices/`.** Only the band (or the mock sender)
-  does. No check-in, acknowledgement or command goes from the main app to the
-  band's tree today; adding one is a design decision with rules work.
+  does. **Broken twice in November**, both open: Clear history (refused by
+  the rules) and the status chip (`devices/{id}/status`, world-writable).
+  Adding a write is a design decision with rules work, not a precedent.
+- **One rules file.** `RTDBS-RULES.md`, stripped, is the ruleset. A second
+  copy (`RTDBS-RULES-CONSOLE.json`, 10 Nov) has already drifted from it.
 - **No phone-location permission in the release app, ever.** The band's GPS
   is the location. (Only the debug mock sender asks.)
 - **Release permissions are fixed at seven**, approved by James on
@@ -114,6 +123,79 @@ These are hard rules, from CLAUDE.md and from decisions already taken.
 ---
 
 ## 3. What could come next
+
+### Next steps (2026-11-11)
+
+The two November merges added real features but left the shared demo
+broken and opened a privacy gap. The next demo is in December, so there is
+time to do this properly, in this order. Each step names who decides.
+
+**A. Put the demo band back (app only, small; decide: James).**
+`FirebaseBandRepository` gives an account with no claimed band its own uid
+as its first band, then `guardband-001`, and `BandSelection.watchedBandOf`
+takes the first. Nothing writes to `devices/<account uid>`, so Track, Alert
+history, the inbox, the Device tab and notifications all show an empty band,
+and `guardband-001` cannot be picked. *Recommended:* the fallback becomes
+`guardband-001` alone, and a connected wearer with no claimed band adds
+nothing (or the same `guardband-001`, de-duplicated). Extract the list-building
+into a pure function so it gets a test; the current bug is invisible to the
+fakes. Also make `readOnce` resume on a read error, so the list cannot
+stall. [`device-pairing.md`](device-pairing.md) §9.
+
+**B. One rules file, and record what is live (Jul).** Copy the live rules
+out of the Console. Fix `watcher_wearers`'s `.read` in `RTDBS-RULES.md` (it
+must sit on `$watcher_uid`, as in the JSON copy), delete
+`RTDBS-RULES-CONSOLE.json`, and note the publish date in
+[`database-rules.md`](database-rules.md) §9. Until then nobody knows which
+watcher rules the switcher is running against.
+
+**C. Undo the two writes to `devices/` that should not be there (app; Jehan
+and jspdavis).**
+- *Clear history:* the rules refuse it, correctly, on a shared band.
+  *Recommended:* remove the button now; if a per-account "hide alerts before
+  this one" is wanted, design it under `users/{uid}` with a notice line.
+- *Incident status:* keep the chips for the demo, but treat
+  `devices/{id}/status` as temporary. Its proper home (a node only the band's
+  wearer and watchers can write) comes with pairing (step E). Make the chip
+  inert-looking where tapping does nothing (Track's sheet, the inbox).
+- *The inbox* goes back to `DEFAULT_HISTORY_WINDOW`; reading the whole
+  history live is a cost and battery problem that grows with every demo.
+[`alert-data.md`](alert-data.md) §13.
+
+**D. Close the watcher privacy gap before anyone real uses Connect (rules:
+Jul; notice: James).**
+- The rules let any signed-in account add itself as a watcher of anyone
+  without a code, and a watcher can read the wearer's whole `users/{uid}`,
+  emergency contacts included. Tie the watcher row to a live invite and
+  narrow what a watcher reads to the name and the bands index. That needs a
+  small app change (the redeem write carries the code) and emulator tests.
+  [`database-rules.md`](database-rules.md) §10.
+- Invite codes: create-only (no overwriting someone else's), single use or
+  deleted once redeemed.
+- The **Privacy Notice and `CONSENT_VERSION`** change in the same commit:
+  watchers now see a wearer's name and alerts.
+- Screens to **remove a watcher** (wearer) and **stop watching** (watcher);
+  the repository methods exist.
+
+**E. Then pairing proper: claim a band (step 3).** Decide first whether
+watching stays **per account** (what was built) or moves **per band**
+(`device_members`, the plan). *Recommended:* keep per account, since an
+account wears one band; the claim writes `users/{uid}/bands/{deviceId}`
+plus a band-to-wearer row the `devices/` read rule can check later. Then the
+switcher shows real friends' bands, the alert watch follows the switcher,
+"All" and the face marker per wearer follow (steps 5 and 6).
+[`device-pairing.md`](device-pairing.md) §8 and §9.
+
+**F. Team process (everyone).** Both merges skipped the Changelog entry, the
+docs and the rules record, and committed IDE files (`.idea/.name`,
+`.idea/deploymentTargetDropDown.xml`). Before pushing to `mvvm-main`: tests
+pass, a Changelog entry for the day, the affected doc updated, any rules
+change in `RTDBS-RULES.md` only (with "published on <date>" or "not
+published" in [`database-rules.md`](database-rules.md)), no `.idea/` files,
+and `main` fast-forwarded after (it had fallen 9 commits behind by
+11 Nov).
+
+### Candidate directions
 
 Ordered roughly by how much they unlock. None of this is decided; each item
 says what it depends on and what it would touch.
@@ -139,6 +221,10 @@ says what it depends on and what it would touch.
      `RTDBS-RULES.md` closes writes on every band id but `guardband-001`
      (emulator-tested, published 2026-11-04). Waits on Anonymous sign-in in
      the Console. Next: claiming a band over Serial (step 3).
+   - **Watchers and a switcher were built on 10 Nov (jspdavis), ahead of the
+     claim and per account rather than per band:** invite codes, a Track
+     switcher, `FirebaseBandRepository`. Not demo-ready: see "Next steps" A,
+     B and D above, and [`device-pairing.md`](device-pairing.md) §9.
 2. **Roles: wearer and guardian.** Today the signed-in user is implicitly the
    wearer (their face is on the marker) and also the watcher. A guardian
    watching someone else's band needs sharing or invites on top of pairing.
@@ -149,7 +235,8 @@ says what it depends on and what it would touch.
    was rolled back: everyone has the three tabs, sign-up has no role picker,
    and its Assigned Guardian card is now the top of the Contacts tab (the
    first starred contact, with Call). Who watches whom should come from
-   pairing and sharing, per band, not from a label on the account.
+   pairing and sharing, not from a label on the account. Since 10 Nov it
+   comes from invite codes between accounts (item 1).
 3. **Panic SMS (FR-05).** Direction since 2026-11-02: the band writes the panic
    to Firebase and the wearer's phone sends the text, so a dead modem or a
    missing phone means no text. **No SMS in any build until pairing ships.**
@@ -161,14 +248,15 @@ says what it depends on and what it would touch.
 
 ### App-only, buildable now
 
-4. **Incident status: acknowledge or resolve. âœ… Built 2026-11-05.** A
-   guardian marks a panic "I'm on it" or "resolved", so other guardians (and
-   the history) know. Status chips appear only on `PANIC` alerts (not
-   check-ins or low-battery). Status is stored under
-   `devices/{id}/status/{sequenceId}` using `updateStatus` (10 s timeout;
-   offline failures surface as a toast). No `uid` is stored (`updatedBy`
-   removed â€” no PII in a world-readable node, no `CONSENT_VERSION` bump).
-   See Â§5 "2026-11-05" for the full change list.
+4. **Incident status: acknowledge or resolve. Built 2026-11-10
+   (jspdavis), on temporary storage.** A guardian marks a panic Acknowledged
+   or Resolved, so other guardians (and the history) know. Chips on `PANIC`
+   alerts only; stored at `devices/{id}/status/{sequenceId}` with
+   `updateStatus` (10 s timeout; failures toast). No uid is stored
+   (`updatedBy` removed), so no `CONSENT_VERSION` bump was needed. **Still
+   open:** the node is world-writable and in the band's tree; Resolved does
+   not end an incident; the payload's own `status` field is a second source
+   nobody writes. §4 "Parked code"; [`alert-data.md`](alert-data.md) §13.
 
 5. **A demo mode / demo script.** The project is presented without hardware.
    A scripted mock-sender run (panic → tracking → check-in → low
@@ -240,12 +328,13 @@ says what it depends on and what it would touch.
 
 | | Who | Notes |
 |---|---|---|
-| **Rules: nothing pending** | Jul | **A+ with band identity is live** (published 2026-11-04, [`database-rules.md`](database-rules.md) §9); `RTDBS-RULES.md`, stripped, matches the Console. Also ask the firmware teammate whether anything uses `devices/{id}/command` or `status`; if not, delete both blocks. |
+| **Rules: record what is live, then close the watcher gap** | Jul | A+ with band identity was published 2026-11-04 ([`database-rules.md`](database-rules.md) §9). On 10 Nov `5f0b254` added watcher rules to `RTDBS-RULES.md` and a second copy, `RTDBS-RULES-CONSOLE.json`, which differ; no publish was recorded. §3 "Next steps" B and D; [`database-rules.md`](database-rules.md) §10. `devices/{id}/status` is now used by the status chips; `command` still by nothing (ask the firmware teammate before deleting it). |
+| **Privacy Notice for connected accounts** | James | Watchers see a wearer's name and alerts (and, under the current rules, their contacts). Notice and `CONSENT_VERSION` before Connect is used by real people. §3 "Next steps" D. |
 | **MapTiler key** | Jul | A dedicated key restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), shared privately, in each `local.properties` as `MAPTILER_API_KEY`. Without it Track says "Map unavailable". [`osmdroid.md`](osmdroid.md) §4.4. |
 | **The Privacy Notice still says "Profile tab"** | James | Its Google profile picture row says the picture shows "on the Profile tab and on the map". It is now the Device tab. Nothing about the data changed, so it is a wording fix for a human to make (and decide whether it needs a version bump); the agent was told not to edit the hosted notice. |
 | **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. The ⓘ collapse follows OSMF's guidelines, not a MapTiler statement. [`osmdroid.md`](osmdroid.md) §4.6. |
 | **Design pass on the placeholders** | Jul | The dark palette (`values-night/colors.xml`), the low-battery icon (triangle or battery), everything marked `DESIGN: Jul` (94 places: 4 for the alert pins and their label, 6 for the Incident view and the face's bubble), and two older theme changes to confirm with Jehan: 28 dp outlined-button corners, 24 dp sign-up top padding. |
-| **Remove the stray `Guardband-MVVM` gitlink** | Jehan, then anyone | A nested clone in Jehan's tree was committed as a gitlink to `9448b3c`, which exists only on her machine. Check nothing is stranded in that inner copy ([`guardband-mvvm-folder.md`](guardband-mvvm-folder.md)), then remove the entry. |
+| **Check the old `Guardband-MVVM` copy** | Jehan | The stray gitlink (to `9448b3c`, which exists only on her machine) was removed from the repo on 2 Nov (`1132d70`). Still to do: check nothing is stranded in that inner copy on her machine ([`guardband-mvvm-folder.md`](guardband-mvvm-folder.md)). |
 | **Each teammate's fingerprints** | each developer | Debug **SHA-1** in the Firebase Console (else Google sign-in fails on their build); debug **SHA-256** in `hosting/public/.well-known/assetlinks.json` and Hosting redeployed (else reset and verification links open the browser). Four SHA-256s are live (James's and three teammates'). Release keystore's before any signed build. |
 | **Band model and turntable frames** | Jul (design and modelling) | The Device tab's band viewer plays a placeholder. Jul models the band in Blender from the concept image (charcoal gray composite strap, neon green perforated liner, brushed steel double-ring clasp, three round buttons with green LEDs, OLED strip) and renders 36 to 72 transparent WebP frames into the viewer's frame folder; no code change is needed. Decide first what the three round elements on the concept are: the concept labels them an HR/SpO2 sensor array, but the requirements and SCHEMA.md contain no heart-rate or blood-oxygen data, and showing one would imply collecting health data (Privacy Notice change and a CONSENT_VERSION bump). A real-time .glb viewer is a possible later replacement behind the same BandViewer interface and would need a dependency check against compileSdk 34 and a release manifest re-check. Folder and frame spec: [`band-viewer.md`](band-viewer.md) §2 and §3. Not started. |
 | **Band firmware** | firmware teammate | Write exactly `SCHEMA.md`'s payload: `history/{sequenceId}` first, then `latest`; a double-press within 2 s is a `CHECKIN` (FR-10); a **1.5 s hold is a `PANIC`**, fired while still held; during a panic a **5 s hold cancels** it (stops tracking, sends a `CHECKIN`), and a check-in alone does not; tracking every 60 s for 30 min after an alert (FR-09); low battery at 20% (FR-11). The Mock Sender copies these gestures (`BandButtonDecoder`): change both together. **Started (2026-10-28):** the Wi-Fi prototype in [`../firmware/`](../README.md#band-firmware-prototype) does all of this (tracking at the Mock Sender's 5 s demo pace), with the laptop standing in for the GPS and battery. Since 2 Nov it signs in as its own band (anonymous auth, `?auth=`) and checks certificates. Still to do: the NEO-6M, the Air780E (4G and SMS, FR-05), a real battery reading, and claiming over Serial (pairing step 3). |
@@ -257,6 +346,11 @@ their own phone each session, so this is a reference list, not a queue.
 [`team-checklist.md`](team-checklist.md) "Phone checks" has the current
 list; the step-by-step checklists live in each doc:
 
+- 5 and 10 Nov changes, once §3 step A is done: day headings by date; the
+  status chips (all three places they show, and a second phone seeing the
+  change); Connect (share, redeem, expired, your own code, wrong code); the
+  switcher (My Band, a friend, the "Now watching" switch on first load).
+  [`incident-view.md`](incident-view.md) §6, [`device-pairing.md`](device-pairing.md) §9.
 - 22–27 Oct changes: Contacts (search, chips, star, tap to edit, hold to
   delete, the new dialog), the inbox, the re-centre button, the five map
   layers and their persistence, the check-in card, Change password in Account
@@ -296,18 +390,21 @@ In the tree with no caller, kept on purpose so it can be reused. Both came in
 with `e97e15b` and were parked on 2026-11-02. Nothing here runs; revive it
 only through the decision it waits on, and fix what is listed first.
 
-**Alert status** (Active, Acknowledged, Resolved; Â§3 item 4). **Revived and
-shipped 2026-11-05.** The parked code has been fully unparked and is live.
-- **What was fixed:** `updatedBy` (uid) removed; `updateStatus` replaces the
-  old `acknowledge`/`resolve` pair; 10 s `withTimeoutOrNull` on the RTDB
-  write; status badge gated to `AlertType.PANIC` only; `observeStatuses` wired
-  into `AlertViewModel`, `IncidentViewModel` and `NotificationsViewModel`;
-  status dialog on the Alert History screen and the Incident view; unit tests
-  for all new ViewModel paths.
-- **Still applies:** who may change it beyond the current account (pairing /
-  sharing) is not gated â€” roles stay fluid (Â§3 item 2). `SCHEMA.md` and
-  `RTDBS-RULES.md` describe the current storage (`devices/{id}/status/{seq}`);
-  migrating off `devices/` remains a future decision.
+**Alert status** (Active, Acknowledged, Resolved; §3 item 4). **No longer
+parked: wired up on 2026-11-10 (`5f0b254`).** Of the list that stood here:
+- **Fixed:** no uid stored (`updatedBy` removed); chips on panics only;
+  failures shown, with a 10 s timeout on the write; `observeStatuses` wired
+  into `AlertViewModel`, `IncidentViewModel` and `NotificationsViewModel`,
+  with tests.
+- **Still open:** stored on `devices/{id}/status`, the old LED node, which is
+  world-writable (anyone can resolve a panic) and in the band's tree, which
+  the main app is not meant to write; two sources (the parser still reads a
+  `status` from the history payload, which nothing writes); `SCHEMA.md` and
+  `RTDBS-RULES.md` do not describe the `status/{seq}` shape (the rules only
+  validate the old `led`, `online`, `lastUpdate`); who may change it should
+  come from pairing; Resolved does not end an incident.
+  [`alert-data.md`](alert-data.md) §13.
+- `FakeAlertRepository`'s status helpers are now used by the tests.
 
 **Panic SMS sender** (FR-05; §3 item 3). Waits on pairing.
 - In the tree: `ui/notifications/SmsPanicSender.kt`, whose KDoc lists the
@@ -338,6 +435,9 @@ The full, user-facing record is `Changelog.entries`
 (`app/src/main/java/com/example/guardband/ui/changelog/Changelog.kt`), shown
 in the app under Settings → Changelog. Headlines:
 
+- **2026-11-10 (jspdavis, `5f0b254`):** connected accounts: Device → Pair a band opens Connect (share or redeem a 6-character invite code, one hour); a wearer switcher on Track (My Band or a connected wearer, Safe / Panic Alert / Offline); `FirebaseBandRepository` and `BandSelectionStore` wired; panic status chips (Active / Acknowledged / Resolved) in Alert history, the Incident view, Track's sheet and the inbox; watcher rules in `RTDBS-RULES.md` plus `RTDBS-RULES-CONSOLE.json`. Left the app on an empty band by default (§3).
+- **2026-11-05 (Jehan, `653f29f`):** Alert history and the inbox grouped by date again (Today, Yesterday, each date); Alert history's 50 cap removed; the inbox reads the whole history; a Clear history button (refused by the rules).
+- **2026-11-04 / 11-02:** pairing steps 1 and 2 (bands sign in as anonymous users; rules close writes on any band id but `guardband-001`, published 4 Nov); roles rolled back; panic SMS and alert status parked; new Track and Contacts icons; the stray gitlink removed.
 - **2026-10-28:** a band viewer at the top of the Device tab (a turntable of rendered frames behind a `BandViewer` interface; a still placeholder until Jul's frames exist); the Device tab's avatar kept round through a theme switch, its text a size smaller; Contacts' filter chips in brand green (white in dark mode); Settings' Device information row removed.
 - **2026-10-27:** the Device tab replaces Profile (band status, battery, last alert, connected account, pairing placeholder; Settings' Device information opens it), the Mock Sender plays the band (one button: hold = panic + tracking, double-press = check-in, 5 s hold = cancel; battery slider), the Incident view (a panic and its tracking path, from four places), alert pins on the Track map (panics keep their spot), map layers (five, remembered), re-centre button replaces the
   Google Maps hand-off (notice 1.3), check-in card, alert cards restyled,
@@ -505,6 +605,12 @@ the deletion marker's write, the `MapView`, and anything in the UI layer.
 - **A child's `.read` never grants the parent.** `history/$sequenceId` alone
   let each entry be read but denied the list, which 401'd the alert screens
   and the mock sender until 2026-10-11. `history` now has its own `.read`.
+  **It happened again on 2026-11-10:** `RTDBS-RULES.md` puts
+  `watcher_wearers`'s `.read` on each child, while the app reads the list.
+- **Green unit tests do not mean the right band.** Every test that needs bands uses
+  `FakeBandRepository`, never `FirebaseBandRepository`, so the 10 Nov fallback (each account
+  reading `devices/<its own uid>`) passed all 990. Logic that decides which
+  band is read belongs in a pure function with its own test.
 - **The Console rejects `RTDBS-RULES.md`'s `"//"` keys.** Strip them before
   pasting.
 - **Firebase Hosting's default `ignore` drops `.well-known/`.** The committed

@@ -37,6 +37,27 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-11-10",
+            title = "Connect with other accounts by invite code; a wearer switcher on Track; incident status",
+            changes = listOf(
+                "Device tab, Pair a band now opens Connect: a wearer can share a 6-character invite code, valid for an hour, and a friend who enters it starts watching that wearer.",
+                "Track has a switcher at the top showing whose band is on the map (My Band or a connected wearer) and whether they are Safe, in a Panic Alert, or Offline. Tapping it switches wearer or connects a new one.",
+                "Panics show a status chip, Active, Acknowledged or Resolved. In Alert history and the Incident view, tapping it changes the status for everyone watching.",
+                "Still being finished: the app now looks for each account's own band rather than the shared demo band, and no band writes there yet, so the screens can show no data. The database rules and the Privacy Notice for connected accounts are also still to be settled."
+            ),
+            commit = "5f0b254"
+        ),
+        ChangelogEntry(
+            date = "2026-11-05",
+            title = "Alert history by date, without the 50-alert limit",
+            changes = listOf(
+                "Alert history and the notifications inbox group alerts under Today, Yesterday, and then each date, instead of one Older heading.",
+                "Alert history no longer stops at 50 alerts, and the inbox shows the band's whole history.",
+                "Alert history has a Clear history button with a confirmation. The database keeps the band's history append-only, so for now it is refused."
+            ),
+            commit = "653f29f"
+        ),
+        ChangelogEntry(
             date = "2026-11-04",
             title = "Bands sign in as themselves; the database only lets a band write its own alerts",
             changes = listOf(

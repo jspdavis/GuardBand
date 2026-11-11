@@ -107,7 +107,9 @@ screens never subscribe to it, which also saves a second live listener.
 **D3 — read 100 raw, show at most 50.**
 The window is over **raw** entries, before filtering. A chatty band therefore
 yields fewer than 50 displayable alerts, and in the worst case none. See
-[§11](#11-known-limitations).
+[§11](#11-known-limitations). **Changed 2026-11-05 (§13):** Alert history
+still reads 100 raw entries but no longer cuts the rest at 50
+(`MAX_HISTORY` is unused), and the inbox reads the whole history.
 
 **D4 — one device id.**
 `DeviceConstants.DEFAULT_DEVICE_ID = "guardband-001"`, supplied through
@@ -116,8 +118,11 @@ id, so adding pairing later is a change to the wiring, not to the screens.
 **Since 2026-11-02 that wiring is in place:** `RepositoryProvider.alertRepository`
 is a `WatchedBandAlertRepository` that follows the account's bands
 (`BandRepository`, through `BandSelection.watchedBandOf`) instead of capturing
-an id, and an account with no band reads `AlertError.NoBand`. Every account
-still gets `guardband-001`. [device-pairing.md](device-pairing.md) §8.
+an id, and an account with no band reads `AlertError.NoBand`.
+[device-pairing.md](device-pairing.md) §8. **Since 2026-11-10 an account
+no longer gets `guardband-001` by default**: `FirebaseBandRepository` puts
+the account's own uid first, and the Track switcher can pick a connected
+wearer ([device-pairing.md](device-pairing.md) §9).
 
 **D5 — `schemaVersion` is read as a String.**
 `"1.0"` and a bare `1` both parse. It is read with `toString()`, so a firmware
@@ -551,7 +556,8 @@ both are valid ISO 8601 and the app parses both.
   either `.indexOn` on `type` plus one query per type, or a separate
   `/devices/{id}/incidents` path written by the firmware. **Firmware decision,
   worth making before December.**
-- **No pagination.** 50 rows is the end of the list; there is no "load older".
+- **No pagination.** Alert history ends at the 100-entry window; there is no
+  "load older". The inbox has no window at all since 2026-11-05 (§13).
 - **`latest` is unread by the alert screens** (by design, D2); Track's map
   reads it.
 - **RTDB disk persistence is off,** so there is no offline cache. A cold start
@@ -624,3 +630,88 @@ all**.
 **Listeners**
 - [ ] Open Track, then Log Out, and confirm RTDB traffic stops (§9 — this is
       the untested path; backgrounding alone keeps the listener).
+
+---
+
+## 13. 2026-11-05 and 2026-11-10 changes
+
+Two merges by teammates changed the alert screens. Recorded here from the
+code on 2026-11-11.
+
+### Day headings back to one per date (`653f29f`, Jehan)
+
+`AlertDays` puts an alert older than yesterday under `AlertDay.On(startMillis,
+sameYear)` again, labelled "Sat, Oct 18", or "Oct 18, 2025" in another year
+(`AlertFormatting.dayLabel`). Between `e97e15b` and this commit every earlier
+day had collapsed into one "Older" heading (REQ-TL-01); `AlertDay.Older` is
+still in the code, unused. §8's description of the headings is accurate again.
+
+### No 50-alert cap, and an unwindowed inbox (`653f29f`)
+
+- **Alert history** still subscribes with `DEFAULT_HISTORY_WINDOW` (100 raw
+  entries) but no longer takes 50 of what is left, so it shows every
+  non-tracking entry in the window.
+- **The inbox** (`NotificationsViewModel`) subscribes with
+  `UNLIMITED_HISTORY_WINDOW` (`Int.MAX_VALUE`), which
+  `FirebaseAlertRepository.observeAlertHistory` turns into `orderByKey()`
+  with **no `limitToLast`**: the whole history, tracking updates included,
+  downloaded on open and kept live while the screen is up. The mock sender
+  writes a tracking update every 5 s for 30 minutes after each panic, so this
+  grows by about 360 entries per demo panic, never shrinks (history is
+  append-only), and costs the Spark plan's 10 GB monthly download. **Put a
+  window back (or page it)**; the inbox is for incidents, and D3's window was
+  there for this.
+
+### Clear history (`653f29f`)
+
+A trash button (`ib_alert_history_clear`, shown while the list is not
+empty) asks "Clear alert history?" and calls
+`AlertViewModel.onClearHistoryClicked` → `AlertRepository.clearAlertHistory`
+→ `removeValue()` on `devices/{id}/history`. On success the screen empties
+itself and toasts "Alert history cleared."
+
+**The live rules refuse it.** History is append-only (Option A+): rows may be
+added, never rewritten or deleted, and nothing grants a write at or above
+`history`. The button therefore always ends in the read-failure wording
+(permission denied). That refusal is the point of A+: on a shared band, a
+delete for one user is a delete for everyone, panics included. Options: drop
+the button; or store a per-account "cleared before sequence N" mark under
+`users/{uid}` and hide older rows on this account only (a notice line, since
+it is new stored data about the user, and a design decision). A real delete
+needs pairing, so that only the band's wearer can do it.
+
+### Incident status chips (`5f0b254`, jspdavis)
+
+The parked status code (handoff §4) is wired up:
+
+- `AlertRepository.observeStatuses()` listens on `devices/{id}/status` and
+  gives a `Map<sequenceId, AlertStatus>`; `updateStatus(seq, status)` writes
+  `{ status, updatedAt: server time }` to `status/{seq}` with a 10 s timeout
+  (an offline write fails as `AlertError.Network` instead of waiting).
+  `updatedBy` (a uid) is gone. `acknowledge` and `resolve` remain as wrappers.
+- `AlertViewModel`, `IncidentViewModel` and `NotificationsViewModel` each
+  open a status listener beside their history one. `AlertUiState.statuses`
+  overlays `rowsOf` and the new `latestRow()`; a panic with no entry falls
+  back to the parsed `Alert.status`, which defaults to `ACTIVE`, so **every
+  panic shows a chip**, "Active" until someone changes it.
+- **Chips on panics only**: `tv_item_alert_status` in `item_alert.xml`,
+  `alert_latest_status` on Alert history's card (bound by `AlertCardViews`,
+  `bg_alert_status_chip`): Active (red), Acknowledged (orange), Resolved
+  (green). Tapping one opens "Update Incident Status" (Mark as Active,
+  Acknowledge, Resolve). A failure toasts "Couldn't update incident status."
+- Track's recent-alerts sheet and the inbox use the same rows, so their
+  panics show chips too, but they pass the adapter no status handler: **a
+  tap on the chip there does nothing**, which reads as broken.
+
+**What is still wrong with it** (handoff §4 listed these before it was
+unparked; two were fixed):
+
+- **Stored on `devices/{id}/status`**, the old LED test node, which is
+  world-readable and **world-writable**, so anyone can mark any panic
+  resolved, and the main app now writes to `devices/` (CLAUDE.md: it must
+  not). Move it under a node with its own rules once pairing says who may
+  change it.
+- **Two sources.** `AlertParser` still reads `status` from inside the history
+  payload, which nothing writes (`SCHEMA.md` has no such field).
+- `SCHEMA.md` and `RTDBS-RULES.md` do not describe the `status/{seq}` shape.
+- Not in the incident grouping: Resolved does not end an incident.

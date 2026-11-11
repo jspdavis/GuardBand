@@ -104,6 +104,12 @@ high-water mark, the newest `sequenceId` it has handled, per device id.
   a 6-hour daily limit once the app targets API 35.
 - Subscribes with `AlertRepository.DEFAULT_HISTORY_WINDOW`, the alert
   screens' own window, so while both run the SDK serves them from one listen.
+- **Which band (2026-11-10):** it follows `BandSelection.watchedBandOf(bands)`,
+  the one-argument rule, so it ignores the Track switcher's choice
+  (`BandSelectionStore`). With `FirebaseBandRepository` wired, that rule now
+  picks `devices/<the account's uid>`, which nothing writes, so the watch
+  posts nothing for `guardband-001` until the band fallback is decided
+  ([device-pairing.md](device-pairing.md) §9).
 - **Started only from foreground code** (`AlertWatch.start`): the
   switch, and `HomeActivity` once its gate opens, if the switch is on, the
   user is signed in and the phone allows the app's notifications

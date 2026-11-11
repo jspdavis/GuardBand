@@ -5,8 +5,8 @@ features come first; each item says who it is waiting on and where its
 details live in the repo. Finished items are at the bottom. The full record
 is [`handoff.md`](handoff.md) §4.
 
-As of 5 Nov 2026 Â· `mvvm-main` Â· unit tests passing Â· lint passes with no errors.
-passes with no errors.
+As of 11 Nov 2026 · `mvvm-main` and `main` (same commit) · 990 unit tests passing ·
+lint last run clean on 27 Oct (not re-run since the 5 and 10 Nov merges).
 
 **Types:** 🟥 heavy feature · 🟩 feature · 🔧 fix · 📱 phone check · 🗳️ decision / setup
 
@@ -33,11 +33,28 @@ the app together. Pairing comes first: SMS depends on it.
     the Console (James), add
     `FIREBASE_API_KEY` to each `secrets.h` (firmware), flash and check it on
     the board.
-  - [ ] Claim a band with a code from the Serial Monitor; "Pair a band" works.
-  - [ ] Watchers: the wearer invites friends; Track's My band / friend / All.
+  - [ ] Claim a band with a code from the Serial Monitor.
+  - [~] Watchers (10 Nov, jspdavis): **built in a different shape from the
+    plan, and not yet usable.** A wearer shares a 6-character code from
+    Device → Pair a band; a friend enters it and is linked to the wearer's
+    *account*. Track has a "My Band" / friend switcher (no All). Before it
+    can be demoed:
+    - [ ] 🔧 **Every account now reads `devices/<its own uid>` by default,
+      not `guardband-001`**, and a friend's band is `devices/<friend's uid>`.
+      Nothing writes to either, so Track, Alert history, the inbox, the
+      Device tab and alert notifications show an empty band. Decide what an
+      unclaimed account should show (see handoff §3).
+    - [ ] 🗳️ **Rules: anyone signed in can make themselves a watcher of
+      anyone** (the code is only checked in the app), and a watcher can read
+      the wearer's whole `users/{uid}`, emergency contacts included. Jul.
+    - [ ] 🗳️ **Which watcher rules are live?** `RTDBS-RULES.md` and the new
+      `RTDBS-RULES-CONSOLE.json` differ; only the Console copy lets the
+      switcher read its list. Jul.
+    - [ ] 🗳️ **Privacy Notice and `CONSENT_VERSION`**: watchers see a
+      wearer's name and alerts, and the rules expose their contacts. James.
   - [ ] Close reads and retire `guardband-001`.
 
-  Where: [`device-pairing.md`](device-pairing.md), [`database-rules.md`](database-rules.md) §4 and §7
+  Where: [`device-pairing.md`](device-pairing.md) §9, [`database-rules.md`](database-rules.md) §2 and §10
 
 - [ ] 🟥 **SMS alerts to emergency contacts** · *firmware + app team*
   **Direction (2 Nov 2026):** the band writes the panic to Firebase and the
@@ -80,11 +97,30 @@ the app together. Pairing comes first: SMS depends on it.
 
 ## Fixes and cleanups
 
-- [ ] 🔧 **Remove the stray `Guardband-MVVM` entry** · *Jehan, then app team*
-  A nested copy of the repo in Jehan's folder got committed as a link to a
-  commit (`9448b3c`) that only exists on her machine. Anything done inside
-  that inner copy never reached GitHub, so check nothing is stranded there
-  first, then remove the entry.
+- [ ] 🔧 **Clear history cannot work on the live rules** · *Jehan, then Jul*
+  The Alert history trash button deletes `devices/{id}/history`, but the
+  rules make history append-only, so Firebase refuses it ("permission
+  denied" toast). Allowing it would let anyone wipe the shared band's
+  history. Decide: drop the button, or make it a per-account "hide before"
+  stored under `users/{uid}`.
+  Where: [`alert-data.md`](alert-data.md) §13
+
+- [ ] 🔧 **Incident status is world-writable** · *app team, then Jul*
+  Acknowledge / Resolve writes `devices/{id}/status/{seq}`, which anyone can
+  write (it is the old LED test node). Anyone could mark a panic resolved.
+  It also breaks the "the app never writes to `devices/`" rule.
+  Where: [`incident-view.md`](incident-view.md) §6
+
+- [ ] 🔧 **The inbox downloads the whole history** · *app team*
+  Since 5 Nov the bell reads every entry ever written, tracking updates
+  included (the mock sender writes one every 5 s while tracking), and keeps
+  that listener open. Put a window back, or page it.
+  Where: [`alert-data.md`](alert-data.md) §13
+
+- [ ] 🔧 **Check the old `Guardband-MVVM` copy** · *Jehan*
+  The stray entry was removed from the repo on 2 Nov (`1132d70`). Anything
+  done inside that inner copy on Jehan's machine never reached GitHub, so
+  check nothing is stranded there.
   Where: [`guardband-mvvm-folder.md`](guardband-mvvm-folder.md) (the
   10-minute check, by hand)
 
@@ -211,20 +247,24 @@ Use the debug mock sender to produce alerts.
 
 ## Done since 20 Oct
 
-- [x] u{1F7E9} **Incident status: Acknowledge / Resolve** Â· *5 Nov*
-  Guardians can mark a panic "I'm on it" (Acknowledged) or Resolved from the
-  Alert History screen and the Incident view. Coloured status chips appear only
-  on PANIC alerts. Writes use a 10 s timeout; failures toast. No PII stored.
-  `AlertViewModel`, `IncidentViewModel`, `NotificationsViewModel` all observe
-  live statuses. Full unit test coverage added.
-- [x] u{1F7E9} **Date grouping ("Yesterday") and unlimited alert history** Â· *5 Nov, Jehan*
-  Alert history groups by Today / Yesterday / specific date; the display limit
-  is removed (Track's compact panel still shows 3). `AlertDays.On` and
-  `AlertFormatting` updated.
-- [x] u{1F7E9} **Clear alert history** Â· *5 Nov, Jehan*
-  A trash-can button in the Alert History top bar clears the band's full history
-  after a confirmation dialog. `AlertRepository.clearAlertHistory` wired through
-  all implementations, `AlertViewModel.onClearHistoryClicked`, and strings added.
+- [x] 🟩 **Connected accounts: invite codes and a wearer switcher** · *10 Nov, jspdavis*
+  Device → Pair a band opens Connect: "Share my code" makes a 6-character
+  code valid for an hour; "Watch someone" redeems one. Track's top bar has a
+  switcher ("My Band" or a connected wearer, with Safe / Panic Alert /
+  Offline). **Not usable yet**: see the open items under Device pairing.
+- [x] 🟩 **Incident status: Acknowledge / Resolve** · *10 Nov, jspdavis*
+  Tap a panic's status chip (Active, Acknowledged, Resolved) in Alert history
+  or the Incident view to change it. Chips show on panics only. Writes time
+  out after 10 s and toast on failure. No uid is stored. **Open:** where it is
+  stored (see Fixes).
+- [x] 🟩 **Day headings and the full history** · *5 Nov, Jehan*
+  Alert history and the inbox group by Today, Yesterday, then each date
+  ("Sat, Oct 18"; "Oct 18, 2025" in another year) instead of one "Older".
+  Alert history no longer stops at 50 alerts (its read is still the newest
+  100 entries); the inbox reads the whole history (see Fixes).
+- [x] 🟩 **Clear alert history button** · *5 Nov, Jehan*
+  A trash button in Alert history's top bar, with a confirmation. **Refused
+  by the live rules** (see Fixes).
 
 - [x] 🟩 **Notifications inbox with real data** · *21 Oct, jspdavis*
   The bell shows the band's alerts (tracking updates left out) by day, with

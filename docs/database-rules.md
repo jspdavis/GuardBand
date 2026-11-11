@@ -7,7 +7,7 @@ Every path the app touches, what the rules allow on each, the open decision on
 |---|---|
 | **Rules file** | [`../RTDBS-RULES.md`](../RTDBS-RULES.md): JSON with `"//"` comment keys; stripped, it is the ruleset |
 | **Live rules** | **Option A+ with band identity**, published by Jul on **2026-11-04**: append-only history, and any band id but `guardband-001` writable only by that band (§4.1). Their text is §9 |
-| **Proposed** | Nothing pending: `RTDBS-RULES.md`, stripped, is the live ruleset |
+| **Proposed** | **Unclear since 2026-11-10.** `5f0b254` added watcher reads to `users/$uid` and three nodes (`invite_codes`, `wearer_watchers`, `watcher_wearers`) to `RTDBS-RULES.md`, plus a second, stripped copy, `RTDBS-RULES-CONSOLE.json`, and the two differ in one rule. Whether either was published is not recorded. §10 |
 | **Tested** | All four `devices/` options against the test list in §5, in the local Database Emulator under a `demo-` project id (§6); the band-identity writes on 2026-11-02 (§6). Never against the real project |
 | **Related** | [`privacy-and-consent.md`](privacy-and-consent.md) §3 (the legacy nodes), [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md), [`../SCHEMA.md`](../SCHEMA.md) (the payload), [`../CLAUDE.md`](../CLAUDE.md) |
 
@@ -34,8 +34,11 @@ delete one. The proposal (§4.1, 2026-11-02) also lets only a band write its
 
 Found by searching `app/src/main` and `app/src/debug` for every
 `getReference`, `child(...)` and REST path, and every caller of the
-repository methods behind them. `{uid}` is always the signed-in user's own
-uid; nothing reads or writes another user's record.
+repository methods behind them; refreshed 2026-11-11 for `653f29f` and
+`5f0b254`. `{uid}` is the signed-in user's own uid, except in the
+`users/{wearer}` row: **since 2026-11-10 a watcher reads another account's
+record.** The device id is no longer always `guardband-001` either; see
+[device-pairing.md](device-pairing.md) §9.
 
 | Path | Read by | Written by | Auth | Class, screen |
 |---|---|---|---|---|
@@ -49,12 +52,20 @@ uid; nothing reads or writes another user's record.
 | `devices/<band id>/latest`, `/history/{n}` | nobody in the app yet (pairing step 3) | the mock sender with its "own id" switch on; the firmware with `WRITE_TO_OWN_ID`. Always signed in as that band | the band itself (`auth.uid == $deviceId`) | Mock Sender, prototype firmware |
 | `devices/guardband-001/history` (the list) | `.observeAlertHistory(100)`: `orderByKey().limitToLast(100)`, shared by Track's recent-alerts panel, Alert history (`AlertViewModel`) and the Check-in pill (`observeLatestCheckIn`); **mock sender** `readHighestHistoryKey`: `GET history.json?shallow=true` | (none at list level) | read: receiver signed in; mock sender **unauthenticated** | Track, Alert history, Mock Sender |
 | `devices/guardband-001/history/{sequenceId}` | (inside the list) | **mock sender** `PUT history/{n}.json`, **first**; the band | **unauthenticated** | Mock Sender |
-| `devices/{id}/command`, `devices/{id}/status` | **nobody** | **nobody** | | No reference in `app/`, `SCHEMA.md` or the README |
+| `devices/{id}/history` (whole node, delete) | | `FirebaseAlertRepository.clearAlertHistory` (`removeValue`, Alert history's trash button, 2026-11-05). **Refused by the rules:** nothing grants a write at or above `history` | signed-in receiver | Alert history |
+| `devices/{id}/status/{sequenceId}` `{ status, updatedAt }` | `.observeStatuses` (live listener on `status`): `AlertViewModel`, `IncidentViewModel`, `NotificationsViewModel` | `.updateStatus` (`setValue`, 10 s timeout): the status chip in Alert history and the Incident view (2026-11-10). **World-writable** (`status/.write: true`, the old LED node), so anyone can change a panic's status | signed-in receiver; the rules ask for none | Alert history, Incident view, inbox |
+| `devices/{id}/command` | **nobody** | **nobody** | | Old LED test node |
+| `invite_codes/{code}` `{ wearer_uid, created_at, expires_at, used }` | `FirebaseWearerConnectionRepository.redeemInviteCode` | `.generateInviteCode` (`setValue`) | any signed-in account, read and write | Connect dialog (2026-11-10) |
+| `wearer_watchers/{wearer}/{watcher}`, `watcher_wearers/{watcher}/{wearer}` | `observeConnectedWearers` and `FirebaseBandRepository.observeBands` (live, on `watcher_wearers/{uid}`) | `redeemInviteCode` (one multi-path update); `removeWatcher`, `stopWatching` (no caller yet) | either side of the link | Connect dialog, Track switcher |
+| `users/{wearer}` (another account's record) | `observeConnectedWearers` reads the whole record for `name` and `bands`; `observeBands` reads `users/{wearer}/bands` | | a watcher of that wearer (2026-11-10) | Track switcher |
+| `users/{uid}/bands` | `FirebaseBandRepository.observeBands` (live) | **nobody yet** (pairing step 3) | owner, or a watcher | every alert screen, the Device tab |
 | `password_resets`, `phone_index`, `email_index` | **nobody** | **nobody** | | Removed 2026-10-11 ([`privacy-and-consent.md`](privacy-and-consent.md) §3) |
 
-The device id is always `DeviceConstants.DEFAULT_DEVICE_ID`, supplied through
-`RepositoryProvider`. Firebase Auth and Hosting are not part of the database
-and are not covered here.
+Until 2026-11-10 the device id was always `DeviceConstants.DEFAULT_DEVICE_ID`.
+It now comes from `FirebaseBandRepository` and the Track switcher, and by
+default is the account's own uid ([device-pairing.md](device-pairing.md) §9).
+Firebase Auth and Hosting are not part of the database and are not covered
+here.
 
 ---
 
@@ -588,3 +599,70 @@ deployed on 2026-10-11 (Option A) are in git history (`6ade00c`).
   }
 }
 ```
+
+---
+
+## 10. The watcher rules (2026-11-10): what is in the files, and what is open
+
+`5f0b254` changed `RTDBS-RULES.md` and added `RTDBS-RULES-CONSOLE.json`, a
+stripped copy meant for pasting into the Console. **Nobody recorded whether
+either was published**, so §9 may no longer be the live text. The
+connection screens' own error ("Have the invite_codes rules been
+published?") suggests they were published at some point. Copy the live
+rules out of the Console before changing anything.
+
+**What changed, in both files:**
+
+- `users/$uid/.read` and `users/$uid/emergency_contacts/.read` also allow
+  `root.child('wearer_watchers').child($uid).child(auth.uid).exists()`: a
+  watcher can read the wearer's **whole record**, name, email, emergency
+  contacts and consent included. (The `emergency_contacts` line adds nothing,
+  because the `users/$uid` read already covers it.) The app reads only `name`
+  and `bands`.
+- `invite_codes/$code`: read and write for anyone signed in.
+- `wearer_watchers/$wearer_uid/$watcher_uid`: read and write for either side.
+- `watcher_wearers`: write for either side; read for the watcher.
+
+**The two files differ in one rule, and the Console copy is the one that
+works.** `RTDBS-RULES.md` puts `watcher_wearers`'s `.read` on each
+`$wearer_uid` child; `RTDBS-RULES-CONSOLE.json` puts it on `$watcher_uid`.
+The app reads the list `watcher_wearers/{uid}`, and **a child's `.read`
+never grants the parent** (the `history` trap of 2026-10-11, §9 of the
+handoff), so under the `.md` text the switcher's read is denied,
+`FirebaseBandRepository` falls back to an empty band list, and every alert
+screen says no band is linked. CLAUDE.md makes `RTDBS-RULES.md` the one
+source; a second copy is exactly how the two drifted. Fix the `.md`, then
+delete the JSON or regenerate it from the `.md`.
+
+**The rules do not check the invite.** Any signed-in account can write
+`wearer_watchers/{victim uid}/{itself}` without a code, and the `users/$uid`
+read above then hands it the victim's emergency contacts (a third party's
+phone numbers). It needs the victim's uid, which is not public, but the
+rules, not the app, are the boundary. Also: anyone signed in can overwrite
+an existing invite code (the write has no `!data.exists()`), and codes are
+never single-use or deleted.
+
+**A rule shape that would close it**, to be emulator-tested (§6) before
+anyone publishes it:
+
+```
+invite_codes/$code
+  .read   auth != null
+  .write  auth != null && !data.exists() && newData.child('wearer_uid').val() === auth.uid
+          (|| the wearer deleting their own code)
+wearer_watchers/$wearer/$watcher
+  .write  removal by either side (!newData.exists()), or adding:
+          auth.uid === $watcher && an invite_codes/<code> exists with
+          wearer_uid === $wearer and expires_at > now
+```
+
+The add case needs to know which code was used; RTDB rules cannot search
+`invite_codes`, so the redeem write has to carry the code (for example
+`wearer_watchers/$wearer/$watcher: "<code>"`, validated against
+`root.child('invite_codes').child(newData.val())`). That is an app change
+too. Narrow the `users/$uid` read for watchers to `name` and `bands` at the
+same time.
+
+**Also still open on `devices/`:** Alert history's Clear history deletes
+`history`, which the append-only rules refuse (keep refusing it: the band is
+shared); Acknowledge / Resolve writes `status`, which is world-writable.
