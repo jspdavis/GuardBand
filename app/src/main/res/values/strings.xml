@@ -472,6 +472,14 @@
     <string name="toast_connected_success">Successfully connected! You are now watching this wearer.</string>
     <string name="hint_tap_to_copy">Tap code to copy</string>
     <string name="label_track_wearer_unknown">Wearer</string>
+    <string name="label_track_wearer_no_band">%1$s · no band yet</string>
+
+    <!-- Claiming your own band, pairing stage 1 (Connect dialog, third tab) -->
+    <string name="btn_invite_tab_claim">My band</string>
+    <string name="label_claim_band_help">Type the band id your band shows: the Mock Sender\'s screen, or STATUS on the band\'s Serial Monitor.</string>
+    <string name="hint_claim_band_id">Band id</string>
+    <string name="btn_claim_band">This is my band</string>
+    <string name="toast_band_claimed">This band is now yours.</string>
 
     <!-- Wearer switcher strings -->
     <string name="status_wearer_safe">Safe</string>

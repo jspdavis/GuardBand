@@ -58,12 +58,13 @@ record.** The device id is no longer always `guardband-001` either; see
 | `invite_codes/{code}` `{ wearer_uid, created_at, expires_at, used }` | `FirebaseWearerConnectionRepository.redeemInviteCode` | `.generateInviteCode` (`setValue`) | any signed-in account, read and write | Connect dialog (2026-11-10) |
 | `wearer_watchers/{wearer}/{watcher}`, `watcher_wearers/{watcher}/{wearer}` | `observeConnectedWearers` and `FirebaseBandRepository.observeBands` (live, on `watcher_wearers/{uid}`) | `redeemInviteCode` (one multi-path update); `removeWatcher`, `stopWatching` (no caller yet) | either side of the link | Connect dialog, Track switcher |
 | `users/{wearer}` (another account's record) | `observeConnectedWearers` reads the whole record for `name` and `bands`; `observeBands` reads `users/{wearer}/bands` | | a watcher of that wearer (2026-11-10) | Track switcher |
-| `users/{uid}/bands` | `FirebaseBandRepository.observeBands` (live) | **nobody yet** (pairing step 3) | owner, or a watcher | every alert screen, the Device tab |
+| `users/{uid}/bands` | `FirebaseBandRepository.observeBands` (live) | `.claimBand`: one `setValue` of `{ <band id>: "wearer" }`, replacing the node (Connect → My band, 2026-11-11). No `.validate` on it yet; worth one (keys `^[A-Za-z0-9_-]{4,64}$`, values `"wearer"`) | owner writes; owner or a watcher reads | every alert screen, the Device tab, Connect |
 | `password_resets`, `phone_index`, `email_index` | **nobody** | **nobody** | | Removed 2026-10-11 ([`privacy-and-consent.md`](privacy-and-consent.md) §3) |
 
 Until 2026-11-10 the device id was always `DeviceConstants.DEFAULT_DEVICE_ID`.
 It now comes from `FirebaseBandRepository` and the Track switcher, and by
-default is the account's own uid ([device-pairing.md](device-pairing.md) §9).
+default was the account's own uid until 2026-11-11; it is now the claimed
+band, else `guardband-001` ([device-pairing.md](device-pairing.md) §9).
 Firebase Auth and Hosting are not part of the database and are not covered
 here.
 

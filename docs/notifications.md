@@ -106,10 +106,10 @@ high-water mark, the newest `sequenceId` it has handled, per device id.
   screens' own window, so while both run the SDK serves them from one listen.
 - **Which band (2026-11-10):** it follows `BandSelection.watchedBandOf(bands)`,
   the one-argument rule, so it ignores the Track switcher's choice
-  (`BandSelectionStore`). With `FirebaseBandRepository` wired, that rule now
-  picks `devices/<the account's uid>`, which nothing writes, so the watch
-  posts nothing for `guardband-001` until the band fallback is decided
-  ([device-pairing.md](device-pairing.md) §9).
+  (`BandSelectionStore`), so it watches the account's own band: the one it
+  claimed, else `guardband-001` (`BandList`, 2026-11-11;
+  [device-pairing.md](device-pairing.md) §9). Following the switcher, or
+  every watched band, is a later step.
 - **Started only from foreground code** (`AlertWatch.start`): the
   switch, and `HomeActivity` once its gate opens, if the switch is on, the
   user is signed in and the phone allows the app's notifications

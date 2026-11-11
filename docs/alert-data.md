@@ -119,10 +119,11 @@ id, so adding pairing later is a change to the wiring, not to the screens.
 is a `WatchedBandAlertRepository` that follows the account's bands
 (`BandRepository`, through `BandSelection.watchedBandOf`) instead of capturing
 an id, and an account with no band reads `AlertError.NoBand`.
-[device-pairing.md](device-pairing.md) §8. **Since 2026-11-10 an account
-no longer gets `guardband-001` by default**: `FirebaseBandRepository` puts
-the account's own uid first, and the Track switcher can pick a connected
-wearer ([device-pairing.md](device-pairing.md) §9).
+[device-pairing.md](device-pairing.md) §8. **Since 2026-11-10**
+`FirebaseBandRepository` lists the bands and the Track switcher can pick a
+connected wearer's. **Since 2026-11-11** `BandList` decides the list: the
+account's claimed band, else `guardband-001`
+([device-pairing.md](device-pairing.md) §9).
 
 **D5 — `schemaVersion` is read as a String.**
 `"1.0"` and a bare `1` both parse. It is read with `toString()`, so a firmware

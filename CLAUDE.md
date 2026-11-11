@@ -21,7 +21,7 @@ Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targ
 ./gradlew lint
 ```
 
-On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 990 JVM unit tests (2026-11-11), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
+On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 1011 JVM unit tests (2026-11-11), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
 
 `app/google-services.json` is required for the `com.google.gms.google-services` plugin. It points at the Firebase project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan, so there are no Cloud Functions).
 
@@ -53,8 +53,10 @@ com/example/guardband/
 │   │                     ContactRepository (observe = Flow<Result<T>>; CRUD = suspend)
 │   │                     AlertRepository (Flow<Result<T>>, live reads)
 │   │                     BandRepository (the account's bands; FirebaseBandRepository since 2026-11-10,
-│   │                     FixedBandRepository kept but unwired), BandSelection (pure: which band is
-│   │                     shown), BandSelectionStore (the Track switcher's choice, per phone),
+│   │                     FixedBandRepository kept but unwired; claimBand since 2026-11-11),
+│   │                     BandList (pure: the band list, demo band when nothing is claimed),
+│   │                     BandIdInput (pure: what a band id may be), BandSelection (pure: which band
+│   │                     is shown), BandSelectionStore (the Track switcher's choice, per phone),
 │   │                     WatchedBandAlertRepository (the AlertRepository that follows them)
 │   │                     WearerConnectionRepository (invite codes, account-to-account watchers);
 │   │                     see docs/device-pairing.md §9
@@ -102,7 +104,7 @@ com/example/guardband/
 │   │                 panic status chips and Clear history (2026-11-05/10; docs/alert-data.md §13)
 │   ├── device/         Device tab (the Profile tab until 2026-10-27): account header, band card,
 │   │                 connected account + contacts count, Pair a band → InviteCodeDialogFragment
-│   │                 (Connect: share or redeem an invite code; see "Device tab")
+│   │                 (Connect: share or redeem an invite code, or claim My band; see "Device tab")
 │   ├── bandviewer/     BandViewer (the interface the Device tab knows) + TurntableBandView: the band
 │   │                 on a turntable of frames from assets/band_turntable/; TurntableMotion (pure maths)
 │   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row.
@@ -631,7 +633,7 @@ Track's recent-alerts panel and the Alert history screen read `devices/{deviceId
 - **D1** — `PANIC`, `CHECKIN` and `LOW_BATTERY` are shown and colour-coded. `TRACKING_UPDATE` is hidden from the Alert list. An **unrecognised** type is *not* hidden: it is shown as "Unknown alert", so a type a future firmware adds still appears.
 - **D2** — the latest-alert card is the newest **non-tracking** entry derived from history. It deliberately does **not** read `devices/{id}/latest`, because every payload overwrites that node, tracking updates included, so the card would read "Location update" while a panic sat one row below it. `observeLatestAlert` still exists, unsubscribed, for the Track tab.
 - **D3** — read a window of 100 raw entries, drop tracking updates, show at most 50. The window is over *raw* entries, so a chatty band yields fewer than 50 displayable alerts. `AlertHistory` therefore carries `rawCount` and `malformedCount`, which is what lets the empty state say *which* kind of empty it is instead of implying the band is silent. **Since 2026-11-05** Alert history no longer cuts at 50 (`MAX_HISTORY` is unused) and the inbox reads with `UNLIMITED_HISTORY_WINDOW`, i.e. the whole history with no `limitToLast`; that unbounded listener is an open item (docs/alert-data.md §13).
-- **D4** — ViewModels never see a device id for reading. `RepositoryProvider.alertRepository` is a `WatchedBandAlertRepository`, which follows the account's bands (`BandRepository`) through `BandSelection.watchedBandOf` and never captures an id, so one instance serves every account a process signs in; no band is `AlertError.NoBand`. **Since 2026-11-10** `FirebaseBandRepository` is wired instead of `FixedBandRepository`, and the Track switcher's `BandSelectionStore` choice overrides the rule. With nothing written under `users/{uid}/bands`, it gives each account its **own uid** as its first band, then `guardband-001`, so by default every screen reads an empty `devices/<uid>`: an open item, [docs/device-pairing.md](docs/device-pairing.md) §9.
+- **D4** — ViewModels never see a device id for reading. `RepositoryProvider.alertRepository` is a `WatchedBandAlertRepository`, which follows the account's bands (`BandRepository`) through `BandSelection.watchedBandOf` and never captures an id, so one instance serves every account a process signs in; no band is `AlertError.NoBand`. **Since 2026-11-10** `FirebaseBandRepository` is wired instead of `FixedBandRepository`, and the Track switcher's `BandSelectionStore` choice overrides the rule. **`BandList` is the one rule** (2026-11-11): an account wears the bands it claimed under `users/{uid}/bands` (Device → Pair a band → My band, `claimBand`), else `guardband-001` alone; a connected wearer adds only the bands they claimed. **Never list an account uid as a band id**: nothing writes `devices/<account uid>`, and doing so emptied every screen on 2026-11-10. [docs/device-pairing.md](docs/device-pairing.md) §9.
 - **D5** — `schemaVersion` is parsed as a String, so both `"1.0"` and a bare `1` work.
 
 **Repository contract.** `AlertRepository` exposes `observeLatestAlert()` and `observeAlertHistory(limit)`, both `Flow<Result<T>>`. A failed read is `Result.failure(AlertError)` — never null, never an empty list — and the flow **stays open**, so a reconnect or a rules fix can make the next emission succeed. `AlertError` is mapped from `DatabaseError.getCode()` through `FirebaseDatabaseErrorMapper`, never from a message, and carries no message of its own.
@@ -919,10 +921,10 @@ Profile. Four things are easy to break:
   or `Paired`, from `RepositoryProvider.bandRepository` through
   `BandSelection.ownBandOf` (the band it *wears*; watched bands belong to
   Track). Since 2026-11-10 the repository is `FirebaseBandRepository`, so
-  the tab has one listener, and with no `users/{uid}/bands` it shows the
-  **account's uid** as the band id and "No data from the band yet"
-  (docs/device-tab.md §5). "Pair a band" opens the invite-code dialog
-  (`InviteCodeDialogFragment`), not a claim. The id is for display only. No band nickname: new stored data
+  the tab has one listener: the claimed band, else `guardband-001`
+  (`BandList`). "Pair a band" opens Connect (`InviteCodeDialogFragment`),
+  whose **My band** tab claims a band by its id (stage 1, no proof: fine only
+  while `devices/` reads are open). The id is for display only. No band nickname: new stored data
   needs the notice first.
 - **The contacts row** navigates through `HomeViewModel` (`ShowContacts`),
   which `show()`s the tab. Settings' Device information row, which opened
@@ -994,7 +996,8 @@ pairing and roles.
   read through `RepositoryProvider.alertRepositoryFor(id)` so the mark's key
   and the reads are always the same band; a change of band restarts the
   read, and no band posts nothing. It ignores the Track switcher's choice
-  (2026-11-10), and the rule now picks `devices/<account uid>`.
+  (2026-11-10), so it follows the account's own band (claimed, else
+  `guardband-001`).
 - **The wording never carries a location, a name, the photo or the device
   id.** Every alert is `VISIBILITY_PRIVATE` with an empty public version and
   one shared status-bar icon (`ic_stat_alert`). **The panic channel is

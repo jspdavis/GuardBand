@@ -5,8 +5,10 @@ and incident status, 10 Nov), after `653f29f` (Jehan: alert history by date
 and Clear history, 5 Nov), plus this docs pass, all pushed · `main`
 fast-forwarded to the same commit on 2026-11-11 · 990 JVM unit tests, 0 failures · `./gradlew lint` last clean
 on 27 Oct, not re-run since · plus the Wi-Fi band prototype in `firmware/`.**
-**The 10 Nov merge left the app showing an empty band by default; read §3,
-"Next steps", before demoing anything.** Run `git status -sb` and
+**The 10 Nov merge left the app showing an empty band by default. Branch
+`feature/band-claim` (2026-11-11, 1011 tests, lint 0 errors) fixes that and
+adds claiming your own band; it waits on the Privacy Notice before merging
+(§3, step A).** Run `git status -sb` and
 `git log origin/mvvm-main -1` before trusting any hash here.
 
 This file is the entry point for anyone picking the project up cold,
@@ -130,17 +132,18 @@ The two November merges added real features but left the shared demo
 broken and opened a privacy gap. The next demo is in December, so there is
 time to do this properly, in this order. Each step names who decides.
 
-**A. Put the demo band back (app only, small; decide: James).**
-`FirebaseBandRepository` gives an account with no claimed band its own uid
-as its first band, then `guardband-001`, and `BandSelection.watchedBandOf`
-takes the first. Nothing writes to `devices/<account uid>`, so Track, Alert
-history, the inbox, the Device tab and notifications all show an empty band,
-and `guardband-001` cannot be picked. *Recommended:* the fallback becomes
-`guardband-001` alone, and a connected wearer with no claimed band adds
-nothing (or the same `guardband-001`, de-duplicated). Extract the list-building
-into a pure function so it gets a test; the current bug is invisible to the
-fakes. Also make `readOnce` resume on a read error, so the list cannot
-stall. [`device-pairing.md`](device-pairing.md) §9.
+**A. Put the demo band back, and claim your own band. Built on
+`feature/band-claim` (2026-11-11), not merged.** `BandList` (pure, tested)
+now decides the bands: the claimed band, else `guardband-001` alone; a
+friend with no claimed band adds nothing and reads "no band yet" in the
+switcher. Device → Pair a band → **My band** claims a band by its id
+(pairing step 3, stage 1: no proof yet), which is what makes the mock
+sender's "own id" sends show up. The band list no longer stalls on a failed
+read. **Before merging:** James's Privacy Notice change and `CONSENT_VERSION`
+bump, because a band's records become linked to an account; then the phone
+checks in [`device-pairing.md`](device-pairing.md) §9 (last part).
+**Stage 2** (a one-time code from the band, checked by a rule; later a QR
+code) must land before `devices/` reads close.
 
 **B. One rules file, and record what is live (Jul).** Copy the live rules
 out of the Console. Fix `watcher_wearers`'s `.read` in `RTDBS-RULES.md` (it

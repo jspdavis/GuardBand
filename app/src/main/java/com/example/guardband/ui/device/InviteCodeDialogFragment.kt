@@ -24,11 +24,20 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 /**
- * Dialog for the two pairing actions:
+ * Dialog for the three pairing actions:
  * - **Watch someone (I'm a watcher):** enter the wearer's 6-char code.
  * - **Share my code (I'm a wearer):** generate a code and show it.
+ * - **My band (pairing stage 1):** type your own band's id to wear it.
  *
- * Both delegate to [InviteCodeViewModel]. Nothing here logs a uid or code value.
+ * All delegate to [InviteCodeViewModel]. Nothing here logs a uid, a band id
+ * or a code.
+ *
+ * View ids: toggle_invite_tabs, btn_invite_tab_enter, btn_invite_tab_share,
+ * btn_invite_tab_claim, panel_invite_enter, et_invite_code, btn_invite_redeem,
+ * panel_invite_share, btn_invite_generate, layout_invite_code_container,
+ * tv_invite_generated_code, tv_invite_expiry, btn_invite_copy,
+ * panel_claim_band, tv_claim_band_help, et_claim_band_id, btn_claim_band,
+ * progress_invite, tv_invite_status.
  */
 class InviteCodeDialogFragment : DialogFragment() {
 
@@ -41,6 +50,9 @@ class InviteCodeDialogFragment : DialogFragment() {
         val toggleTabs    = view.findViewById<MaterialButtonToggleGroup>(R.id.toggle_invite_tabs)
         val panelEnter    = view.findViewById<View>(R.id.panel_invite_enter)
         val panelShare    = view.findViewById<View>(R.id.panel_invite_share)
+        val panelClaim    = view.findViewById<View>(R.id.panel_claim_band)
+        val etBandId      = view.findViewById<EditText>(R.id.et_claim_band_id)
+        val btnClaim      = view.findViewById<Button>(R.id.btn_claim_band)
         val etCode        = view.findViewById<EditText>(R.id.et_invite_code)
         val btnRedeem     = view.findViewById<Button>(R.id.btn_invite_redeem)
         val btnGenerate   = view.findViewById<Button>(R.id.btn_invite_generate)
@@ -63,22 +75,21 @@ class InviteCodeDialogFragment : DialogFragment() {
         tvCode.setOnClickListener { copyCodeToClipboard() }
         btnCopy.setOnClickListener { copyCodeToClipboard() }
 
-        fun showEnter() {
-            panelEnter.isVisible = true
-            panelShare.isVisible = false
+        fun showPanel(panel: View) {
+            panelEnter.isVisible = panel === panelEnter
+            panelShare.isVisible = panel === panelShare
+            panelClaim.isVisible = panel === panelClaim
         }
 
-        fun showShare() {
-            panelEnter.isVisible = false
-            panelShare.isVisible = true
-        }
+        fun showEnter() = showPanel(panelEnter)
 
         showEnter()
         toggleTabs.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 when (checkedId) {
                     R.id.btn_invite_tab_enter -> showEnter()
-                    R.id.btn_invite_tab_share -> showShare()
+                    R.id.btn_invite_tab_share -> showPanel(panelShare)
+                    R.id.btn_invite_tab_claim -> showPanel(panelClaim)
                 }
             }
         }
@@ -87,6 +98,7 @@ class InviteCodeDialogFragment : DialogFragment() {
             viewModel.redeem(etCode.text.toString().trim().uppercase())
         }
         btnGenerate.setOnClickListener { viewModel.generate() }
+        btnClaim.setOnClickListener { viewModel.claimBand(etBandId.text.toString()) }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -98,6 +110,14 @@ class InviteCodeDialogFragment : DialogFragment() {
                     codeContainer.isVisible = hasCode
                     if (hasCode) {
                         tvCode.text = state.generatedCode
+                    }
+                    if (state.bandClaimed) {
+                        Toast.makeText(
+                            requireContext(),
+                            R.string.toast_band_claimed,
+                            Toast.LENGTH_LONG
+                        ).show()
+                        dismiss()
                     }
                     if (state.redeemed) {
                         Toast.makeText(

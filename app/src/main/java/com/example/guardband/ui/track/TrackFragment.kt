@@ -712,7 +712,10 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         // 2. All connected wearers
         for (wearer in state.connectedWearers) {
             val name = wearer.displayName.ifEmpty { getString(R.string.label_track_wearer_unknown) }
-            items.add(name)
+            // No claimed band yet: listed, but picking it only says why.
+            items.add(
+                if (wearer.deviceId == null) getString(R.string.label_track_wearer_no_band, name) else name
+            )
             uids.add(wearer.wearerUid)
         }
 

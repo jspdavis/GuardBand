@@ -1,6 +1,5 @@
 package com.example.guardband.data.repository
 
-import android.util.Log
 import com.example.guardband.data.model.ConnectedWearer
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
@@ -124,7 +123,9 @@ class FirebaseWearerConnectionRepository(
     private suspend fun readConnectedWearer(wearerUid: String): ConnectedWearer {
         val userSnap = database.reference.child(NODE_USERS).child(wearerUid).readOnce()
         val name = userSnap.child(FIELD_NAME).value?.toString().orEmpty()
-        val deviceId = userSnap.child(NODE_BANDS).children.firstOrNull()?.key ?: wearerUid
+        // Null until the wearer claims a band: never their account uid, which
+        // no band writes to (BandList, 2026-11-11).
+        val deviceId = userSnap.child(NODE_BANDS).children.firstOrNull()?.key
         return ConnectedWearer(wearerUid = wearerUid, displayName = name, deviceId = deviceId)
     }
 

@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.guardband.data.RepositoryProvider
+import com.example.guardband.data.repository.BandError
+import com.example.guardband.data.repository.BandIdInput
+import com.example.guardband.data.repository.BandRepository
 import com.example.guardband.data.repository.WearerConnectionError
 import com.example.guardband.data.repository.WearerConnectionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,14 +18,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Invite-code operations for [InviteCodeDialogFragment].
+ * Invite-code operations for [InviteCodeDialogFragment], and claiming your
+ * own band by its id (pairing stage 1, [claimBand]).
  *
  * Calls [WearerConnectionRepository] and translates the results into
  * [InviteCodeUiState]. Firebase calls stay in the repository; this ViewModel
  * holds no context and logs nothing.
  */
 class InviteCodeViewModel(
-    private val connectionRepository: WearerConnectionRepository
+    private val connectionRepository: WearerConnectionRepository,
+    private val bandRepository: BandRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(InviteCodeUiState())
@@ -66,6 +71,34 @@ class InviteCodeViewModel(
         }
     }
 
+    /**
+     * Claims the band whose id the user typed (pairing stage 1): it becomes
+     * the band this account wears, replacing any before. The id is checked by
+     * [BandIdInput] first, so nothing malformed reaches the database.
+     */
+    fun claimBand(text: String) {
+        val deviceId = BandIdInput.deviceIdOf(text)
+        if (deviceId == null) {
+            _uiState.update { it.copy(statusMessage = MSG_BAND_ID_INVALID) }
+            return
+        }
+        _uiState.update { it.copy(isLoading = true, statusMessage = null) }
+        viewModelScope.launch {
+            bandRepository.claimBand(deviceId).fold(
+                onSuccess = { _uiState.update { it.copy(isLoading = false, bandClaimed = true) } },
+                onFailure = { error ->
+                    _uiState.update { it.copy(isLoading = false, statusMessage = claimMessageFor(error)) }
+                }
+            )
+        }
+    }
+
+    private fun claimMessageFor(error: Throwable): String = when (error) {
+        BandError.NotSignedIn      -> MSG_NOT_SIGNED_IN
+        BandError.PermissionDenied -> MSG_CLAIM_REFUSED
+        else                       -> MSG_NETWORK_ERROR
+    }
+
     private fun messageFor(error: Throwable): String = when (error) {
         WearerConnectionError.NotSignedIn        -> MSG_NOT_SIGNED_IN
         WearerConnectionError.CodeNotFound       -> MSG_CODE_NOT_FOUND
@@ -84,9 +117,16 @@ class InviteCodeViewModel(
         const val MSG_ALREADY_LINKED      = "You're already the wearer for that code."
         const val MSG_PERMISSION_DENIED   = "Database permission denied. Have the invite_codes rules been published in Firebase Console?"
         const val MSG_NETWORK_ERROR       = "Couldn't reach the server. Check your connection."
+        const val MSG_BAND_ID_INVALID     = "That doesn't look like a band id. Check it and try again."
+        const val MSG_CLAIM_REFUSED       = "Couldn't save your band. Try again later."
 
         val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer { InviteCodeViewModel(RepositoryProvider.wearerConnectionRepository) }
+            initializer {
+                InviteCodeViewModel(
+                    RepositoryProvider.wearerConnectionRepository,
+                    RepositoryProvider.bandRepository
+                )
+            }
         }
     }
 }

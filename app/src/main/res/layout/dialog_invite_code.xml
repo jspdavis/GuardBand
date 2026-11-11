@@ -33,6 +33,15 @@
             android:layout_weight="1"
             android:text="@string/btn_invite_tab_share" />
 
+        <!-- Pairing stage 1: claim your own band by its id. DESIGN: Jul -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_invite_tab_claim"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/btn_invite_tab_claim" />
+
     </com.google.android.material.button.MaterialButtonToggleGroup>
 
     <!-- Panel: enter a code (watcher side) -->
@@ -120,6 +129,47 @@
                 app:iconGravity="textStart" />
 
         </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Panel: claim your own band (wearer side, pairing stage 1). DESIGN: Jul -->
+    <LinearLayout
+        android:id="@+id/panel_claim_band"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tv_claim_band_help"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/label_claim_band_help"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="@color/text_secondary" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/hint_claim_band_id">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_claim_band_id"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:importantForAutofill="no"
+                android:inputType="textNoSuggestions|textVisiblePassword"
+                android:maxLength="64" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/btn_claim_band"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/btn_claim_band" />
 
     </LinearLayout>
 

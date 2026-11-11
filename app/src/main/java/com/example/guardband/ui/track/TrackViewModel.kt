@@ -142,13 +142,16 @@ class TrackViewModel(
                     val wearers = result.getOrElse { emptyList() }
                     val currentWearers = _uiState.value.connectedWearers
                     val currentSelected = _uiState.value.selectedWearerUid
+                    // Only a wearer who has claimed a band can be shown; one
+                    // who has not is listed, but never picked (2026-11-11).
+                    val withBand = wearers.filter { it.deviceId != null }
 
                     // Detect newly added wearers (live connection during this session).
-                    val newlyAdded = wearers.firstOrNull { w ->
+                    val newlyAdded = withBand.firstOrNull { w ->
                         currentWearers.none { it.wearerUid == w.wearerUid }
                     }
                     // Detect first load: we had no wearers yet and now we do.
-                    val firstLoad = currentWearers.isEmpty() && wearers.isNotEmpty()
+                    val firstLoad = currentWearers.isEmpty() && withBand.isNotEmpty()
 
                     // Decide who to show in the pill:
                     // 1. Keep the explicit selection if still valid.
@@ -156,18 +159,17 @@ class TrackViewModel(
                     // 3. Auto-select the first wearer on startup (first load).
                     // 4. Otherwise show My Band (null = default rule).
                     val targetWearer = when {
-                        currentSelected != null && wearers.any { it.wearerUid == currentSelected } ->
-                            wearers.first { it.wearerUid == currentSelected }
+                        currentSelected != null && withBand.any { it.wearerUid == currentSelected } ->
+                            withBand.first { it.wearerUid == currentSelected }
                         newlyAdded != null -> newlyAdded
-                        firstLoad -> wearers.first()
+                        firstLoad -> withBand.first()
                         else -> null
                     }
 
                     // If the target changed, update BandSelectionStore so the
                     // alert/map reads follow the same wearer.
                     if (targetWearer != null && targetWearer.wearerUid != currentSelected) {
-                        val deviceId = targetWearer.deviceId ?: targetWearer.wearerUid
-                        bandSelectionStore?.select(deviceId)
+                        bandSelectionStore?.select(targetWearer.deviceId)
                         if (newlyAdded != null || firstLoad) {
                             val name = targetWearer.displayName.ifEmpty { "connected wearer" }
                             _events.trySend(TrackEvent.ShowMessage("Now watching: $name"))
@@ -203,6 +205,9 @@ class TrackViewModel(
      * Persists the selection via [BandSelectionStore] so the alert and map
      * reads switch to that wearer's band.
      *
+     * A wearer who has not claimed a band yet has nothing to show: the
+     * selection stays where it was and a toast says why.
+     *
      * @param wearerUid the uid of the selected wearer, or null to go back to
      *   the default rule (the account's own band first).
      */
@@ -210,7 +215,12 @@ class TrackViewModel(
         val deviceId = if (wearerUid == null) {
             null
         } else {
-            _uiState.value.connectedWearers.firstOrNull { it.wearerUid == wearerUid }?.deviceId ?: wearerUid
+            val wearer = _uiState.value.connectedWearers.firstOrNull { it.wearerUid == wearerUid }
+                ?: return
+            wearer.deviceId ?: run {
+                _events.trySend(TrackEvent.ShowMessage(MSG_WEARER_NO_BAND))
+                return
+            }
         }
         bandSelectionStore?.select(deviceId)
         _uiState.update { it.copy(selectedWearerUid = wearerUid) }
@@ -494,6 +504,7 @@ class TrackViewModel(
         const val MSG_UNREADABLE = "Your band sent a position we couldn't read."
         /** Unreachable until pairing exists: every account wears the one band. */
         const val MSG_NO_BAND = "No band is linked to your account yet."
+        const val MSG_WEARER_NO_BAND = "They haven't set up their band yet."
 
         /** The real ticker. A plain loop, so nothing schedules work when unused. */
         private fun defaultStaleTicks(): Flow<Unit> = flow {

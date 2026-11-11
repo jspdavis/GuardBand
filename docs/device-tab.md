@@ -31,7 +31,7 @@ A scrolling column, top to bottom:
 | **Band viewer** (2026-10-28) | The band on a turntable: drag to turn it. A still placeholder until the rendered frames exist. Visual only; the tab knows it only as a `BandViewer`. [band-viewer.md](band-viewer.md). |
 | **b) Band card** | "GuardBand" and the band's id; a status chip, **"Reporting"** or **"Last seen 5 min ago"**; battery with the alert rows' battery symbol, orange at 20% or below; the last alert (type in its colour and symbol, "5 min ago", place name); the last known position as a place name. **"No data from the band yet"** when the band has never reported. No map, no coordinates. |
 | **c) Connected account** | Sign-in method (Email and password, Google, or both); email Verified / Not verified; **"Emergency contacts: N, M starred"**, which switches to the Contacts tab. |
-| **d) Pair a band** | Since 2026-11-10: enabled, and opens the **Connect** dialog (share an invite code, or enter someone else's to watch them). It does not claim a band. [device-pairing.md](device-pairing.md) §9. |
+| **d) Pair a band** | Since 2026-11-10: enabled, and opens the **Connect** dialog: share an invite code, enter someone else's to watch them, or (2026-11-11) **My band**, claim your own band by its id. [device-pairing.md](device-pairing.md) §9. |
 | **e) How the band works** | Three plain lines: panic, double-press check-in, low battery at 20%. DESIGN: Jul. |
 
 ---
@@ -151,6 +151,11 @@ band yet", because nothing writes to `devices/<account uid>`. The "Pair a
 band" row opens the invite-code dialog rather than a claim. Showing a uid on
 screen is not logging it, but it is an internal identifier the tab was never
 meant to show.
+
+**Fixed 2026-11-11 (`feature/band-claim`):** `BandList` gives an account
+with nothing claimed `guardband-001` alone, so the card is the demo band
+again; Connect's **My band** tab claims a band, which then shows here with
+its id. No account uid is ever a band id.
 
 ---
 

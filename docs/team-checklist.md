@@ -39,11 +39,11 @@ the app together. Pairing comes first: SMS depends on it.
     Device → Pair a band; a friend enters it and is linked to the wearer's
     *account*. Track has a "My Band" / friend switcher (no All). Before it
     can be demoed:
-    - [ ] 🔧 **Every account now reads `devices/<its own uid>` by default,
-      not `guardband-001`**, and a friend's band is `devices/<friend's uid>`.
-      Nothing writes to either, so Track, Alert history, the inbox, the
-      Device tab and alert notifications show an empty band. Decide what an
-      unclaimed account should show (see handoff §3).
+    - [~] 🔧 **Every account read `devices/<its own uid>` by default**, so
+      every screen showed an empty band. **Fixed on `feature/band-claim`
+      (11 Nov):** the demo band by default, a friend with no band adds
+      nothing, and Device → Pair a band → My band claims your own band by
+      its id. Merges after James's Privacy Notice change.
     - [ ] 🗳️ **Rules: anyone signed in can make themselves a watcher of
       anyone** (the code is only checked in the app), and a watcher can read
       the wearer's whole `users/{uid}`, emergency contacts included. Jul.
