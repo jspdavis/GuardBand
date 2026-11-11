@@ -37,6 +37,17 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-11-11",
+            title = "The demo band is back; claim your own band by its id",
+            changes = listOf(
+                "Every screen shows the shared demo band again for an account that has not claimed a band of its own. Since 10 November they had been showing an empty band.",
+                "Device tab, Pair a band, My band: type the id your band shows (the Mock Sender's screen, or STATUS on the band's Serial Monitor) and it becomes the band your account wears, on Track, the Device tab and in notifications.",
+                "A friend you watch who has not set up a band yet is listed in the switcher as having no band, instead of showing an empty map.",
+                "Docs brought up to date with the 5 and 10 November work, with the next steps in the handoff. The IDE's device-picker file is no longer kept in the repository."
+            ),
+            commit = "4717692"
+        ),
+        ChangelogEntry(
             date = "2026-11-10",
             title = "Connect with other accounts by invite code; a wearer switcher on Track; incident status",
             changes = listOf(
