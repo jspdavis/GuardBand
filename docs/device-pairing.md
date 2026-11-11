@@ -88,7 +88,8 @@ the next attempt signs in afresh. Tokens are never printed.
 **Mock sender.** `BandIdentity` (REST, OkHttp) keeps the uid and refresh
 token in SharedPreferences `mock_sender_band` and the ID token in memory. It
 never touches the app's `FirebaseAuth` session. The screen shows the band
-id, the switch and **New band id**; the status line says `signed in` or not.
+id, the switch, **Copy band id** (2026-11-11, for My band) and **New band
+id**; the status line says `signed in` or not.
 The key comes from the Firebase app's own options. `BandAuthReplies` (pure,
 `BandAuthRepliesTest`) reads the replies.
 

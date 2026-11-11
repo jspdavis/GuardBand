@@ -44,6 +44,8 @@
     <string name="mock_sender_sign_in_failed">Not signed in: %1$s\nAlerts to guardband-001 still go out, unsigned.</string>
     <string name="mock_sender_own_id_switch">Write to this band\'s own id instead of guardband-001 (the app does not read it until pairing)</string>
     <string name="mock_sender_new_band_id">New band id</string>
+    <string name="mock_sender_copy_band_id">Copy band id</string>
+    <string name="mock_sender_band_id_copied">Band id copied</string>
     <string name="mock_sender_band_id_replaced">Old band id forgotten: this phone is a new band now</string>
 
     <string name="mock_sender_status_heading">Status:</string>

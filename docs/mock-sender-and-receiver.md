@@ -40,9 +40,11 @@ up once as a Firebase **anonymous** user (the band identity,
 says `signed in` or `not signed in`. It still writes to `guardband-001`,
 which the receiver reads, so with anonymous sign-in off in the Console the
 writes simply go out unsigned. The **own id** switch writes to
-`devices/<band id>` instead, which the receiver does not read until pairing
-exists (check it in the Console), and **New band id** starts over as a new
-band. None of this touches whoever is signed in to the receiver screens.
+`devices/<band id>` instead, which the receiver reads once that id is claimed
+(Device → Pair a band → **My band**, since 2026-11-11), and **New band id**
+starts over as a new band. **Copy band id** puts the bare id on the
+clipboard, to paste into My band on the same phone. None of this touches
+whoever is signed in to the receiver screens.
 
 ---
 

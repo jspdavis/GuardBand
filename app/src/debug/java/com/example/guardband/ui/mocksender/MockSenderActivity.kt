@@ -2,6 +2,8 @@ package com.example.guardband.ui.mocksender
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
@@ -9,6 +11,7 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.BatteryManager
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.HapticFeedbackConstants
@@ -16,6 +19,7 @@ import android.view.MotionEvent
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
@@ -80,7 +84,7 @@ import kotlinx.coroutines.launch
  * id" forgets the identity, like the firmware's RESETID.
  *
  * View IDs: btnBand, tvTracking, tvBattery, sbBattery, tvBandId, swOwnBandId,
- * btnNewBandId, tvStatus, tvGpsStatus.
+ * btnCopyBandId, btnNewBandId, tvStatus, tvGpsStatus.
  */
 class MockSenderActivity : AppCompatActivity() {
 
@@ -91,6 +95,7 @@ class MockSenderActivity : AppCompatActivity() {
     private lateinit var tvBandId: TextView
     private lateinit var swOwnBandId: SwitchCompat
     private lateinit var btnNewBandId: Button
+    private lateinit var btnCopyBandId: Button
     private lateinit var tvStatus: TextView
     private lateinit var tvGpsStatus: TextView
 
@@ -234,6 +239,7 @@ class MockSenderActivity : AppCompatActivity() {
         tvBandId = findViewById(R.id.tvBandId)
         swOwnBandId = findViewById(R.id.swOwnBandId)
         btnNewBandId = findViewById(R.id.btnNewBandId)
+        btnCopyBandId = findViewById(R.id.btnCopyBandId)
         tvStatus = findViewById(R.id.tvStatus)
         tvGpsStatus = findViewById(R.id.tvGpsStatus)
     }
@@ -258,6 +264,8 @@ class MockSenderActivity : AppCompatActivity() {
             }
         }
 
+        btnCopyBandId.setOnClickListener { copyBandId() }
+
         btnNewBandId.setOnClickListener {
             if (trackingJob != null) {
                 stopTracking()
@@ -273,9 +281,24 @@ class MockSenderActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Puts the bare band id on the clipboard, for the app's Pair a band, My
+     * band tab. Android 13 and later confirm a copy themselves, so the toast
+     * is only for older phones.
+     */
+    private fun copyBandId() {
+        val id = alertSender.bandId ?: return
+        getSystemService(ClipboardManager::class.java)
+            .setPrimaryClip(ClipData.newPlainText(getString(R.string.mock_sender_copy_band_id), id))
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            Toast.makeText(this, R.string.mock_sender_band_id_copied, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun renderBandId(signingIn: Boolean = false) {
         val id = alertSender.bandId
         val failure = signInFailure
+        btnCopyBandId.isEnabled = !signingIn && id != null
         tvBandId.text = when {
             signingIn -> getString(R.string.mock_sender_signing_in)
             failure != null -> getString(R.string.mock_sender_sign_in_failed, failure)
