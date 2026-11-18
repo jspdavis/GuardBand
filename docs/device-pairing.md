@@ -415,3 +415,40 @@ Branch `feature/band-claim`. Fixes §9's first open point and starts step 3.
   the Device tab (with that id) and notifications; claim `guardband-001` to go
   back; a malformed id is refused; offline, the claim fails after 10 s; a
   friend with no band reads "no band yet" in the switcher.
+
+---
+
+## 10. What the switcher's status means
+
+The pill at the top of Track (`track_wearer_switcher`, 2026-11-10) shows one
+status for **the band on the map**, not for each wearer in the list. It is
+`TrackUiState.currentWearerStatus`. The first rule that applies wins:
+
+| Status | Shown when | Notes |
+|---|---|---|
+| **Panic Alert** (red, `alert_panic`) | `TrackUiState.bandPanic` is set: the band's newest **non-tracking** alert is a `PANIC` (`TrackViewModel.latestPanic()`) | Stays through the tracking updates after the panic. Clears only when a check-in or low-battery alert arrives after it, or when the panic drops out of the 100-entry history window. **Ignores the status chip:** a panic marked Resolved still reads Panic Alert. |
+| **Offline** (grey, `text_secondary`) | `!isOnline`: the band's newest message of any type, tracking updates included, is older than `BandStatus.ONLINE_THRESHOLD_MS` (**180 s**), or the band has never reported | Recomputed on the 30 s ticker, so it changes while the band is silent. A timestamp in the future counts as recent (the band's clock can run ahead of the phone's). Same rule as the Device tab's "Reporting" (`BandReport.isReporting`). |
+| **Safe** (green, `alert_checkin`) | Neither: the band sent something in the last 180 s and its newest alert is not a panic | |
+
+The name comes from `currentWearerName`: "My Band" for the account's own band
+(or the default rule), else the connected wearer's display name.
+
+### Why the wording needs a decision (DECISION: Jul, with jspdavis)
+
+- **"Offline" is the normal state of a band that is fine.** FR-09 tracking
+  runs only for 30 minutes after an alert, so an idle band sends nothing and
+  reads Offline most of the day. CLAUDE.md ("Track and map": "Reporting",
+  not "Online") explains why the Device tab avoids exactly this word: it
+  reads as a claim about the wearer, when a timestamp can only say whether
+  the band is sending right now.
+- **"Safe" claims something the data cannot back.** It means only "sent
+  something in the last 3 minutes, and the newest alert is not a panic". A
+  wearer can be in danger without pressing the button.
+- **Panic Alert outlives a Resolved panic**, so the pill and the chip can
+  disagree on the same screen.
+
+**Proposed:** keep **Panic Alert** but clear it once the panic's status is
+Resolved; **Reporting** instead of Safe; **Last seen 2 h ago** instead of
+Offline, and **No data yet** for a band that has never reported. All three
+reuse rules that already exist (`BandReport`, the status listener), so it is
+a wording and binding change, not new logic.

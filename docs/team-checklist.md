@@ -218,6 +218,13 @@ Use the debug mock sender to produce alerts.
   run `adb shell pm verify-app-links --re-verify com.example.guardband` on
   their phones. Anyone else still adds theirs.
 
+- [ ] 🗳️ **Track switcher wording: Safe / Panic Alert / Offline** · *Jul, with jspdavis*
+  "Offline" is what a healthy idle band shows most of the day, "Safe" claims
+  more than a timestamp can say, and Panic Alert stays after a panic is
+  Resolved. Proposed: Reporting / Last seen 2 h ago / No data yet, and clear
+  Panic Alert on Resolved.
+  Where: [`device-pairing.md`](device-pairing.md) §10
+
 - [ ] 🗳️ **Design pass on the placeholders** · *Jul*
   - The dark palette (`values-night/colors.xml`). (The white MapTiler logo on
     dark maps is done, 27 Oct.)
