@@ -37,6 +37,15 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-11-18",
+            title = "Privacy Notice 1.4: your band and the people you connect with",
+            changes = listOf(
+                "The Privacy Notice now covers claiming your own band, invite codes and watchers, what a watcher can see, panic statuses, and what Delete account leaves behind. New consents are recorded against 1.4.",
+                "The Mock Sender can copy its band id, to paste into My band."
+            ),
+            commit = "677cdb3"
+        ),
+        ChangelogEntry(
             date = "2026-11-11",
             title = "The demo band is back; claim your own band by its id",
             changes = listOf(
