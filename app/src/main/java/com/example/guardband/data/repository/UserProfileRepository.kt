@@ -162,6 +162,6 @@ interface UserProfileRepository {
          * they were given, and **nobody is re-prompted** - there is no
          * re-consent flow yet.
          */
-        const val CONSENT_VERSION = "1.3"
+        const val CONSENT_VERSION = "1.4"
     }
 }

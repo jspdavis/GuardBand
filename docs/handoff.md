@@ -139,9 +139,12 @@ friend with no claimed band adds nothing and reads "no band yet" in the
 switcher. Device → Pair a band → **My band** claims a band by its id
 (pairing step 3, stage 1: no proof yet), which is what makes the mock
 sender's "own id" sends show up. The band list no longer stalls on a failed
-read. **Before merging:** James's Privacy Notice change and `CONSENT_VERSION`
-bump, because a band's records become linked to an account; then the phone
-checks in [`device-pairing.md`](device-pairing.md) §9 (last part).
+read. **Privacy Notice 1.4** (2026-11-18, on the branch, `CONSENT_VERSION`
+`"1.4"`) covers the claim and the 10 Nov connected accounts. **Before
+merging:** the phone checks in [`device-pairing.md`](device-pairing.md) §9
+(last part). **When it merges:** deploy Hosting
+(`firebase deploy --only hosting` from `hosting/`), so the live notice
+matches the app; until then the live 1.3 does not mention connected accounts.
 **Stage 2** (a one-time code from the band, checked by a rule; later a QR
 code) must land before `devices/` reads close.
 

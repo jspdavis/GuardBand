@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  GuardBand Privacy Notice, version 1.3. See docs/privacy-and-consent.md.
+  GuardBand Privacy Notice, version 1.4. See docs/privacy-and-consent.md.
 
   Every statement below is taken from the code, not assumed, because a notice
   that describes practices the project does not actually follow is worse than
@@ -127,7 +127,7 @@
 
   <p class="brand">GuardBand</p>
   <h1>Privacy Notice</h1>
-  <p class="meta"><strong>Version 1.3</strong> &middot; 27 October 2026</p>
+  <p class="meta"><strong>Version 1.4</strong> &middot; 18 November 2026</p>
 
   <p>
     GuardBand is a student project. It is a phone app that works with a
@@ -240,10 +240,52 @@
     sign-up consent is about.
   </p>
 
+  <p>
+    When someone marks a panic as <strong>Acknowledged</strong> or
+    <strong>Resolved</strong>, that status and the time it changed are stored
+    with the band's reports. It does not record who changed it.
+  </p>
+
   <div class="card">
     <p style="margin:0">
       <strong>The phone's own location is never used.</strong> The app asks for
       no location permission at all. Everything on the map comes from the band.
+    </p>
+  </div>
+
+  <h3>Your band, and the people you connect with</h3>
+
+  <p>
+    If you tell the app which band is yours (<strong>Device tab &rarr; Pair a
+    band &rarr; My band</strong>), it stores that <strong>band's
+    identifier</strong> with your account. From then on the band's reports
+    &mdash; its location, battery and times &mdash; are linked to you. Until you
+    do, the app shows a shared demo band that is not linked to anyone.
+  </p>
+
+  <p>
+    You can also connect with other GuardBand users by invite code, from the
+    same place. When you <strong>share a code</strong>, the app stores the code
+    with your account's internal identifier, when it was made and when it
+    expires (one hour). Anyone signed in to GuardBand who has the code can read
+    that record, and more than one person can use the code within its hour.
+    Each person who enters it becomes your <strong>watcher</strong>, and the
+    link is stored under both accounts' internal identifiers.
+  </p>
+
+  <p>
+    A watcher sees your <strong>name</strong>, and, once you have told the app
+    which band is yours, your band's <strong>alerts, location, battery and the
+    status of any panic</strong>, the same as you do. When you enter someone
+    else's code, the same is true the other way round.
+  </p>
+
+  <div class="card">
+    <p style="margin:0">
+      <strong>Only share a code with people you want to see where the band
+      is.</strong> There is not yet a button in the app to remove a watcher or to
+      stop watching someone. Write to the address below and the link will be
+      removed.
     </p>
   </div>
 
@@ -283,7 +325,7 @@
         <td><strong>Google</strong> (profile picture)</td>
         <td>
           If you sign in with Google,
-          the app shows your Google profile picture on the Profile tab and on
+          the app shows your Google profile picture on the Device tab and on
           the map, as the marker for the band's position. The picture is loaded
           from Google's image servers, which receive <strong>your phone's IP
           address</strong> when it is fetched. The app keeps a copy only in its
@@ -304,6 +346,16 @@
           app's memory until it closes; they are not stored on the phone or in
           the project's database. If the service cannot be reached, the alert
           shows its coordinates instead.
+        </td>
+      </tr>
+      <tr>
+        <td><strong>People you connect with</strong> (your watchers)</td>
+        <td>
+          Your name, and your band's alerts, positions, battery and panic
+          statuses, as described above. The project's database rules also let
+          a watcher's account read <strong>your email address, your emergency
+          contacts and your consent record</strong>, although the app never
+          shows them to a watcher. Those rules are being tightened.
         </td>
       </tr>
       <tr>
@@ -335,7 +387,10 @@
     <li>a <strong>cache of map images</strong>, in the app's own temporary storage;</li>
     <li>if you sign in with Google, a <strong>cached copy of your profile
       picture</strong>, in the same storage;</li>
-    <li>your <strong>display setting</strong> &mdash; light, dark, or the phone's own.</li>
+    <li>your <strong>display setting</strong> &mdash; light, dark, or the phone's own;</li>
+    <li>the <strong>map style</strong> you last picked on the Track tab;</li>
+    <li>which <strong>band you last chose to view</strong> on the Track tab (its
+      identifier), if you watch someone else's.</li>
   </ul>
 
   <p>
@@ -358,15 +413,23 @@
 
   <div class="card">
     <p style="margin:0">
-      <strong>One thing to be aware of while this is a student project.</strong>
-      The band's reported locations are currently stored under a
-      <strong>single shared band identifier</strong>, and the project's database
-      rules for that part are <strong>open</strong>: that data can be read, and
-      written, without signing in. There is no device pairing yet, so one
-      person's band data is not separated from another's. Do not use GuardBand
-      to protect anyone who would be put at risk by that. Your account details
-      and your emergency contacts are <em>not</em> in that open area &mdash; they
-      are readable only by you.
+      <strong>Things to be aware of while this is a student project.</strong>
+      The band's reports are stored under the band's identifier &mdash; the
+      shared demo band's, or your own band's once you claim it &mdash; and the
+      project's database rules for that part are <strong>open to read</strong>:
+      anyone who knows or guesses the identifier can read them without signing
+      in. Only the band itself can write its own reports, except on the shared
+      demo band, which anyone can write to. Panic statuses are stored there
+      too, and <strong>anyone can change them</strong>. Do not use GuardBand to
+      protect anyone who would be put at risk by that.
+    </p>
+    <p style="margin:0.75em 0 0">
+      Your account details and your emergency contacts are <em>not</em> in that
+      open area. They are readable by you and by the people you have connected
+      with as watchers. The rules that decide who counts as a watcher do not
+      yet check the invite code themselves: until they do, another signed-in
+      account that knew your account's internal identifier could make itself
+      your watcher. The app never shows anyone that identifier.
     </p>
   </div>
 
@@ -389,13 +452,18 @@
     notice will change to say what it is.
   </p>
 
+  <p>
+    Invite codes are <strong>not deleted when they expire</strong>; they simply
+    stop working. Links with watchers stay until they are removed.
+  </p>
+
   <h2>Your rights, and how to use them</h2>
 
   <h3>See or correct your data</h3>
 
   <p>
     Your name, email and emergency contacts are all visible in the app, on the
-    Profile and Contacts tabs, and the contacts can be edited there. For
+    Device and Contacts tabs, and the contacts can be edited there. For
     anything you cannot see or change yourself, write to
     <a href="mailto:julianmiguelroldan@gmail.com">julianmiguelroldan@gmail.com</a>.
   </p>
@@ -414,16 +482,25 @@
     <li>your profile &mdash; name and email;</li>
     <li>every emergency contact you saved, including their names and numbers;</li>
     <li>your consent record;</li>
+    <li>the record of <strong>which band is yours</strong>, so the band's
+      reports are no longer linked to you;</li>
     <li>your sign-in.</li>
   </ul>
 
   <p>
     It does <strong>not</strong> delete the alerts and tracking updates the band
-    recorded. Those sit under a band identifier that is shared between
-    installations rather than tied to your account, so there is nothing there
-    that can be matched to you and removed. <a href="/delete-account">The
-    delete-account page</a> explains this, and what to do if you cannot open the
-    app.
+    recorded. They belong to the band, under its own identifier (the shared
+    demo band's, or the band you claimed), not to your account. Once your
+    account is gone nothing links them to you, but they stay under that band's
+    identifier. <a href="/delete-account">The delete-account page</a> explains
+    this, and what to do if you cannot open the app.
+  </p>
+
+  <p>
+    It also does <strong>not yet</strong> remove your links with watchers, or
+    the invite codes you made. Those hold only account identifiers and times
+    &mdash; no name, email or contacts. Write to the address below to have them
+    removed.
   </p>
 
   <p>
@@ -453,7 +530,7 @@
   <ul>
     <li>that you <strong>accepted</strong>;</li>
     <li><strong>when</strong>, from the server's clock rather than your phone's;</li>
-    <li>the <strong>version</strong> of this notice you agreed to &mdash; <strong>1.3</strong> for the current wording.</li>
+    <li>the <strong>version</strong> of this notice you agreed to &mdash; <strong>1.4</strong> for the current wording.</li>
   </ul>
 
   <p>
@@ -512,7 +589,7 @@
   </p>
 
   <footer>
-    GuardBand Privacy Notice, version 1.3 &middot;
+    GuardBand Privacy Notice, version 1.4 &middot;
     <a href="/delete-account">How to delete your account</a>
   </footer>
 

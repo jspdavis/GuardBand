@@ -6,8 +6,8 @@ rules that keep them in step with the app.
 | | |
 |---|---|
 | **Branch** | `feature/trust-gaps` |
-| **Status** | **Both pages published without a DRAFT banner** on 2026-10-24 (notice 1.2), at the team's decision and without the adviser review — see §1. **Notice 1.3** (Google Maps row removed) deployed 2026-10-27. |
-| **Consent version** | `1.3` (`UserProfileRepository.CONSENT_VERSION`) |
+| **Status** | **Both pages published without a DRAFT banner** on 2026-10-24 (notice 1.2), at the team's decision and without the adviser review — see §1. **Notice 1.3** (Google Maps row removed) deployed 2026-10-27. **Notice 1.4** (band claim, connected accounts) written 2026-11-18 on `feature/band-claim`, **not deployed**: deploy it when that branch merges. |
+| **Consent version** | `1.4` (`UserProfileRepository.CONSENT_VERSION`) |
 | **Notice** | [`../hosting/public/privacy/index.html`](../hosting/public/privacy/index.html) → `https://guardband-aae65.web.app/privacy` |
 | **Delete page** | [`../hosting/public/delete-account/index.html`](../hosting/public/delete-account/index.html) → `https://guardband-aae65.web.app/delete-account` |
 | **URLs built by** | [`utils/HostedPages.kt`](../app/src/main/java/com/example/guardband/utils/HostedPages.kt), from constants in [`../app/build.gradle.kts`](../app/build.gradle.kts) |
@@ -46,6 +46,7 @@ to, which fails if the number cannot be matched to a document.
 | `1.1` | 2026-10-11 | Wording changed from "I agree to the Privacy Notice" to **"I have read the Privacy Notice and agree to it"**, and the notice became a real, reachable document at `/privacy`. The claim being made is materially different: under 1.0 the user could not have read it. |
 | `1.2` | 2026-10-24 | The statement is unchanged; **the notice it points to changed**, and was published without its DRAFT banner. New recipients: **MapTiler** (map tiles, replacing OpenStreetMap; sees the IP and the area viewed), **Google's place-name service** (each shown alert's position, rounded to about 11 m), **Google's image servers** (the profile picture on Profile and the map marker). Also: the opt-in alert notifications, email verification, the Emergency mark on contacts, what the phone stores (picture cache, display setting), the Delete account path (now via Account information) and the deletion marker it leaves, and the consent gate. |
 | `1.3` | 2026-10-27 | The statement is unchanged; **the notice it points to changed.** The **Google Maps** row came out of the sharing table: Track's round button no longer hands the band's coordinates to a maps app, it re-centres the map on them instead. Nothing new is collected and no one new receives anything; one recipient is gone. |
+| `1.4` | 2026-11-18 | The statement is unchanged; **the notice it points to changed.** New: **claiming your band** (My band) links a band's reports to the account (`users/{uid}/bands`); **connected accounts** (invite codes holding the account's uid and times, readable by any signed-in account with the code; watcher links under both uids); a new recipient, **watchers**, who see the name and the band's alerts, and whom the rules also let read the email, contacts and consent record; **panic statuses**, stored in the open `devices/` area and changeable by anyone; the open-area card rewritten (reads open, only a band writes its own id, the rules do not check the invite code); two **on-phone** settings (map style, the chosen band); invite codes not deleted on expiry; Delete account now removes the band link but **not** watcher links or invite codes. Fixed: "Profile tab" became the Device tab. Connected accounts shipped on 2026-11-10 (`5f0b254`) without a notice change; this version covers them. |
 
 **Existing users are not re-prompted.** A record written at `1.0` keeps `1.0`;
 nothing rewrites it, and there is no re-consent flow. Building one means
@@ -151,7 +152,7 @@ Needs §1 steps 1–3 done.
 3. With TalkBack on, the checkbox and its statement still read as **one
    control**, and the link reads as a separate button after it.
 4. Finish sign-up. In the Console, the new `users/{uid}/consent` shows
-   **`version: "1.3"`**, `accepted: true` and a server `acceptedAt`.
+   **`version: "1.4"`**, `accepted: true` and a server `acceptedAt`.
 5. **Settings → About → Privacy Notice** opens the same page.
 6. The notice's displayed version reads **1.3**, matching step 4.
 7. Open `/delete-account` and follow its in-app steps exactly as written —
@@ -168,7 +169,7 @@ Needs §1 steps 1–3 done.
    unverified, so **Verify your email** comes first: Resend, open the link,
    return. Then **Before you continue** appears before any tab, with sign-up's
    statement and "Read the Privacy Notice". Tap **Agree**: the Console shows
-   `users/{uid}/consent` with `version: "1.3"`, `accepted: true` and a server
+   `users/{uid}/consent` with `version: "1.4"`, `accepted: true` and a server
    `acceptedAt`, and the app opens.
 10. **Missing Google profile.** For a Google account, delete only
     `users/{uid}` in the Console (leave its Authentication user) and sign in

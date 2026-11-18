@@ -43,15 +43,18 @@ the app together. Pairing comes first: SMS depends on it.
       every screen showed an empty band. **Fixed on `feature/band-claim`
       (11 Nov):** the demo band by default, a friend with no band adds
       nothing, and Device → Pair a band → My band claims your own band by
-      its id. Merges after James's Privacy Notice change.
+      its id. Notice 1.4 is written on the branch; it merges after the
+      phone checks, and Hosting is deployed then.
     - [ ] 🗳️ **Rules: anyone signed in can make themselves a watcher of
       anyone** (the code is only checked in the app), and a watcher can read
       the wearer's whole `users/{uid}`, emergency contacts included. Jul.
     - [ ] 🗳️ **Which watcher rules are live?** `RTDBS-RULES.md` and the new
       `RTDBS-RULES-CONSOLE.json` differ; only the Console copy lets the
       switcher read its list. Jul.
-    - [ ] 🗳️ **Privacy Notice and `CONSENT_VERSION`**: watchers see a
-      wearer's name and alerts, and the rules expose their contacts. James.
+    - [~] 🗳️ **Privacy Notice and `CONSENT_VERSION`**: written as notice
+      1.4 on `feature/band-claim` (18 Nov): watchers, invite codes, the band
+      claim, panic statuses, what Delete account leaves. Deploy Hosting when
+      the branch merges. James to re-read the wording before that deploy.
   - [ ] Close reads and retire `guardband-001`.
 
   Where: [`device-pairing.md`](device-pairing.md) §9, [`database-rules.md`](database-rules.md) §2 and §10
