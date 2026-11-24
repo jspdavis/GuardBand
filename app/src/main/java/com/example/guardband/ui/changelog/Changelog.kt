@@ -38,13 +38,17 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-11-24",
-            title = "Band claiming lands, and Google sign-in says what actually went wrong",
+            title = "Band claiming lands, Google sign-in says what went wrong, and the map gets faster",
             changes = listOf(
                 "Continue with Google no longer claims the phone has no Google account when the real cause is something else. An unregistered signing certificate and a provider that has paused prompts now read as themselves, and only the genuinely account-less case asks you to add an account.",
                 "A debug build logs which of the three it was, under tag GoogleIdTokenProvider, so a developer on a new machine can see that their debug SHA-1 is missing instead of guessing. The log carries no account, email or provider text, and a release build logs nothing.",
-                "Claiming your own band and connecting to a Google account were confirmed working on a device, and this branch - the demo band fix, Privacy Notice 1.4 and the sign-in fix - merged into the main development branch."
+                "Claiming your own band and connecting to a Google account were confirmed working on a device, and this branch - the demo band fix, Privacy Notice 1.4 and the sign-in fix - merged into the main development branch.",
+                "The map keeps its place. Leaving Track for another tab and coming back no longer reloads it, and changing the app's theme no longer throws the map back to the default city view before jumping to the band - it reopens where you left it, at the zoom you left it.",
+                "The map only redraws what changed. A new alert now moves one pin instead of rebuilding all ten, so nothing flickers; the band's marker stops re-animating every half minute while the band stands still; and an update from the band that repeats what the app already knows is ignored instead of redrawing the screen.",
+                "A long panic route draws faster. The trail of tracking points is thinned to the points that give it its shape, at a tolerance smaller than the band's own GPS error, so the route a guardian reads is the same one.",
+                "The map takes far less of the phone. Stored map tiles were allowed up to 600 MB and are now a share of the free space, between 16 and 64 MB; phones with little memory keep fewer tiles in memory; and a tile that comes back damaged or is not really a map tile is refused instead of being drawn and kept."
             ),
-            commit = "add3370"
+            commit = "7db4a98"
         ),
         ChangelogEntry(
             date = "2026-11-18",
