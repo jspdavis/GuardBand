@@ -260,6 +260,8 @@ class DeleteAccountViewModel(
         fail(
             when (result) {
                 GoogleIdTokenResult.NoGoogleAccount -> MSG_NO_GOOGLE_ACCOUNT
+                GoogleIdTokenResult.NotConfigured -> MSG_GOOGLE_NOT_CONFIGURED
+                GoogleIdTokenResult.TemporarilyBlocked -> MSG_GOOGLE_BLOCKED
                 GoogleIdTokenResult.Unavailable -> MSG_GOOGLE_UNAVAILABLE
                 GoogleIdTokenResult.Network -> MSG_NO_CONNECTION
                 else -> MSG_GOOGLE_FAILED
@@ -442,6 +444,10 @@ class DeleteAccountViewModel(
         const val MSG_WRONG_GOOGLE_ACCOUNT =
             "That's a different Google account. Choose the one you signed in with."
         const val MSG_NO_GOOGLE_ACCOUNT = "No Google account is available on this device."
+        const val MSG_GOOGLE_NOT_CONFIGURED =
+            "Google sign-in isn't set up for this build of the app, so we can't confirm it's you here."
+        const val MSG_GOOGLE_BLOCKED =
+            "Google has paused sign-in prompts on this device. Try again later."
         const val MSG_GOOGLE_UNAVAILABLE = "Google sign-in isn't available on this device."
         const val MSG_GOOGLE_FAILED = "Could not confirm your Google account. Please try again."
         const val MSG_NO_CONNECTION = "No connection. Check your network and try again."

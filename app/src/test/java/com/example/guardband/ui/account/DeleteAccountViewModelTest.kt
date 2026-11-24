@@ -307,6 +307,43 @@ class DeleteAccountViewModelTest {
         assertEquals(DeleteAccountViewModel.MSG_GOOGLE_UNAVAILABLE, state.errorMessage)
     }
 
+    @Test
+    fun `a configuration failure is reported without claiming no account exists`() = runTest {
+        collectEvents()
+        auth.providers = setOf(SignInProvider.GOOGLE)
+
+        confirmDelete()
+        viewModel.onGoogleError(GoogleIdTokenResult.NotConfigured)
+        advanceUntilIdle()
+
+        assertEquals(DeleteAccountStep.FAILED, state.step)
+        assertEquals(DeleteAccountViewModel.MSG_GOOGLE_NOT_CONFIGURED, state.errorMessage)
+    }
+
+    @Test
+    fun `a blocked provider is reported on its own`() = runTest {
+        collectEvents()
+        auth.providers = setOf(SignInProvider.GOOGLE)
+
+        confirmDelete()
+        viewModel.onGoogleError(GoogleIdTokenResult.TemporarilyBlocked)
+        advanceUntilIdle()
+
+        assertEquals(DeleteAccountStep.FAILED, state.step)
+        assertEquals(DeleteAccountViewModel.MSG_GOOGLE_BLOCKED, state.errorMessage)
+    }
+
+    /**
+     * A Google-only account has no password to fall back to, so this screen
+     * must not suggest one.
+     */
+    @Test
+    fun `the configuration message does not offer a password instead`() {
+        assertFalse(
+            DeleteAccountViewModel.MSG_GOOGLE_NOT_CONFIGURED.lowercase().contains("password")
+        )
+    }
+
     // ── The deletes, in order ─────────────────────────────────────────────────
 
     @Test

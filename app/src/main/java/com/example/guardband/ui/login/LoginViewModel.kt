@@ -116,6 +116,8 @@ class LoginViewModel(
         val message = when (result) {
             GoogleIdTokenResult.Cancelled -> return
             GoogleIdTokenResult.NoGoogleAccount -> MSG_NO_GOOGLE_ACCOUNT
+            GoogleIdTokenResult.NotConfigured -> MSG_GOOGLE_NOT_CONFIGURED
+            GoogleIdTokenResult.TemporarilyBlocked -> MSG_GOOGLE_BLOCKED
             GoogleIdTokenResult.Unavailable -> MSG_GOOGLE_UNAVAILABLE
             GoogleIdTokenResult.Network -> MSG_NO_CONNECTION
             else -> MSG_GOOGLE_FAILED
@@ -194,6 +196,10 @@ class LoginViewModel(
         const val MSG_LOGIN_FAILED = "Could not log in. Please try again."
         const val MSG_DIFFERENT_SIGN_IN_METHOD = "This email uses a different sign-in method."
         const val MSG_NO_GOOGLE_ACCOUNT = "No Google account on this device. Add one and try again."
+        const val MSG_GOOGLE_NOT_CONFIGURED =
+            "Google sign-in isn't set up for this build of the app. Use your email and password for now."
+        const val MSG_GOOGLE_BLOCKED =
+            "Google has paused sign-in prompts on this device. Try again later, or use your email and password."
         const val MSG_GOOGLE_UNAVAILABLE = "Google sign-in is unavailable on this device."
         const val MSG_GOOGLE_FAILED = "Could not sign in with Google. Please try again."
 

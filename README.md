@@ -129,7 +129,7 @@ git checkout mvvm-main
 
 1. `app/google-services.json` is in the repo and points at `guardband-aae65`. Don't replace it with a copy from another branch.
 2. Add the map key to your own `local.properties` (gitignored): `MAPTILER_API_KEY=…`. Get it from James or Jul in a private message, and never commit it. Without it the app builds, but the Track tab shows "Map unavailable".
-3. Register your debug **SHA-1** in the Firebase Console, or Google sign-in fails on your build. For password-reset and verification links to open in the app, your debug **SHA-256** also has to be in `hosting/public/.well-known/assetlinks.json` and Hosting redeployed ([docs/forgot-password.md](docs/forgot-password.md)).
+3. Register your debug **SHA-1** in the Firebase Console, or Google sign-in fails on your build. Get it with `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android`, add it under Project settings → your Android app → *Add fingerprint*, then re-download `google-services.json`. The symptom is the Continue with Google button reporting **"Google sign-in isn't set up for this build of the app"**; a debug build also logs the reason under tag `GoogleIdTokenProvider`. Each machine has its own debug keystore, so a fresh clone on a new laptop needs this again. For password-reset and verification links to open in the app, your debug **SHA-256** also has to be in `hosting/public/.well-known/assetlinks.json` and Hosting redeployed ([docs/forgot-password.md](docs/forgot-password.md)).
 4. Open the project in Android Studio, let Gradle sync, and run on a device or emulator.
 
 ### Build and test

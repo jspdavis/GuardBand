@@ -150,6 +150,64 @@ class LoginGoogleViewModelTest {
         assertEquals(0, auth.loginCalls)
     }
 
+    @Test
+    fun `a configuration failure does not claim the device has no account`() = runTest {
+        viewModel.onGoogleError(GoogleIdTokenResult.NotConfigured)
+
+        assertEquals(LoginViewModel.MSG_GOOGLE_NOT_CONFIGURED, firstMessage())
+    }
+
+    @Test
+    fun `a blocked provider reads differently from a missing account`() = runTest {
+        viewModel.onGoogleError(GoogleIdTokenResult.TemporarilyBlocked)
+
+        assertEquals(LoginViewModel.MSG_GOOGLE_BLOCKED, firstMessage())
+    }
+
+    @Test
+    fun `the five Google failure messages are all distinct`() {
+        val messages = listOf(
+            LoginViewModel.MSG_NO_GOOGLE_ACCOUNT,
+            LoginViewModel.MSG_GOOGLE_NOT_CONFIGURED,
+            LoginViewModel.MSG_GOOGLE_BLOCKED,
+            LoginViewModel.MSG_GOOGLE_UNAVAILABLE,
+            LoginViewModel.MSG_GOOGLE_FAILED
+        )
+
+        assertEquals(messages.size, messages.toSet().size)
+    }
+
+    /**
+     * The whole point of the change: only the genuinely account-less case may
+     * tell someone to add an account.
+     */
+    @Test
+    fun `only the missing-account message asks for an account`() {
+        assertTrue(LoginViewModel.MSG_NO_GOOGLE_ACCOUNT.contains("Add one"))
+        assertFalse(LoginViewModel.MSG_GOOGLE_NOT_CONFIGURED.contains("Add one"))
+        assertFalse(LoginViewModel.MSG_GOOGLE_BLOCKED.contains("Add one"))
+    }
+
+    /** Developer detail belongs in logcat, not in a Toast a user sees. */
+    @Test
+    fun `no failure message names a SHA-1 or the Firebase Console`() {
+        val messages = listOf(
+            LoginViewModel.MSG_NO_GOOGLE_ACCOUNT,
+            LoginViewModel.MSG_GOOGLE_NOT_CONFIGURED,
+            LoginViewModel.MSG_GOOGLE_BLOCKED,
+            LoginViewModel.MSG_GOOGLE_UNAVAILABLE,
+            LoginViewModel.MSG_GOOGLE_FAILED
+        )
+
+        messages.forEach {
+            val text = it.lowercase()
+            assertFalse(text.contains("sha"))
+            assertFalse(text.contains("firebase"))
+            assertFalse(text.contains("console"))
+            assertFalse(text.contains("certificate"))
+        }
+    }
+
     private suspend fun firstMessage(): String =
         (viewModel.events.first() as LoginEvent.ShowMessage).text
 }

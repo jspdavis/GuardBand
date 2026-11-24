@@ -214,7 +214,9 @@ Use the debug mock sender to produce alerts.
   Where: [`osmdroid.md`](osmdroid.md) §4.4 and §4.6
 
 - [ ] 🗳️ **Register your debug fingerprints** · *each developer*
-  SHA-1 in the Firebase Console (or Google sign-in fails on your build);
+  SHA-1 in the Firebase Console (or Google sign-in fails on your build —
+  the button reads "Google sign-in isn't set up for this build of the app",
+  and a debug build logs why under tag `GoogleIdTokenProvider`);
   SHA-256 in `hosting/public/.well-known/assetlinks.json`, then redeploy
   Hosting (or reset and verification links open the browser). **Four
   SHA-256s are live since 25 Oct** (James's and three teammates'); those three
