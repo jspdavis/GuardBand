@@ -21,7 +21,7 @@ Single-module Gradle project (`:app`). AGP 8.3.2, Kotlin 1.9.24, compileSdk/targ
 ./gradlew lint
 ```
 
-On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 1011 JVM unit tests (2026-11-11), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
+On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` pointing at Android Studio's bundled JBR. There are 1041 JVM unit tests (2026-11-24), under `app/src/test` (and the debug-only Mock Sender's in `app/src/testDebug`); the test doubles are in `app/src/test/.../testing/`. Instrumented tests are still only the template. `./gradlew lint` passes with no errors (warnings only).
 
 `app/google-services.json` is required for the `com.google.gms.google-services` plugin. It points at the Firebase project `guardband-aae65` (RTDB only, `asia-southeast1`, Spark plan, so there are no Cloud Functions).
 
@@ -638,7 +638,7 @@ Track's recent-alerts panel and the Alert history screen read `devices/{deviceId
 - **D4** — ViewModels never see a device id for reading. `RepositoryProvider.alertRepository` is a `WatchedBandAlertRepository`, which follows the account's bands (`BandRepository`) through `BandSelection.watchedBandOf` and never captures an id, so one instance serves every account a process signs in; no band is `AlertError.NoBand`. **Since 2026-11-10** `FirebaseBandRepository` is wired instead of `FixedBandRepository`, and the Track switcher's `BandSelectionStore` choice overrides the rule. **`BandList` is the one rule** (2026-11-11): an account wears the bands it claimed under `users/{uid}/bands` (Device → Pair a band → My band, `claimBand`), else `guardband-001` alone; a connected wearer adds only the bands they claimed. **Never list an account uid as a band id**: nothing writes `devices/<account uid>`, and doing so emptied every screen on 2026-11-10. [docs/device-pairing.md](docs/device-pairing.md) §9.
 - **D5** — `schemaVersion` is parsed as a String, so both `"1.0"` and a bare `1` work.
 
-**Repository contract.** `AlertRepository` exposes `observeLatestAlert()` and `observeAlertHistory(limit)`, both `Flow<Result<T>>`. A failed read is `Result.failure(AlertError)` — never null, never an empty list — and the flow **stays open**, so a reconnect or a rules fix can make the next emission succeed. `AlertError` is mapped from `DatabaseError.getCode()` through `FirebaseDatabaseErrorMapper`, never from a message, and carries no message of its own.
+**Repository contract.** `AlertRepository` exposes `observeLatestAlert()` and `observeAlertHistory(limit)`, both `Flow<Result<T>>`. A failed read is `Result.failure(AlertError)` — never null, never an empty list — and the flow **stays open**, so a reconnect or a rules fix can make the next emission succeed. **An emission that says nothing new is dropped** (2026-11-24): `FirebaseAlertRepository.asFlow` ends in `distinctUntilChanged`, and `observeLatestCheckIn` again after its selector. RTDB fires for any write under the query and re-delivers the window on a reconnect, and every value these flows carry is a data class or an `AlertError` object, so an unchanged read never reaches a ViewModel — which is what stops the Track map re-rendering, the pins being re-chosen and the adapters re-submitting for a snapshot identical to the one on screen. A retry subscribes to a **new** flow, so it still reports its first emission, failure included. `AlertError` is mapped from `DatabaseError.getCode()` through `FirebaseDatabaseErrorMapper`, never from a message, and carries no message of its own.
 
 **Ordering is `orderByKey().limitToLast(n)`, and needs no index.** History children are keyed by `sequenceId`, and RTDB sorts integer-like keys numerically and ahead of string keys, so this returns the newest entries. `orderByChild("sequenceId")` would need an `".indexOn": "sequenceId"` rule deployed; `orderByKey` needs none. The window is re-sorted by `sequenceId` in memory anyway, so a key that is *not* integer-like (a push id, a zero-padded number) degrades the window rather than the order within it.
 
@@ -662,7 +662,9 @@ empty by default so tests never hold a `delay`. [docs/alert-data.md](docs/alert-
 
 > The map library itself - why osmdroid, the user agent, the MapTiler tile
 > source and its key, attribution, and the blocked-tile trap:
-> [docs/osmdroid.md](docs/osmdroid.md).
+> [docs/osmdroid.md](docs/osmdroid.md). Why the loading, caching and redraw
+> rules exist, and the eight things that look slow and are not:
+> [docs/map-performance.md](docs/map-performance.md).
 
 The Track tab reads `devices/{deviceId}/latest` live and puts the band's last
 known position on a map drawn from **MapTiler** raster tiles (OpenStreetMap
@@ -876,11 +878,51 @@ alert screens' 100-entry window loses a panic within minutes of a walking
 band; it is the only reader of tracking updates, which stay out of every list
 and every pin. `IncidentGrouper` ties them to the panic by `sequenceId` (after
 it, before the next panic) and 30 minutes: SCHEMA.md has no incident id.
+**The drawn line is thinned by `ui/incident/PathSimplifier`** (2026-11-24),
+Ramer-Douglas-Peucker at 5 m - below the band's own GPS error, so what goes is
+jitter along a straight run and never a real turn. Drawing only: the updates,
+their count, the end marker and the fitted box still use the whole path.
 Details: `docs/incident-view.md`.
 
 **The `MapView` is detached by hand** in `onDestroyView` (plus `onResume` /
 `onPause`). osmdroid holds a tile cache, a worker and overlay references, so
-without it the Fragment's view leaks.
+without it the Fragment's view leaks. **A tab switch does not pause the
+Fragment** (2026-11-24): the host hides tabs rather than replacing them, and
+`hide()` leaves a Fragment RESUMED, so `TrackFragment.onHiddenChanged` pauses
+and resumes the map by hand - the Device tab's pattern. Nothing is detached
+there, so coming back is instant.
+
+**The camera survives a view recreation** (2026-11-24). The centre, the zoom,
+`followBand` and `hasZoomedToFix` go through the Fragment's
+`onSaveInstanceState`, and `setUpMap` restores them instead of applying D5's
+default view, so a theme change no longer reopens on Cebu at zoom 13 and then
+jumps to the band. Still **not** in the ViewModel (the camera is view state)
+and still **not on disk**: a stored map centre would be the wearer's location
+kept somewhere new, which needs a Privacy Notice change and a
+`CONSENT_VERSION` bump first. So a restore after process death opens on the
+default view, deliberately.
+
+**Updates are incremental, by memo** (2026-11-24): `appliedLayer` for the tile
+source, `markerLocation` for the band marker (a repeated position moves
+nothing, animates nothing and invalidates nothing - the 30 s staleness tick
+used to re-animate the map twice a minute for a band standing still), and
+`appliedPins` + `pinMarkers` for the pins, which are now matched to their
+markers by `sequenceId`: one new alert touches one pin instead of rebuilding
+all ten. The folder's item order is the drawing order, so `reorderPins` keeps
+it oldest-first and an open label follows its own pin. `docs/osmdroid.md` §5.6.
+
+**osmdroid's cache budget is ours** (2026-11-24, `docs/osmdroid.md` §2.4).
+The library defaults to **600 MB** of tiles in `cacheDir`; `OsmdroidConfig`
+sets 20% of the free space there, clamped to 16-64 MB, with a 75% trim target,
+computed once per process. `cacheMapTileOvershoot` is the memory cache's
+off-screen buffer (12 tiles, **0** on a low-RAM phone, where
+`MapTilerMap.prepare` also turns on `MapTileCache.setStressedMemory`); it is
+not a pre-fetch, and `FLAG_NO_PREVENTIVE` stays. **`MapTilerTileSource`
+refuses an image that is not a plausible tile** (square, 64-1024 px) in both
+`getDrawable` forms and deletes the cached file when it can, which is the one
+case osmdroid misses: a 200 response that decodes but is not a tile. Rejecting
+the bytes before the write needs a custom `TileDownloader`, unreachable from an
+XML-inflated `MapView` - §2.5.
 
 **Coordinates are never logged.** Same rule as contact phone numbers and
 alerts — see "Alert data". Neither the Track tab nor anything in `data/` logs.

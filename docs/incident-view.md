@@ -114,6 +114,20 @@ needed, and no rules change: `history` already has its own `.read`.
   tracked position (`ic_incident_end`, a ringed dot). None has a bubble.
   No tracked position yet: only the panic's pin. A panic with no position: a
   pill says so.
+- **The drawn line is thinned** (`ui/incident/PathSimplifier`, 2026-11-24).
+  FR-09's real band sends one update a minute for half an hour — 30 points,
+  which no map minds — but the mock sender stands in at one every 5 s and the
+  read window is 400 entries, so the polyline could carry a few hundred points,
+  almost all of them a band walking straight, each re-projected to pixels on
+  every frame of a pan. Ramer–Douglas–Peucker at **5 m** keeps the first and
+  last point and every point further than that from the line its neighbours
+  draw. 5 m is below the band's own GPS error (the NEO-6M is about 2.5 m in
+  open sky, 5–10 m between buildings), so what goes is jitter along a straight
+  run, never a turn the band really made: a guardian reads the same route.
+  It is for **drawing only** — the tracking updates, their count, the newest
+  one, the end marker and the fitted box all still come from the whole path.
+  Pure, and tested
+  ([`PathSimplifierTest`](../app/src/test/java/com/example/guardband/ui/incident/PathSimplifierTest.kt)).
 - **Fit**: once, when the incident is first drawn, after the first layout:
   the whole path with a 48 dp margin, never closer than zoom 18; one point
   at zoom 16. Later updates extend the path without moving the camera.

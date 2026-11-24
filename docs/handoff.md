@@ -383,6 +383,9 @@ list; the step-by-step checklists live in each doc:
 - Alert notifications: [`notifications-test-cases.md`](notifications-test-cases.md) (47 cases).
 - Alert rows and place names: [`alert-data.md`](alert-data.md) §12.
 - Map, face marker, credits and logo links: [`osmdroid.md`](osmdroid.md) §5.4 and §8.
+- Map loading, state and incremental updates (24 Nov): [`osmdroid.md`](osmdroid.md) §8,
+  "Loading, state and incremental updates"; the reasoning is in
+  [`map-performance.md`](map-performance.md).
 - Alert pins on Track (27 Oct): [`osmdroid.md`](osmdroid.md) §8, "Alert pins".
 - Incident view, its four ways in and the panic-pin rule (27 Oct): [`incident-view.md`](incident-view.md) §5.
 - Band viewer (28 Oct): the placeholder now; drag, fling, auto-turn, scrolling, TalkBack and "remove animations" once frames exist: [`band-viewer.md`](band-viewer.md) §8.
@@ -493,6 +496,7 @@ in the app under Settings → Changelog. Headlines:
 | What is left, by person, in short | [`team-checklist.md`](team-checklist.md) |
 | **Running a demo with no hardware** | [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) |
 | The map library and its configuration | [`osmdroid.md`](osmdroid.md): **read before touching the map** |
+| Why the map is as fast as it is, and the eight things not to "fix" | [`map-performance.md`](map-performance.md) |
 | How alerts are read from RTDB | [`alert-data.md`](alert-data.md) |
 | The Incident view: grouping, its read, its ways in | [`incident-view.md`](incident-view.md) |
 | The Device tab: where each value comes from, pairing's shape | [`device-tab.md`](device-tab.md) |

@@ -132,6 +132,9 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     /** The band's one marker, created on the first fix. */
     private var marker: Marker? = null
 
+    /** Where [marker] is, so a report that repeats its position redraws nothing. */
+    private var markerLocation: Alert.Location? = null
+
     /** The alert pins, one folder at the bottom of the overlays, under the face. */
     private var pinFolder: FolderOverlay? = null
 
@@ -221,7 +224,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             }
         }
 
-        setUpMap()
+        setUpMap(savedInstanceState)
 
         view.findViewById<ImageButton>(R.id.ib_track_notifications)
             .setOnClickListener { homeViewModel.onNotificationsClicked() }
@@ -262,12 +265,57 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
     override fun onResume() {
         super.onResume()
-        mapView.onResume()
+        if (!isHidden) mapView.onResume()
     }
 
     override fun onPause() {
         mapView.onPause()
         super.onPause()
+    }
+
+    /**
+     * **A tab switch does not pause this Fragment.** The host shows and hides
+     * tabs rather than replacing them (that is what keeps their state), and
+     * `hide()` leaves the Fragment RESUMED - so without this, `onPause` was
+     * never reached on the way to Contacts or Device and the map's overlays
+     * kept running until Log Out. Paused and resumed by hand instead, the same
+     * way the Device tab drives its band viewer.
+     *
+     * The camera, the zoom, the layer and every overlay are untouched: the
+     * view is still there, so coming back is instant and shows exactly what
+     * was left behind.
+     */
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        // There is no map yet if this arrives before the view is built - a
+        // restore the host hides on its way to another tab.
+        if (view == null) return
+        if (hidden) mapView.onPause() else if (isResumed) mapView.onResume()
+    }
+
+    /**
+     * Where the camera was, so a view recreated under it (a theme change, say)
+     * opens on the same place at the same zoom - drawing the tiles already
+     * cached for that view instead of flying in from the default one. This is
+     * view state, like a scroll offset, which is why it is saved here and not
+     * in [TrackViewModel]; and it is saved in the instance state rather than
+     * on disk, because a coordinate written to the phone would be the wearer's
+     * location stored in a new place, which the Privacy Notice would have to
+     * cover first.
+     *
+     * [followBand] and [hasZoomedToFix] go with it: restoring the camera but
+     * not these would pull the map straight back to the band and undo the pan
+     * the user had made.
+     */
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (view == null) return
+        val center = mapView.mapCenter
+        outState.putDouble(STATE_CAMERA_LAT, center.latitude)
+        outState.putDouble(STATE_CAMERA_LNG, center.longitude)
+        outState.putDouble(STATE_CAMERA_ZOOM, mapView.zoomLevelDouble)
+        outState.putBoolean(STATE_FOLLOW_BAND, followBand)
+        outState.putBoolean(STATE_ZOOMED_TO_FIX, hasZoomedToFix)
     }
 
     /**
@@ -282,6 +330,7 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
         attribution.release()
         markerIcon.release()
         marker = null
+        markerLocation = null
         bandIcon = null
         pinFolder = null
         pinMarkers.clear()
@@ -295,16 +344,30 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
 
     // ── Map ───────────────────────────────────────────────────────────────────
 
-    private fun setUpMap() {
+    private fun setUpMap(savedInstanceState: Bundle?) {
         // The tile source is set even without a key, so the MapView's default
         // (OSM's public server) is never used. A theme change recreates the
         // Fragment, which applies the selected layer again (see [applyLayer]).
         // The layout supplies its own round controls.
         MapTilerMap.prepare(mapView, TAG)
 
-        // D5: somewhere sensible to look before the band has ever reported.
-        mapView.controller.setZoom(DEFAULT_ZOOM)
-        mapView.controller.setCenter(GeoPoint(DEFAULT_LAT, DEFAULT_LNG))
+        // Back where the camera was, if this view replaces one that had a
+        // camera (see onSaveInstanceState); D5's view - somewhere sensible to
+        // look before the band has ever reported - only on a first open.
+        if (savedInstanceState?.containsKey(STATE_CAMERA_LAT) == true) {
+            mapView.controller.setZoom(savedInstanceState.getDouble(STATE_CAMERA_ZOOM, DEFAULT_ZOOM))
+            mapView.controller.setCenter(
+                GeoPoint(
+                    savedInstanceState.getDouble(STATE_CAMERA_LAT),
+                    savedInstanceState.getDouble(STATE_CAMERA_LNG)
+                )
+            )
+            followBand = savedInstanceState.getBoolean(STATE_FOLLOW_BAND, true)
+            hasZoomedToFix = savedInstanceState.getBoolean(STATE_ZOOMED_TO_FIX, false)
+        } else {
+            mapView.controller.setZoom(DEFAULT_ZOOM)
+            mapView.controller.setCenter(GeoPoint(DEFAULT_LAT, DEFAULT_LNG))
+        }
 
         // The selected base map (D7), applied now and again whenever it changes
         // (see render). Streets darkens with the theme; the other layers stay.
@@ -465,6 +528,14 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
      * One marker, moved rather than re-added (D4). Its picture is set when it
      * is created and again only when [BandMarkerIcon] draws a new one; the
      * anchor is the pointer's tip, so the tip is on the band's position.
+     *
+     * **A position that has not changed costs nothing** (2026-11-24). This
+     * runs on every state emission, which includes the 30 s staleness tick and
+     * every alert that arrives, so moving the marker, animating the camera to
+     * where it already is and redrawing the map unconditionally meant the map
+     * re-animated twice a minute for a band standing still. Only a position
+     * that is new, or the first one after the camera was restored without
+     * having zoomed to a fix, touches the map.
      */
     private fun showFix(location: Alert.Location) {
         val bandMarker = marker ?: Marker(mapView).also {
@@ -477,14 +548,20 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
             marker = it
         }
 
+        val moved = location != markerLocation
+        if (!moved) return
+
+        markerLocation = location
         bandMarker.position = GeoPoint(location.lat, location.lng)
         if (followBand) centerOn(location)
         mapView.invalidate()
     }
 
     private fun removeMarker() {
+        if (marker == null && markerLocation == null) return
         marker?.let { mapView.overlays.remove(it) }
         marker = null
+        markerLocation = null
         mapView.invalidate()
     }
 
@@ -515,30 +592,66 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
     }
 
     /**
-     * Redraws the pins when the list changes, and only then: a walking band
-     * moves the face every few seconds without touching them. All of them are
-     * replaced rather than diffed - at most ten, and only when an alert
-     * arrives - so a pin that dropped out can never be left behind. The
-     * oldest is added first, so where two overlap on screen the newest is on
-     * top. The open label is closed with its pin and reopened on the new one
-     * by [renderPinLabel].
+     * Brings the pins into line with [pins] when the list changes, and only
+     * then: a walking band moves the face every few seconds without touching
+     * them.
+     *
+     * **One alert arriving changes one pin** (2026-11-24). Every pin used to
+     * be detached and rebuilt whenever anything about the list changed, so a
+     * single new alert re-created all ten markers and every one of them
+     * flickered. Now a pin is matched to its marker by `sequenceId`: a pin
+     * that is gone has its own marker removed, a pin that stayed keeps its
+     * marker (moved only if its spot moved), and a pin that is new gets one
+     * marker of its own.
+     *
+     * The marker carries its pin as its related object rather than capturing
+     * it in the tap listener, so a reused marker can never report the pin it
+     * was created with.
+     *
+     * The order of the folder's items is the drawing order, so it is kept
+     * oldest-first: where two pins overlap on screen the newest is on top, and
+     * it takes the tap. [reorderPins] only ever moves references.
+     *
+     * An open label follows its own pin: it stays open while the pin is still
+     * there and has not moved, is reopened by [renderPinLabel] when it has,
+     * and closes with the pin when it goes.
      */
     private fun renderPins(pins: List<AlertPin>) {
         if (pins == appliedPins) return
         val folder = pinFolder ?: return
 
-        pinLabelWindow?.close()
-        appliedPinLabel = null
-        pinMarkers.values.forEach {
-            folder.remove(it)
-            it.onDetach(mapView)
-        }
-        pinMarkers.clear()
+        val wanted = pins.associateBy { it.alert.sequenceId }
+        val labelled = appliedPinLabel?.pin?.alert?.sequenceId
+        var labelPinChanged = false
 
+        // Gone: each dropped pin's own marker, not the whole folder.
+        val existing = pinMarkers.iterator()
+        while (existing.hasNext()) {
+            val (sequenceId, pinMarker) = existing.next()
+            if (sequenceId in wanted) continue
+            if (sequenceId == labelled) labelPinChanged = true
+            folder.remove(pinMarker)
+            pinMarker.onDetach(mapView)
+            existing.remove()
+        }
+
+        // Still there: the same marker. New: one marker. Oldest first, so a
+        // marker added now lands on top of the ones already there.
         for (pin in pins.asReversed()) {
+            val point = GeoPoint(pin.lat, pin.lng)
+            val reused = pinMarkers[pin.alert.sequenceId]
+            if (reused != null) {
+                reused.relatedObject = pin
+                if (reused.position != point) {
+                    reused.position = point
+                    if (pin.alert.sequenceId == labelled) labelPinChanged = true
+                }
+                continue
+            }
             val icon = pinIcon(pin.type) ?: continue
             val pinMarker = Marker(mapView).apply {
-                position = GeoPoint(pin.lat, pin.lng)
+                position = point
+                relatedObject = pin
                 this.icon = ContextCompat.getDrawable(requireContext(), icon)
                 setAnchor(PIN_ANCHOR_U, PIN_ANCHOR_V)
                 // The label sits just above the pin's head, not over it.
@@ -546,16 +659,41 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
                 setInfoWindowAnchor(PIN_ANCHOR_U, 0f)
                 // osmdroid's default tap pans to the marker; a pin only opens its label.
                 setPanToView(false)
-                setOnMarkerClickListener { _, _ ->
-                    viewModel.onAlertPinTapped(pin.alert)
+                setOnMarkerClickListener { tapped, _ ->
+                    (tapped.relatedObject as? AlertPin)?.let { viewModel.onAlertPinTapped(it.alert) }
                     true
                 }
             }
             folder.add(pinMarker)
             pinMarkers[pin.alert.sequenceId] = pinMarker
         }
+
+        // An open label whose pin has moved or gone would sit where the pin
+        // used to be: dropped here, so renderPinLabel opens it afresh.
+        if (labelPinChanged) {
+            pinLabelWindow?.close()
+            appliedPinLabel = null
+        }
+
+        reorderPins(pins, folder)
         appliedPins = pins
         mapView.invalidate()
+    }
+
+    /**
+     * Puts the folder's items back in drawing order, oldest first, if adding
+     * or removing a pin has disturbed it. [FolderOverlay.getItems] is
+     * documented as the folder's own list, and only this Fragment's pin
+     * markers are ever in it, so reordering it moves references and detaches,
+     * re-creates and redraws nothing.
+     */
+    private fun reorderPins(pins: List<AlertPin>, folder: FolderOverlay) {
+        val order = pins.asReversed().mapNotNull { pinMarkers[it.alert.sequenceId] }
+        val items = folder.items
+        if (items.size != order.size) return
+        if (order.indices.none { items[it] !== order[it] }) return
+        items.clear()
+        items.addAll(order)
     }
 
     /**
@@ -787,5 +925,15 @@ class TrackFragment : Fragment(R.layout.fragment_track) {
          */
         const val PIN_ANCHOR_U = 0.5f
         const val PIN_ANCHOR_V = 30f / 32f
+
+        /**
+         * The camera, kept across a view recreation only (see
+         * [onSaveInstanceState]). Never written to disk.
+         */
+        const val STATE_CAMERA_LAT = "track_camera_lat"
+        const val STATE_CAMERA_LNG = "track_camera_lng"
+        const val STATE_CAMERA_ZOOM = "track_camera_zoom"
+        const val STATE_FOLLOW_BAND = "track_follow_band"
+        const val STATE_ZOOMED_TO_FIX = "track_zoomed_to_fix"
     }
 }

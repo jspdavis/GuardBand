@@ -13,6 +13,7 @@ import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
@@ -79,10 +80,16 @@ class FirebaseAlertRepository(
      * cancels. The SDK also serves identical queries from one subscription,
      * so the check-in pill and the alert screens together listen to the
      * window once.
+     *
+     * Deduplicated again after the selector: the window changes whenever the
+     * band sends anything, and almost none of that is a check-in, so without
+     * this the Track pill would re-render on every tracking ping to say the
+     * same thing.
      */
     override fun observeLatestCheckIn(): Flow<Result<CheckIn?>> =
         observeAlertHistory(AlertRepository.DEFAULT_HISTORY_WINDOW)
             .map { result -> result.map(CheckInSelector::latestFrom) }
+            .distinctUntilChanged()
 
     /**
      * `startAt` on the key, so it needs no index either: an integer-like key
@@ -164,6 +171,18 @@ class FirebaseAlertRepository(
      * The flow stays open on failure so a reconnect can still deliver data,
      * and [awaitClose] removes the listener when the collector cancels - which
      * is what keeps a cleared alert ViewModel from leaking a live RTDB listener.
+     *
+     * **An emission that says nothing new is dropped here** (2026-11-24).
+     * RTDB fires `onDataChange` for a write anywhere under the query, and a
+     * reconnect re-delivers the window, so the same history or the same
+     * `latest` arrives repeatedly. Every value these flows carry is a data
+     * class ([Alert], [AlertHistory], [CheckIn]) or an [AlertError] object, so
+     * `distinctUntilChanged` compares them properly, and an unchanged read
+     * never reaches a ViewModel - which is what stops the Track map
+     * re-rendering, the alert pins being re-chosen and the adapters
+     * re-submitting for a snapshot identical to the one on screen. A retry
+     * re-subscribes to a **new** flow, so it still reports its first
+     * emission, failure included.
      */
     private fun <T> Query.asFlow(
         onValue: (DataSnapshot) -> Result<T>
@@ -180,7 +199,7 @@ class FirebaseAlertRepository(
 
         addValueEventListener(listener)
         awaitClose { removeEventListener(listener) }
-    }
+    }.distinctUntilChanged()
 
     private companion object {
         const val PATH_DEVICES = "devices"
