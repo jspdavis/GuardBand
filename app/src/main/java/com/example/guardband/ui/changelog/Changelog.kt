@@ -38,10 +38,11 @@ object Changelog {
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
             date = "2026-11-24",
-            title = "Google sign-in says what actually went wrong",
+            title = "Band claiming lands, and Google sign-in says what actually went wrong",
             changes = listOf(
                 "Continue with Google no longer claims the phone has no Google account when the real cause is something else. An unregistered signing certificate and a provider that has paused prompts now read as themselves, and only the genuinely account-less case asks you to add an account.",
-                "A debug build logs which of the three it was, under tag GoogleIdTokenProvider, so a developer on a new machine can see that their debug SHA-1 is missing instead of guessing. The log carries no account, email or provider text, and a release build logs nothing."
+                "A debug build logs which of the three it was, under tag GoogleIdTokenProvider, so a developer on a new machine can see that their debug SHA-1 is missing instead of guessing. The log carries no account, email or provider text, and a release build logs nothing.",
+                "Claiming your own band and connecting to a Google account were confirmed working on a device, and this branch - the demo band fix, Privacy Notice 1.4 and the sign-in fix - merged into the main development branch."
             ),
             commit = "add3370"
         ),

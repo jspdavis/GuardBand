@@ -1,15 +1,31 @@
 # Handoff
 
-**As of 2026-11-11 · `mvvm-main` at `5f0b254` (jspdavis: connected accounts
-and incident status, 10 Nov), after `653f29f` (Jehan: alert history by date
-and Clear history, 5 Nov), plus this docs pass, all pushed · `main`
-fast-forwarded to the same commit on 2026-11-11 · 990 JVM unit tests, 0 failures · `./gradlew lint` last clean
-on 27 Oct, not re-run since · plus the Wi-Fi band prototype in `firmware/`.**
-**The 10 Nov merge left the app showing an empty band by default. Branch
-`feature/band-claim` (2026-11-11, 1011 tests, lint 0 errors) fixes that and
-adds claiming your own band; it waits on the Privacy Notice before merging
-(§3, step A).** Run `git status -sb` and
-`git log origin/mvvm-main -1` before trusting any hash here.
+**As of 2026-11-24 · `mvvm-main` carries `feature/band-claim`, fast-forwarded
+on 2026-11-24: the demo band is back and a band can be claimed by its id
+(`4717692`), Privacy Notice 1.4 (`677cdb3`), and Google sign-in now reports
+the real cause of a failure instead of blaming the device (`add3370`) ·
+1031 JVM unit tests, 0 failures · `./gradlew lint` last clean on 27 Oct, not
+re-run since · plus the Wi-Fi band prototype in `firmware/`.**
+
+> **This file needs a refinement pass.** It was written for the 11 Nov state
+> and amended in place at the merge, so §3's "Next steps" still reads as a
+> pre-merge plan and step A describes work that has now landed. The hashes and
+> the ordering are provisional - re-check them against the code before relying
+> on them.
+
+**Open at the merge, both carried over from §3 step A:**
+- **Hosting was not redeployed.** The live Privacy Notice is still 1.3 while
+  the app records consent against `"1.4"`, so the live notice does not
+  mention connected accounts or claiming a band. Run
+  `firebase deploy --only hosting` from `hosting/`.
+- **The phone checks were only partly re-run.** Google sign-in, device
+  pairing and claiming a band were confirmed working on a device on
+  2026-11-24; the remainder of [`device-pairing.md`](device-pairing.md) §9
+  was not. Whether James signed off the notice change before the merge is not
+  recorded here.
+
+Run `git status -sb` and `git log origin/mvvm-main -1` before trusting any
+hash here.
 
 This file is the entry point for anyone picking the project up cold,
 including a chat that is deciding **what to build next**. §1 says what the
@@ -132,19 +148,21 @@ The two November merges added real features but left the shared demo
 broken and opened a privacy gap. The next demo is in December, so there is
 time to do this properly, in this order. Each step names who decides.
 
-**A. Put the demo band back, and claim your own band. Built on
-`feature/band-claim` (2026-11-11), not merged.** `BandList` (pure, tested)
+**A. Put the demo band back, and claim your own band. MERGED to
+`mvvm-main` on 2026-11-24.** `BandList` (pure, tested)
 now decides the bands: the claimed band, else `guardband-001` alone; a
 friend with no claimed band adds nothing and reads "no band yet" in the
 switcher. Device → Pair a band → **My band** claims a band by its id
 (pairing step 3, stage 1: no proof yet), which is what makes the mock
 sender's "own id" sends show up. The band list no longer stalls on a failed
-read. **Privacy Notice 1.4** (2026-11-18, on the branch, `CONSENT_VERSION`
+read. **Privacy Notice 1.4** (2026-11-18, `CONSENT_VERSION`
 `"1.4"`) covers the claim and the 10 Nov connected accounts. **Before
 merging:** the phone checks in [`device-pairing.md`](device-pairing.md) §9
-(last part). **When it merges:** deploy Hosting
-(`firebase deploy --only hosting` from `hosting/`), so the live notice
-matches the app; until then the live 1.3 does not mention connected accounts.
+(last part) - **pairing and claiming were confirmed on a device on
+2026-11-24, the rest was not re-run**. **Still open after the merge:**
+deploy Hosting (`firebase deploy --only hosting` from `hosting/`), so the
+live notice matches the app; until that runs the live 1.3 does not mention
+connected accounts.
 **Stage 2** (a one-time code from the band, checked by a rule; later a QR
 code) must land before `devices/` reads close.
 
