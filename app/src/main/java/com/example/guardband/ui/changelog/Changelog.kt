@@ -37,6 +37,16 @@ object Changelog {
 
     val entries: List<ChangelogEntry> = listOf(
         ChangelogEntry(
+            date = "2026-11-28",
+            title = "The Mock Sender moves inside the app",
+            changes = listOf(
+                "On a debug build, the Mock Sender is a screen of the app: Track, the gear, Settings, then Mock Sender at the foot of the list, with a back arrow that returns to Settings.",
+                "Its separate launcher icon is gone, so the phone that plays the band signs in like any other. That means a verified email address and a recorded consent on that phone before it can send a panic, where the icon needed neither.",
+                "A release build has no trace of any of it: no row, no screen and no way in."
+            ),
+            commit = "af7567e"
+        ),
+        ChangelogEntry(
             date = "2026-11-24",
             title = "Band claiming lands, Google sign-in says what went wrong, and the map gets faster",
             changes = listOf(
