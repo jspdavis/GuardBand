@@ -21,6 +21,15 @@ internal object MapTilerMap {
      * Without a key: no data connection at all, so the `MapView`'s default
      * (OSM's public server) is never asked, and one warning. Pinch to zoom; no
      * stock zoom buttons, since each screen has its own controls or none.
+     *
+     * **The memory tile cache is told to be strict on a low-RAM phone**
+     * (2026-11-24). osmdroid's cache capacity only ever grows - it ends up at
+     * the most tiles any one view of the session needed - and garbage
+     * collection removes off-screen tiles only once the cache is over that
+     * capacity. On a phone Android itself calls low-RAM, each 256 px tile is
+     * a quarter of a megabyte it cannot spare, so every tile that leaves the
+     * screen goes with it. [OsmdroidConfig] drops that phone's off-screen
+     * buffer to match; see its KDoc.
      */
     fun prepare(mapView: MapView, logTag: String) {
         if (!MapTilerTileSource.hasApiKey) {
@@ -29,6 +38,8 @@ internal object MapTilerMap {
         }
         mapView.setMultiTouchControls(true)
         mapView.zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
+        mapView.tileProvider.tileCache
+            .setStressedMemory(OsmdroidConfig.isLowRamDevice(mapView.context))
     }
 
     /**

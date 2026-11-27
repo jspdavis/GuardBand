@@ -1,5 +1,7 @@
 package com.example.guardband.ui.track
 
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.URLSpan
@@ -7,6 +9,8 @@ import com.example.guardband.BuildConfig
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.tileprovider.tilesource.TileSourcePolicy
 import org.osmdroid.util.MapTileIndex
+import java.io.File
+import java.io.InputStream
 
 /**
  * The Track tab's tile source: MapTiler Cloud's raster tiles at 256 px, one
@@ -77,6 +81,52 @@ internal class MapTilerTileSource private constructor(
             "?key=" + apiKey
     }
 
+    /**
+     * The cached file, refused unless it looks like a tile - and deleted when
+     * it does not, so it is asked for again rather than drawn forever. See
+     * [isPlausibleTile].
+     */
+    override fun getDrawable(aFilePath: String): Drawable? {
+        val drawable = super.getDrawable(aFilePath) ?: return null
+        if (isPlausibleTile(drawable)) return drawable
+        runCatching { File(aFilePath).delete() }
+        return null
+    }
+
+    /**
+     * A downloaded or cached tile's bytes, refused unless they look like a
+     * tile. Nothing can be deleted here - the stream says nothing about where
+     * it came from - so a bad row in osmdroid's `cache.db` is refused on every
+     * read until it expires and the trim removes it. It is never drawn.
+     */
+    override fun getDrawable(aFileInputStream: InputStream): Drawable? {
+        val drawable = super.getDrawable(aFileInputStream) ?: return null
+        return drawable.takeIf { isPlausibleTile(it) }
+    }
+
+    /**
+     * Whether a decoded image can honestly be a map tile: square, and of a
+     * size a tile server serves.
+     *
+     * osmdroid already drops a response that is not 200 without caching it,
+     * and deletes a cached file that will not decode at all. What is left is
+     * the response that **does** decode and is not a tile: an error graphic or
+     * a placeholder served with 200, which osmdroid would cache and draw like
+     * any other tile - the shape of the "access blocked" image OpenStreetMap
+     * used to return, and the reason [OsmdroidConfig.USER_AGENT] exists. The
+     * pixel dimensions come from the bitmap, not the drawable's intrinsic
+     * size, so no display-density scaling can confuse the comparison.
+     *
+     * Deliberately a loose range rather than `== TILE_SIZE`: every style here
+     * is pinned to a `/256/` endpoint, but a tile source that one day serves
+     * 512 px retina tiles must not blank the map, and nothing a tile server
+     * sends is 1 px or 4096 px.
+     */
+    private fun isPlausibleTile(drawable: Drawable): Boolean {
+        val bitmap = (drawable as? BitmapDrawable)?.bitmap ?: return true
+        return bitmap.width == bitmap.height && bitmap.width in MIN_TILE_PX..MAX_TILE_PX
+    }
+
     companion object {
 
         // Declared ahead of the properties that use them, as in an object
@@ -91,6 +141,13 @@ internal class MapTilerTileSource private constructor(
         private const val DARK_BASE_URL = "https://api.maptiler.com/maps/streets-v2-dark/256/"
         private const val FILE_EXTENSION = ".png"
         private const val TILE_SIZE = 256
+
+        /**
+         * The range of square sizes a real raster tile can have, used by
+         * `isPlausibleTile`. Wide on purpose: see its KDoc.
+         */
+        private const val MIN_TILE_PX = 64
+        private const val MAX_TILE_PX = 1024
 
         /** MapTiler's documented range for its standard maps' raster tiles. */
         private const val MIN_ZOOM = 0

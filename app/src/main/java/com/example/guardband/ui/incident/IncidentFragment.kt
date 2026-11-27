@@ -225,6 +225,12 @@ class IncidentFragment : Fragment(R.layout.fragment_incident) {
      * Draws [incident] when it changed: the panic's pin, the path from it
      * through every tracked position, and the end marker at the newest. With
      * no tracked position there is no path and no end marker, only the pin.
+     *
+     * **The drawn line is thinned by [PathSimplifier]** (2026-11-24), which
+     * drops the points that only repeat a straight run - most of an incident
+     * when the band reports every few seconds - so panning re-projects tens of
+     * points rather than hundreds. The shape, the end marker and the fitted
+     * box all still come from the incident's own, complete, path.
      */
     private fun drawIncident(incident: Incident) {
         if (incident == drawnIncident) return
@@ -236,7 +242,10 @@ class IncidentFragment : Fragment(R.layout.fragment_incident) {
         }
 
         val tracked = incident.trackedLocations.map { it.toGeoPoint() }
-        path?.setPoints(if (tracked.isEmpty()) emptyList() else incident.path.map { it.toGeoPoint() })
+        path?.setPoints(
+            if (tracked.isEmpty()) emptyList()
+            else PathSimplifier.simplify(incident.path).map { it.toGeoPoint() }
+        )
         endMarker?.apply {
             tracked.lastOrNull()?.let { position = it }
             isEnabled = tracked.isNotEmpty()

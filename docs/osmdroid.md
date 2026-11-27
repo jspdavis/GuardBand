@@ -13,7 +13,7 @@ involved.
 | **Status** | MapTiler swap merged into `mvvm-main` (`1ca8177`), 588 tests passing. **MapTiler tiles not yet confirmed on a device**, which needs a real key — see §8. The MapTiler logo is on the map since 2026-10-19 (§4.6). |
 | **Owns it** | [`ui/track/OsmdroidConfig.kt`](../app/src/main/java/com/example/guardband/ui/track/OsmdroidConfig.kt), [`ui/track/MapTilerTileSource.kt`](../app/src/main/java/com/example/guardband/ui/track/MapTilerTileSource.kt) |
 | **Uses it** | [`ui/track/TrackFragment.kt`](../app/src/main/java/com/example/guardband/ui/track/TrackFragment.kt) only |
-| **Related** | [`../CLAUDE.md`](../CLAUDE.md) ("Track and map"), [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) (troubleshooting) |
+| **Related** | [`../CLAUDE.md`](../CLAUDE.md) ("Track and map"), [`map-performance.md`](map-performance.md) (why the loading, caching and redraw rules below exist, and what was already correct), [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) (troubleshooting) |
 
 This file is about the **library**. What the Track tab *shows* — band status,
 the "Reporting" badge, the staleness ticker, retained positions — is a
@@ -101,6 +101,72 @@ The `MapView` is constructed during `onCreateView`, when
 Configuration applied after that point is too late for the first batch of tile
 requests. `TrackFragment` therefore calls `OsmdroidConfig.apply` in
 **`onCreate`**, and the layout carries a comment saying so.
+
+
+### 2.4 The cache budget (2026-11-24)
+
+osmdroid's defaults are **600 MB** of tiles with a 500 MB trim target
+(`DefaultConfigurationProvider.tileFileSystemCacheMaxBytes`). That is a lot of
+a small phone's storage to hand to a map that only ever shows one city, and it
+all lands in `cacheDir`. `OsmdroidConfig.apply` replaces it with a share of
+what is actually free:
+
+```kotlin
+val maxBytes = diskCacheBudget(context)      // 20% of cacheDir's usableSpace,
+configuration.tileFileSystemCacheMaxBytes  = maxBytes   // clamped to 16–64 MB
+configuration.tileFileSystemCacheTrimBytes = maxBytes * 75 / 100
+```
+
+- **A share, not a number**, so a nearly full phone keeps a usable map and a
+  roomy one still never fills up. A filesystem that cannot answer reports 0,
+  which lands on the floor — the same place a full phone lands, and the floor
+  is the right answer for both.
+- **Computed once per process.** `usableSpace` is a filesystem call and both
+  Track and the Incident view call `apply`. The `budgetApplied` flag guards
+  only the budget; the user agent and the paths are re-set every call, which
+  is what keeps §2.1 and §2.2 unconditional.
+- **The writer is `SqlTileWriter`** (`cache.db` under the tile cache path),
+  which reads both of these on every save and trims the oldest rows down to
+  the trim figure.
+
+`cacheMapTileOvershoot` is set in the same place, and it is the **memory**
+cache's buffer, not a pre-fetch: it is how many tiles that have just left the
+screen survive `MapTileCache.garbageCollection`, so panning back costs
+nothing. `FLAG_NO_PREVENTIVE` is still on (§4.0), so no tile is ever requested
+for an area the user is not looking at. It is 12 tiles (about 3 MB at 256 px),
+and **0 on a phone Android calls low-RAM** — where
+`MapTilerMap.prepare` also turns on `MapTileCache.setStressedMemory(true)`, so
+every tile that leaves the screen goes with it. osmdroid's cache capacity only
+ever grows (`ensureCapacity` never shrinks it), so without that a session of
+zooming leaves the peak screenful resident for good.
+
+### 2.5 Tiles that decode but are not tiles (2026-11-24)
+
+`MapTilerTileSource` overrides both `getDrawable` forms and refuses an image
+that is not square, or is smaller than 64 px or larger than 1024 px.
+
+The gap it closes is narrow but real. osmdroid already:
+
+- never caches a response that is not HTTP 200 (`TileDownloader` returns null
+  before the `saveFile`), and
+- deletes a **cached file** that will not decode at all
+  (`BitmapTileSourceBase.getDrawable(String)`).
+
+What is left is the response that *does* decode and is not a tile — an error
+graphic or a placeholder served with 200, which osmdroid caches and draws like
+any other tile. That is the shape of the OSM "access blocked" image in §3. The
+check reads the **bitmap's** dimensions, not the drawable's intrinsic size, so
+no display-density scaling can confuse it, and the range is loose on purpose:
+every style here is pinned to a `/256/` endpoint, but a source that one day
+serves 512 px retina tiles must not blank the map.
+
+**What it cannot do.** Rejecting the bytes *before* they are written would
+mean a custom `TileDownloader`, which has to be installed on the
+`MapTileDownloader` inside the tile provider — and a `MapView` inflated from
+XML builds its own `MapTileProviderBasic`, with no setter for either. So a bad
+blob can still reach `cache.db`; it is refused on every read, never drawn, and
+goes when it expires and the trim removes it. Changing that means building the
+`MapView` in code, which the layouts (Jul's) do not do today.
 
 ---
 
@@ -463,6 +529,44 @@ override fun onDestroyView() { mapView.onDetach(); marker = null; super.onDestro
 
 `marker = null` matters too: a `Marker` holds the `MapView` that created it.
 
+**A tab switch does not pause the Fragment** (2026-11-24). The Home host shows
+and hides tabs rather than replacing them — that is what keeps each tab's
+state — and `FragmentTransaction.hide()` leaves the Fragment **RESUMED**. So
+`onPause` was never reached on the way to Contacts or Device, and the map's
+overlays kept running until Log Out. `TrackFragment` therefore pauses by hand,
+the same way the Device tab drives its band viewer:
+
+```kotlin
+override fun onResume()  { super.onResume(); if (!isHidden) mapView.onResume() }
+override fun onHiddenChanged(hidden: Boolean) {
+    super.onHiddenChanged(hidden)
+    if (view == null) return                 // hidden before the view exists
+    if (hidden) mapView.onPause() else if (isResumed) mapView.onResume()
+}
+```
+
+Note what this does **not** do: nothing is detached, so the camera, the zoom,
+the layer and every overlay are still there and coming back is instant. And
+note what it is worth — `MapView.onPause()` in 6.1.20 only forwards to the
+overlay manager; it does not stop the tile downloader. Tile requests stop
+anyway, because a hidden Fragment's view is GONE and `TilesOverlay` only asks
+for tiles from a draw pass.
+
+**The camera survives a view recreation** (2026-11-24). A theme change
+recreates the Activity and so the Fragment, and the map used to reopen at the
+default Cebu view at zoom 13 and then jump to the band at zoom 16. The camera
+(centre, zoom), `followBand` and `hasZoomedToFix` now go through
+`Fragment.onSaveInstanceState`, and `setUpMap` restores them instead of
+applying D5's default view. Two deliberate choices there:
+
+- **Not in `TrackViewModel`.** Where the camera points is view state, like a
+  scroll offset — the rule in `CLAUDE.md` that put recentring in the Fragment.
+- **Not on disk.** A map centre written to SharedPreferences would be the
+  wearer's approximate location stored somewhere new, which the Privacy Notice
+  would have to cover first (and `CONSENT_VERSION` bumped with it). Instance
+  state is Android's own transient bundle, so a restore after **process
+  death** still opens on the default view. That is the known limit.
+
 ### 5.3 Coordinates are never logged
 
 An alert carries the wearer's position. Nothing in `data/` logs at all, and
@@ -584,6 +688,39 @@ no coordinates. Pins are the alerts the app already reads and shows in the
 sheet, at the positions the app already sends to the geocoder, so the Privacy
 Notice is unchanged.
 
+### 5.6 Updates are incremental (2026-11-24)
+
+The map is redrawn by what changed, not by what arrived. Three places decide
+that, and all three have a memo of what is on screen:
+
+| Memo | Guard | Was |
+|---|---|---|
+| `appliedLayer` | the tile source is swapped only when the layer changes | already there (2026-10-27) |
+| `markerLocation` | the band marker moves, the camera animates and the map is invalidated only for a **new** position | the marker was moved, the camera re-animated and the map invalidated on every emission — twice a minute for a band standing still, because the 30 s staleness tick produces a new state |
+| `appliedPins` + `pinMarkers` | a pin is matched to its marker by `sequenceId`: gone pins lose their own marker, surviving pins keep theirs (moved only if the spot moved), new pins get one marker | every pin was detached and rebuilt whenever anything in the list changed, so one new alert re-created all ten and every one of them flickered |
+
+Three details in the pin diff are load-bearing:
+
+- **The marker carries its pin as its `relatedObject`,** not captured in the
+  tap listener, so a reused marker can never report the pin it was built with.
+- **The folder's item order is the drawing order,** so `reorderPins` puts it
+  back to oldest-first after an add or a remove: where two pins overlap on
+  screen the newest is on top and takes the tap. `FolderOverlay.getItems()` is
+  documented as the folder's own list and holds nothing but these markers, so
+  reordering it moves references — it detaches, re-creates and redraws nothing.
+- **An open label follows its own pin.** It stays open while its pin is there
+  and has not moved (so it no longer blinks when an unrelated alert arrives),
+  is reopened by `renderPinLabel` when the pin moved, and closes with the pin
+  when it goes. osmdroid's `InfoWindow` does not follow a marker that moves
+  under it, which is why "moved" counts as a change.
+
+The emissions themselves are deduplicated one layer down, in
+`FirebaseAlertRepository.asFlow`: RTDB fires for any write under the query and
+re-delivers the window on a reconnect, and every value these flows carry is a
+data class or an `AlertError` object, so `distinctUntilChanged` drops a read
+that says nothing new before it reaches a ViewModel. A retry subscribes to a
+**new** flow, so it still reports its first emission, failure included.
+
 ---
 
 ## 6. Troubleshooting
@@ -645,8 +782,14 @@ Tracked in [`handoff.md`](handoff.md).
 `OsmdroidConfig`, `MapTilerTileSource`, the `MapView` lifecycle, the marker's
 placement, the alert pins' overlays and label window, and the follow logic all
 need a real `Context`, a running map, or an instrumented test — and the
-project declares no mocking library. The testable logic was lifted out
-instead: `BandStatus`, `AlertPinSelector` (which alerts get a pin),
+project declares no mocking library. **Everything in §2.4, §2.5, §5.2 and
+§5.6 is in that set**: the cache budget needs a filesystem, the tile check a
+`BitmapFactory`, the pause-on-hide a FragmentManager, and each memo lives in
+the Fragment beside the `MapView` it guards. `PathSimplifier` is the one piece
+of this pass that came out as a pure helper, and it is tested
+([`PathSimplifierTest`](../app/src/test/java/com/example/guardband/ui/incident/PathSimplifierTest.kt),
+10 tests). The rest of the testable logic was lifted out earlier:
+`BandStatus`, `AlertPinSelector` (which alerts get a pin),
 `TrackViewModel` (including the pins and their label), `BandMarkerFace` (photo or initials, and the initials
 themselves) and `BandMarkerIcon` under Robolectric (drawn once per face, and
 the anchor; the photo path needs a device), all covered under
@@ -693,6 +836,35 @@ above once someone has looked at the map.
       change. Pins are readable on Satellite and on the dark map.
 - [ ] Go to Alert history and back, and switch tabs: no doubled pins.
 - [ ] Log out and back in: the pins come back with the alerts.
+
+**Loading, state and incremental updates (§2.4, §2.5, §5.2, §5.6), once:**
+
+- [ ] Open Track, let the tiles land, then pan and zoom somewhere. Switch to
+      Contacts and back: the map is **already there**, at the same place and
+      zoom, with no grey tiles, no reload and no flash.
+- [ ] Still panned away, go to Settings → Display and switch Light/Dark. Back
+      on Track the map is on the **same place and zoom** (its new tiles load
+      over it), not the default Cebu view, and it does not jump to the band.
+- [ ] Tap the round target button, then switch tabs twice. Still following:
+      the band's next position re-centres the map.
+- [ ] With the Mock Sender walking, watch the pins for a minute. The face
+      moves smoothly; the pins do not blink, vanish or re-appear. Open a
+      check-in pin's label and leave it open while the band walks: the label
+      stays put, and its time moves on.
+- [ ] Open an Incident view on a panic whose tracking has been running a
+      while. The path has the same shape as before (compare against a
+      screenshot if you have one) and the end marker is on the newest point.
+- [ ] Turn off mobile data and Wi-Fi, then open Track. The tiles you had
+      already looked at are still drawn, the map still pans and zooms over
+      them, and nothing freezes or crashes. Turn the connection back on: new
+      tiles fill in.
+- [ ] Leave the app on Track for a few minutes with the band quiet. The map
+      does not re-animate or flicker on its own (the check-in pill and the
+      alert times still age).
+- [ ] After a long session of panning around, check the cache size:
+      `adb shell du -sh /data/data/com.example.guardband/cache/osmdroid`. It
+      settles under the budget (16–64 MB by free space), not osmdroid's
+      600 MB.
 
 ---
 
