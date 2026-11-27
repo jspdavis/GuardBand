@@ -8,7 +8,7 @@ proposal. Each open point says who decides it.
 
 | | |
 |---|---|
-| **State** | 2026-11-02: step 1 (app groundwork) and step 2 (band identity) built (§8). Its rules were published on 2026-11-04 (Jul); it still waits on Anonymous sign-in being turned on in the Console. **2026-11-10 (jspdavis, `5f0b254`): account-to-account watchers by invite code, a Track switcher, and `FirebaseBandRepository` in place of the fixed one (§9).** From then until 2026-11-11 an account read `devices/<its own uid>` by default, so the app showed an empty band. **2026-11-11 (`feature/band-claim`): the demo band is back by default, and "My band" claims your own band by its id (stage 1 of step 3, §9).** No Privacy Notice change yet; the branch waits on it. |
+| **State** | 2026-11-02: step 1 (app groundwork) and step 2 (band identity) built (§8). Its rules were published on 2026-11-04 (Jul); it still waits on Anonymous sign-in being turned on in the Console. **2026-11-10 (jspdavis, `5f0b254`): account-to-account watchers by invite code, a Track switcher, and `FirebaseBandRepository` in place of the fixed one (§9).** From then until 2026-11-11 an account read `devices/<its own uid>` by default, so the app showed an empty band. **2026-11-11 (`feature/band-claim`): the demo band is back by default, and "My band" claims your own band by its id (stage 1 of step 3, §9).** No Privacy Notice change yet; the branch waits on it. **2026-11-27: the switcher pill's Safe / Panic Alert / Offline wording is decided away - the dot alone carries the status (§10). Not built yet.** |
 | **Code** | App: `data/model/PairedBand.kt`, `ConnectedWearer.kt`, `data/repository/BandRepository.kt` (`FirebaseBandRepository`; `FixedBandRepository` kept, unwired), `BandSelection.kt`, `BandSelectionStore.kt`, `WatchedBandAlertRepository.kt`, `WearerConnectionRepository.kt` (+ `Firebase…`), `RepositoryProvider`, `ui/device/InviteCode*`, the switcher in `ui/track/`. Mock sender: `BandIdentity.kt`, `AlertSender.kt`. Firmware: `guardband_band.ino`, `gts_roots.h`. Rules: `RTDBS-RULES.md`'s `devices/` writes and its three watcher nodes |
 | **Tests** | `BandSelectionTest`, `WatchedBandAlertRepositoryTest`, `DeviceViewModelTest` (pairing cases), `InviteCodeViewModelTest`, `BandAuthRepliesTest` (testDebug); the rules: 18 emulator cases (§6), none yet for the watcher nodes. `FirebaseBandRepository`, `FirebaseWearerConnectionRepository` and the switcher's selection logic in `TrackViewModel` have no tests |
 | **Related** | [database-rules.md](database-rules.md) §4 (the `devices/` options), [team-checklist.md](team-checklist.md) (SMS), [device-tab.md](device-tab.md) §5, [`../SCHEMA.md`](../SCHEMA.md), [`../README.md`](../README.md#band-firmware-prototype) (the prototype firmware) |
@@ -447,8 +447,53 @@ The name comes from `currentWearerName`: "My Band" for the account's own band
 - **Panic Alert outlives a Resolved panic**, so the pill and the chip can
   disagree on the same screen.
 
-**Proposed:** keep **Panic Alert** but clear it once the panic's status is
-Resolved; **Reporting** instead of Safe; **Last seen 2 h ago** instead of
-Offline, and **No data yet** for a band that has never reported. All three
-reuse rules that already exist (`BandReport`, the status listener), so it is
-a wording and binding change, not new logic.
+### Decided: the dot carries the status, the words come off (2026-11-27)
+
+The three words leave the pill. The dot stays and becomes the whole status:
+**green** reporting, **grey** not reporting, **red** panic. The pill reads
+`● My Band ▾` instead of `● Safe │ My Band ▾`, and the thin divider goes with
+the text it was separating. This supersedes the proposal above: there is no
+wording left to reword, so **Reporting** and **Last seen 2 h ago** are dropped
+with it.
+
+**Why.** The pill is `wrap_content` between the gear and the bell
+(`layout_constraintStart_toEndOf="@id/ib_track_settings"`,
+`End_toStartOf="@id/ib_track_notifications"`), so "Panic Alert" plus a wearer's
+name is the widest thing Track's top bar is ever asked to hold — and the name
+is already capped at `maxWidth="130dp"` and ellipsized to make it fit.
+Dropping the word buys that room back on every screen size. It also settles
+this section's problem by removing it: a colour makes no claim, so there is no
+claim to be wrong. "Safe" cannot overstate what a timestamp knows if it is not
+written down.
+
+**What it costs.** Track stops saying *how long* the band has been quiet, which
+was the one real argument for "Last seen 2 h ago". That is not lost from the
+app: the **Device tab** states it in words (`BandReport.elapsed`, the same
+value), and Track's **Check-in pill** still ages in words right below the map.
+The pill was never the place a guardian read a duration; it is a picker with a
+light on it.
+
+**What it does not change.** `TrackUiState.currentWearerStatus` and the three
+rules in the table above stay exactly as they are, Panic Alert outliving a
+Resolved panic included. That one is still open, and still belongs on the
+status listener rather than here.
+
+**The strings stay.** `status_wearer_safe`, `status_wearer_panic` and
+`status_wearer_offline` are not deleted. With the text gone, colour is the only
+thing on screen, and colour alone is not a status anyone can read: they become
+the dot's `contentDescription`, set in `TrackFragment.renderWearerSwitcher`
+beside the tint, so TalkBack still announces "Safe, My Band" for the pill (the
+card is the focusable control, so its children's labels are read together).
+`view_wearer_status_dot` is a bare `View` with no description today and needs
+one.
+
+**Red and green are the colour-blind pair**, with grey as the third. Deuteranopia
+leaves `alert_panic` and `alert_checkin` looking much alike, so a panic must not
+rest on an 8 dp circle's hue: tint the card's `strokeColor` to `alert_panic`
+too, so the whole pill changes and not just the dot. Whether it pulses instead
+is `DESIGN: Jul`.
+
+**Scope when it is built:** three strings kept and re-pointed, `tv_wearer_status`
+and its divider out of `fragment_track.xml`, `renderWearerSwitcher` setting a
+tint and a description instead of a tint and a text, and CLAUDE.md's
+"Safe/Panic/Offline" line reworded. No data, no rules, no Privacy Notice.
