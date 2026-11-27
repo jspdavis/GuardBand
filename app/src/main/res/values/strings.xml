@@ -316,6 +316,11 @@
     <string name="label_settings_privacy_notice">Privacy Notice</string>
     <string name="label_settings_display">Display</string>
     <string name="label_settings_about">About</string>
+
+    <!-- Debug builds only: the row that opens the Mock Sender harness, and
+         since 2026-11-27 the only way into it - the harness had its own
+         launcher icon and lost it. Hidden in release (utils/MockSenderLink). -->
+    <string name="label_settings_mock_sender">Mock Sender</string>
     <string name="btn_logout">Log Out</string>
 
     <!-- Display (opened from Settings) -->

@@ -19,6 +19,7 @@ import com.example.guardband.ui.auth.LoginNavigation
 import com.example.guardband.ui.changelog.ChangelogActivity
 import com.example.guardband.ui.display.DisplayActivity
 import com.example.guardband.ui.notifications.AlertNotificationsActivity
+import com.example.guardband.utils.MockSenderLink
 import kotlinx.coroutines.launch
 
 /**
@@ -38,10 +39,18 @@ import kotlinx.coroutines.launch
  * theme. The Device information row was removed on 2026-10-28; the Device
  * tab is reached from the bar.
  *
+ * **The last row is the Mock Sender, on debug builds only.** It is hidden
+ * unless [MockSenderLink.isAvailable], and it opens the harness through an
+ * implicit intent rather than its class, because `main` cannot name one in
+ * `app/src/debug`. Since 2026-11-27 it is the **only** way in: the harness
+ * had its own launcher icon, and lost it, so playing the band now needs an
+ * account past both gates. See `docs/mock-sender-and-receiver.md` §1.
+ *
  * View ids: ib_settings_back, tv_settings_title, row_settings_account,
  * row_settings_alert_notifications,
  * row_settings_display, row_settings_changelog,
- * row_settings_about, btn_settings_logout.
+ * row_settings_about, ll_settings_debug, row_settings_mock_sender,
+ * btn_settings_logout.
  */
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
@@ -69,6 +78,16 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         view.findViewById<LinearLayout>(R.id.row_settings_changelog)
             .setOnClickListener { viewModel.onChangelogClicked() }
+
+        // The debug section, its divider and its row together, so a release
+        // build shows no stray divider under About. Whether this build has
+        // the harness at all is a build fact, not screen state, which is why
+        // it is read here rather than held in a UiState.
+        view.findViewById<LinearLayout>(R.id.ll_settings_debug).visibility =
+            if (MockSenderLink.isAvailable) View.VISIBLE else View.GONE
+
+        view.findViewById<LinearLayout>(R.id.row_settings_mock_sender)
+            .setOnClickListener { viewModel.onMockSenderClicked() }
 
         view.findViewById<Button>(R.id.btn_settings_logout)
             .setOnClickListener { viewModel.onLogoutClicked() }
@@ -100,6 +119,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
             SettingsEvent.OpenAbout ->
                 startActivity(Intent(requireContext(), AboutActivity::class.java))
+
+            // Debug builds only; the row that sends this is gone otherwise.
+            SettingsEvent.OpenMockSender ->
+                startActivity(MockSenderLink.intent(requireContext().packageName))
         }
     }
 }

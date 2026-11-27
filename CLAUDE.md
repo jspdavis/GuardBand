@@ -107,7 +107,7 @@ com/example/guardband/
 │   │                 (Connect: share or redeem an invite code, or claim My band; see "Device tab")
 │   ├── bandviewer/     BandViewer (the interface the Device tab knows) + TurntableBandView: the band
 │   │                 on a turntable of frames from assets/band_turntable/; TurntableMotion (pure maths)
-│   ├── settings/       pushed from Track's gear; holds Log Out and the Account information row.
+│   ├── settings/       pushed from Track's gear; holds Log Out, the Account information row and, on debug builds only, the Mock Sender row (utils/MockSenderLink).
 │   │                 A chevron means another screen of the app (no Device information row since 2026-10-28)
 │   ├── display/        DisplayActivity, opened from Settings: the theme (ThemeChoice, DisplayPrefs)
 │   ├── about/          AboutActivity, opened from Settings: version and the Privacy Notice row
@@ -125,7 +125,8 @@ com/example/guardband/
 └── utils/
     ├── InputValidator.kt       shared input predicates (no messages)
     ├── PasswordCriteria.kt     which password rules the typed pair satisfies
-    └── HostedPages.kt          URLs of the pages served from the Hosting domain
+    ├── HostedPages.kt          URLs of the pages served from the Hosting domain
+    └── MockSenderLink.kt       the debug-only Mock Sender's action + whether to offer its Settings row
 ```
 
 **Auth, the user profile, contacts and alerts are all on Firebase** (see "Firebase", "Contacts and profile data" and "Alert data" below). Nothing in the app reads `InMemoryStore` any more; it is the unit tests' backing store.
@@ -1067,9 +1068,13 @@ pairing and roles.
 
 ## Mock sender
 
-> Operating manual for both launchers, end to end: [docs/mock-sender-and-receiver.md](docs/mock-sender-and-receiver.md).
+> Operating manual for both ends, start to finish: [docs/mock-sender-and-receiver.md](docs/mock-sender-and-receiver.md).
 
-For demos without hardware, Phone A runs `MockSenderActivity` and Phone B runs the receiver screens. Both icons belong to **one install** — same `applicationId` — so a single phone can play both ends. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives in the **debug source set** (`app/src/debug/java/.../ui/mocksender/`, plus `app/src/debug/AndroidManifest.xml`, which gives it its own "GuardBand Mock Sender" launcher icon), so release builds contain neither the code nor the icon. OkHttp is `debugImplementation` for the same reason (release still gets it through Coil, but nothing in `main` calls it).
+For demos without hardware, Phone A runs `MockSenderActivity` and Phone B runs the receiver screens. Both belong to **one install** — same `applicationId` — so a single phone can play both ends. `MockSenderActivity` is intentionally *not* MVVM because it is a throwaway harness, so don't refactor it into the architecture. It lives in the **debug source set** (`app/src/debug/java/.../ui/mocksender/`, plus `app/src/debug/AndroidManifest.xml`), so release builds contain neither the code nor any way to reach it. OkHttp is `debugImplementation` for the same reason (release still gets it through Coil, but nothing in `main` calls it).
+
+**Settings' Mock Sender row is the one way in (2026-11-27).** The row sits at the foot of Settings and is `GONE` unless `BuildConfig.DEBUG`. `main` cannot name `MockSenderActivity` (a release build would not compile), so it sends an **implicit intent** on `com.example.guardband.action.MOCK_SENDER`, declared in the debug manifest. **`utils/MockSenderLink` is the one place that action is spelled out**, and the one thing that decides whether the row is offered; it takes a package name rather than a `Context` so it stays unit-testable, like `HostedPages.url`. Don't add a second entry point without putting it through `MockSenderLink`. The harness has a back arrow (`ibBack`) that goes through `onBackPressedDispatcher`, so it returns to Settings.
+
+**The harness had its own launcher icon until then, and losing it has a cost worth remembering.** It signs in as its own band over REST and never touches the app's `FirebaseAuth` session, so that icon let a demo phone play the band with **no account**; now the sender is behind login, the verification gate and the consent gate like anything else under Settings, and `exported="false"` means `adb shell am start` cannot reach it either. Putting the `MAIN`/`LAUNCHER` filter back and setting `exported="true"` restores the old route in one edit — the reasoning and the demo-day consequence are in [docs/mock-sender-and-receiver.md](docs/mock-sender-and-receiver.md) §1 and §2.
 
 **`AlertSender` writes straight to the RTDB REST API,** as the band will: one `PUT` to `/devices/{id}/history/{sequenceId}.json`, then one to `/devices/{id}/latest.json`. There is no Cloud Function in the path — the Spark plan cannot host one, and the `devices` Security Rules already do the validation `ingestAlert` was going to do. (`SCHEMA.md`'s "Receiver validation requirements" still describes that Function; the payload shape it specifies is unchanged.)
 
@@ -1137,8 +1142,9 @@ Asset → Launcher Icons, name `ic_launcher`):
 
 Image Asset rewrites `mipmap-anydpi-v26/ic_launcher.xml` and
 `ic_launcher_round.xml`, so check afterwards that neither gained a
-`<monochrome>` line, and put back their header comment. The mock sender has no
-icon of its own; it shows the same one under a different label.
+`<monochrome>` line, and put back their header comment. There is only one
+launcher icon to change: the mock sender lost its own on 2026-11-27 and is
+reached from Settings.
 
 ## Changelog
 

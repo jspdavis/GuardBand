@@ -17,6 +17,7 @@ import android.os.SystemClock
 import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
@@ -83,7 +84,7 @@ import kotlinx.coroutines.launch
  * band's own id instead (the app does not read it until pairing). "New band
  * id" forgets the identity, like the firmware's RESETID.
  *
- * View IDs: btnBand, tvTracking, tvBattery, sbBattery, tvBandId, swOwnBandId,
+ * View IDs: ibBack, btnBand, tvTracking, tvBattery, sbBattery, tvBandId, swOwnBandId,
  * btnCopyBandId, btnNewBandId, tvStatus, tvGpsStatus.
  */
 class MockSenderActivity : AppCompatActivity() {
@@ -242,6 +243,13 @@ class MockSenderActivity : AppCompatActivity() {
         btnCopyBandId = findViewById(R.id.btnCopyBandId)
         tvStatus = findViewById(R.id.tvStatus)
         tvGpsStatus = findViewById(R.id.tvGpsStatus)
+
+        // Back to Settings, whose Mock Sender row is the only way in since
+        // the launcher icon went. Through the dispatcher rather than
+        // finish(), so the arrow and the system Back do the same thing.
+        findViewById<ImageButton>(R.id.ibBack).setOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
     }
 
     /**

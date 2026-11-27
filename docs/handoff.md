@@ -1,28 +1,39 @@
 # Handoff
 
-**As of 2026-11-24 · `mvvm-main` carries `feature/band-claim`, fast-forwarded
-on 2026-11-24: the demo band is back and a band can be claimed by its id
+**As of 2026-11-27 · `mvvm-main` is at `0136eb6`: the map performance pass
+merged on 2026-11-27 (`7db4a98`, `--no-ff`), over the band-claim merge
+of 2026-11-24 - the demo band is back and a band can be claimed by its id
 (`4717692`), Privacy Notice 1.4 (`677cdb3`), and Google sign-in now reports
 the real cause of a failure instead of blaming the device (`add3370`) ·
-1031 JVM unit tests, 0 failures · `./gradlew lint` last clean on 27 Oct, not
-re-run since · plus the Wi-Fi band prototype in `firmware/`.**
+1041 JVM unit tests, 0 failures, run on the merged tree on 2026-11-27 ·
+`./gradlew lint` no errors on 2026-11-24 (one fewer warning than before) ·
+plus the Wi-Fi band prototype in `firmware/`. `main` is 13 commits behind;
+it is James's to move. `git branch --no-merged mvvm-main -a` lists only
+`origin/mvp-checkpoint-local-backup`.**
 
-> **This file needs a refinement pass.** It was written for the 11 Nov state
-> and amended in place at the merge, so §3's "Next steps" still reads as a
-> pre-merge plan and step A describes work that has now landed. The hashes and
-> the ordering are provisional - re-check them against the code before relying
-> on them.
+> **This file still needs a refinement pass.** It was written for the 11 Nov
+> state and has been amended in place at each merge, so §3's "Next steps"
+> still reads as a pre-merge plan and step A describes work that has now
+> landed. The header's hashes and counts were re-checked on 2026-11-27; the
+> ordering below was not.
 
-**Open at the merge, both carried over from §3 step A:**
+**Open now:**
 - **Hosting was not redeployed.** The live Privacy Notice is still 1.3 while
   the app records consent against `"1.4"`, so the live notice does not
   mention connected accounts or claiming a band. Run
-  `firebase deploy --only hosting` from `hosting/`.
-- **The phone checks were only partly re-run.** Google sign-in, device
-  pairing and claiming a band were confirmed working on a device on
+  `firebase deploy --only hosting` from `hosting/`. Carried over from §3 step A.
+- **The band-claim phone checks were only partly re-run.** Google sign-in,
+  device pairing and claiming a band were confirmed working on a device on
   2026-11-24; the remainder of [`device-pairing.md`](device-pairing.md) §9
   was not. Whether James signed off the notice change before the merge is not
-  recorded here.
+  recorded here. Carried over from §3 step A.
+- **The map pass's on-screen behaviour is only partly confirmed.** The
+  MapTiler key is in `local.properties` and some of
+  [`osmdroid.md`](osmdroid.md) §8's "Loading, state and incremental updates"
+  checklist was walked on 2026-11-27; the items that need a band on the move
+  (the Mock Sender walk: the face moving smoothly, pins not blinking, an open
+  label staying put while its time advances; the incident path keeping its
+  shape) were not. Deliberately deferred, not forgotten.
 
 Run `git status -sb` and `git log origin/mvvm-main -1` before trusting any
 hash here.
@@ -69,13 +80,13 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 |---|---|
 | **Accounts** | Email/password sign-up wizard (Account → Name → Contacts → Consent), Google sign-in, login, in-app password reset via the email link (App Link), email verification with a gate that locks unverified password accounts out, Change password, Delete account (re-auth, then a resumable two-step delete), Log Out. |
 | **Consent and privacy** | A recorded consent (`accepted`, timestamp, version `1.3`) for every account; a gate that sends any account without one to the consent screen. Hosted Privacy Notice (1.3) and delete-account page, published as final. No analytics. |
-| **Track tab** (default) | A MapTiler map (five layers: Auto/Street/Satellite/Outdoor/Topo, dark map in dark mode, choice remembered) with the band's last known position as a face marker (Google photo or initials); small pins under it for the newest ten panics, check-ins and low-battery alerts (one per spot, a panic always keeping its spot; colour-coded; a panic pin opens its Incident view, the others show "Check-in, 5 min ago"); the face's bubble offers "View incident" after a panic; a re-centre button; a "Last check-in: 5 min ago" status card; a draggable bottom sheet with the newest three alerts and "See all". **Since 10 Nov** a **wearer switcher** at the top: "My Band" or a connected wearer, with Safe / Panic Alert / Offline ([`device-pairing.md`](device-pairing.md) §9). |
+| **Track tab** (default) | A MapTiler map (five layers: Auto/Street/Satellite/Outdoor/Topo, dark map in dark mode, choice remembered) with the band's last known position as a face marker (Google photo or initials); small pins under it for the newest ten panics, check-ins and low-battery alerts (one per spot, a panic always keeping its spot; colour-coded; a panic pin opens its Incident view, the others show "Check-in, 5 min ago"); the face's bubble offers "View incident" after a panic; a re-centre button; a "Last check-in: 5 min ago" status card; a draggable bottom sheet with the newest three alerts and "See all". **Since 10 Nov** a **wearer switcher** at the top: "My Band" or a connected wearer, with Safe / Panic Alert / Offline ([`device-pairing.md`](device-pairing.md) §9); **decided 27 Nov, not built:** those three words come off and the dot alone carries the status ([`device-pairing.md`](device-pairing.md) §10, §3 item 15). **Since 24 Nov** the map keeps its camera across a tab switch and a theme change, redraws only the pin or marker that changed, and holds a tile cache sized to the phone rather than osmdroid's 600 MB ([`map-performance.md`](map-performance.md)). |
 | **Alerts** | Alert history (pushed screen): latest alert card plus the list by day (Today, Yesterday, then each date), colour-coded by type (panic, check-in, low battery, unknown), with place names instead of coordinates (Android Geocoder), battery level and "5 min ago" times. Tracking updates are hidden from lists. **Incident view** (pushed screen): a panic row, a panic pin or the face's "View incident" opens the panic on a map with the tracking updates after it drawn as a path, plus its time, place, latest battery and update count. **Since 10 Nov** every panic has a **status chip** (Active / Acknowledged / Resolved), changeable from Alert history and the Incident view. **Since 5 Nov** Alert history has a **Clear history** button, which the rules refuse ([`alert-data.md`](alert-data.md) §13). |
 | **Notifications** | The bell opens an inbox of the band's alerts by day. Opt-in **alert notifications** (Settings): a foreground service keeps the listener open and posts each new alert as a system notification, panic silent for the wearer's discretion, nothing identifying on the lock screen. |
 | **Contacts tab** | Emergency contacts: add/edit (tap a card)/delete (trash or hold), search, relationship filter chips, an Emergency star that sorts and badges. At least one contact always; phone numbers stored as E.164. |
 | **Device tab** (was Profile) | A compact header (photo or initials, name, email); the band: "Reporting" or "Last seen 5 min ago", battery (orange at 20%), last alert with time and place name, last known position as a place name ("On the move" while tracking); the connected account (sign-in method, email verification, "Emergency contacts: N, M starred" opening Contacts); "Pair a band", which since 10 Nov opens **Connect** (share an invite code, or redeem one to watch someone); how the band works. Since 10 Nov it shows the account's uid as its band, with no data ([`device-tab.md`](device-tab.md) §5). At the top, a **band viewer**: the band on a turntable to drag round, built to play rendered frames, **showing a still placeholder** until the frames exist (§3, item 14). [`band-viewer.md`](band-viewer.md). |
 | **Settings** | Account information (details, verification status, Change password, Delete account), Alert notifications, Display (Light/Dark/System), About (version, Privacy Notice), Changelog, Log Out. |
-| **Mock sender** (debug builds only) | Plays the band with its one button: hold 1.5 s = panic (then tracking every 5 s for 30 min), double-press = check-in, hold 5 s during a panic = cancel (sends a check-in). A battery slider sets the level reported and sends a low-battery alert at 20%. |
+| **Mock sender** (debug builds only) | Plays the band with its one button: hold 1.5 s = panic (then tracking every 5 s for 30 min), double-press = check-in, hold 5 s during a panic = cancel (sends a check-in). A battery slider sets the level reported and sends a low-battery alert at 20%. **Since 27 Nov** it is one screen of the app, at **Settings → Mock Sender**, with a back arrow; its own launcher icon is gone, so the phone that plays the band now needs a signed-in, verified, consented account ([`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) §1 and §2). |
 
 ### Requirements coverage
 
@@ -285,6 +296,32 @@ says what it depends on and what it would touch.
 5. **A demo mode / demo script.** The project is presented without hardware.
    A scripted mock-sender run (panic → tracking → check-in → low
    battery) would make demos reliable.
+   - **Folding the harness into the app proper was assessed on 2026-11-27.**
+     Three readings, very different costs. **One app, one icon, still
+     debug-only: done** - a Settings row with a back arrow, and the launcher
+     icon deleted (James's call; [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md)
+     §1). **The cost of deleting it is a demo-day one:** the icon let a phone
+     play the band with no account, and the sender now sits behind login, the
+     verification gate and the consent gate, with `exported="false"` so
+     `adb shell am start` cannot reach it either. Restoring the old route is
+     one edit to the debug manifest (§1), and worth considering before the
+     December demo if setting up a verified account per sender phone proves
+     tedious. **In release builds: ~1 day of code behind four human
+     gates**, so not
+     app-only after all. Its GPS would put `ACCESS_FINE_LOCATION` in the
+     release manifest, which breaks §2's "never", needs James past the seven
+     approved permissions, and contradicts a highlighted card in the live
+     notice ("The phone's own location is never used. The app asks for no
+     location permission at all") - so notice, `CONSENT_VERSION` and a
+     Hosting deploy, on top of the 1.3/1.4 drift in the header. *Ship it
+     with the synthetic Cebu loop and none of that paragraph applies.* It
+     would also make the app write to `devices/` (§2, and §3 step C's open
+     items), and let a real user fire a panic that reaches watchers and,
+     once FR-05 lands, real contacts - `SmsPanicSender`'s own preconditions
+     already name that guard. **Rewriting it into MVVM: +2-3 days, and
+     argued against** - CLAUDE.md tolerates the 704-line non-MVVM Activity
+     and its `FirebaseProvider` import *because* the harness is throwaway,
+     and it is meant to die when the firmware lands.
 
 ### Quality and hardening
 
@@ -344,6 +381,29 @@ says what it depends on and what it would touch.
       `band_turn_000.webp` onwards; the spec (direction of turn, size,
       transparency) is [`band-viewer.md`](band-viewer.md) §2.
 
+### Decided, not built
+
+15. **The switcher pill loses its words (decided 2026-11-27).** Track's
+    wearer switcher drops **Safe / Panic Alert / Offline**, and the dot alone
+    carries the status - green reporting, grey not reporting, red panic - so
+    the pill reads `● My Band ▾` and the divider goes with the text it
+    separated. Two reasons: length (the pill is `wrap_content` between the
+    gear and the bell, and the wearer's name is already capped at 130 dp and
+    ellipsized), and honesty ("Safe" asserts something a timestamp cannot
+    support, and an idle band reads "Offline" most of the day because FR-09
+    tracking is post-alert only). It supersedes the earlier proposal to
+    reword the three to "Reporting" / "Last seen 2 h ago".
+    - **No data and no rules change.** `TrackUiState.currentWearerStatus` and
+      its three rules stay exactly as they are.
+    - The three strings stay too, re-pointed at the dot's
+      `contentDescription`, which it has none of today; and a panic also
+      tints the card's stroke, because red and green are the colour-blind
+      pair and an 8 dp circle's hue cannot be the only signal.
+    - **The cost:** Track no longer states a duration. The Device tab
+      ("Last seen 5 min ago") and the check-in pill still do.
+    - Scope when it is built, and the still-open "Panic Alert outlives a
+      Resolved panic": [`device-pairing.md`](device-pairing.md) §10.
+
 ---
 
 ## 4. Backlog
@@ -354,7 +414,7 @@ says what it depends on and what it would touch.
 |---|---|---|
 | **Rules: record what is live, then close the watcher gap** | Jul | A+ with band identity was published 2026-11-04 ([`database-rules.md`](database-rules.md) §9). On 10 Nov `5f0b254` added watcher rules to `RTDBS-RULES.md` and a second copy, `RTDBS-RULES-CONSOLE.json`, which differ; no publish was recorded. §3 "Next steps" B and D; [`database-rules.md`](database-rules.md) §10. `devices/{id}/status` is now used by the status chips; `command` still by nothing (ask the firmware teammate before deleting it). |
 | **Privacy Notice for connected accounts** | James | Watchers see a wearer's name and alerts (and, under the current rules, their contacts). Notice and `CONSENT_VERSION` before Connect is used by real people. §3 "Next steps" D. |
-| **MapTiler key** | Jul | A dedicated key restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), shared privately, in each `local.properties` as `MAPTILER_API_KEY`. Without it Track says "Map unavailable". [`osmdroid.md`](osmdroid.md) §4.4. |
+| **MapTiler key** | Jul | A dedicated key restricted by **Allowed user-agent header** to `GuardBand/1.0 (+https://github.com/jspdavis/GuardBand)` (`OsmdroidConfig.USER_AGENT`), shared privately, in each `local.properties` as `MAPTILER_API_KEY`. Without it Track says "Map unavailable" - and a key that is present but *invalid* shows a grey map with no such message, which is what happened before 2026-11-27. The key was in place and tiles were drawing on 2026-11-27. [`osmdroid.md`](osmdroid.md) §4.4. |
 | **The Privacy Notice still says "Profile tab"** | James | Its Google profile picture row says the picture shows "on the Profile tab and on the map". It is now the Device tab. Nothing about the data changed, so it is a wording fix for a human to make (and decide whether it needs a version bump); the agent was told not to edit the hosted notice. |
 | **Ask MapTiler about the collapsing credit** | Jul | Before any public demo. The ⓘ collapse follows OSMF's guidelines, not a MapTiler statement. [`osmdroid.md`](osmdroid.md) §4.6. |
 | **Design pass on the placeholders** | Jul | The dark palette (`values-night/colors.xml`), the low-battery icon (triangle or battery), everything marked `DESIGN: Jul` (94 places: 4 for the alert pins and their label, 6 for the Incident view and the face's bubble), and two older theme changes to confirm with Jehan: 28 dp outlined-button corners, 24 dp sign-up top padding. |
@@ -383,9 +443,14 @@ list; the step-by-step checklists live in each doc:
 - Alert notifications: [`notifications-test-cases.md`](notifications-test-cases.md) (47 cases).
 - Alert rows and place names: [`alert-data.md`](alert-data.md) §12.
 - Map, face marker, credits and logo links: [`osmdroid.md`](osmdroid.md) §5.4 and §8.
-- Map loading, state and incremental updates (24 Nov): [`osmdroid.md`](osmdroid.md) §8,
-  "Loading, state and incremental updates"; the reasoning is in
-  [`map-performance.md`](map-performance.md).
+- Map loading, state and incremental updates (24 Nov, merged 27 Nov):
+  [`osmdroid.md`](osmdroid.md) §8, "Loading, state and incremental updates";
+  the reasoning is in [`map-performance.md`](map-performance.md).
+  **Partly walked on 2026-11-27** with the MapTiler key in place; the items
+  that need a band on the move (the Mock Sender walk and the incident path's
+  shape) are still outstanding, as is
+  `adb shell du -sh /data/data/com.example.guardband/cache/osmdroid` to see
+  the new cache budget hold.
 - Alert pins on Track (27 Oct): [`osmdroid.md`](osmdroid.md) §8, "Alert pins".
 - Incident view, its four ways in and the panic-pin rule (27 Oct): [`incident-view.md`](incident-view.md) §5.
 - Band viewer (28 Oct): the placeholder now; drag, fling, auto-turn, scrolling, TalkBack and "remove animations" once frames exist: [`band-viewer.md`](band-viewer.md) §8.
@@ -450,7 +515,8 @@ parked: wired up on 2026-11-10 (`5f0b254`).** Of the list that stood here:
 
 - `ic_edit` (the contact pencil) is now hidden in `item_contact.xml` since tap
   to edit; delete the button and its binding if it stays unused.
-- The mock sender has no launcher icon of its own (it differs by label only).
+- The mock sender's launcher icon was removed on 27 Nov; `mock_sender_label`
+  is now only the activity's recents label and its on-screen title.
 - Refresh this file after each merge: the header's hashes and test count,
   §1's tables and §4.
 
@@ -462,6 +528,29 @@ The full, user-facing record is `Changelog.entries`
 (`app/src/main/java/com/example/guardband/ui/changelog/Changelog.kt`), shown
 in the app under Settings → Changelog. Headlines:
 
+- **2026-11-27 (`1a90c6b`):** the switcher-pill decision recorded in
+  [`device-pairing.md`](device-pairing.md) §10 - the dot carries the status
+  and the three words come off. Documented only, nothing built (§3 item 15).
+  Docs-only, so no Changelog entry, as with `3289759`.
+- **2026-11-24, merged to `mvvm-main` on 2026-11-27 (`7db4a98`, merge
+  `0136eb6`):** a map performance pass, audited before anything was changed -
+  [`map-performance.md`](map-performance.md) records the eight things that
+  looked slow and were already right, so they are not "fixed" later. The
+  camera survives a tab switch and a theme change; the marker, the pins and
+  the adapters redraw only for a change (one new alert touches one pin); an
+  RTDB emission that says nothing new is dropped; the incident path is thinned
+  by Douglas-Peucker at 5 m for drawing only; osmdroid's 600 MB tile cache
+  becomes 16-64 MB of the free space, with a smaller memory buffer on low-RAM
+  phones and a refusal for an image that is not a plausible tile. No
+  dependency, no layout and no feature changed. The branch's Changelog entry
+  for the day is `c4e798a`, which was its tip; `feature/map-performance` was
+  merged `--no-ff` and then deleted, local and remote.
+- **2026-11-18 .. 11-24 (`4717692`, `677cdb3`, `add3370`):** the demo band is
+  back by default and a band can be claimed by its id (pairing stage 1, no
+  proof yet); Privacy Notice 1.4 and `CONSENT_VERSION` `"1.4"` cover the claim
+  and the 10 Nov connected accounts (**the hosted page is still 1.3** - see
+  the header); Google sign-in reports the real cause of a failure instead of
+  blaming the device.
 - **2026-11-10 (jspdavis, `5f0b254`):** connected accounts: Device → Pair a band opens Connect (share or redeem a 6-character invite code, one hour); a wearer switcher on Track (My Band or a connected wearer, Safe / Panic Alert / Offline); `FirebaseBandRepository` and `BandSelectionStore` wired; panic status chips (Active / Acknowledged / Resolved) in Alert history, the Incident view, Track's sheet and the inbox; watcher rules in `RTDBS-RULES.md` plus `RTDBS-RULES-CONSOLE.json`. Left the app on an empty band by default (§3).
 - **2026-11-05 (Jehan, `653f29f`):** Alert history and the inbox grouped by date again (Today, Yesterday, each date); Alert history's 50 cap removed; the inbox reads the whole history; a Clear history button (refused by the rules).
 - **2026-11-04 / 11-02:** pairing steps 1 and 2 (bands sign in as anonymous users; rules close writes on any band id but `guardband-001`, published 4 Nov); roles rolled back; panic SMS and alert status parked; new Track and Contacts icons; the stray gitlink removed.
@@ -513,11 +602,14 @@ in the app under Settings → Changelog. Headlines:
 | The alert payload contract | [`../SCHEMA.md`](../SCHEMA.md): **authoritative** |
 | Security Rules | [`../RTDBS-RULES.md`](../RTDBS-RULES.md) (source of truth) and [`database-rules.md`](database-rules.md) (paths, `devices/` options, Playground tests, rollout) |
 
-**Branches.** Push to `mvvm-main` only; `main` is then fast-forwarded to the
-same commit (`git push origin mvvm-main:main`), never merged with `--no-ff`.
+**Branches.** Push to `mvvm-main` only. The convention is that `main` is then
+fast-forwarded to the same commit (`git push origin mvvm-main:main`), never
+merged with `--no-ff`; **in practice that step has been skipped since at least
+11 Nov**, and `main` was 13 commits behind on 2026-11-27 - James moves it.
 `mvp-checkpoint*` stay strict MVP: never port code between them and the MVVM
-branches. `git branch --no-merged mvvm-main` should list only `main` and the
-MVP checkpoint branches.
+branches. On 2026-11-27 `git branch --no-merged mvvm-main -a` lists only
+`origin/mvp-checkpoint-local-backup`; `main` and `feature/band-claim` are
+ancestors of `mvvm-main`, and `feature/map-performance` is gone.
 
 ---
 

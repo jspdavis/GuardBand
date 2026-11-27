@@ -2,8 +2,8 @@
 <!--
     Debug-only additions, merged into the main manifest for debug builds.
     MockSenderActivity is a throwaway test harness that stands in for the
-    wristband firmware; it gets its own launcher icon so a demo phone can
-    open it without adb. Release builds contain neither the code nor the icon.
+    wristband firmware. Release builds contain neither its code nor its entry
+    point in Settings.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
@@ -23,15 +23,35 @@
 
     <application>
 
+        <!--
+            One way in: Settings' Mock Sender row (2026-11-27). The launcher
+            icon this activity used to have was removed with it, so playing
+            the band now means a signed-in account past the verification and
+            consent gates.
+
+            exported="false" follows from that: the row is a same-package
+            intent, and nothing outside the app has any business starting the
+            harness. It also means `adb shell am start` cannot reach it -
+            flip this back to true if a no-account route is ever needed again.
+        -->
         <activity
             android:name=".ui.mocksender.MockSenderActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="@string/mock_sender_label"
             android:screenOrientation="portrait">
+
+            <!--
+                It has to be an implicit action, because app/src/main cannot
+                name a class in app/src/debug - a release build would not
+                compile. utils/MockSenderLink is the one place the action is
+                spelled out, and it restricts the intent to this package.
+                CATEGORY_DEFAULT because an implicit intent needs it to match.
+            -->
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="com.example.guardband.action.MOCK_SENDER" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
         </activity>
 
     </application>

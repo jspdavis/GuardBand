@@ -18,4 +18,11 @@ sealed interface SettingsEvent {
 
     /** Open About, which holds the version and the Privacy Notice. */
     object OpenAbout : SettingsEvent
+
+    /**
+     * Open the debug-only Mock Sender harness. Emitted only from the row
+     * that [com.example.guardband.utils.MockSenderLink] makes visible, so a
+     * release build can never reach it.
+     */
+    object OpenMockSender : SettingsEvent
 }

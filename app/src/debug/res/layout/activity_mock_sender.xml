@@ -1,179 +1,204 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The Mock Sender: the band's one button, its battery, and what it is
-     sending. Debug harness only; see MockSenderActivity. -->
-<ScrollView
+     sending. Debug harness only; see MockSenderActivity.
+
+     The back arrow is outside the ScrollView so it stays put. Settings'
+     Mock Sender row is the only way in, so Back always returns there. -->
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/surface_muted"
-    android:fillViewport="true"
+    android:orientation="vertical"
     tools:context=".ui.mocksender.MockSenderActivity">
 
-    <LinearLayout
+    <!-- The app's arrow and its label, but not its top bar: the harness has
+         its own big title in the content just below, and two would read as
+         one too many. -->
+    <ImageButton
+        android:id="@+id/ibBack"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="4dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/cd_back"
+        android:src="@drawable/ic_arrow_back"
+        app:tint="@color/text_primary" />
+
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:fontFamily="@font/poppins_semibold"
-            android:text="@string/mock_sender_label"
-            android:textSize="24sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:fontFamily="@font/poppins_extralight"
-            android:text="@string/mock_sender_subtitle"
-            android:textColor="#666666"
-            android:textSize="14sp" />
-
-        <!-- The band's one button. Its gestures are read from the raw touch
-             (BandButtonDecoder), so it is a TextView, not a Button. -->
-        <TextView
-            android:id="@+id/btnBand"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:background="@drawable/bg_mock_band_button"
-            android:contentDescription="@string/mock_sender_band_button_cd"
-            android:fontFamily="@font/poppins_semibold"
-            android:gravity="center"
-            android:hapticFeedbackEnabled="true"
-            android:text="@string/mock_sender_band_button"
-            android:textColor="@android:color/white"
-            android:textSize="20sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:fontFamily="@font/poppins_extralight"
-            android:text="@string/mock_sender_gestures"
-            android:textAlignment="center"
-            android:textColor="#444444"
-            android:textSize="13sp" />
-
-        <!-- The tracking a panic starts: off, or how many sent and how long left. -->
-        <TextView
-            android:id="@+id/tvTracking"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:background="#FFFFFF"
-            android:fontFamily="@font/poppins_extralight"
-            android:padding="12dp"
-            android:text="@string/mock_sender_tracking_off"
-            android:textAlignment="center" />
-
-        <!-- The battery every message reports. Dropping to 20% sends the low
-             battery alert by itself (FR-11), once until it goes back above. -->
-        <TextView
-            android:id="@+id/tvBattery"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:fontFamily="@font/poppins_semibold"
-            tools:text="Battery: 64%" />
-
-        <SeekBar
-            android:id="@+id/sbBattery"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:contentDescription="@string/mock_sender_battery_cd"
-            android:max="100"
-            android:minHeight="48dp" />
-
-        <!-- The band identity (docs/device-pairing.md section 2): its own id,
-             where it writes, and a way to start over as a new band. -->
-        <TextView
-            android:id="@+id/tvBandId"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:fontFamily="@font/poppins_extralight"
-            android:textIsSelectable="true"
-            android:textSize="13sp"
-            tools:text="Band id: Xy12AbCdEfGhIjKlMnOpQrStUv34" />
-
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/swOwnBandId"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:fontFamily="@font/poppins_extralight"
-            android:minHeight="48dp"
-            android:text="@string/mock_sender_own_id_switch"
-            android:textSize="13sp" />
-
-        <!-- Copy feeds the app's Pair a band, My band tab. -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:orientation="horizontal">
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="24dp">
 
-            <Button
-                android:id="@+id/btnCopyBandId"
-                style="?attr/borderlessButtonStyle"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:enabled="false"
-                android:text="@string/mock_sender_copy_band_id" />
+                android:layout_marginBottom="4dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="@string/mock_sender_label"
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
-            <Button
-                android:id="@+id/btnNewBandId"
-                style="?attr/borderlessButtonStyle"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/mock_sender_new_band_id" />
+                android:layout_marginBottom="24dp"
+                android:fontFamily="@font/poppins_extralight"
+                android:text="@string/mock_sender_subtitle"
+                android:textColor="#666666"
+                android:textSize="14sp" />
 
+            <!-- The band's one button. Its gestures are read from the raw touch
+                 (BandButtonDecoder), so it is a TextView, not a Button. -->
+            <TextView
+                android:id="@+id/btnBand"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
+                android:background="@drawable/bg_mock_band_button"
+                android:contentDescription="@string/mock_sender_band_button_cd"
+                android:fontFamily="@font/poppins_semibold"
+                android:gravity="center"
+                android:hapticFeedbackEnabled="true"
+                android:text="@string/mock_sender_band_button"
+                android:textColor="@android:color/white"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/poppins_extralight"
+                android:text="@string/mock_sender_gestures"
+                android:textAlignment="center"
+                android:textColor="#444444"
+                android:textSize="13sp" />
+
+            <!-- The tracking a panic starts: off, or how many sent and how long left. -->
+            <TextView
+                android:id="@+id/tvTracking"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="#FFFFFF"
+                android:fontFamily="@font/poppins_extralight"
+                android:padding="12dp"
+                android:text="@string/mock_sender_tracking_off"
+                android:textAlignment="center" />
+
+            <!-- The battery every message reports. Dropping to 20% sends the low
+                 battery alert by itself (FR-11), once until it goes back above. -->
+            <TextView
+                android:id="@+id/tvBattery"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:fontFamily="@font/poppins_semibold"
+                tools:text="Battery: 64%" />
+
+            <SeekBar
+                android:id="@+id/sbBattery"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:contentDescription="@string/mock_sender_battery_cd"
+                android:max="100"
+                android:minHeight="48dp" />
+
+            <!-- The band identity (docs/device-pairing.md section 2): its own id,
+                 where it writes, and a way to start over as a new band. -->
+            <TextView
+                android:id="@+id/tvBandId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:fontFamily="@font/poppins_extralight"
+                android:textIsSelectable="true"
+                android:textSize="13sp"
+                tools:text="Band id: Xy12AbCdEfGhIjKlMnOpQrStUv34" />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/swOwnBandId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="@font/poppins_extralight"
+                android:minHeight="48dp"
+                android:text="@string/mock_sender_own_id_switch"
+                android:textSize="13sp" />
+
+            <!-- Copy feeds the app's Pair a band, My band tab. -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnCopyBandId"
+                    style="?attr/borderlessButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:enabled="false"
+                    android:text="@string/mock_sender_copy_band_id" />
+
+                <Button
+                    android:id="@+id/btnNewBandId"
+                    style="?attr/borderlessButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/mock_sender_new_band_id" />
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:background="#E0E0E0" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="@font/poppins_semibold"
+                android:text="@string/mock_sender_status_heading"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#F5F5F5"
+                android:fontFamily="@font/poppins_extralight"
+                android:minHeight="48dp"
+                android:padding="12dp"
+                android:text="@string/mock_sender_ready"
+                android:textAlignment="center" />
+
+            <!-- GPS fix badge: updated by MockSenderActivity whenever the fix changes -->
+            <TextView
+                android:id="@+id/tvGpsStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="@font/poppins_extralight"
+                android:padding="8dp"
+                android:text="@string/mock_sender_gps_acquiring"
+                android:textAlignment="center"
+                android:textColor="@color/black"
+                android:textSize="12sp" />
         </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:background="#E0E0E0" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:fontFamily="@font/poppins_semibold"
-            android:text="@string/mock_sender_status_heading"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#F5F5F5"
-            android:fontFamily="@font/poppins_extralight"
-            android:minHeight="48dp"
-            android:padding="12dp"
-            android:text="@string/mock_sender_ready"
-            android:textAlignment="center" />
-
-        <!-- GPS fix badge: updated by MockSenderActivity whenever the fix changes -->
-        <TextView
-            android:id="@+id/tvGpsStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:fontFamily="@font/poppins_extralight"
-            android:padding="8dp"
-            android:text="@string/mock_sender_gps_acquiring"
-            android:textAlignment="center"
-            android:textColor="@color/black"
-            android:textSize="12sp" />
-    </LinearLayout>
-</ScrollView>
+    </ScrollView>
+</LinearLayout>

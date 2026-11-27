@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
  *       Settings → (Alert notifications) → AlertNotificationsActivity
  *       Settings → (Display) → DisplayActivity
  *       Settings → (About) → AboutActivity
+ *       Settings → (Mock Sender, debug builds only) → the harness
  */
 class SettingsViewModel(
     private val authRepository: AuthRepository
@@ -61,6 +62,16 @@ class SettingsViewModel(
     /** The Changelog row: the app's progress, as an in-app page. */
     fun onChangelogClicked() {
         _events.trySend(SettingsEvent.OpenChangelog)
+    }
+
+    /**
+     * The Mock Sender row, on a debug build only. The Fragment hides the row
+     * when [com.example.guardband.utils.MockSenderLink.isAvailable] is false,
+     * and it is the Fragment that builds the implicit intent, because `main`
+     * cannot name a class in `app/src/debug`.
+     */
+    fun onMockSenderClicked() {
+        _events.trySend(SettingsEvent.OpenMockSender)
     }
 
     fun onLogoutClicked() {

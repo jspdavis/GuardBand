@@ -147,7 +147,7 @@ On Windows, use `gradlew.bat` (or `./gradlew` from Git Bash), with `JAVA_HOME` p
 
 Until the ESP32/Air780E firmware is ready, a phone stands in for the wristband:
 
-1. **Phone A** runs the **GuardBand Mock Sender** (its own launcher icon in debug builds). It has one band button, with the band's gestures: hold 1.5 s for a panic (then tracking every 5 s for 30 min), double-press for a check-in, hold 5 s during a panic to cancel. A battery slider sends a low-battery alert at 20%. It writes to the RTDB REST endpoints, as the band will.
+1. **Phone A** runs the **Mock Sender** (a debug build only, reached at Track → gear → Settings → Mock Sender; it had its own launcher icon until 2026-11-27, so this phone now needs a signed-in, verified, consented account). It has one band button, with the band's gestures: hold 1.5 s for a panic (then tracking every 5 s for 30 min), double-press for a check-in, hold 5 s during a panic to cancel. A battery slider sends a low-battery alert at 20%. It writes to the RTDB REST endpoints, as the band will.
 2. **Phone B** runs the receiver/guardian screens. One phone can also play both ends.
 3. Firebase is the only intermediary between them.
 

@@ -1,11 +1,10 @@
-# The mock signal and the receiver: both launchers
+# The mock signal and the receiver
 
 **How to make the band's data appear in the app when there is no band.**
 
-The firmware does not exist. A debug build therefore ships **two launcher
-icons**: one pretends to be the wrist band and writes alerts, the other is the
-real app and reads them. This document covers both ends and the path between
-them.
+The firmware does not exist. A debug build therefore carries a **Mock Sender**
+that pretends to be the wrist band and writes alerts, alongside the real app
+that reads them. This document covers both ends and the path between them.
 
 As of `feature/mock-sender-band-button` (2026-10-27): the sender is one band
 button and a battery slider (§4). For the design reasoning behind any of
@@ -14,24 +13,40 @@ data"); this file is the operating manual.
 
 ---
 
-## 1. The two launchers
+## 1. One app, one icon, two screens
 
-Both are **the same app**. `applicationId` is `com.example.guardband` for both,
-so a debug install puts two icons on one phone — it is not two installs, and
-you cannot have one without the other.
+The sender is not a second install. It is a screen of the same app, in the
+**debug source set** (`app/src/debug/`, including its own
+`AndroidManifest.xml` entry), so a release build contains neither its code nor
+any way to reach it. OkHttp is `debugImplementation` for the same reason.
 
-| Icon | Opens | What it is | Needs a sign-in? | In a release build? |
-|---|---|---|---|---|
-| **GuardBand** | `ui.splash.SplashActivity` | The real app. The receiver. | **Yes** | Yes |
-| **GuardBand Mock Sender** | `ui.mocksender.MockSenderActivity` | Stand-in for the ESP32 firmware. Writes alerts. | **No** | **No** |
+| Screen | Opens | What it is | In a release build? |
+|---|---|---|---|
+| **GuardBand** (the launcher icon) | `ui.splash.SplashActivity` | The real app. The receiver. | Yes |
+| **Mock Sender** (Settings' last row) | `ui.mocksender.MockSenderActivity` | Stand-in for the ESP32 firmware. Writes alerts. | **No** |
 
-The sender lives in the **debug source set** (`app/src/debug/`), including its
-own `AndroidManifest.xml` entry, so a release build contains neither its code
-nor its icon. OkHttp is `debugImplementation` for the same reason.
+**The way in is Track → gear → Settings → Mock Sender**, the last row, under
+About. A back arrow at the top left returns to Settings.
 
-**The sender needs no account.** It writes to the Realtime Database over
-REST, so a phone that only plays the band never has to log in. The receiver
-does need an account, because `HomeActivity` is behind the auth gate.
+**It had its own launcher icon until 2026-11-27, and that icon mattered
+(2026-11-27).** The harness signs in as its own band over REST and never
+touches the app's `FirebaseAuth` session, so the icon let a phone play the
+band with **no account at all**. With the icon gone, **the sender now needs a
+signed-in account past the verification and consent gates**, like any other
+screen behind Settings, which is worth knowing before a demo: budget a
+verified address and a recorded consent for the phone that plays the band
+(§2). `adb shell am start` is no escape hatch either, because the activity is
+now `exported="false"`. Putting the `MAIN`/`LAUNCHER` filter back in
+`app/src/debug/AndroidManifest.xml` and setting `exported="true"` restores the
+old no-account route in one edit, if a demo needs it.
+
+The row cannot name `MockSenderActivity` — `app/src/main` compiles without
+`app/src/debug`, so a release build would not build. It sends an **implicit
+intent** on `com.example.guardband.action.MOCK_SENDER`, declared in the debug
+manifest and restricted to this package. `utils/MockSenderLink` is the one
+place the action is spelled out and the one thing that decides whether to
+offer the row (`BuildConfig.DEBUG`); in a release build the row and its
+divider are `GONE`.
 
 **It signs in as its own band (2026-11-02).** On opening, the sender signs
 up once as a Firebase **anonymous** user (the band identity,
@@ -43,8 +58,9 @@ writes simply go out unsigned. The **own id** switch writes to
 `devices/<band id>` instead, which the receiver reads once that id is claimed
 (Device → Pair a band → **My band**, since 2026-11-11), and **New band id**
 starts over as a new band. **Copy band id** puts the bare id on the
-clipboard, to paste into My band on the same phone. None of this touches
-whoever is signed in to the receiver screens.
+clipboard, to paste into My band on the same phone. This band identity is
+**separate from the account you signed in with** to reach the screen: the
+harness never touches that session.
 
 ---
 
@@ -53,6 +69,7 @@ whoever is signed in to the receiver screens.
 | | |
 |---|---|
 | **A debug build** | `./gradlew installDebug`. A release build has no sender. |
+| **An account on the sender phone too** | Since 2026-11-27 the sender sits behind Settings, so the phone that plays the band has to be signed in, with a **verified email** and a recorded consent. It had its own launcher icon and needed none of this until then (§1). |
 | **`app/google-services.json`** | Required to build at all. Points at `guardband-aae65`. |
 | **Your own debug SHA-1** | Only needed for **Google** sign-in on the receiver. Email + password works without it. Register it in the Firebase Console, then re-download `google-services.json`. |
 | **Network on both phones** | Everything goes through the database; there is no local or Bluetooth path. |
@@ -111,7 +128,7 @@ and unchanged.
 
 ---
 
-## 4. The sender launcher
+## 4. The sender screen
 
 **It behaves like the band (2026-10-27):** one button, decoded with the
 firmware's own timings, and a battery slider. It replaced six separate
@@ -225,7 +242,7 @@ staleness window.
 
 ---
 
-## 5. The receiver launcher
+## 5. The receiver screens
 
 Splash → Login (or straight to Home if a session is stored) → `HomeActivity`
 and its three tabs: Track, Contacts, Device (Profile until 2026-10-27; the
@@ -391,7 +408,7 @@ tracking pings that follow.
 
 ## 7. One phone is enough
 
-Two phones are nicer for a demo, but because both icons belong to one install
+Two phones are nicer for a demo, but because the sender is a screen of the same install
 you can run the whole thing on a single device: send from the Mock Sender, press
 Home, open GuardBand, watch it arrive. **Tracking stops as soon as the Mock
 Sender leaves the screen**, so a panic's path needs two phones. The database is the only channel, so the
@@ -428,7 +445,9 @@ payloads, missing fields and unknown types — see §9.
 | Recent alerts panel / Alert history ignore your tracking updates | Correct (§5). Send a `PANIC` to see them react. |
 | Receiver shows nothing at all | Wrong Firebase project, no network, or you are looking at a different `deviceId`. There is only one: `guardband-001`. |
 | Sequence ids restarted at 1 | The history node was cleared. |
-| No Mock Sender icon | You installed a release build. |
+| No Mock Sender row in Settings | You installed a release build. The row is `GONE` unless `BuildConfig.DEBUG` (§1). |
+| Looking for a Mock Sender launcher icon | It was removed on 2026-11-27; Settings' row is the only way in (§1). |
+| Settings is unreachable: the app keeps asking you to verify or consent | The sender is behind those gates now that the icon is gone (§1). Finish them, or put the launcher filter back (§1). |
 
 ---
 
