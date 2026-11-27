@@ -1,27 +1,36 @@
 # Handoff
 
-**As of 2026-11-27 · `mvvm-main` is at `0136eb6`: the map performance pass
-merged on 2026-11-27 (`7db4a98`, `--no-ff`), over the band-claim merge
+**As of 2026-11-28 · `mvvm-main` is at `00f1706`: the Mock Sender became a
+screen of the app on 2026-11-28 (`af7567e`, pushed straight to `mvvm-main`,
+no feature branch), over the map performance pass merged on 2026-11-27
+(`7db4a98`, `--no-ff`, merge `0136eb6`), over the band-claim merge
 of 2026-11-24 - the demo band is back and a band can be claimed by its id
 (`4717692`), Privacy Notice 1.4 (`677cdb3`), and Google sign-in now reports
 the real cause of a failure instead of blaming the device (`add3370`) ·
-1041 JVM unit tests, 0 failures, run on the merged tree on 2026-11-27 ·
+1044 JVM unit tests, 0 failures, run on 2026-11-28 ·
 `./gradlew lint` no errors on 2026-11-24 (one fewer warning than before) ·
-plus the Wi-Fi band prototype in `firmware/`. `main` is 13 commits behind;
+plus the Wi-Fi band prototype in `firmware/`. `main` is 15 commits behind;
 it is James's to move. `git branch --no-merged mvvm-main -a` lists only
 `origin/mvp-checkpoint-local-backup`.**
 
 > **This file still needs a refinement pass.** It was written for the 11 Nov
 > state and has been amended in place at each merge, so §3's "Next steps"
 > still reads as a pre-merge plan and step A describes work that has now
-> landed. The header's hashes and counts were re-checked on 2026-11-27; the
-> ordering below was not.
+> landed. The header's hashes and counts, and §1's tables, were re-checked on
+> 2026-11-28; §3's ordering was not.
 
 **Open now:**
 - **Hosting was not redeployed.** The live Privacy Notice is still 1.3 while
-  the app records consent against `"1.4"`, so the live notice does not
+  the app records consent against `"1.4"` and `hosting/public/privacy/index.html`
+  in the repo already says 1.4, so the live notice does not
   mention connected accounts or claiming a band. Run
   `firebase deploy --only hosting` from `hosting/`. Carried over from §3 step A.
+- **Decide how the sender phone gets in, before the December demo.** The Mock
+  Sender's launcher icon was deleted on 28 Nov, so the phone that plays the
+  band now needs a signed-in, verified, consented account - the icon needed
+  none of that. One edit to `app/src/debug/AndroidManifest.xml` brings the old
+  route back if setting that up per demo phone proves tedious
+  ([`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) §1, §3 item 5).
 - **The band-claim phone checks were only partly re-run.** Google sign-in,
   device pairing and claiming a band were confirmed working on a device on
   2026-11-24; the remainder of [`device-pairing.md`](device-pairing.md) §9
@@ -79,14 +88,14 @@ app. It is an academic project (requirements FR-01..FR-11 in `README.md`).
 | Area | What exists |
 |---|---|
 | **Accounts** | Email/password sign-up wizard (Account → Name → Contacts → Consent), Google sign-in, login, in-app password reset via the email link (App Link), email verification with a gate that locks unverified password accounts out, Change password, Delete account (re-auth, then a resumable two-step delete), Log Out. |
-| **Consent and privacy** | A recorded consent (`accepted`, timestamp, version `1.3`) for every account; a gate that sends any account without one to the consent screen. Hosted Privacy Notice (1.3) and delete-account page, published as final. No analytics. |
+| **Consent and privacy** | A recorded consent (`accepted`, timestamp, version `1.4`) for every account; a gate that sends any account without one to the consent screen. Hosted Privacy Notice and delete-account page, published as final - **1.4 in the repo, still 1.3 on the live site** until Hosting is redeployed (see the header). No analytics. |
 | **Track tab** (default) | A MapTiler map (five layers: Auto/Street/Satellite/Outdoor/Topo, dark map in dark mode, choice remembered) with the band's last known position as a face marker (Google photo or initials); small pins under it for the newest ten panics, check-ins and low-battery alerts (one per spot, a panic always keeping its spot; colour-coded; a panic pin opens its Incident view, the others show "Check-in, 5 min ago"); the face's bubble offers "View incident" after a panic; a re-centre button; a "Last check-in: 5 min ago" status card; a draggable bottom sheet with the newest three alerts and "See all". **Since 10 Nov** a **wearer switcher** at the top: "My Band" or a connected wearer, with Safe / Panic Alert / Offline ([`device-pairing.md`](device-pairing.md) §9); **decided 27 Nov, not built:** those three words come off and the dot alone carries the status ([`device-pairing.md`](device-pairing.md) §10, §3 item 15). **Since 24 Nov** the map keeps its camera across a tab switch and a theme change, redraws only the pin or marker that changed, and holds a tile cache sized to the phone rather than osmdroid's 600 MB ([`map-performance.md`](map-performance.md)). |
 | **Alerts** | Alert history (pushed screen): latest alert card plus the list by day (Today, Yesterday, then each date), colour-coded by type (panic, check-in, low battery, unknown), with place names instead of coordinates (Android Geocoder), battery level and "5 min ago" times. Tracking updates are hidden from lists. **Incident view** (pushed screen): a panic row, a panic pin or the face's "View incident" opens the panic on a map with the tracking updates after it drawn as a path, plus its time, place, latest battery and update count. **Since 10 Nov** every panic has a **status chip** (Active / Acknowledged / Resolved), changeable from Alert history and the Incident view. **Since 5 Nov** Alert history has a **Clear history** button, which the rules refuse ([`alert-data.md`](alert-data.md) §13). |
 | **Notifications** | The bell opens an inbox of the band's alerts by day. Opt-in **alert notifications** (Settings): a foreground service keeps the listener open and posts each new alert as a system notification, panic silent for the wearer's discretion, nothing identifying on the lock screen. |
 | **Contacts tab** | Emergency contacts: add/edit (tap a card)/delete (trash or hold), search, relationship filter chips, an Emergency star that sorts and badges. At least one contact always; phone numbers stored as E.164. |
 | **Device tab** (was Profile) | A compact header (photo or initials, name, email); the band: "Reporting" or "Last seen 5 min ago", battery (orange at 20%), last alert with time and place name, last known position as a place name ("On the move" while tracking); the connected account (sign-in method, email verification, "Emergency contacts: N, M starred" opening Contacts); "Pair a band", which since 10 Nov opens **Connect** (share an invite code, or redeem one to watch someone); how the band works. Since 10 Nov it shows the account's uid as its band, with no data ([`device-tab.md`](device-tab.md) §5). At the top, a **band viewer**: the band on a turntable to drag round, built to play rendered frames, **showing a still placeholder** until the frames exist (§3, item 14). [`band-viewer.md`](band-viewer.md). |
 | **Settings** | Account information (details, verification status, Change password, Delete account), Alert notifications, Display (Light/Dark/System), About (version, Privacy Notice), Changelog, Log Out. |
-| **Mock sender** (debug builds only) | Plays the band with its one button: hold 1.5 s = panic (then tracking every 5 s for 30 min), double-press = check-in, hold 5 s during a panic = cancel (sends a check-in). A battery slider sets the level reported and sends a low-battery alert at 20%. **Since 27 Nov** it is one screen of the app, at **Settings → Mock Sender**, with a back arrow; its own launcher icon is gone, so the phone that plays the band now needs a signed-in, verified, consented account ([`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) §1 and §2). |
+| **Mock sender** (debug builds only) | Plays the band with its one button: hold 1.5 s = panic (then tracking every 5 s for 30 min), double-press = check-in, hold 5 s during a panic = cancel (sends a check-in). A battery slider sets the level reported and sends a low-battery alert at 20%. **Since 28 Nov** it is one screen of the app, at **Settings → Mock Sender**, with a back arrow; its own launcher icon is gone, so the phone that plays the band now needs a signed-in, verified, consented account ([`mock-sender-and-receiver.md`](mock-sender-and-receiver.md) §1 and §2, and the header's open item). |
 
 ### Requirements coverage
 
@@ -298,7 +307,7 @@ says what it depends on and what it would touch.
    battery) would make demos reliable.
    - **Folding the harness into the app proper was assessed on 2026-11-27.**
      Three readings, very different costs. **One app, one icon, still
-     debug-only: done** - a Settings row with a back arrow, and the launcher
+     debug-only: done** (`af7567e`, 28 Nov) - a Settings row with a back arrow, and the launcher
      icon deleted (James's call; [`mock-sender-and-receiver.md`](mock-sender-and-receiver.md)
      §1). **The cost of deleting it is a demo-day one:** the icon let a phone
      play the band with no account, and the sender now sits behind login, the
@@ -430,6 +439,10 @@ their own phone each session, so this is a reference list, not a queue.
 [`team-checklist.md`](team-checklist.md) "Phone checks" has the current
 list; the step-by-step checklists live in each doc:
 
+- **Done on a phone, 2026-11-28:** the Mock Sender's new route - Settings'
+  row appears on a debug build, opens the harness, and its back arrow
+  returns to Settings. Still unrecorded: that a **release** build shows no
+  row (needs a release install), and a full send from the new route.
 - 5 and 10 Nov changes, once §3 step A is done: day headings by date; the
   status chips (all three places they show, and a second phone seeing the
   change); Connect (share, redeem, expired, your own code, wrong code); the
@@ -515,7 +528,7 @@ parked: wired up on 2026-11-10 (`5f0b254`).** Of the list that stood here:
 
 - `ic_edit` (the contact pencil) is now hidden in `item_contact.xml` since tap
   to edit; delete the button and its binding if it stays unused.
-- The mock sender's launcher icon was removed on 27 Nov; `mock_sender_label`
+- The mock sender's launcher icon was removed on 28 Nov; `mock_sender_label`
   is now only the activity's recents label and its on-screen title.
 - Refresh this file after each merge: the header's hashes and test count,
   §1's tables and §4.
@@ -527,6 +540,19 @@ parked: wired up on 2026-11-10 (`5f0b254`).** Of the list that stood here:
 The full, user-facing record is `Changelog.entries`
 (`app/src/main/java/com/example/guardband/ui/changelog/Changelog.kt`), shown
 in the app under Settings → Changelog. Headlines:
+
+- **2026-11-28 (`af7567e`, Changelog `00f1706`):** the Mock Sender became a
+  screen of the app - Track → gear → Settings → **Mock Sender**, the last
+  row, with a back arrow. Its separate launcher icon was deleted, so a debug
+  install puts one icon on the phone; `utils/MockSenderLink` holds the one
+  implicit action the row sends, because `app/src/main` cannot name a class in
+  `app/src/debug`, and the row is `GONE` unless `BuildConfig.DEBUG`. Decided
+  and built on 27 Nov; the commit crossed midnight, which is why the code
+  comments and CLAUDE.md say 27 Nov and the Changelog says 28. **The cost is
+  in the header's open items:** the icon let a phone play the band with no
+  account. Pushed straight to `mvvm-main` with no feature branch. Assessment
+  of the two bigger readings of "merge the harness in" (release builds; an
+  MVVM rewrite) is in §3 item 5.
 
 - **2026-11-27 (`1a90c6b`):** the switcher-pill decision recorded in
   [`device-pairing.md`](device-pairing.md) §10 - the dot carries the status
@@ -605,9 +631,9 @@ in the app under Settings → Changelog. Headlines:
 **Branches.** Push to `mvvm-main` only. The convention is that `main` is then
 fast-forwarded to the same commit (`git push origin mvvm-main:main`), never
 merged with `--no-ff`; **in practice that step has been skipped since at least
-11 Nov**, and `main` was 13 commits behind on 2026-11-27 - James moves it.
+11 Nov**, and `main` was 15 commits behind on 2026-11-28 - James moves it.
 `mvp-checkpoint*` stay strict MVP: never port code between them and the MVVM
-branches. On 2026-11-27 `git branch --no-merged mvvm-main -a` lists only
+branches. On 2026-11-28 `git branch --no-merged mvvm-main -a` lists only
 `origin/mvp-checkpoint-local-backup`; `main` and `feature/band-claim` are
 ancestors of `mvvm-main`, and `feature/map-performance` is gone.
 

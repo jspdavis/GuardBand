@@ -6,8 +6,8 @@ The firmware does not exist. A debug build therefore carries a **Mock Sender**
 that pretends to be the wrist band and writes alerts, alongside the real app
 that reads them. This document covers both ends and the path between them.
 
-As of `feature/mock-sender-band-button` (2026-10-27): the sender is one band
-button and a battery slider (§4). For the design reasoning behind any of
+As of 2026-11-28: the sender is one band button and a battery slider (§4),
+reached from Settings (§1). For the design reasoning behind any of
 it, see [`../CLAUDE.md`](../CLAUDE.md) ("Mock sender", "Track and map", "Alert
 data"); this file is the operating manual.
 
@@ -73,15 +73,17 @@ harness never touches that session.
 | **`app/google-services.json`** | Required to build at all. Points at `guardband-aae65`. |
 | **Your own debug SHA-1** | Only needed for **Google** sign-in on the receiver. Email + password works without it. Register it in the Firebase Console, then re-download `google-services.json`. |
 | **Network on both phones** | Everything goes through the database; there is no local or Bluetooth path. |
-| **One device id** | Everything reads and writes `devices/guardband-001` (`DeviceConstants.DEFAULT_DEVICE_ID`). There is no pairing yet, so **every account sees the same band.** |
+| **One device id, usually** | The sender writes `devices/guardband-001` (`DeviceConstants.DEFAULT_DEVICE_ID`) and every account reads it when it has claimed no band, so by default **every account sees the same band**. Since 2026-11-24 an account can claim a band by its id (Device → Pair a band → **My band**), which is what makes the sender's **own id** switch visible on the receiver. |
 
 **On the Security Rules.** The sender's writes depend on open writes under
 `devices/{deviceId}`, and both its sequence-id seed read and the receiver's
-reads on `".read": true`. The rules deployed on 2026-10-11 allow all of it.
-The proposal pending in `RTDBS-RULES.md` (Option A+,
-[`database-rules.md`](database-rules.md) §4) keeps all of it working but makes
-history **append-only**: a history id can be written once, never again. If a
-send comes back `401`, see §8.
+reads on `".read": true`.
+The live rules (Option A+ with band identity, published 2026-11-04,
+[`database-rules.md`](database-rules.md) §9) allow all of it, and make history
+**append-only**: a history id can be written once, never again. They also let
+any band id but `guardband-001` be written only by that band
+(`auth.uid == $deviceId`), which is why the **own id** switch needs the
+anonymous sign-in to have worked. If a send comes back `401`, see §8.
 
 ---
 
@@ -89,7 +91,7 @@ send comes back `401`, see §8.
 
 ```
 ┌─────────────────────────┐
-│  GuardBand Mock Sender  │   (debug only, no sign-in)
+│ Mock Sender (Settings)  │   (debug only; the phone is signed in)
 └───────────┬─────────────┘
             │  HTTPS PUT ×2, in this order
             │    1. /devices/guardband-001/history/<sequenceId>.json
@@ -262,26 +264,50 @@ status line. Battery is still on each alert row.
 
 | Element | Shows |
 |---|---|
-| Map + one marker | Last known position. MapTiler tiles via osmdroid; "Map unavailable" if the build has no `MAPTILER_API_KEY`. |
+| Map + the band's marker | Last known position, drawn as a **face marker** (the signed-in account's Google photo, or its initials). MapTiler tiles via osmdroid; "Map unavailable" if the build has no `MAPTILER_API_KEY`. |
+| **Alert pins** | Small pins under the face for the newest ten panics, check-ins and low-battery alerts, one per spot, a panic always keeping its spot. A **panic pin opens its Incident view**; the others show a label ("Check-in, 5 min ago"). Since 2026-10-27. |
+| **Wearer switcher** (top) | "My Band" or a connected wearer, with a status word. Since 2026-11-10; [`device-pairing.md`](device-pairing.md) §9. Your own band is what the sender writes. |
 | Empty overlay | *"Your band hasn't reported yet."* / *"No location fix yet"* / a read error. |
 | **Re-centre** (round target) | **Tap:** animates back to the band's last known position, zooms back in to street level if you had zoomed far out, and resumes following. Disabled with no fix. (Since 2026-10-27; it opened Google Maps on a tap until then.) |
 | **Check-in pill** | Read-only status of the latest check-in: *"Last check-in: 5 minutes ago"*, or *"No recent check-ins"*. Read from **history**, not `latest` (see below). Not tappable; the app never sends a check-in. |
-| Layers | UI-only stub. |
+| **Layers** | Five base maps, not a stub since 2026-10-27: Auto (dark in dark mode), Street, Satellite, Outdoor, Topo. The choice is remembered per phone. |
 | **Recent alerts sheet** | A draggable bottom sheet over the map: collapsed it shows only its header, dragged up the newest **three**, from `history`, tracking updates hidden, in the same rows as Alert history. **See all** opens Alert history. |
 
 ### Alert history: reads `history`
 
 The incident log, opened from **See all** on Track's panel (Back returns to
-Track). Reads the newest 100 raw entries, hides tracking updates, and shows up
-to 50. The panel and this screen share one ViewModel and one listener, so they
-always agree.
+Track). Reads the newest 100 raw entries and hides tracking updates; since
+2026-11-05 it shows **all** of what is left, grouped by day (Today,
+Yesterday, then each date), with no 50-row cap. The panel and this screen
+share one ViewModel and one listener, so they always agree.
 
 | Element | Shows |
 |---|---|
-| **Current status** card | The newest **non-tracking** alert: type, time, coordinates, battery. |
+| **Current status** card | The newest **non-tracking** alert: type, time, **place name** (from Android's Geocoder; coordinates until a name arrives, and for good if none exists) and battery. |
+| **Status chip** on a panic | Active / Acknowledged / Resolved, changeable here and in the Incident view. Since 2026-11-10; stored on `devices/{id}/status`, which is world-writable and an open item ([`alert-data.md`](alert-data.md) §13). |
+| **Clear history** | Since 2026-11-05, and **the rules refuse it** - append-only history. Expect it to fail ([`alert-data.md`](alert-data.md) §13). |
 | **History** list | The rest, newest first, colour-coded by type. |
 | Empty state | Says *which* kind of empty: nothing sent, only tracking updates, or nothing readable. |
 | **Try again** | Re-subscribes after a failed read. The panel has its own. |
+
+### Incident view and the inbox: two more readers
+
+Both arrived after this document was first written, and both react to what
+the sender writes.
+
+- **Incident view** (pushed screen, since 2026-10-27). A panic row, a panic
+  pin or the face's bubble opens the panic on a map with the
+  `TRACKING_UPDATE`s that followed it drawn as a path, plus its time, place,
+  latest battery and update count. **It is the only reader of tracking
+  updates** — they stay hidden from every list and every pin — so it is the
+  one screen where walkthrough C's path is visible as a path.
+  It runs **its own** query (the panic onwards, up to 400 entries), because
+  the alert screens' 100-entry window loses a panic within minutes of a
+  walking band. [`incident-view.md`](incident-view.md).
+- **The inbox** (the bell, since 2026-10-21). The band's non-tracking alerts
+  by day with place names, on its own history subscription. Since 2026-11-05
+  it reads the **whole** history with no window, which is an open cost item
+  ([`alert-data.md`](alert-data.md) §13).
 
 ### The one thing to understand about the map and the alerts
 
@@ -318,8 +344,8 @@ with the panel's **See all**.
 
 Clear `devices/guardband-001` in the Console first.
 
-- **Track:** Cebu City at zoom 13, *"Your band hasn't reported yet."*, Navigate
-  disabled.
+- **Track:** Cebu City at zoom 13, *"Your band hasn't reported yet."*, the
+  round re-centre button disabled, no pins.
 - **Panel:** *"No alerts from your band yet."* **History** says the same.
 
 ### B · First panic
@@ -440,7 +466,7 @@ payloads, missing fields and unknown types — see §9.
 | **Grey map, tiles refused** | The MapTiler key, or its user-agent restriction not matching `OsmdroidConfig.USER_AGENT`, or the Free plan's monthly limit — [`osmdroid.md`](osmdroid.md) §6. |
 | **Map is blank/grey, everything else works** | `OsmdroidConfig` did not run before the `MapView` was built. It must be applied in `onCreate`, ahead of inflation. |
 | Marker never appears, panel does | Reporting without a fix (§G), or the payload has no `location`. |
-| Badge stuck on **Reporting** after the band goes quiet | The 30 s staleness ticker (§D). |
+| Expecting a **Reporting** badge on Track | There is none: it went with the status panel on 2026-10-14 (§D). The Device tab shows "Reporting" / "Last seen 5 min ago" instead. |
 | Camera won't follow the band | Expected after you pan. Tap the round target button. |
 | Recent alerts panel / Alert history ignore your tracking updates | Correct (§5). Send a `PANIC` to see them react. |
 | Receiver shows nothing at all | Wrong Firebase project, no network, or you are looking at a different `deviceId`. There is only one: `guardband-001`. |
@@ -459,7 +485,6 @@ payloads, missing fields and unknown types — see §9.
 | **SMS to contacts (FR-05)** | The band sends it, not the app. Nothing here exercises it. |
 | **A real check-in (FR-10)** | A band double-press. The Mock Sender's double-press sends the same `CHECKIN` payload, which is what the receiver would see (walkthrough H). |
 | **A low-battery alert** | Drag the battery slider to 20% or below. |
-| **Pairing** | One hardcoded device id, so every account watches the same band. |
+| **Pairing, fully** | A band can be **claimed** by its id since 2026-11-24 (Device → Pair a band → **My band**; the sender's **own id** switch then shows up on the receiver), but that is stage 1 with **no proof** - anyone can claim any id while `devices/` reads stay open. Stage 2, a one-time code from the band, is not built ([`device-pairing.md`](device-pairing.md) §8). |
 | **Malformed payloads, unknown types, missing fields** | Console only. The harness always writes a valid payload. |
-| **Map layers** | UI stub. |
-| **A public demo** | The draft rules leave the wearer's coordinates **world-readable**. Close that first. The map runs on MapTiler's Free plan, which is non-commercial and pauses at its monthly limit. |
+| **A public demo** | The live rules leave the wearer's coordinates **world-readable**, and `devices/` **world-writable**. Close that first ([`database-rules.md`](database-rules.md) §9). The map runs on MapTiler's Free plan, which is non-commercial and pauses at its monthly limit. |
